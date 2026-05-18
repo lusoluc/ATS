@@ -1,6 +1,7 @@
 {
   "name": "frontend",
   "version": "0.1.0",
+  "author": "Carlos Lucas - Hamburg / Germany (https://www.linkedin.com/in/director-it-development/)",
   "private": true,
   "scripts": {
     "dev": "next dev",

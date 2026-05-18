@@ -1,5 +1,8 @@
 # System-Architektur & Feature-Katalog: Open-Source Enterprise ATS & Karriereplattform
 
+**Autor & Urheber:** Carlos Lucas - Hamburg / Germany  
+**Profil:** [LinkedIn - Director IT Development](https://www.linkedin.com/in/director-it-development/)
+
 ## 1. Executive Summary
 Diese hochmoderne, quelloffene Karriereplattform ist eine vollständig integrierte Enterprise-Lösung. Sie vereint ein leistungsstarkes Content-Management-System (CMS), vollautomatisiertes Job-Multiposting und ein Applicant Tracking System (ATS) in einer einzigen, nahtlosen Umgebung.
 

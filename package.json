@@ -2,6 +2,7 @@
   "name": "lv-karriereplattform",
   "version": "1.0.0",
   "description": "Landesverein Karriereplattform - Wave 1 Core Model",
+  "author": "Carlos Lucas - Hamburg / Germany (https://www.linkedin.com/in/director-it-development/)",
   "main": "index.js",
   "scripts": {
     "db:generate": "prisma generate",

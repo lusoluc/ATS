@@ -22,7 +22,7 @@ export async function runRetentionWorker() {
     // 1. Finde alle Bewerbungen, die löschpflichtig sind
     // In einer echten DB würden wir nach dem Datum der Absage filtern (z.B. rejectedAt)
     // Für dieses Modell nutzen wir das updatedAt der ApplicationForm 
-    const expiredApplications = await prisma.applicationForm.findMany({
+    const expiredApplications = await (prisma as any).application.findMany({
       where: {
         // Angenommener Status-Filter (in der Prisma-Schema Erweiterung für WP04/05)
         // status: { in: ['REJECTED', 'WITHDRAWN'] },

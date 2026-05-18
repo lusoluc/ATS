@@ -57,8 +57,8 @@ export default function Navbar({ cmsPages = [] }: { cmsPages?: NavPage[] }) {
                       if (subChildren.length > 0) {
                         return (
                           <div key={child.id} className="nested-dropdown">
-                            <span className="nested-dropdown-trigger" style={{ padding: '0.65rem 1.2rem', cursor: 'pointer', fontSize: '0.9rem' }}>
-                              {child.navLabel || child.title} <span style={{ opacity: 0.5 }}>▸</span>
+                            <span className="nested-dropdown-trigger" style={{ padding: '0.65rem 1.2rem', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>
+                              {child.navLabel || child.title} <span className="nested-indicator">❯</span>
                             </span>
                             <div className="nested-dropdown-content glass-panel">
                               {subChildren.map(sub => (

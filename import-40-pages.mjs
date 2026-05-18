@@ -3,7 +3,7 @@ import path from 'path';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
-const CONTENT_DIR = 'c:/Users/Admin/Desktop/lv/content_text';
+const CONTENT_DIR = path.join(process.cwd(), 'content_text');
 
 async function importPages() {
   const files = fs.readdirSync(CONTENT_DIR).filter(f => f.endsWith('.md'));

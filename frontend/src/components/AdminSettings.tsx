@@ -592,7 +592,7 @@ export default function AdminSettings() {
             <form style={{ display: 'grid', gap: '1.5rem', maxWidth: '600px', marginBottom: '2rem' }}>
               {[
                 { key: 'sap_base_url', label: 'API Base URL (OData)', placeholder: 'z.B. https://api4.successfactors.com' },
-                { key: 'sap_company_id', label: 'Company ID', placeholder: 'z.B. landesvereinXYZ' },
+                { key: 'sap_company_id', label: 'Company ID', placeholder: 'z.B. EnterpriseXYZ' },
                 { key: 'sap_client_id', label: 'Client ID / API Key', placeholder: 'z.B. MDEyMzQ1Njc4OTA=' },
                 { key: 'sap_client_secret', label: 'Client Secret (Password)', placeholder: 'z.B. geheimes_passwort', type: 'password' }
               ].map(({ key, label, placeholder, type = 'text' }) => {

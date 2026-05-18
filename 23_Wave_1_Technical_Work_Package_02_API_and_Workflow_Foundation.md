@@ -10,7 +10,7 @@
   - Enterprise Architect
   - Security Architect
   - Delivery Lead
-- Gültigkeit: Landesverein-spezifisch, benchmark-frei, Wave-1-umsetzungsorientiert
+- Gültigkeit: Enterprise-spezifisch, benchmark-frei, Wave-1-umsetzungsorientiert
 - Regel: Wenn dieses Arbeitspaket dem Final Source of Truth widerspricht, gilt immer der Final Source of Truth
 
 ---
@@ -37,9 +37,9 @@ Dieses Arbeitspaket ist erfolgreich, wenn danach:
 # 2. Warum dieses Arbeitspaket jetzt kommt
 
 Nach dem stabilisierten Kernmodell muss als nächstes die **API- und Workflow-Schicht** festgezogen werden, weil:
-- die aktuelle Landesverein-Zielrealität bereits eine klar strukturierte Jobsuche und Stellenanzeigendarstellung zeigt, [1](https://www.dvinci.de/karrierewebseite/)
+- die aktuelle Enterprise-Zielrealität bereits eine klar strukturierte Jobsuche und Stellenanzeigendarstellung zeigt, [1](https://www.dvinci.de/karrierewebseite/)
 - öffentliche Karriere- und Jobfunktionen ohne saubere Public/Internal-Trennung riskant wären, [2](https://gdpr-info.eu/art-5-gdpr/)[4](https://gdpr-info.eu/art-6-gdpr/)
-- und die zukünftige Landesverein-Plattform zwingend zentrale Jobfreigaben und lokale Recruiting-Beteiligung technisch kontrollieren muss. [1](https://www.dvinci.de/karrierewebseite/)[5](https://www.dvinci.de/bewerbermanagement-software/)
+- und die zukünftige Enterprise-Plattform zwingend zentrale Jobfreigaben und lokale Recruiting-Beteiligung technisch kontrollieren muss. [1](https://www.dvinci.de/karrierewebseite/)[5](https://www.dvinci.de/bewerbermanagement-software/)
 
 Sobald APIs für Jobs, Workflow-Transitions und Bewerbungen existieren, steigt auch das Risiko für:
 - fehlende Endpoint-Autorisierung,

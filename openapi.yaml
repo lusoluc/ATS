@@ -1,10 +1,10 @@
 openapi: 3.0.3
 info:
-  title: Landesverein Karriereplattform API
+  title: Enterprise Karriereplattform API
   description: API Contracts (Wave 1) - Public, Governance, Recruiting, Sensitive
   version: 1.0.0
 servers:
-  - url: https://api.karriere.landesverein.de/v1
+  - url: https://api.karriere.Enterprise.de/v1
     description: Production Server
 
 components:

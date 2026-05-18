@@ -118,7 +118,7 @@ export async function DELETE(req: NextRequest) {
 
 async function ensureSeedData() {
   let org = await prisma.organization.findFirst();
-  if (!org) org = await prisma.organization.create({ data: { name: 'Landesverein für Innere Mission' } });
+  if (!org) org = await prisma.organization.create({ data: { name: 'Enterprise' } });
   let facility = await prisma.facility.findFirst();
   if (!facility) await prisma.facility.create({ data: { name: 'Psychiatrisches Zentrum Rickling', organizationId: org.id } });
   for (const name of ['draft', 'in_review', 'published', 'archived']) {

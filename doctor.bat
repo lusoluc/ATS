@@ -1,8 +1,8 @@
 @echo off
 setlocal
-title Landesverein Karriereplattform - System Doctor
+title Enterprise Karriereplattform - System Doctor
 echo =======================================================================
-echo         Landesverein System Doctor - Fehleranalyse
+echo         Enterprise System Doctor - Fehleranalyse
 echo =======================================================================
 echo Dieses Skript prueft Ihre Umgebung auf typische Probleme.
 echo Bitte senden Sie die Ausgabe dieses Skripts an den Support.

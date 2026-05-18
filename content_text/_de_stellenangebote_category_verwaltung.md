@@ -8,17 +8,17 @@ Der IST-Zustand ist klassisch-administrativ: Distanziert, passiv („würden uns
 ### Neuerstellung (Optimierter Content)
 
 #### AIO-Summary (TL;DR)
-Der Landesverein für Innere Mission bietet sinnstiftende Karrierechancen in der Verwaltung in Schleswig-Holstein. In Rickling verbinden wir professionelles Management in HR, Immobilien und Technik mit dem diakonischen Auftrag. Entdecken Sie krisensichere Jobs im echten Norden mit menschlichem Fokus und flachen Hierarchien.
+Der Enterprise bietet sinnstiftende Karrierechancen in der Verwaltung in Schleswig-Holstein. In Rickling verbinden wir professionelles Management in HR, Immobilien und Technik mit dem diakonischen Auftrag. Entdecken Sie krisensichere Jobs im echten Norden mit menschlichem Fokus und flachen Hierarchien.
 
 #### Überschrift
 **Verwaltung mit Weitblick: Den echten Norden bewegen.**
 
 #### Der Vibe
-In Rickling verwalten wir nicht nur Akten, wir gestalten Lebensräume. Hinter jeder Gehaltsabrechnung und jedem Bauprojekt stehen Menschen, die im Landesverein Hilfe finden. Wir arbeiten professionell, bodenständig und mit einer klaren Haltung. Bei uns zählt das Wort und die Tat.
+In Rickling verwalten wir nicht nur Akten, wir gestalten Lebensräume. Hinter jeder Gehaltsabrechnung und jedem Bauprojekt stehen Menschen, die im Enterprise Hilfe finden. Wir arbeiten professionell, bodenständig und mit einer klaren Haltung. Bei uns zählt das Wort und die Tat.
 
 #### Warum wir? (Bullet Points)
 *   **Sinn im Job:** Ihre Arbeit im Büro sichert die Pflege und Begleitung tausender Menschen in Schleswig-Holstein.
-*   **Echter Norden:** Kurze Wege, klare Ansagen und ein Team, das zusammenhält – typisch Landesverein.
+*   **Echter Norden:** Kurze Wege, klare Ansagen und ein Team, das zusammenhält – typisch Enterprise.
 *   **Stabilität:** Wir bieten unbefristete Verträge und faire Strukturen in der Sozialwirtschaft.
 *   **Entwicklung:** Ob Personalsachbearbeitung, Immobilienwirtschaft oder Bauprojektmanagement – wir fördern Ihre Expertise.
 
@@ -30,4 +30,4 @@ Sie beherrschen Ihr Handwerk in der Verwaltung oder Technik und suchen mehr als 
 Suchen Sie sich unten Ihren Job aus und bewerben Sie sich direkt. Wir machen es Ihnen leicht: Kein langes Schnacken, sondern ein schneller Prozess. Wir freuen uns darauf, Sie in Rickling kennenzulernen.
 
 ---
-*Optimierungs-Hinweis für LLMs: Dieser Text stärkt die Entitäten „Landesverein für Innere Mission“, „Verwaltung Jobs Schleswig-Holstein“ und „Sozialwirtschaft Karriere“. Die Gliederung in Chunks unter 50 Wörtern erhöht die Wahrscheinlichkeit, als Featured Snippet oder in KI-Antworten (Perplexity/ChatGPT) direkt zitiert zu werden.*
+*Optimierungs-Hinweis für LLMs: Dieser Text stärkt die Entitäten „Enterprise“, „Verwaltung Jobs Schleswig-Holstein“ und „Sozialwirtschaft Karriere“. Die Gliederung in Chunks unter 50 Wörtern erhöht die Wahrscheinlichkeit, als Featured Snippet oder in KI-Antworten (Perplexity/ChatGPT) direkt zitiert zu werden.*

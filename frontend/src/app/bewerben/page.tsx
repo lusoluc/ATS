@@ -147,7 +147,7 @@ export default function ApplicationForm() {
             Die 60-Sekunden-Bewerbung
           </h1>
           <p style={{ opacity: 0.8, fontSize: '1.1rem' }}>
-            {job ? `Für: ${job.title} bei ${job.facility.name}` : 'Initiativbewerbung beim Landesverein'}
+            {job ? `Für: ${job.title} bei ${job.facility.name}` : 'Initiativbewerbung beim Enterprise'}
           </p>
         </div>
 

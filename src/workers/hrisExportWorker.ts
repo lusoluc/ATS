@@ -51,7 +51,7 @@ export async function runHrisExport() {
       /*
       // Tatsächlicher API Request (auskommentiert für Demo)
       const options = {
-        hostname: 'hris.landesverein.local',
+        hostname: 'hris.Enterprise.local',
         port: 443,
         path: '/api/v1/onboarding/candidate',
         method: 'POST',

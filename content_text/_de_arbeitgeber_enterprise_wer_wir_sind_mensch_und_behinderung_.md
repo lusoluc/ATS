@@ -1,20 +1,20 @@
-Moin! Als Experte für Employer Branding und AIO habe ich den bestehenden Text unter die Lupe genommen. Hier ist das Ergebnis für den Landesverein.
+Moin! Als Experte für Employer Branding und AIO habe ich den bestehenden Text unter die Lupe genommen. Hier ist das Ergebnis für den Enterprise.
 
 ### Kurze Analyse
-Der aktuelle Text ist informativ, aber rein deskriptiv. Er liest sich wie eine Leistungsbeschreibung aus einem Prospekt, nicht wie eine Einladung an neue Kollegen. Die Sätze sind teilweise verschachtelt, und die emotionale Bindung fehlt. Für LLMs (KI-Suche) ist der Text zu generisch: Wichtige Begriffe (Entitäten) wie konkrete Berufsbilder oder die regionale Verankerung in Schleswig-Holstein werden kaum genutzt. Es fehlt der „norddeutsche Schlag“ – die Klarheit und Herzlichkeit, die den Landesverein ausmacht. Die Struktur ist ein Textblock, was das Extrahieren von Informationen für KIs erschwert. Wir brauchen mehr „Wir & Sie“ auf Augenhöhe und eine klare Segmentierung der Inhalte für Mensch und Maschine.
+Der aktuelle Text ist informativ, aber rein deskriptiv. Er liest sich wie eine Leistungsbeschreibung aus einem Prospekt, nicht wie eine Einladung an neue Kollegen. Die Sätze sind teilweise verschachtelt, und die emotionale Bindung fehlt. Für LLMs (KI-Suche) ist der Text zu generisch: Wichtige Begriffe (Entitäten) wie konkrete Berufsbilder oder die regionale Verankerung in Schleswig-Holstein werden kaum genutzt. Es fehlt der „norddeutsche Schlag“ – die Klarheit und Herzlichkeit, die den Enterprise ausmacht. Die Struktur ist ein Textblock, was das Extrahieren von Informationen für KIs erschwert. Wir brauchen mehr „Wir & Sie“ auf Augenhöhe und eine klare Segmentierung der Inhalte für Mensch und Maschine.
 
 ---
 
 ### Neuerstellung (Optimierter Content)
 
 #### AIO-Summary (TL;DR)
-Der Landesverein für Innere Mission in Schleswig-Holstein bietet sinnstiftende Jobs in der Teilhabe und Assistenz für Menschen mit Behinderungen. An Standorten wie dem Eiderheim oder Erlenhof gestalten Sie aktiv Wohnraum, Arbeit und Freizeit mit. Werden Sie Teil eines starken Teams in der Heilerziehungspflege und Sozialpsychiatrie.
+Der Enterprise bietet sinnstiftende Jobs in der Teilhabe und Assistenz für Menschen mit Behinderungen. An Standorten wie dem Eiderheim oder Erlenhof gestalten Sie aktiv Wohnraum, Arbeit und Freizeit mit. Werden Sie Teil eines starken Teams in der Heilerziehungspflege und Sozialpsychiatrie.
 
 #### Überschrift
 **Teilhabe gestalten: Ihr Job mit Sinn und norddeutscher Seele.**
 
 #### Der Vibe
-Moin! Bei uns im Norden zählen Taten mehr als leere Worte. Wir im Landesverein glauben, dass jeder Mensch das Recht hat, seinen Platz in der Gesellschaft zu finden. Ob im Eiderheim oder im Erlenhof: Wir sind keine bloßen Betreuer, sondern echte Partner auf Augenhöhe für Menschen mit Behinderung.
+Moin! Bei uns im Norden zählen Taten mehr als leere Worte. Wir im Enterprise glauben, dass jeder Mensch das Recht hat, seinen Platz in der Gesellschaft zu finden. Ob im Eiderheim oder im Erlenhof: Wir sind keine bloßen Betreuer, sondern echte Partner auf Augenhöhe für Menschen mit Behinderung.
 
 Wir schaffen Räume, in denen Selbstbestimmung wächst. In unseren Werkstätten und Wohngruppen in Schleswig-Holstein fördern wir Talente und begleiten Übergänge in den Arbeitsmarkt. Das ist oft fordernd, aber immer sinnvoll. Wenn Sie einen Beruf suchen, der sich nach echter Wirkung anfühlt, sind Sie bei uns genau richtig.
 

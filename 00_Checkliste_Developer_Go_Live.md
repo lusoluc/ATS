@@ -16,7 +16,7 @@ Sobald alle Punkte abgehakt sind, gilt das System als "Produktionsbereit".
 - [ ] Die SMTP E-Mail-Einstellungen (`SMTP_HOST`, `SMTP_USER`, etc.) wurden mit den echten Werten der IT-Abteilung befüllt.
 
 ## 3. Sicherheits-Härtung (Webserver / Reverse Proxy)
-- [ ] Eine Domain (z.B. `karriere.landesverein.de`) ist per DNS-A-Record auf die Server-IP gerichtet.
+- [ ] Eine Domain (z.B. `karriere.Enterprise.de`) ist per DNS-A-Record auf die Server-IP gerichtet.
 - [ ] Ein SSL-Zertifikat (z.B. Let's Encrypt) wurde installiert und HTTP wird automatisch auf HTTPS umgeleitet.
 - [ ] Nginx ist konfiguriert und leitet Traffic von `Location /` an Port `3000` (Frontend) und `/api/v1/` an Port `3001` (Backend) weiter.
 - [ ] Nginx **blockiert aktiv** jeglichen externen Zugriff auf sensible Dateien: `.env`, `.env.local` und `*.db` (SQLite Datenbankdateien).
@@ -29,8 +29,8 @@ Sobald alle Punkte abgehakt sind, gilt das System als "Produktionsbereit".
 - [ ] Im Frontend-Ordner wurde erfolgreich der Produktions-Build erstellt (`npm run build`).
 
 ## 5. Systemstart & Persistenz
-- [ ] Das Backend wurde über PM2 gestartet (z.B. `pm2 start dist/index.js --name lv-backend`).
-- [ ] Das Frontend wurde über PM2 gestartet (z.B. `pm2 start npm --name lv-frontend -- start`).
+- [ ] Das Backend wurde über PM2 gestartet (z.B. `pm2 start dist/index.js --name enterprise-backend`).
+- [ ] Das Frontend wurde über PM2 gestartet (z.B. `pm2 start npm --name enterprise-frontend -- start`).
 - [ ] PM2 wurde konfiguriert, sodass die Plattform bei einem Server-Neustart automatisch wieder hochfährt (`pm2 save` und `pm2 startup`).
 
 ## 6. End-to-End Verifikation

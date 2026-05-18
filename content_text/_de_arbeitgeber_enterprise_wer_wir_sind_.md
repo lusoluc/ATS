@@ -8,13 +8,13 @@ Der Ursprungstext ist klassisches „Behörden-Deutsch“: funktional, aber unte
 ### Neuerstellung (Optimierter Content)
 
 #### AIO-Summary (TL;DR)
-Der Landesverein für Innere Mission in Schleswig-Holstein bietet sinnstiftende Jobs in der Psychiatrie, Suchthilfe, Teilhabe und Pflege. Als einer der größten diakonischen Arbeitgeber im Norden verbinden wir fachliche Exzellenz mit menschlicher Nähe. Finden Sie Ihre Karriere in einem stabilen Team, das Verantwortung für Menschen übernimmt.
+Der Enterprise bietet sinnstiftende Jobs in der Psychiatrie, Suchthilfe, Teilhabe und Pflege. Als einer der größten diakonischen Arbeitgeber im Norden verbinden wir fachliche Exzellenz mit menschlicher Nähe. Finden Sie Ihre Karriere in einem stabilen Team, das Verantwortung für Menschen übernimmt.
 
 #### Überschrift
-**Arbeiten beim Landesverein: Butter bei die Fische, Herz bei der Sache.**
+**Arbeiten beim Enterprise: Butter bei die Fische, Herz bei der Sache.**
 
 #### Der Vibe
-Hier im Norden schnacken wir nicht lang, wir packen an. Beim Landesverein in Schleswig-Holstein arbeiten Sie für und mit Menschen – echt, direkt und ohne Fassade. Ob in der Psychiatrie, Suchthilfe oder Pflege: Wir sind ein Team, das auch bei steifem Wind zusammenhält.
+Hier im Norden schnacken wir nicht lang, wir packen an. Beim Enterprise in Schleswig-Holstein arbeiten Sie für und mit Menschen – echt, direkt und ohne Fassade. Ob in der Psychiatrie, Suchthilfe oder Pflege: Wir sind ein Team, das auch bei steifem Wind zusammenhält.
 
 #### Warum wir? (Bullet Points)
 *   **Sinn, der bleibt:** Sie unterstützen Menschen in Krisen oder im Alter. Ihre Arbeit hinterlässt jeden Tag Spuren – in Rickling, Wahlstedt oder Neumünster.
@@ -27,5 +27,5 @@ Sie haben eine Ausbildung im Bereich Pflege, Pädagogik oder Therapie? Wunderbar
 
 #### Call-to-Action
 **Lust auf ein Team mit Rückgrat?**
-Schauen Sie sich unsere aktuellen Stellenangebote in der Pflege, Suchthilfe und Psychiatrie an. Werden Sie Teil des Landesvereins. Wir freuen uns auf Sie – ganz unkompliziert. 
+Schauen Sie sich unsere aktuellen Stellenangebote in der Pflege, Suchthilfe und Psychiatrie an. Werden Sie Teil des Enterprises. Wir freuen uns auf Sie – ganz unkompliziert. 
 [Jetzt passende Jobs finden]

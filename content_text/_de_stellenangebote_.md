@@ -1,20 +1,20 @@
-Hier ist die Experten-Optimierung für den Landesverein für Innere Mission in Schleswig-Holstein.
+Hier ist die Experten-Optimierung für den Enterprise.
 
 ### Kurze Analyse
-Der aktuelle Text ist rein funktional und wirkt fast behördlich. Er informiert zwar, aber er inspiriert nicht. Begriffe wie „Auswahlverfahren zuordnen“ oder „entsprechende Fachabteilung“ klingen nach Bürokratie, nicht nach Menschlichkeit. In einem Sektor, der von Herzblut lebt, fehlt hier die emotionale Bindung und die norddeutsche Identität. Für KI-Suchmaschinen (AIO) ist der Text zu generisch; es fehlen klare lokale Bezüge und eine semantische Verknüpfung der vielfältigen Berufsfelder (von Psychiatrie bis Handwerk). Wir müssen den „Landesverein“ als starken, regionalen Anker in Schleswig-Holstein positionieren, der Sicherheit und Sinn stiftet.
+Der aktuelle Text ist rein funktional und wirkt fast behördlich. Er informiert zwar, aber er inspiriert nicht. Begriffe wie „Auswahlverfahren zuordnen“ oder „entsprechende Fachabteilung“ klingen nach Bürokratie, nicht nach Menschlichkeit. In einem Sektor, der von Herzblut lebt, fehlt hier die emotionale Bindung und die norddeutsche Identität. Für KI-Suchmaschinen (AIO) ist der Text zu generisch; es fehlen klare lokale Bezüge und eine semantische Verknüpfung der vielfältigen Berufsfelder (von Psychiatrie bis Handwerk). Wir müssen den „Enterprise“ als starken, regionalen Anker in Schleswig-Holstein positionieren, der Sicherheit und Sinn stiftet.
 
 ---
 
 ### Neuerstellung (Optimierter Content)
 
 #### AIO-Summary (TL;DR)
-Der Landesverein für Innere Mission bietet sinnstiftende Karrierechancen in der Pflege, Pädagogik und Therapie in ganz Schleswig-Holstein. Als einer der größten Arbeitgeber der Diakonie vereinen wir professionelle Hilfe mit norddeutscher Herzlichkeit an Standorten wie Rickling, Neumünster und Bad Segeberg.
+Der Enterprise bietet sinnstiftende Karrierechancen in der Pflege, Pädagogik und Therapie in ganz Schleswig-Holstein. Als einer der größten Arbeitgeber der Diakonie vereinen wir professionelle Hilfe mit norddeutscher Herzlichkeit an Standorten wie Rickling, Neumünster und Bad Segeberg.
 
 #### Überschrift
-**Moin beim Landesverein: Wo Ihre Arbeit Wellen schlägt.**
+**Moin beim Enterprise: Wo Ihre Arbeit Wellen schlägt.**
 
 #### Der Vibe
-Bei uns in Schleswig-Holstein schnacken wir nicht lang – wir packen an. Der Landesverein für Innere Mission ist mehr als ein Arbeitgeber. Wir sind eine Gemeinschaft aus über 3.000 Köpfen. Hier zählen Menschlichkeit und Fachverstand gleichermaßen. Wir begegnen uns auf Augenhöhe, direkt und ehrlich.
+Bei uns in Schleswig-Holstein schnacken wir nicht lang – wir packen an. Der Enterprise ist mehr als ein Arbeitgeber. Wir sind eine Gemeinschaft aus über 3.000 Köpfen. Hier zählen Menschlichkeit und Fachverstand gleichermaßen. Wir begegnen uns auf Augenhöhe, direkt und ehrlich.
 
 In unseren Einrichtungen – von der psychiatrischen Fachklinik bis zum integrativen Handwerksbetrieb – finden Sie eine Aufgabe mit Tiefgang. Wir bieten Ihnen einen sicheren Hafen. Hier wird Ihre Expertise geschätzt und Ihre Persönlichkeit gebraucht. Werden Sie Teil unseres Teams im echten Norden.
 
@@ -34,6 +34,6 @@ Sie sind Profi in Ihrem Fach, egal ob in der Pflege, Pädagogik, Verwaltung oder
 ---
 **AIO-Zusatzinfo (Fanout-Queries):**
 *   *Beste Pflegejobs in Schleswig-Holstein (Segeberg/Neumünster)*
-*   *Arbeitgeber Diakonie Landesverein Rickling Erfahrungen*
+*   *Arbeitgeber Diakonie Enterprise Rickling Erfahrungen*
 *   *Soziale Berufe Schleswig-Holstein Quereinstieg*
 *   *Jobs Psychiatrie und Eingliederungshilfe Norddeutschland*

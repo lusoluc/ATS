@@ -10,8 +10,8 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' });
 
 export const metadata: Metadata = {
-  title: 'Landesverein Karriere',
-  description: 'Karriereplattform des Landesvereins. Finde Jobs, Ausbildungsplätze und Karrierewege.',
+  title: 'Enterprise Karriere',
+  description: 'Karriereplattform des Enterprises. Finde Jobs, Ausbildungsplätze und Karrierewege.',
 };
 
 const prisma = new PrismaClient();
@@ -52,15 +52,15 @@ export default async function RootLayout({
           <footer style={{ backgroundColor: 'var(--card-bg)', borderTop: '1px solid var(--border)', padding: '4rem 0 2rem', marginTop: '4rem' }}>
             <div className="container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
               <div>
-                <h4 style={{ color: 'var(--primary)', marginBottom: '1rem' }}>Landesverein Karriere</h4>
+                <h4 style={{ color: 'var(--primary)', marginBottom: '1rem' }}>Enterprise Karriere</h4>
                 <p style={{ opacity: 0.8, fontSize: '0.9rem' }}>Ihr Platz mit Sinn im Herzen Holsteins. Wirken. Helfen. Wachsen.</p>
               </div>
               <div>
                 <h4 style={{ marginBottom: '1rem' }}>Über uns</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.9rem', opacity: 0.8 }}>
                   <Link href="/arbeitgeber">Warum wir?</Link>
-                  <Link href="/info/_de_arbeitgeber_landesverein_wer_wir_sind_">Wer wir sind</Link>
-                  <Link href="/info/_de_arbeitgeber_landesverein_was_uns_auszeichnet_">Was uns auszeichnet</Link>
+                  <Link href="/info/_de_arbeitgeber_Enterprise_wer_wir_sind_">Wer wir sind</Link>
+                  <Link href="/info/_de_arbeitgeber_Enterprise_was_uns_auszeichnet_">Was uns auszeichnet</Link>
                 </div>
               </div>
               <div>
@@ -73,7 +73,7 @@ export default async function RootLayout({
               </div>
             </div>
             <div className="container" style={{ textAlign: 'center', opacity: 0.5, fontSize: '0.8rem', borderTop: '1px solid var(--border)', paddingTop: '2rem' }}>
-              © {new Date().getFullYear()} Landesverein für Innere Mission in Schleswig-Holstein
+              © {new Date().getFullYear()} Enterprise
             </div>
           </footer>
         )}

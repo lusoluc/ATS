@@ -12,21 +12,21 @@
   - CMS Architect
   - Enterprise Architect
   - Delivery Lead
-- Gültigkeit: Landesverein-spezifisch, benchmark-frei, Wave-1-umsetzungsorientiert
+- Gültigkeit: Enterprise-spezifisch, benchmark-frei, Wave-1-umsetzungsorientiert
 - Regel: Wenn dieses Arbeitspaket dem Final Source of Truth widerspricht, gilt immer der Final Source of Truth
 
 ---
 
 # 1. Ziel dieses Arbeitspakets
 
-Dieses Arbeitspaket realisiert die erste **sichtbare und nutzbare Produktoberfläche** der neuen Landesverein-Karriereplattform.
+Dieses Arbeitspaket realisiert die erste **sichtbare und nutzbare Produktoberfläche** der neuen Enterprise-Karriereplattform.
 
 Es soll sicherstellen, dass:
 - die öffentliche Karriere- und Jobsuche erstmals nutzbar wird,
 - zentrale Inhalte nicht nur modelliert, sondern sichtbar ausspielbar sind,
 - die strukturierte Joblogik im UI / Service Layer korrekt erscheint,
 - die erste Job-Governance-Kette (Draft → Review → Approval → Publish) end-to-end realisierbar wird,
-- und die sichtbaren Kernpfade des aktuellen Landesverein-Karriereportals kontrolliert in das Zielsystem überführt werden. [3](https://www.dvinci.de/karrierewebseite/)
+- und die sichtbaren Kernpfade des aktuellen Enterprise-Karriereportals kontrolliert in das Zielsystem überführt werden. [3](https://www.dvinci.de/karrierewebseite/)
 
 Dieses Arbeitspaket ist erfolgreich, wenn danach:
 1. die Karriere-Startseite realisiert ist,
@@ -41,7 +41,7 @@ Dieses Arbeitspaket ist erfolgreich, wenn danach:
 # 2. Warum dieses Arbeitspaket jetzt kommt
 
 Nach Work Package 01 (Core Model & Auth Baseline) und Work Package 02 (API & Workflow Foundation) ist nun die erste Realisierungsschicht sinnvoll, weil:
-- das aktuelle Landesverein-Portal bereits eine öffentliche Karriereerfahrung besitzt, die ersetzt bzw. modernisiert werden muss, 
+- das aktuelle Enterprise-Portal bereits eine öffentliche Karriereerfahrung besitzt, die ersetzt bzw. modernisiert werden muss, 
 - Jobs nicht nur intern strukturiert sein dürfen, sondern öffentlich such- und lesbar sein müssen, [3](https://www.dvinci.de/karrierewebseite/)
 - und zentrale Governance nur dann sinnvoll wirksam wird, wenn der Weg vom lokalen Entwurf bis zur Veröffentlichung technisch end-to-end funktioniert. [3](https://www.dvinci.de/karrierewebseite/)
 
@@ -130,14 +130,14 @@ Der Senior Developer Agent muss dieses Arbeitspaket auf Basis der folgenden Doku
 # 5. Verbindliche Ziele
 
 ## Ziel A – Public Homepage and Entry Logic
-Die neue Plattform muss eine Karriere-Startseite realisieren, die den Landesverein-Kontext mit mehreren Einstiegen verständlich abbildet.  
+Die neue Plattform muss eine Karriere-Startseite realisieren, die den Enterprise-Kontext mit mehreren Einstiegen verständlich abbildet.  
 Die aktuelle Seite zeigt bereits Einstiege in Arbeitgeberkontext, Karrierepfade und Jobsuche. 
 
 ## Ziel B – Employer and CareerPath Realisation
 Der Arbeitgeberbereich und ausgewählte CareerPath-Seiten müssen produktionsnah realisiert werden, da diese auf der aktuellen Plattform bereits sichtbare Kernorientierungspunkte sind. [1](https://www.dvinci.de/bewerbermanagement-software/)
 
 ## Ziel C – Public Jobs Realisation
-Die strukturierte Landesverein-Stellenlogik muss als Stellenliste und Stellentdetail realisiert werden, basierend auf den bereits sichtbaren Jobfeldern und Detailinformationen. [3](https://www.dvinci.de/karrierewebseite/)
+Die strukturierte Enterprise-Stellenlogik muss als Stellenliste und Stellentdetail realisiert werden, basierend auf den bereits sichtbaren Jobfeldern und Detailinformationen. [3](https://www.dvinci.de/karrierewebseite/)
 
 ## Ziel D – Initiative/Application Guidance Realisation
 Die Plattform muss einen klaren Initiativbewerbungs- und Bewerbungsweg-Einstieg realisieren, da diese Logik auf der aktuellen Seite bereits sichtbar vorhanden ist. 
@@ -215,7 +215,7 @@ Realisierung der neuen Karriere-Startseite basierend auf dem Zielmodell.
 - Service-/Kontaktbezug
 - klare CTA-Struktur
 
-Die aktuelle Landesverein-Startseite zeigt bereits mehrere Karrierepfad-Teaser sowie den Jobsucheinstieg. 
+Die aktuelle Enterprise-Startseite zeigt bereits mehrere Karrierepfad-Teaser sowie den Jobsucheinstieg. 
 
 ### Output
 - homepage realization
@@ -236,7 +236,7 @@ Realisierung einer strukturierten Arbeitgeberseite.
 - saubere Seitenstruktur
 - modulare Wiederverwendbarkeit
 
-Die aktuelle Arbeitgeberseite und die Arbeits-/Berufsfeld-Seite zeigen, dass dieser Bereich ein zentraler Orientierungsbaustein des Landesvereins ist. [1](https://www.dvinci.de/bewerbermanagement-software/)[2](https://www.dvinci.de/features/)
+Die aktuelle Arbeitgeberseite und die Arbeits-/Berufsfeld-Seite zeigen, dass dieser Bereich ein zentraler Orientierungsbaustein des Enterprises ist. [1](https://www.dvinci.de/bewerbermanagement-software/)[2](https://www.dvinci.de/features/)
 
 ### Output
 - employer page realization
@@ -286,7 +286,7 @@ Realisierung der öffentlichen Stellenliste auf Basis strukturierter JobPosting-
 - Filterlogik
 - Übergang zur Stellentdetailseite
 
-Die aktuelle Landesverein-Stellenliste zeigt diese Daten bereits sichtbar. [3](https://www.dvinci.de/karrierewebseite/)
+Die aktuelle Enterprise-Stellenliste zeigt diese Daten bereits sichtbar. [3](https://www.dvinci.de/karrierewebseite/)
 
 ### Output
 - job list realization
@@ -361,7 +361,7 @@ local draft → submit review → central approve/reject → publish → public 
 - negative publish test evidence
 - status transition realization note
 
-Die zukünftige Landesverein-Plattform benötigt genau diese zentrale Prüf- und Freigabelogik, weil lokale Einheiten Inhalte beitragen sollen, die zentrale HR-Karriere-Abteilung aber prüfen und freigeben muss. [3](https://www.dvinci.de/karrierewebseite/)
+Die zukünftige Enterprise-Plattform benötigt genau diese zentrale Prüf- und Freigabelogik, weil lokale Einheiten Inhalte beitragen sollen, die zentrale HR-Karriere-Abteilung aber prüfen und freigeben muss. [3](https://www.dvinci.de/karrierewebseite/)
 
 ---
 

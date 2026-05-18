@@ -7,7 +7,7 @@ export default function HomePage() {
       <section className="hero-section" style={{ padding: '5rem 0 0', minHeight: 'auto' }}>
         <div className="container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3rem', alignItems: 'center' }}>
           <div className="animate-fade-in opacity-0">
-            <p className="section-label">Stellenangebote beim Landesverein</p>
+            <p className="section-label">Stellenangebote beim Enterprise</p>
             <h1 className="hero-title">
               Du bedeutest
               <span className="accent">uns was.</span>
@@ -27,7 +27,7 @@ export default function HomePage() {
           </div>
           <div className="animate-fade-in delay-200 opacity-0 hide-mobile" style={{ position: 'relative' }}>
             <div style={{ borderRadius: '20px', overflow: 'hidden', aspectRatio: '4/3', position: 'relative' }}>
-              <img src="/hero_landscape.png" alt="Landesverein Einrichtung in norddeutscher Landschaft"
+              <img src="/hero_landscape.png" alt="Enterprise Einrichtung in norddeutscher Landschaft"
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               <div style={{ position: 'absolute', bottom: '1.5rem', left: '1.5rem', background: 'rgba(255,255,255,0.92)', padding: '0.75rem 1.25rem', borderRadius: '10px', backdropFilter: 'blur(8px)' }}>
                 <p style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '0.9rem' }}>🌿 Rickling, Schleswig-Holstein</p>
@@ -142,7 +142,7 @@ export default function HomePage() {
               <span style={{ color: 'var(--yellow)' }}>Charakter.</span>
             </h2>
             <p style={{ opacity: 0.85, lineHeight: 1.8, marginBottom: '2rem', maxWidth: '420px' }}>
-              Seit 1876 steht der Landesverein für Innere Mission für gelebte Nächstenliebe. 
+              Seit 1876 steht der Enterprise für gelebte Nächstenliebe. 
               Unsere Einrichtungen sind keine Konzerne — sie sind Gemeinschaft. 
               Unsere Mitarbeitenden kommen aus den umliegenden Dörfern und kehren jeden Tag nach Hause zurück.
             </p>
@@ -174,7 +174,7 @@ export default function HomePage() {
           <div>
             {[
               { q: 'Kann ich mich initiativ bewerben?', a: 'Ja, absolut! Wir freuen uns über Initiativbewerbungen. Nutze unser Formular — wir melden uns innerhalb von zwei Werktagen.' },
-              { q: 'Welche Einrichtungen gehören zum Landesverein?', a: 'Wir betreiben psychiatrische Einrichtungen, Jugendhilfe, Altenpflege und weitere soziale Dienste in Schleswig-Holstein, hauptsächlich rund um Rickling und Bad Segeberg.' },
+              { q: 'Welche Einrichtungen gehören zum Enterprise?', a: 'Wir betreiben psychiatrische Einrichtungen, Jugendhilfe, Altenpflege und weitere soziale Dienste in Schleswig-Holstein, hauptsächlich rund um Rickling und Bad Segeberg.' },
               { q: 'Sind Teilzeitstellen möglich?', a: 'Ja. Viele unserer Stellen sind auch in Teilzeit zu besetzen. Sprich uns gerne darauf an.' },
               { q: 'Welcher Tarifvertrag gilt?', a: 'Wir vergüten nach dem Kirchlichen Tarifvertrag Diakonie (KTD) inklusive Jahressonderzahlung und betrieblicher Altersversorgung.' },
               { q: 'Gibt es Ausbildungsplätze?', a: 'Ja! Wir bilden in verschiedenen Pflegeberufen, im sozialen Bereich und in der Verwaltung aus. Alle Ausbildungsstellen findest du in unserer Jobbörse.' },
@@ -209,7 +209,7 @@ export default function HomePage() {
                 Wir beantworten alle Fragen wochentags zwischen 8:30 und 15:00 Uhr.
               </p>
               <div style={{ marginTop: '1rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-                <a href="mailto:karriere@landesverein.de" style={{ color: 'white', fontWeight: 600, fontSize: '0.9rem' }}>✉️ karriere@landesverein.de</a>
+                <a href="mailto:karriere@Enterprise.de" style={{ color: 'white', fontWeight: 600, fontSize: '0.9rem' }}>✉️ karriere@Enterprise.de</a>
                 <a href="tel:+494326500" style={{ color: 'white', fontWeight: 600, fontSize: '0.9rem' }}>📞 04326 / 500</a>
               </div>
             </div>

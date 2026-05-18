@@ -9,7 +9,7 @@
   - Enterprise Architect
   - Senior Developer Agent
   - Central HR Career Department
-- **Gültigkeit:** Landesverein-spezifisch, setzt zwingend auf dem Code- und Datenmodell aus Wave 1 auf.
+- **Gültigkeit:** Enterprise-spezifisch, setzt zwingend auf dem Code- und Datenmodell aus Wave 1 auf.
 
 ---
 
@@ -37,7 +37,7 @@ Die Plattform wird von einem sicheren Job-Portal zu einem echten **Bewerbermanag
 - **Custom Local Workflows:** Einrichtungen (`Facilities`) können spezifische Sub-Steps im Recruiting-Prozess definieren (z.B. "Probearbeitstag in der Pflege").
 
 ### 2.1.2 Erweiterte Public Experience (Frontend)
-- **Facility Detail Pages (`/einrichtungen/[slug]`):** Eigene Landingpages für die verschiedenen Zentren und Kliniken des Landesvereins, inkl. lokaler Benefits und Ansprechpartner.
+- **Facility Detail Pages (`/einrichtungen/[slug]`):** Eigene Landingpages für die verschiedenen Zentren und Kliniken des Enterprises, inkl. lokaler Benefits und Ansprechpartner.
 - **Erweiterte Job-Suchen:** Geodaten-basierte Umkreissuche ("Jobs im Umkreis von 20km um Rickling").
 - **Talent Pool / Job Alert:** User können sich für Benachrichtigungen registrieren, wenn passende Jobs online gehen (erfordert Consent-Management-Update).
 

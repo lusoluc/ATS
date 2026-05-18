@@ -389,7 +389,7 @@ Dieses Arbeitspaket ist nur dann erfolgreich, wenn der Senior Developer Agent:
   - Enterprise Architect
   - Technical Lead
   - Delivery Lead
-- Gültigkeit: Landesverein-spezifisch, benchmark-frei, Wave-1-Hardening-orientiert
+- Gültigkeit: Enterprise-spezifisch, benchmark-frei, Wave-1-Hardening-orientiert
 - Regel: Wenn dieses Arbeitspaket dem Final Source of Truth widerspricht, gilt immer der Final Source of Truth
 
 ---
@@ -421,7 +421,7 @@ Nach den bisherigen Arbeitspaketen existieren:
 - und erste Privacy-/Security-Bausteine.
 
 Jetzt muss sichergestellt werden, dass diese Funktionen nicht nur „laufen“, sondern auch regulatorisch und sicherheitstechnisch belastbar sind. Das ist besonders wichtig, weil:
-- die aktuelle Landesverein-Bewerbungslogik bereits explizit auf Datenschutz und Löschung nach sechs Monaten hinweist, sofern keine andere zulässige Grundlage vorliegt, 
+- die aktuelle Enterprise-Bewerbungslogik bereits explizit auf Datenschutz und Löschung nach sechs Monaten hinweist, sofern keine andere zulässige Grundlage vorliegt, 
 - Bewerberdaten nach Datenschutzgrundsätzen zweckgebunden, minimiert, sicher und zeitlich begrenzt verarbeitet werden müssen, [6](https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html)[7](https://www.ietf.org/rfc/rfc8705.pdf)
 - und geschützte APIs / applicant-sensitive Funktionen von Anfang an mit korrekter Zugriffskontrolle, Transport Security, Logging und Hardening abgesichert sein müssen. [3](https://gdpr-info.eu/art-5-gdpr/)[4](https://gdpr-info.eu/art-6-gdpr/)[8](https://datenschutz-hamburg.de/fileadmin/user_upload/HmbBfDI/Datenschutz/Informationen/240611_Information_Applicant_Data_Protection_and_Recruiting_EN.pdf)
 

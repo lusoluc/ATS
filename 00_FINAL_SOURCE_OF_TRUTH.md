@@ -3,17 +3,17 @@ Dokumentstatus
 
 Version: 2.0
 Status: verbindlich
-Zweck: einzige verbindliche fachlich-technische Quelle für die Umsetzung einer spezialisierten Karriereplattform für den Landesverein
+Zweck: einzige verbindliche fachlich-technische Quelle für die Umsetzung einer spezialisierten Karriereplattform für den Enterprise
 Gültigkeit: ersetzt alle externen Produktvergleiche, Benchmark-Verweise und impliziten Fremdannahmen
-Ziel: sichere, kontrollierte und schrittweise Umsetzung einer Landesverein-spezifischen Karriereplattform
+Ziel: sichere, kontrollierte und schrittweise Umsetzung einer Enterprise-spezifischen Karriereplattform
 
 
 1. Verbindlicher Grundsatz
 Dieses Dokument ist die einzige verbindliche Quelle für die Umsetzung.
-1.1 Landesverein-Only Rule
+1.1 Enterprise-Only Rule
 Die Umsetzung basiert ausschließlich auf:
 
-den fachlichen und strukturellen Anforderungen für den Landesverein,
+den fachlichen und strukturellen Anforderungen für den Enterprise,
 den verifizierten sichtbaren Elementen der aktuellen Karrierepräsenz,
 den explizit definierten Zielentscheidungen dieses Dokuments,
 und den vom Auftraggeber/Projektkontext festgelegten Organisations- und Governance-Regeln.
@@ -37,11 +37,11 @@ eine Entscheidungsvorlage formulieren,
 und an der kritischen Stelle stoppen, wenn die Lücke die fachliche oder sicherheitsrelevante Integrität gefährdet.
 
 
-2. Verifizierter aktueller Landesverein-Kontext
+2. Verifizierter aktueller Enterprise-Kontext
 2.1 Aktuelle Karrierepräsenz
-Die aktuelle Karrierepräsenz des Landesvereins enthält sichtbar mindestens folgende Hauptbereiche:
+Die aktuelle Karrierepräsenz des Enterprises enthält sichtbar mindestens folgende Hauptbereiche:
 
-Arbeitgeber Landesverein,
+Arbeitgeber Enterprise,
 Beruf und Karriere,
 Stellenangebote,
 Initiativbewerbung,
@@ -70,7 +70,7 @@ Befristung. [dvinci.de]
 
 Zusätzlich ist die Jobsuche mit Berufsfeld-/Kategorielogik verbunden. [dvinci.de]
 2.4 Arbeitgeber- und Organisationsbreite
-Der Arbeitgeberbereich beschreibt den Landesverein als großen Träger im Gesundheits- und Sozialwesen mit mehreren Einrichtungen, verschiedenen Standorten und vielfältigen Arbeits- und Berufsfeldern. [dvinci.de], [dvinci.de]
+Der Arbeitgeberbereich beschreibt den Enterprise als großen Träger im Gesundheits- und Sozialwesen mit mehreren Einrichtungen, verschiedenen Standorten und vielfältigen Arbeits- und Berufsfeldern. [dvinci.de], [dvinci.de]
 Die Seite „Arbeits- und Berufsfelder“ zeigt eine sehr breite Vielfalt fachlicher Felder und Berufe, darunter Pflege, Medizin, Pädagogik/Therapie, Verwaltung, Technik, Küche, Landwirtschaft und weitere Tätigkeitsprofile. [dvinci.de]
 2.5 Aktuelle Bewerbungslogik
 Die aktuelle Karrierepräsenz beschreibt mindestens folgende Bewerbungswege:
@@ -87,7 +87,7 @@ sowie den Hinweis, dass Daten nach sechs Monaten gelöscht werden, wenn keine Be
 
 3. Zielsystem
 3.1 Produktdefinition
-Das Zielsystem ist eine spezialisierte Karriereplattform für den Landesverein mit:
+Das Zielsystem ist eine spezialisierte Karriereplattform für den Enterprise mit:
 
 mehreren Karrierepfaden,
 vielen Berufsfeldern,
@@ -125,7 +125,7 @@ und kontrollierter lokaler Beteiligung.
 4. Produktziele
 4.1 Hauptziele
 
-Die bestehende Karriere- und Recruiting-Komplexität des Landesvereins klar und strukturiert abbilden.
+Die bestehende Karriere- und Recruiting-Komplexität des Enterprises klar und strukturiert abbilden.
 Mehrere Karrierepfade und Berufsfelder gezielt und verständlich darstellen.
 Stellen strukturiert, konsistent und suchbar verwalten und ausspielen.
 Initiativbewerbung und ausgeschriebene Bewerbungswege sauber unterstützen.
@@ -342,7 +342,7 @@ Karrierepfade,
 Berufsfelder oder Arbeitgeberbereich,
 Initiativbewerbung.
 
-Diese Anforderung passt zur sichtbaren Landesverein-Startlogik mit mehreren Karrierepfaden und Jobsucheinstieg.
+Diese Anforderung passt zur sichtbaren Enterprise-Startlogik mit mehreren Karrierepfaden und Jobsucheinstieg.
 
 10. Verbindliches Entitätenmodell
 10.1 Mindestentitäten
@@ -416,7 +416,7 @@ Bewerbung auf konkrete Stelle
 Initiativbewerbung
 karrierepfadbezogene Bewerbung, sofern explizit freigegeben
 
-12.2 Aktueller Landesverein-Bezug
+12.2 Aktueller Enterprise-Bezug
 Die aktuelle Plattform unterstützt heute bereits:
 
 Bewerbung auf ausgeschriebene Stellen,
@@ -535,7 +535,7 @@ nicht frei erfunden.
 
 
 16. Datenschutz- und Bewerberdatenschutzregeln
-16.1 Aktueller Landesverein-Bezug
+16.1 Aktueller Enterprise-Bezug
 Die aktuelle Plattform zeigt bereits:
 
 Datenschutzzustimmung im Kurzbewerbungsformular,
@@ -592,7 +592,7 @@ keine Secrets oder privaten Schlüssel hart im Code
 18. Accessibility- und SEO-Regeln
 18.1 Accessibility
 Die Plattform muss Barrierefreiheit als Kernanforderung behandeln.
-Die aktuelle Landesverein-Karriereseite verweist bereits sichtbar auf Barrierefreiheit.
+Die aktuelle Enterprise-Karriereseite verweist bereits sichtbar auf Barrierefreiheit.
 Mindestanforderungen
 
 semantische Struktur
@@ -615,8 +615,8 @@ sinnvolle interne Verlinkung
 
 
 19. Migration-Grundsatz
-19.1 Landesverein als Content-Quelle
-Für Inhalte und aktuelle Struktur ist die aktuelle Landesverein-Karriereseite die Ausgangsbasis.
+19.1 Enterprise als Content-Quelle
+Für Inhalte und aktuelle Struktur ist die aktuelle Enterprise-Karriereseite die Ausgangsbasis.
 Das betrifft insbesondere:
 
 Karriere-Startlogik,

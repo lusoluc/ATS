@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
 
     // 4. E-Mail Versand simulieren
     const magicLink = `http://localhost:3000/bewerber/${result.token.token}`;
-    console.log(`\n\n[MAIL-SIMULATION] An: ${email}\nBetreff: Eingangsbestätigung deiner Bewerbung\n\nHallo ${firstName},\nvielen Dank für deine Bewerbung! Du kannst den aktuellen Status deiner Bewerbung jederzeit unter folgendem, sicheren Link einsehen:\n👉 ${magicLink}\n\nDein Landesverein Team\n\n`);
+    console.log(`\n\n[MAIL-SIMULATION] An: ${email}\nBetreff: Eingangsbestätigung deiner Bewerbung\n\nHallo ${firstName},\nvielen Dank für deine Bewerbung! Du kannst den aktuellen Status deiner Bewerbung jederzeit unter folgendem, sicheren Link einsehen:\n👉 ${magicLink}\n\nDein Enterprise Team\n\n`);
 
     return NextResponse.json({ 
       success: true, 

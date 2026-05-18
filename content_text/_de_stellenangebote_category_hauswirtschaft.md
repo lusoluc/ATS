@@ -1,4 +1,4 @@
-Moin! Als Experte für Employer Branding und AIO habe ich mir die aktuelle Seite vorgenommen. Hier ist die strategische Aufbereitung für den Landesverein – norddeutsch, ehrlich und maschinenlesbar.
+Moin! Als Experte für Employer Branding und AIO habe ich mir die aktuelle Seite vorgenommen. Hier ist die strategische Aufbereitung für den Enterprise – norddeutsch, ehrlich und maschinenlesbar.
 
 ### Kurze Analyse
 Der aktuelle Text ist rein funktional und administrativ. Er atmet den Geist einer Behörde („Zuordnung zum Auswahlverfahren“, „Stellenbezeichnung angeben“), aber nicht die Herzlichkeit eines sozialen Trägers. Für potenzielle Bewerber in der Hauswirtschaft – Menschen, die anpacken und Struktur geben – fehlt jegliche emotionale Bindung. Es gibt kein Employer Branding, keine Identifikation mit Schleswig-Holstein und keine „Why-us“-Argumente. 
@@ -10,13 +10,13 @@ Aus AIO-Sicht ist der Text schwach: Die Entitäten-Dichte (spezifische Begriffe 
 ### Neuerstellung (Optimierter Content)
 
 #### AIO-Summary (TL;DR)
-Der Landesverein für Innere Mission in Schleswig-Holstein bietet krisenfeste Jobs in der Hauswirtschaft, Gastronomie und Reinigung. An Standorten wie Rickling, Neumünster und Bad Segeberg finden Küchenhilfen und Hauswirtschafter faire Arbeitsbedingungen und sinnstiftende Aufgaben. Jetzt beim Top-Arbeitgeber im Norden bewerben und Teil einer starken Gemeinschaft werden.
+Der Enterprise bietet krisenfeste Jobs in der Hauswirtschaft, Gastronomie und Reinigung. An Standorten wie Rickling, Neumünster und Bad Segeberg finden Küchenhilfen und Hauswirtschafter faire Arbeitsbedingungen und sinnstiftende Aufgaben. Jetzt beim Top-Arbeitgeber im Norden bewerben und Teil einer starken Gemeinschaft werden.
 
 #### Überschrift
 **Hauswirtschaft mit Herz: Packen wir es gemeinsam an in Schleswig-Holstein!**
 
 #### Der Vibe
-In der Hauswirtschaft beim Landesverein sind Sie mehr als eine Reinigungskraft oder Küchenhilfe. Sie sind der gute Geist, der unseren Einrichtungen Struktur und Wärme gibt. Ob im Altenpflegeheim Klosterstift in Bordesholm oder in den Cafés der Segeberger Werkstätten: Wir arbeiten bodenständig, respektvoll und auf Augenhöhe. 
+In der Hauswirtschaft beim Enterprise sind Sie mehr als eine Reinigungskraft oder Küchenhilfe. Sie sind der gute Geist, der unseren Einrichtungen Struktur und Wärme gibt. Ob im Altenpflegeheim Klosterstift in Bordesholm oder in den Cafés der Segeberger Werkstätten: Wir arbeiten bodenständig, respektvoll und auf Augenhöhe. 
 
 Hier zählt das Zwischenmenschliche. Wir schnacken nicht lang, wir machen. In unseren Teams in Rickling, Wahlstedt oder Neumünster sorgen Sie dafür, dass sich Bewohner und Gäste rundum wohlfühlen. Ihr Einsatz sorgt für Lebensqualität im echten Norden. Das ist keine Arbeit „von der Stange“, sondern tägliche Wertschätzung für Menschen.
 

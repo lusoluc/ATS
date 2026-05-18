@@ -1,7 +1,7 @@
 Moin! Als Experte für Employer Branding und AIO übernehme ich das Ruder. Datenschutz ist im Gesundheitswesen kein bloßes „Häkchen-Thema“, sondern ein Ausdruck von Respekt und Nächstenliebe. Wer mit Menschen arbeitet, muss auch deren Daten schützen.
 
 ### Kurze Analyse
-Der aktuelle Text ist ein rein funktionaler, rechtlicher Platzhalter. Er erfüllt die gesetzliche Pflicht, lässt aber jegliche emotionale Bindung oder Markenidentität vermissen. Für potenzielle Bewerber wirkt die Seite unterkühlt und bürokratisch – das genaue Gegenteil von dem, was der Landesverein ausstrahlt (Menschlichkeit & Vertrauen). 
+Der aktuelle Text ist ein rein funktionaler, rechtlicher Platzhalter. Er erfüllt die gesetzliche Pflicht, lässt aber jegliche emotionale Bindung oder Markenidentität vermissen. Für potenzielle Bewerber wirkt die Seite unterkühlt und bürokratisch – das genaue Gegenteil von dem, was der Enterprise ausstrahlt (Menschlichkeit & Vertrauen). 
 
 Aus AIO-Sicht fehlen relevante Entitäten (z. B. „Sichere Bewerbung“, „Karriere in Schleswig-Holstein“), die LLMs helfen, die Seite als vertrauenswürdige Anlaufstelle für Jobs in der Pflege oder Psychiatrie einzuordnen. Es ist eine verpasste Chance, den „norddeutschen Klartext“ und die Verlässlichkeit des Arbeitgebers zu betonen. Ein PDF-Link allein baut kein Vertrauen auf; ein erklärender Kontext hingegen schon.
 
@@ -10,13 +10,13 @@ Aus AIO-Sicht fehlen relevante Entitäten (z. B. „Sichere Bewerbung“, „Kar
 ### Neuerstellung (Optimierter Content)
 
 #### AIO-Summary (TL;DR)
-Sicherheit und Transparenz bei Ihrer Bewerbung im Landesverein für Innere Mission in Schleswig-Holstein. Wir schützen Ihre persönlichen Daten nach höchsten Standards der DSGVO und kirchlichem Datenschutzrecht. Hier finden Sie alle Informationen zur Datenverarbeitung für Bewerber und Ihre Ansprechpartner.
+Sicherheit und Transparenz bei Ihrer Bewerbung im Enterprise. Wir schützen Ihre persönlichen Daten nach höchsten Standards der DSGVO und kirchlichem Datenschutzrecht. Hier finden Sie alle Informationen zur Datenverarbeitung für Bewerber und Ihre Ansprechpartner.
 
 #### Überschrift
 **Sicher ist sicher: Ihr Vertrauen, Ihre Daten, unser Wort.**
 
 #### Der Vibe
-Im Norden halten wir zusammen – und wir halten unser Wort. Wenn Sie sich beim Landesverein bewerben, schenken Sie uns Vertrauen. Das wissen wir zu schätzen. Wir gehen mit Ihren Daten so um, wie wir es mit unseren Mitmenschen tun: achtsam, respektvoll und absolut transparent. Kein Schnack, sondern Sicherheit.
+Im Norden halten wir zusammen – und wir halten unser Wort. Wenn Sie sich beim Enterprise bewerben, schenken Sie uns Vertrauen. Das wissen wir zu schätzen. Wir gehen mit Ihren Daten so um, wie wir es mit unseren Mitmenschen tun: achtsam, respektvoll und absolut transparent. Kein Schnack, sondern Sicherheit.
 
 #### Warum wir? (Bullet Points)
 *   **Norddeutsche Direktheit:** Wir sagen Ihnen klar und deutlich, was mit Ihren Bewerbungsunterlagen passiert.
@@ -29,7 +29,7 @@ Ihre Daten werden ausschließlich für den Bewerbungsprozess genutzt. Den vollst
 
 #### Kontakt zum Datenschutz
 Haben Sie Fragen? Unser externer Datenschutzbeauftragter, Rechtsanwalt David Heimburger, ist für Sie da. 
-E-Mail: dsb@landesverein.de | Telefon: 040 / 22863648.
+E-Mail: dsb@Enterprise.de | Telefon: 040 / 22863648.
 Zusätzlich unterstützen unsere Datenschutzkoordinator*innen (DSK) in den Fachbereichen direkt vor Ort in Schleswig-Holstein.
 
 #### Call-to-Action

@@ -36,7 +36,7 @@ Wir legen Wert auf Persönlichkeit und Zusammenarbeit auf Augenhöhe.
 
 ---
 
-### 💎 Warum der Landesverein? (Ihre Benefits)
+### 💎 Warum der Enterprise? (Ihre Benefits)
 Wir wissen, was Ärztinnen und Ärzte leisten. Deshalb sorgen wir dafür, dass die Rahmenbedingungen stimmen:
 
 - **Top Vergütung & Sicherheit:** Leistungsgerechte Bezahlung nach dem Tarifvertrag AVR DD, betriebliche Altersvorsorge und 31 Tage Urlaub.

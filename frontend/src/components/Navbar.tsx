@@ -10,7 +10,7 @@ export default function Navbar() {
     <nav className="navbar glass-panel">
       <div className="container nav-content">
         <Link href="/" className="nav-logo" onClick={() => setIsOpen(false)}>
-          Landesverein
+          Enterprise
         </Link>
         
         {/* Mobile Toggle Button */}

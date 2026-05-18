@@ -29,9 +29,9 @@ async function getJob(id: string) {
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const job = await getJob(id);
-  if (!job) return { title: 'Job nicht gefunden | Landesverein' };
+  if (!job) return { title: 'Job nicht gefunden | Enterprise' };
   return {
-    title: `${job.title} | Landesverein Karriere`,
+    title: `${job.title} | Enterprise Karriere`,
     description: `Stellenangebot: ${job.title} in ${job.location.name}. Jetzt bewerben!`,
   };
 }
@@ -66,7 +66,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
     "hiringOrganization": {
       "@type": "Organization",
       "name": job.organization.name,
-      "sameAs": "https://www.landesverein.de" // should be dynamic, but good enough for generic Open Source template
+      "sameAs": "https://www.Enterprise.de" // should be dynamic, but good enough for generic Open Source template
     },
     "jobLocation": {
       "@type": "Place",

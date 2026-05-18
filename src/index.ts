@@ -153,14 +153,14 @@ app.get('/api/v1/integrations/multiposter/feed.xml', (req, res) => {
   <job id="1">
     <title>Pflegefachkraft (m/w/d) für die Psychiatrie</title>
     <location>Rickling</location>
-    <company>Landesverein</company>
-    <url>https://karriere.landesverein.de/jobs/1</url>
+    <company>Enterprise</company>
+    <url>https://karriere.Enterprise.de/jobs/1</url>
   </job>
   <job id="2">
     <title>Assistenzarzt (m/w/d) in Weiterbildung</title>
     <location>Rickling</location>
-    <company>Landesverein</company>
-    <url>https://karriere.landesverein.de/jobs/2</url>
+    <company>Enterprise</company>
+    <url>https://karriere.Enterprise.de/jobs/2</url>
   </job>
 </jobs>`;
 
@@ -169,6 +169,6 @@ app.get('/api/v1/integrations/multiposter/feed.xml', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`[Server] Landesverein Karriereplattform API running on port ${PORT}`);
+  console.log(`[Server] Enterprise Karriereplattform API running on port ${PORT}`);
   console.log(`[Server] Security Baseline: JWT Auth active | RBAC active | BOLA Guards active`);
 });

@@ -103,7 +103,7 @@ export default function JobsPage() {
         <div className="container animate-fade-in opacity-0">
           <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', marginBottom: '1rem', fontFamily: 'var(--font-outfit)' }}>Stellenangebote</h1>
           <p style={{ fontSize: '1.1rem', opacity: 0.9, maxWidth: '580px', margin: '0 auto' }}>
-            Finde deinen Platz beim Landesverein – bodenständig, sinnvoll, norddeutsch.
+            Finde deinen Platz beim Enterprise – bodenständig, sinnvoll, norddeutsch.
           </p>
         </div>
       </div>

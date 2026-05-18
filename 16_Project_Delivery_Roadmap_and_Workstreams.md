@@ -2,8 +2,8 @@
 
 ## Dokumentstatus
 - Version: 1.0
-- Zweck: Projektliefermodell, Workstreams, Meilensteine, Abhängigkeiten, Governance und Rollout-Logik für die neue Karriereplattform des Landesvereins
-- Gültigkeit: Landesverein-spezifisch, benchmark-frei, umsetzungsorientiert
+- Zweck: Projektliefermodell, Workstreams, Meilensteine, Abhängigkeiten, Governance und Rollout-Logik für die neue Karriereplattform des Enterprises
+- Gültigkeit: Enterprise-spezifisch, benchmark-frei, umsetzungsorientiert
 - Regel: Wenn dieses Dokument mit Final Source of Truth oder Sicherheits-/Privacy-Regeln kollidiert, gelten die dort definierten harten Regeln
 
 ---
@@ -17,7 +17,7 @@ Dieses Dokument definiert:
 - die Meilensteine,
 - die Abhängigkeiten,
 - die Governance- und Entscheidungswege,
-- und die empfohlene Rollout-Reihenfolge für die neue Karriereplattform des Landesvereins.
+- und die empfohlene Rollout-Reihenfolge für die neue Karriereplattform des Enterprises.
 
 Das Ziel ist, die Plattform nicht als unstrukturierten Big-Bang umzusetzen, sondern als kontrolliertes, mehrstufiges Delivery-Programm.
 
@@ -25,7 +25,7 @@ Das Ziel ist, die Plattform nicht als unstrukturierten Big-Bang umzusetzen, sond
 
 # 2. Projektziel
 
-Die neue Karriereplattform soll den aktuellen Landesverein-Kontext in eine strukturierte Zielarchitektur überführen:
+Die neue Karriereplattform soll den aktuellen Enterprise-Kontext in eine strukturierte Zielarchitektur überführen:
 - mehrere Karrierepfade,
 - strukturierte Stellenanzeigen,
 - zentrale HR-Karriere-Governance,
@@ -74,7 +74,7 @@ Festlegung des Zielbetriebsmodells für zentrale HR-Karriere-Governance und loka
 
 ## 4.2 Workstream B – Domain & Data Model
 ### Ziel
-Finalisierung des Landesverein-spezifischen Zielmodells.
+Finalisierung des Enterprise-spezifischen Zielmodells.
 
 ### Inhalte
 - Organization
@@ -185,7 +185,7 @@ Aufbau der Candidate Experience.
 
 ## 4.7 Workstream G – Migration & Content Preparation
 ### Ziel
-Überführung der aktuellen Landesverein-Karriereinhalte in die Zielstruktur.
+Überführung der aktuellen Enterprise-Karriereinhalte in die Zielstruktur.
 
 ### Inhalte
 - Content Inventory
@@ -233,7 +233,7 @@ Fachliche und architektonische Klarheit schaffen.
 
 ### Deliverables
 - Final Source of Truth
-- Landesverein-clean Master Concept
+- Enterprise-clean Master Concept
 - Rollen-/Operating-Model
 - Security baseline
 - Migration baseline
@@ -376,7 +376,7 @@ Inhalte migrieren und kontrolliert live gehen.
 
 ## M1 – Concept Freeze
 - Final Source of Truth freigegeben
-- Landesverein-clean Master Concept freigegeben
+- Enterprise-clean Master Concept freigegeben
 - Operating Model freigegeben
 
 ## M2 – Architecture & Security Freeze
@@ -557,4 +557,4 @@ Es gilt erst dann als erfolgreich, wenn:
 - lokale Recruiting-Beteiligung kontrolliert funktioniert,
 - Datenschutz/Sicherheit funktioniert,
 - Inhalte korrekt migriert sind,
-- und die Plattform im Landesverein-Betriebsmodell stabil nutzbar ist.
+- und die Plattform im Enterprise-Betriebsmodell stabil nutzbar ist.

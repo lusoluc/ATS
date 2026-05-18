@@ -49,10 +49,10 @@ function mdToHtml(md: string): string {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const page = await getPage(slug);
-  if (!page) return { title: 'Seite nicht gefunden | Landesverein' };
+  if (!page) return { title: 'Seite nicht gefunden | Enterprise' };
   return {
-    title: `${page.title} | Landesverein Karriere`,
-    description: page.metaDesc || `${page.title} – Landesverein für Innere Mission Schleswig-Holstein`,
+    title: `${page.title} | Enterprise Karriere`,
+    description: page.metaDesc || `${page.title} – Enterprise Schleswig-Holstein`,
   };
 }
 

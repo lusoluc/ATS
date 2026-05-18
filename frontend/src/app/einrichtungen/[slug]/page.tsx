@@ -32,10 +32,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const profile = await getFacilityProfile(slug);
   
-  if (!profile) return { title: 'Einrichtung nicht gefunden | Landesverein Karriere' };
+  if (!profile) return { title: 'Einrichtung nicht gefunden | Enterprise Karriere' };
 
   return {
-    title: `${profile.facility.name} | Landesverein Karriere`,
+    title: `${profile.facility.name} | Enterprise Karriere`,
     description: profile.description || `Karriere in der Einrichtung ${profile.facility.name}. Erfahre mehr über uns und unsere offenen Stellen.`
   };
 }

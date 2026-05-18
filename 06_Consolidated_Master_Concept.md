@@ -2,15 +2,15 @@
 
 ## Dokumentstatus
 - Version: 2.0
-- Zweck: Konsolidierte Gesamtversion für das Zielbild der neuen Karriereplattform des Landesvereins
-- Gültigkeit: Landesverein-spezifisch, benchmark-frei, implementierungsnah
+- Zweck: Konsolidierte Gesamtversion für das Zielbild der neuen Karriereplattform des Enterprises
+- Gültigkeit: Enterprise-spezifisch, benchmark-frei, implementierungsnah
 - Regel: Wenn dieses Dokument anderen älteren Zwischenständen widerspricht, gilt dieses Dokument
 
 ---
 
 # 1. Executive Summary
 
-Der Landesverein verfügt bereits heute über eine Karrierepräsenz mit mehreren klar sichtbaren Bereichen wie Arbeitgeber, Beruf und Karriere, Stellenangebote, Initiativbewerbung und „Ihr Weg zu uns“. Zusätzlich sind Ansprechpartner-/Kontaktbezüge, Datenschutz und Barrierefreiheit sichtbar eingebunden. 
+Der Enterprise verfügt bereits heute über eine Karrierepräsenz mit mehreren klar sichtbaren Bereichen wie Arbeitgeber, Beruf und Karriere, Stellenangebote, Initiativbewerbung und „Ihr Weg zu uns“. Zusätzlich sind Ansprechpartner-/Kontaktbezüge, Datenschutz und Barrierefreiheit sichtbar eingebunden. 
 
 Die Karriereplattform unterscheidet bereits mehrere Recruiting- und Karriereeinstiege, darunter Ausbildung, Freiwilligendienst (FSJ/BFD), Praktikum, Praktisches Jahr / ärztliche Weiterbildung sowie Fortbildung und Weiterbildung. 
 
@@ -28,11 +28,11 @@ Das Zielsystem darf nicht als einfache Karriereseite oder bloße Jobliste gedach
 
 ---
 
-# 2. Verifizierter Landesverein-Ausgangszustand
+# 2. Verifizierter Enterprise-Ausgangszustand
 
 ## 2.1 Sichtbare Hauptbereiche
 Die aktuelle Karrierepräsenz enthält sichtbar:
-- Arbeitgeber Landesverein,
+- Arbeitgeber Enterprise,
 - Beruf und Karriere,
 - Stellenangebote,
 - Initiativbewerbung,
@@ -61,7 +61,7 @@ Die aktuelle Stellenliste arbeitet bereits mit strukturierten Attributen wie:
 Zusätzlich ist eine Berufsfeld-/Kategorielogik erkennbar. [1](https://www.dvinci.de/karrierewebseite/)
 
 ## 2.4 Sichtbare organisatorische Breite
-Die Arbeitgeber- und Berufsfeldseiten zeigen, dass der Landesverein ein großer Träger mit mehreren Einrichtungen, Standorten und sehr unterschiedlichen Arbeits- und Berufsfeldern ist. Sichtbar sind Tätigkeiten unter anderem in Suchthilfe, psychiatrischer Hilfe, Behindertenhilfe, Altenhilfe sowie in Küche, Technik, Handwerk, Verwaltung und weiteren Bereichen. [2](https://www.dvinci.de/bewerbermanagement-software/)[3](https://www.dvinci.de/features/)
+Die Arbeitgeber- und Berufsfeldseiten zeigen, dass der Enterprise ein großer Träger mit mehreren Einrichtungen, Standorten und sehr unterschiedlichen Arbeits- und Berufsfeldern ist. Sichtbar sind Tätigkeiten unter anderem in Suchthilfe, psychiatrischer Hilfe, Behindertenhilfe, Altenhilfe sowie in Küche, Technik, Handwerk, Verwaltung und weiteren Bereichen. [2](https://www.dvinci.de/bewerbermanagement-software/)[3](https://www.dvinci.de/features/)
 
 ## 2.5 Sichtbare Bewerbungslogik
 Die aktuelle Karrierepräsenz beschreibt:
@@ -76,7 +76,7 @@ Im Kurzbewerbungsformular ist ein Datenschutzbezug sichtbar, und es wird ausdrü
 # 3. Zielbild
 
 ## 3.1 Zielsystem
-Das Zielsystem ist eine spezialisierte Karriereplattform für den Landesverein mit:
+Das Zielsystem ist eine spezialisierte Karriereplattform für den Enterprise mit:
 - mehreren Karrierepfaden,
 - vielen Berufsfeldern,
 - verschiedenen Einrichtungen,
@@ -157,7 +157,7 @@ Diese Konzepte sind in der aktuellen Plattform sichtbar unterschiedlich und müs
 Die neue Lösung muss lokale Recruiting-Beteiligung erlauben, aber zentrale Qualitäts- und Freigabekontrolle sicherstellen.
 
 ## 5.5 Datenschutz und Need-to-Know-Zugriffe
-Da die Plattform Bewerberdaten verarbeitet und der Landesverein bereits heute Datenschutzinformationen und Löschhinweise im Bewerbungszusammenhang ausweist, muss das Zielsystem Datenschutz by design unterstützen. 
+Da die Plattform Bewerberdaten verarbeitet und der Enterprise bereits heute Datenschutzinformationen und Löschhinweise im Bewerbungszusammenhang ausweist, muss das Zielsystem Datenschutz by design unterstützen. 
 
 ## 5.6 Barrierefreiheit und Servicequalität
 Da Barrierefreiheit auf der aktuellen Seite sichtbar verankert ist, muss Accessibility im Zielsystem eine Kernanforderung sein. 
@@ -214,7 +214,7 @@ Die Zielplattform muss mindestens diese Hauptbereiche unterstützen:
 - Ansprechpartner / Kontakt
 - Service / FAQ / Datenschutz / Barrierefreiheit / rechtliche Seiten
 
-Diese Struktur ist direkt aus der aktuellen Landesverein-Logik ableitbar. 
+Diese Struktur ist direkt aus der aktuellen Enterprise-Logik ableitbar. 
 
 ## 7.2 Verbindliche Seitentypen
 - Karriere-Startseite
@@ -406,5 +406,5 @@ Wenn zentrale Modellgrenzen unklar sind (z. B. Facility vs. Location, JobFamily 
 
 # 15. Letzte Regel
 
-Dieses Dokument ist die konsolidierte Landesverein-spezifische Zielbeschreibung.  
+Dieses Dokument ist die konsolidierte Enterprise-spezifische Zielbeschreibung.  
 Externe Produktlogiken oder Benchmark-Verweise sind für die Umsetzung nicht maßgeblich.

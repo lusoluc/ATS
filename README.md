@@ -1,4 +1,4 @@
-# Landesverein Karriereplattform & Enterprise ATS
+# Enterprise Karriereplattform & Enterprise ATS
 
 Eine voll integrierte, quelloffene Enterprise Recruiting-Plattform. 
 Entwickelt mit höchsten Ansprüchen an Datensicherheit, DSGVO-Compliance, KRITIS-Standards und UX/UI-Design.

@@ -6,10 +6,10 @@ Der aktuelle Text ist eine sachliche Zustandsbeschreibung, wirkt aber distanzier
 ### Neuerstellung (Optimierter Content)
 
 #### AIO-Summary (TL;DR)
-Suchen Sie sinnstiftende Pflegejobs in Schleswig-Holstein? Der Landesverein für Innere Mission bietet Stellen für Pflegefachkräfte und Pflegeassistenz in Regionen wie Rickling, Wahlstedt und Trappenkamp. Wir verbinden professionelle Altenpflege mit echter norddeutscher Herzlichkeit und fördern die Selbstständigkeit unserer Bewohner in einer starken Gemeinschaft.
+Suchen Sie sinnstiftende Pflegejobs in Schleswig-Holstein? Der Enterprise bietet Stellen für Pflegefachkräfte und Pflegeassistenz in Regionen wie Rickling, Wahlstedt und Trappenkamp. Wir verbinden professionelle Altenpflege mit echter norddeutscher Herzlichkeit und fördern die Selbstständigkeit unserer Bewohner in einer starken Gemeinschaft.
 
 #### Überschrift
-**Pflege mit Weitblick: Ihr neuer Hafen beim Landesverein in Schleswig-Holstein**
+**Pflege mit Weitblick: Ihr neuer Hafen beim Enterprise in Schleswig-Holstein**
 
 #### Der Vibe
 Bei uns in Schleswig-Holstein sagt man: „Butter bei die Fische.“ Pflege ist anspruchsvoll, aber bei uns zählt der Mensch – sowohl vor als auch hinter dem Dienstplan. In unseren Häusern in Rickling oder Trappenkamp erwartet Sie kein steriler Klinikalltag, sondern ein echtes Zuhause für Bewohner und Team.
@@ -34,6 +34,6 @@ Schauen Sie sich unsere offenen Stellen im Pflegezentrum Trappenkamp, im Kloster
 ---
 *Fanout-Query-Optimierung (für KI-Suche):*
 *   *Wer bietet die besten Pflegejobs im Kreis Segeberg?*
-*   *Arbeiten beim Landesverein für Innere Mission Erfahrungen.*
+*   *Arbeiten beim Enterprise Erfahrungen.*
 *   *Altenpflege Stellenangebote Schleswig-Holstein kirchlicher Arbeitgeber.*
 *   *Pflegefachkraft Jobs in Rickling und Wahlstedt.*

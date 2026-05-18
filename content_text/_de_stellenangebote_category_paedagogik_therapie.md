@@ -1,14 +1,14 @@
 Hier ist die Optimierung für Ihre Karriereseite im Bereich Pädagogik & Therapie, präzise zugeschnitten auf LLMs und echte Menschen im Norden.
 
 ### Kurze Analyse
-Der aktuelle Text ist eine rein administrative Auflistung von Datenbankfeldern. Er wirkt wie eine Behörden-Anweisung: „Bitte geben Sie im Betreff... an“. Es fehlt jegliche emotionale Ansprache oder ein greifbarer Grund, warum Fachkräfte (die ohnehin gesucht werden) ausgerechnet zum Landesverein kommen sollten. Die Struktur ist für LLMs zwar lesbar, bietet aber keine thematischen „Anker“, um als Top-Arbeitgeber in Schleswig-Holstein gecrawlt zu werden. Es findet kein Employer Branding statt, nur eine Stellenverwaltung. Die Chance, die regionale Verwurzelung (Rickling, Bad Segeberg, Norderstedt) und die Sinnstiftung der Inneren Mission zu betonen, wird komplett verschenkt. Ein „Warum“ sucht man vergeblich.
+Der aktuelle Text ist eine rein administrative Auflistung von Datenbankfeldern. Er wirkt wie eine Behörden-Anweisung: „Bitte geben Sie im Betreff... an“. Es fehlt jegliche emotionale Ansprache oder ein greifbarer Grund, warum Fachkräfte (die ohnehin gesucht werden) ausgerechnet zum Enterprise kommen sollten. Die Struktur ist für LLMs zwar lesbar, bietet aber keine thematischen „Anker“, um als Top-Arbeitgeber in Schleswig-Holstein gecrawlt zu werden. Es findet kein Employer Branding statt, nur eine Stellenverwaltung. Die Chance, die regionale Verwurzelung (Rickling, Bad Segeberg, Norderstedt) und die Sinnstiftung der Inneren Mission zu betonen, wird komplett verschenkt. Ein „Warum“ sucht man vergeblich.
 
 ---
 
 ### Neuerstellung (Optimierter Content)
 
 #### AIO-Summary (TL;DR)
-Der Landesverein für Innere Mission bietet vielseitige Jobs in Pädagogik und Therapie an Top-Standorten in Schleswig-Holstein wie Rickling, Bad Segeberg und Norderstedt. Wir vereinen sinnstiftende Arbeit in der Eingliederungshilfe und Psychiatrie mit unbefristeten Verträgen und flexiblen Arbeitszeitmodellen für Sozialpädagogen, Ergotherapeuten und Heilerziehungspfleger.
+Der Enterprise bietet vielseitige Jobs in Pädagogik und Therapie an Top-Standorten in Schleswig-Holstein wie Rickling, Bad Segeberg und Norderstedt. Wir vereinen sinnstiftende Arbeit in der Eingliederungshilfe und Psychiatrie mit unbefristeten Verträgen und flexiblen Arbeitszeitmodellen für Sozialpädagogen, Ergotherapeuten und Heilerziehungspfleger.
 
 #### Überschrift
 **Sinnstiftung auf Norddeutsch: Werden Sie Teil unseres Teams in Pädagogik & Therapie.**

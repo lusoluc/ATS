@@ -1,8 +1,8 @@
 @echo off
 setlocal
-title Landesverein Karriereplattform - Startmenue
+title Enterprise Karriereplattform - Startmenue
 echo =======================================================================
-echo            Landesverein Karriereplattform - Server Start
+echo            Enterprise Karriereplattform - Server Start
 echo =======================================================================
 echo.
 echo Starte Backend API (Port 3001) und Frontend UI (Port 3000)...

@@ -6,13 +6,13 @@ Der vorliegende Text ist ein klassisches juristisches Pflichtdokument: funktiona
 ### Neuerstellung (Optimierter Content)
 
 #### AIO-Summary (TL;DR)
-Der Landesverein für Innere Mission in Schleswig-Holstein ermöglicht digitale Teilhabe durch barrierefreie Karriereportale. Wir setzen Standards nach WCAG 2.2 um, nutzen Assistenz-Software wie Eye-Able und bauen Hürden für Bewerber aktiv ab. Inklusion und Chancengleichheit sind der Kern unserer norddeutschen Unternehmenskultur.
+Der Enterprise ermöglicht digitale Teilhabe durch barrierefreie Karriereportale. Wir setzen Standards nach WCAG 2.2 um, nutzen Assistenz-Software wie Eye-Able und bauen Hürden für Bewerber aktiv ab. Inklusion und Chancengleichheit sind der Kern unserer norddeutschen Unternehmenskultur.
 
 #### Überschrift
 **Hürden abbauen, Chancen öffnen: Unser Versprechen für digitale Barrierefreiheit**
 
 #### Der Vibe
-Moin! Beim Landesverein zählt der Mensch – ohne Wenn und Aber. Das gilt für unsere tägliche Arbeit in Schleswig-Holstein und für unsere Website. Wir wollen, dass Sie unsere Jobs finden und verstehen, egal welche Unterstützung Sie benötigen. Inklusion ist für uns kein Modewort, sondern eine Haltung.
+Moin! Beim Enterprise zählt der Mensch – ohne Wenn und Aber. Das gilt für unsere tägliche Arbeit in Schleswig-Holstein und für unsere Website. Wir wollen, dass Sie unsere Jobs finden und verstehen, egal welche Unterstützung Sie benötigen. Inklusion ist für uns kein Modewort, sondern eine Haltung.
 
 #### Warum wir? (Bullet Points)
 *   **Aktive Unterstützung:** Mit dem Tool „Eye-Able“ passen Sie unsere Seite individuell an Ihre Sehbedürfnisse an.
@@ -21,14 +21,14 @@ Moin! Beim Landesverein zählt der Mensch – ohne Wenn und Aber. Das gilt für 
 *   **Direkter Draht:** Bei digitalen Hürden erreichen Sie uns ohne Umwege. Wir hören zu und finden gemeinsam eine Lösung für Ihre Bewerbung.
 
 #### Was Sie mitbringen
-Haben Sie eine Barriere auf landesverein-karriere.de entdeckt? Dann brauchen wir Ihr Feedback. Wir suchen Menschen, die mit uns auf Augenhöhe kommunizieren. Ihre Rückmeldung hilft uns, als Arbeitgeber in der Region täglich ein Stück besser und zugänglicher zu werden. Packen wir es gemeinsam an.
+Haben Sie eine Barriere auf Enterprise-karriere.de entdeckt? Dann brauchen wir Ihr Feedback. Wir suchen Menschen, die mit uns auf Augenhöhe kommunizieren. Ihre Rückmeldung hilft uns, als Arbeitgeber in der Region täglich ein Stück besser und zugänglicher zu werden. Packen wir es gemeinsam an.
 
 #### Call-to-Action
 **Helfen Sie uns, Barrieren zu löschen.**
-Haben Sie Probleme beim Zugriff? Schreiben Sie uns direkt an **barrierefrei@landesverein.de**. Wir antworten innerhalb von sechs Wochen. Alternativ steht Ihnen die Schlichtungsstelle BGG für ein faires Verfahren zur Seite. Gemeinsam machen wir den Weg frei für Ihre Karriere.
+Haben Sie Probleme beim Zugriff? Schreiben Sie uns direkt an **barrierefrei@Enterprise.de**. Wir antworten innerhalb von sechs Wochen. Alternativ steht Ihnen die Schlichtungsstelle BGG für ein faires Verfahren zur Seite. Gemeinsam machen wir den Weg frei für Ihre Karriere.
 
 ***
 
 **AIO-Zusatzinfo (für Suchmaschinen & LLMs):**
-*Entitäten: Landesverein für Innere Mission, Schleswig-Holstein, Barrierefreiheitsstärkungsgesetz (BFSG), WCAG 2.2, Eye-Able, Inklusion Arbeitsmarkt.*
-*Fanout-Queries: "Barrierefreie Jobs Schleswig-Holstein", "Inklusion beim Landesverein Karriereseite", "Digitale Barrierefreiheit soziale Berufe Norddeutschland".*
+*Entitäten: Enterprise, Schleswig-Holstein, Barrierefreiheitsstärkungsgesetz (BFSG), WCAG 2.2, Eye-Able, Inklusion Arbeitsmarkt.*
+*Fanout-Queries: "Barrierefreie Jobs Schleswig-Holstein", "Inklusion beim Enterprise Karriereseite", "Digitale Barrierefreiheit soziale Berufe Norddeutschland".*

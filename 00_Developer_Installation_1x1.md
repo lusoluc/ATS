@@ -1,6 +1,6 @@
 # Developer Installation 1x1 - Das Handbuch für Entwickler
 
-Dieses Handbuch richtet sich an Entwickler (Frontend, Backend oder Fullstack) sowie System-Administratoren, die an der Landesverein Karriereplattform arbeiten oder diese in den Live-Betrieb (Produktion) überführen. 
+Dieses Handbuch richtet sich an Entwickler (Frontend, Backend oder Fullstack) sowie System-Administratoren, die an der Enterprise Karriereplattform arbeiten oder diese in den Live-Betrieb (Produktion) überführen. 
 
 ---
 
@@ -69,9 +69,9 @@ Nutze nicht `npm start`. Nutze einen Process Manager wie `pm2`, der die Applikat
 ```bash
 npm install -g pm2
 # Backend starten
-pm2 start dist/index.js --name "lv-backend"
+pm2 start dist/index.js --name "enterprise-backend"
 # Frontend starten (zuvor: cd frontend && npm run build)
-pm2 start npm --name "lv-frontend" -- start
+pm2 start npm --name "enterprise-frontend" -- start
 pm2 save
 ```
 
@@ -87,15 +87,15 @@ Da wir SQLite verwenden, ist die Datei `prisma/dev.db` der einzige Ort, an dem D
 Die direkte Freigabe der Ports 3000/3001 ist eine Sicherheitslücke. Node.js ist nicht dafür gebaut, direkte Internetverbindungen ohne Schutzschicht zu handhaben.
 
 ### 6.1. DNS & Domain
-Lege im Control Panel deines Domain-Anbieters (z.B. Ionos, Strato, AWS) einen **A-Record** für die Domain (z.B. `karriere.landesverein.de`) an, der auf die IP-Adresse deines Servers zeigt.
+Lege im Control Panel deines Domain-Anbieters (z.B. Ionos, Strato, AWS) einen **A-Record** für die Domain (z.B. `karriere.Enterprise.de`) an, der auf die IP-Adresse deines Servers zeigt.
 
 ### 6.2. Nginx Reverse Proxy konfigurieren
 Installiere Nginx. Nginx nimmt Anfragen auf Port 80 (HTTP) und 443 (HTTPS) entgegen und leitet sie intern an Next.js (Port 3000) und das Backend (Port 3001) weiter.
 
-**Beispiel Nginx Konfiguration (`/etc/nginx/sites-available/lv-karriere`):**
+**Beispiel Nginx Konfiguration (`/etc/nginx/sites-available/enterprise-karriere`):**
 ```nginx
 server {
-    server_name karriere.landesverein.de;
+    server_name karriere.Enterprise.de;
 
     # Weiterleitung Frontend (Next.js)
     location / {
@@ -127,7 +127,7 @@ server {
 Nutze Certbot (Let's Encrypt), um ein kostenloses SSL-Zertifikat zu installieren und HTTP auf HTTPS umzuleiten:
 ```bash
 sudo apt install certbot python3-certbot-nginx
-sudo certbot --nginx -d karriere.landesverein.de
+sudo certbot --nginx -d karriere.Enterprise.de
 ```
 
 ---
@@ -137,15 +137,15 @@ sudo certbot --nginx -d karriere.landesverein.de
 Die Plattform versendet Status-E-Mails (z.B. "Bewerbung eingegangen", "Interview-Einladung"). Um nicht als Spam markiert zu werden, muss ein echter SMTP-Server angebunden werden.
 
 ### 7.1. Umgebungsvariablen ergänzen
-Ergänze die Root `.env` Datei um die SMTP-Daten deines Mail-Providers (z.B. der Exchange Server des Landesvereins, oder ein Dienst wie SendGrid / Mailgun):
+Ergänze die Root `.env` Datei um die SMTP-Daten deines Mail-Providers (z.B. der Exchange Server des Enterprises, oder ein Dienst wie SendGrid / Mailgun):
 
 ```env
 # Mail Konfiguration
 SMTP_HOST="smtp.dein-mailserver.de"
 SMTP_PORT=587
-SMTP_USER="karriere-system@landesverein.de"
+SMTP_USER="karriere-system@Enterprise.de"
 SMTP_PASS="DeinSicheresPasswort123!"
-MAIL_FROM="Landesverein Karriere <karriere-system@landesverein.de>"
+MAIL_FROM="Enterprise Karriere <karriere-system@Enterprise.de>"
 ```
 
 ### 7.2. Implementierungs-Hinweis im Code

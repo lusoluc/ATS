@@ -2,8 +2,8 @@
 
 ## Dokumentstatus
 - Version: 2.0
-- Zweck: Landesverein-spezifische Migrations- und Inventarisierungsgrundlage für Inhalte, Strukturen und Zielobjekte
-- Gültigkeit: benchmark-frei, ausschließlich auf Landesverein-Quellen und Zielmodell ausgerichtet
+- Zweck: Enterprise-spezifische Migrations- und Inventarisierungsgrundlage für Inhalte, Strukturen und Zielobjekte
+- Gültigkeit: benchmark-frei, ausschließlich auf Enterprise-Quellen und Zielmodell ausgerichtet
 - Regel: Wenn Zielmodell oder Governance-Regeln angepasst werden, muss dieses Migrationsdokument aktualisiert werden
 
 ---
@@ -11,7 +11,7 @@
 # 1. Ziel dieses Dokuments
 
 Dieses Dokument definiert:
-- welche Inhalte und Strukturen in der aktuellen Landesverein-Karrierepräsenz sichtbar sind,
+- welche Inhalte und Strukturen in der aktuellen Enterprise-Karrierepräsenz sichtbar sind,
 - wie diese in Zielobjekte überführt werden,
 - welche Inhalte migriert, restrukturiert, neu geschrieben oder stillgelegt werden,
 - welche Inhalte zentral gepflegt werden,
@@ -19,15 +19,15 @@ Dieses Dokument definiert:
 - und welche Validierungen vor Go-Live notwendig sind.
 
 Die Migration ist **keine 1:1-Kopie** der aktuellen Seiten, sondern eine **strukturierte Transformation**:
-- von aktueller Landesverein-Webstruktur
+- von aktueller Enterprise-Webstruktur
 - in das neue Zielmodell der Karriereplattform.
 
 ---
 
 # 2. Migrationsprinzipien
 
-## 2.1 Landesverein ist die einzige Content-Ausgangsquelle
-Für aktuelle Inhalte und aktuelle Struktur dient ausschließlich die aktuelle Landesverein-Karrierepräsenz als Ausgangsbasis. Dazu gehören insbesondere:
+## 2.1 Enterprise ist die einzige Content-Ausgangsquelle
+Für aktuelle Inhalte und aktuelle Struktur dient ausschließlich die aktuelle Enterprise-Karrierepräsenz als Ausgangsbasis. Dazu gehören insbesondere:
 - Karriere-Startseite,
 - Arbeitgeberinhalte,
 - Beruf und Karriere,
@@ -70,11 +70,11 @@ Mögliche Migrationsaktionen:
 
 ---
 
-# 3. Aktuelle sichtbare Inhaltsbereiche des Landesvereins
+# 3. Aktuelle sichtbare Inhaltsbereiche des Enterprises
 
 ## 3.1 Karriere-Hauptnavigation / Einstieg
 Sichtbar sind unter anderem:
-- Arbeitgeber Landesverein,
+- Arbeitgeber Enterprise,
 - Beruf und Karriere,
 - Stellenangebote,
 - Initiativbewerbung,
@@ -209,7 +209,7 @@ Jeder Quellinhalt muss im Migrationsinventar mindestens folgende Felder besitzen
 
 ---
 
-# 7. Landesverein-spezifische Startinventarisierung
+# 7. Enterprise-spezifische Startinventarisierung
 
 ---
 
@@ -252,10 +252,10 @@ Sie soll zur strukturierten Karriere-Startseite werden mit:
 # 7.2 Arbeitgeberbereich
 
 ## Quelle
-- Arbeitgeber Landesverein / Arbeitgeberübersicht [2](https://www.dvinci.de/bewerbermanagement-software/)
+- Arbeitgeber Enterprise / Arbeitgeberübersicht [2](https://www.dvinci.de/bewerbermanagement-software/)
 
 ## Sichtbare Quellmerkmale
-Die Seite beschreibt den Landesverein als großen Träger im Gesundheits- und Sozialwesen mit mehreren Arbeitsfeldern, Standorten und vielfältigen beruflichen Möglichkeiten. [2](https://www.dvinci.de/bewerbermanagement-software/)[3](https://www.dvinci.de/features/)
+Die Seite beschreibt den Enterprise als großen Träger im Gesundheits- und Sozialwesen mit mehreren Arbeitsfeldern, Standorten und vielfältigen beruflichen Möglichkeiten. [2](https://www.dvinci.de/bewerbermanagement-software/)[3](https://www.dvinci.de/features/)
 
 ## Zielabbildung
 - `target_domain`: Editorial Career Pages
@@ -279,7 +279,7 @@ Die Inhalte sollen in einen strukturierten Arbeitgeberbereich überführt werden
 Die Seite enthält:
 - breite Arbeitsfeldbeschreibung,
 - viele Berufsbezeichnungen,
-- Querschnitt über fachliche Bereiche des Landesvereins. [3](https://www.dvinci.de/features/)
+- Querschnitt über fachliche Bereiche des Enterprises. [3](https://www.dvinci.de/features/)
 
 ## Zielabbildung
 - `target_domain`: Structural Master Data + Editorial Career Pages
@@ -640,7 +640,7 @@ Jedes Zielobjekt muss geprüft werden auf:
 # 10. Migrationsphasen
 
 ## Phase 1 – Discovery Inventory
-- alle aktuell sichtbaren Landesverein-Karriereinhalte erfassen
+- alle aktuell sichtbaren Enterprise-Karriereinhalte erfassen
 - Kategorien zuordnen
 - Dopplungen und Überschneidungen identifizieren
 - strukturrelevante Daten in Texten identifizieren
@@ -726,4 +726,4 @@ Ein Inhalt gilt erst dann als migriert, wenn:
 - strukturierte Felder befüllt sind,
 - Owner und Workflow korrekt gesetzt sind,
 - Privacy-/Accessibility-/SEO-Prüfungen erfolgt sind,
-- und der Inhalt das neue Landesverein-Betriebsmodell unterstützt.
+- und der Inhalt das neue Enterprise-Betriebsmodell unterstützt.

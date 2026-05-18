@@ -1,7 +1,7 @@
-# Landesverein Karriereplattform – Finales Master-Dokumentenpaket (aktuellste Version)
+# Enterprise Karriereplattform – Finales Master-Dokumentenpaket (aktuellste Version)
 
 > Stand: 2026-05-13  
-> Zweck: Sammeldokument mit den **letzten / neuesten Versionen** aller final relevanten Dokumente aus dem bisherigen Konzept- und Umsetzungsprozess für die neue Karriereplattform des Landesvereins.
+> Zweck: Sammeldokument mit den **letzten / neuesten Versionen** aller final relevanten Dokumente aus dem bisherigen Konzept- und Umsetzungsprozess für die neue Karriereplattform des Enterprises.
 
 ---
 
@@ -32,9 +32,9 @@
 ## Dokumentstatus
 - Version: 2.0
 - Status: verbindlich
-- Zweck: einzige verbindliche fachlich-technische Quelle für die Umsetzung einer spezialisierten Karriereplattform für den Landesverein
+- Zweck: einzige verbindliche fachlich-technische Quelle für die Umsetzung einer spezialisierten Karriereplattform für den Enterprise
 - Gültigkeit: ersetzt alle externen Produktvergleiche, Benchmark-Verweise und impliziten Fremdannahmen
-- Ziel: sichere, kontrollierte und schrittweise Umsetzung einer Landesverein-spezifischen Karriereplattform
+- Ziel: sichere, kontrollierte und schrittweise Umsetzung einer Enterprise-spezifischen Karriereplattform
 
 ---
 
@@ -42,9 +42,9 @@
 
 Dieses Dokument ist die einzige verbindliche Quelle für die Umsetzung.
 
-### 1.1 Landesverein-Only Rule
+### 1.1 Enterprise-Only Rule
 Die Umsetzung basiert ausschließlich auf:
-- den fachlichen und strukturellen Anforderungen für den Landesverein,
+- den fachlichen und strukturellen Anforderungen für den Enterprise,
 - den verifizierten sichtbaren Elementen der aktuellen Karrierepräsenz,
 - den explizit definierten Zielentscheidungen dieses Dokuments,
 - und den vom Auftraggeber/Projektkontext festgelegten Organisations- und Governance-Regeln.
@@ -69,11 +69,11 @@ Wenn Informationen fehlen, muss der Agent:
 
 ---
 
-## 2. Verifizierter aktueller Landesverein-Kontext
+## 2. Verifizierter aktueller Enterprise-Kontext
 
 ### 2.1 Aktuelle Karrierepräsenz
-Die aktuelle Karrierepräsenz des Landesvereins enthält sichtbar mindestens folgende Hauptbereiche:
-- Arbeitgeber Landesverein,
+Die aktuelle Karrierepräsenz des Enterprises enthält sichtbar mindestens folgende Hauptbereiche:
+- Arbeitgeber Enterprise,
 - Beruf und Karriere,
 - Stellenangebote,
 - Initiativbewerbung,
@@ -102,7 +102,7 @@ Die aktuelle Stellenlogik arbeitet bereits mit strukturierten Datenfeldern, daru
 Zusätzlich ist die Jobsuche mit Berufsfeld-/Kategorielogik verbunden.
 
 ### 2.4 Arbeitgeber- und Organisationsbreite
-Der Arbeitgeberbereich beschreibt den Landesverein als großen Träger im Gesundheits- und Sozialwesen mit mehreren Einrichtungen, verschiedenen Standorten und vielfältigen Arbeits- und Berufsfeldern.
+Der Arbeitgeberbereich beschreibt den Enterprise als großen Träger im Gesundheits- und Sozialwesen mit mehreren Einrichtungen, verschiedenen Standorten und vielfältigen Arbeits- und Berufsfeldern.
 
 Die Seite „Arbeits- und Berufsfelder“ zeigt eine sehr breite Vielfalt fachlicher Felder und Berufe, darunter Pflege, Medizin, Pädagogik/Therapie, Verwaltung, Technik, Küche, Landwirtschaft und weitere Tätigkeitsprofile.
 
@@ -121,7 +121,7 @@ Die aktuelle Seite nennt außerdem ausdrücklich:
 ## 3. Zielsystem
 
 ### 3.1 Produktdefinition
-Das Zielsystem ist eine spezialisierte Karriereplattform für den Landesverein mit:
+Das Zielsystem ist eine spezialisierte Karriereplattform für den Enterprise mit:
 - mehreren Karrierepfaden,
 - vielen Berufsfeldern,
 - verschiedenen Einrichtungen,
@@ -157,7 +157,7 @@ Das Zielsystem ist:
 ## 4. Produktziele
 
 ### 4.1 Hauptziele
-1. Die bestehende Karriere- und Recruiting-Komplexität des Landesvereins klar und strukturiert abbilden.
+1. Die bestehende Karriere- und Recruiting-Komplexität des Enterprises klar und strukturiert abbilden.
 2. Mehrere Karrierepfade und Berufsfelder gezielt und verständlich darstellen.
 3. Stellen strukturiert, konsistent und suchbar verwalten und ausspielen.
 4. Initiativbewerbung und ausgeschriebene Bewerbungswege sauber unterstützen.
@@ -457,7 +457,7 @@ Die Plattform muss mindestens folgende Arten unterstützen:
 - Initiativbewerbung
 - karrierepfadbezogene Bewerbung, sofern explizit freigegeben
 
-### 12.2 Aktueller Landesverein-Bezug
+### 12.2 Aktueller Enterprise-Bezug
 Die aktuelle Plattform unterstützt heute bereits:
 - Bewerbung auf ausgeschriebene Stellen,
 - Bewerbung für Praktikum / FSJ / BFD,
@@ -574,7 +574,7 @@ Lokale Unterschiede dürfen nur als **kontrollierte Varianten** existieren:
 
 ## 16. Datenschutz- und Bewerberdatenschutzregeln
 
-### 16.1 Aktueller Landesverein-Bezug
+### 16.1 Aktueller Enterprise-Bezug
 Die aktuelle Plattform zeigt bereits:
 - Datenschutzzustimmung im Kurzbewerbungsformular,
 - Kandidat*innen-Pool-Bezug,
@@ -654,8 +654,8 @@ Die Plattform muss suchmaschinenfreundliche Karriere- und Jobinhalte unterstütz
 
 ## 19. Migration-Grundsatz
 
-### 19.1 Landesverein als Content-Quelle
-Für Inhalte und aktuelle Struktur ist die aktuelle Landesverein-Karriereseite die Ausgangsbasis.
+### 19.1 Enterprise als Content-Quelle
+Für Inhalte und aktuelle Struktur ist die aktuelle Enterprise-Karriereseite die Ausgangsbasis.
 
 Das betrifft insbesondere:
 - Karriere-Startlogik,
@@ -721,15 +721,15 @@ Wenn dieses Dokument an einer Stelle unvollständig ist, muss der Agent **nicht 
 
 ## Dokumentstatus
 - Version: 2.0
-- Zweck: Konsolidierte Gesamtversion für das Zielbild der neuen Karriereplattform des Landesvereins
-- Gültigkeit: Landesverein-spezifisch, benchmark-frei, implementierungsnah
+- Zweck: Konsolidierte Gesamtversion für das Zielbild der neuen Karriereplattform des Enterprises
+- Gültigkeit: Enterprise-spezifisch, benchmark-frei, implementierungsnah
 - Regel: Wenn dieses Dokument anderen älteren Zwischenständen widerspricht, gilt dieses Dokument
 
 ---
 
 ## 1. Executive Summary
 
-Der Landesverein verfügt bereits heute über eine Karrierepräsenz mit mehreren klar sichtbaren Bereichen wie Arbeitgeber, Beruf und Karriere, Stellenangebote, Initiativbewerbung und „Ihr Weg zu uns“. Zusätzlich sind Ansprechpartner-/Kontaktbezüge, Datenschutz und Barrierefreiheit sichtbar eingebunden.
+Der Enterprise verfügt bereits heute über eine Karrierepräsenz mit mehreren klar sichtbaren Bereichen wie Arbeitgeber, Beruf und Karriere, Stellenangebote, Initiativbewerbung und „Ihr Weg zu uns“. Zusätzlich sind Ansprechpartner-/Kontaktbezüge, Datenschutz und Barrierefreiheit sichtbar eingebunden.
 
 Die Karriereplattform unterscheidet bereits mehrere Recruiting- und Karriereeinstiege, darunter Ausbildung, Freiwilligendienst (FSJ/BFD), Praktikum, Praktisches Jahr / ärztliche Weiterbildung sowie Fortbildung und Weiterbildung.
 
@@ -747,11 +747,11 @@ Das Zielsystem darf nicht als einfache Karriereseite oder bloße Jobliste gedach
 
 ---
 
-## 2. Verifizierter Landesverein-Ausgangszustand
+## 2. Verifizierter Enterprise-Ausgangszustand
 
 ### 2.1 Sichtbare Hauptbereiche
 Die aktuelle Karrierepräsenz enthält sichtbar:
-- Arbeitgeber Landesverein,
+- Arbeitgeber Enterprise,
 - Beruf und Karriere,
 - Stellenangebote,
 - Initiativbewerbung,
@@ -780,7 +780,7 @@ Die aktuelle Stellenliste arbeitet bereits mit strukturierten Attributen wie:
 Zusätzlich ist eine Berufsfeld-/Kategorielogik erkennbar.
 
 ### 2.4 Sichtbare organisatorische Breite
-Die Arbeitgeber- und Berufsfeldseiten zeigen, dass der Landesverein ein großer Träger mit mehreren Einrichtungen, Standorten und sehr unterschiedlichen Arbeits- und Berufsfeldern ist. Sichtbar sind Tätigkeiten unter anderem in Suchthilfe, psychiatrischer Hilfe, Behindertenhilfe, Altenhilfe sowie in Küche, Technik, Handwerk, Verwaltung und weiteren Bereichen.
+Die Arbeitgeber- und Berufsfeldseiten zeigen, dass der Enterprise ein großer Träger mit mehreren Einrichtungen, Standorten und sehr unterschiedlichen Arbeits- und Berufsfeldern ist. Sichtbar sind Tätigkeiten unter anderem in Suchthilfe, psychiatrischer Hilfe, Behindertenhilfe, Altenhilfe sowie in Küche, Technik, Handwerk, Verwaltung und weiteren Bereichen.
 
 ### 2.5 Sichtbare Bewerbungslogik
 Die aktuelle Karrierepräsenz beschreibt:
@@ -795,7 +795,7 @@ Im Kurzbewerbungsformular ist ein Datenschutzbezug sichtbar, und es wird ausdrü
 ## 3. Zielbild
 
 ### 3.1 Zielsystem
-Das Zielsystem ist eine spezialisierte Karriereplattform für den Landesverein mit:
+Das Zielsystem ist eine spezialisierte Karriereplattform für den Enterprise mit:
 - mehreren Karrierepfaden,
 - vielen Berufsfeldern,
 - verschiedenen Einrichtungen,
@@ -876,7 +876,7 @@ Diese Konzepte sind in der aktuellen Plattform sichtbar unterschiedlich und müs
 Die neue Lösung muss lokale Recruiting-Beteiligung erlauben, aber zentrale Qualitäts- und Freigabekontrolle sicherstellen.
 
 ### 5.5 Datenschutz und Need-to-Know-Zugriffe
-Da die Plattform Bewerberdaten verarbeitet und der Landesverein bereits heute Datenschutzinformationen und Löschhinweise im Bewerbungszusammenhang ausweist, muss das Zielsystem Datenschutz by design unterstützen.
+Da die Plattform Bewerberdaten verarbeitet und der Enterprise bereits heute Datenschutzinformationen und Löschhinweise im Bewerbungszusammenhang ausweist, muss das Zielsystem Datenschutz by design unterstützen.
 
 ### 5.6 Barrierefreiheit und Servicequalität
 Da Barrierefreiheit auf der aktuellen Seite sichtbar verankert ist, muss Accessibility im Zielsystem eine Kernanforderung sein.
@@ -1122,7 +1122,7 @@ Wenn zentrale Modellgrenzen unklar sind (z. B. Facility vs. Location, JobFamily 
 
 ## 15. Letzte Regel
 
-Dieses Dokument ist die konsolidierte Landesverein-spezifische Zielbeschreibung.  
+Dieses Dokument ist die konsolidierte Enterprise-spezifische Zielbeschreibung.  
 Externe Produktlogiken oder Benchmark-Verweise sind für die Umsetzung nicht maßgeblich.
 
 ---
@@ -1131,8 +1131,8 @@ Externe Produktlogiken oder Benchmark-Verweise sind für die Umsetzung nicht ma�
 
 ## Dokumentstatus
 - Version: 2.0
-- Zweck: Landesverein-spezifische Migrations- und Inventarisierungsgrundlage für Inhalte, Strukturen und Zielobjekte
-- Gültigkeit: benchmark-frei, ausschließlich auf Landesverein-Quellen und Zielmodell ausgerichtet
+- Zweck: Enterprise-spezifische Migrations- und Inventarisierungsgrundlage für Inhalte, Strukturen und Zielobjekte
+- Gültigkeit: benchmark-frei, ausschließlich auf Enterprise-Quellen und Zielmodell ausgerichtet
 - Regel: Wenn Zielmodell oder Governance-Regeln angepasst werden, muss dieses Migrationsdokument aktualisiert werden
 
 ---
@@ -1140,7 +1140,7 @@ Externe Produktlogiken oder Benchmark-Verweise sind für die Umsetzung nicht ma�
 ## 1. Ziel dieses Dokuments
 
 Dieses Dokument definiert:
-- welche Inhalte und Strukturen in der aktuellen Landesverein-Karrierepräsenz sichtbar sind,
+- welche Inhalte und Strukturen in der aktuellen Enterprise-Karrierepräsenz sichtbar sind,
 - wie diese in Zielobjekte überführt werden,
 - welche Inhalte migriert, restrukturiert, neu geschrieben oder stillgelegt werden,
 - welche Inhalte zentral gepflegt werden,
@@ -1148,15 +1148,15 @@ Dieses Dokument definiert:
 - und welche Validierungen vor Go-Live notwendig sind.
 
 Die Migration ist **keine 1:1-Kopie** der aktuellen Seiten, sondern eine **strukturierte Transformation**:
-- von aktueller Landesverein-Webstruktur
+- von aktueller Enterprise-Webstruktur
 - in das neue Zielmodell der Karriereplattform.
 
 ---
 
 ## 2. Migrationsprinzipien
 
-### 2.1 Landesverein ist die einzige Content-Ausgangsquelle
-Für aktuelle Inhalte und aktuelle Struktur dient ausschließlich die aktuelle Landesverein-Karrierepräsenz als Ausgangsbasis. Dazu gehören insbesondere:
+### 2.1 Enterprise ist die einzige Content-Ausgangsquelle
+Für aktuelle Inhalte und aktuelle Struktur dient ausschließlich die aktuelle Enterprise-Karrierepräsenz als Ausgangsbasis. Dazu gehören insbesondere:
 - Karriere-Startseite,
 - Arbeitgeberinhalte,
 - Beruf und Karriere,
@@ -1199,11 +1199,11 @@ Mögliche Migrationsaktionen:
 
 ---
 
-## 3. Aktuelle sichtbare Inhaltsbereiche des Landesvereins
+## 3. Aktuelle sichtbare Inhaltsbereiche des Enterprises
 
 ### 3.1 Karriere-Hauptnavigation / Einstieg
 Sichtbar sind unter anderem:
-- Arbeitgeber Landesverein,
+- Arbeitgeber Enterprise,
 - Beruf und Karriere,
 - Stellenangebote,
 - Initiativbewerbung,
@@ -1338,7 +1338,7 @@ Jeder Quellinhalt muss im Migrationsinventar mindestens folgende Felder besitzen
 
 ---
 
-## 7. Landesverein-spezifische Startinventarisierung
+## 7. Enterprise-spezifische Startinventarisierung
 
 ### 7.1 Karriere-Startseite
 - `target_domain`: Editorial Career Pages
@@ -1506,7 +1506,7 @@ Jedes Zielobjekt muss geprüft werden auf:
 ## 10. Migrationsphasen
 
 ### Phase 1 – Discovery Inventory
-- alle aktuell sichtbaren Landesverein-Karriereinhalte erfassen
+- alle aktuell sichtbaren Enterprise-Karriereinhalte erfassen
 - Kategorien zuordnen
 - Dopplungen und Überschneidungen identifizieren
 - strukturrelevante Daten in Texten identifizieren
@@ -1592,7 +1592,7 @@ Ein Inhalt gilt erst dann als migriert, wenn:
 - strukturierte Felder befüllt sind,
 - Owner und Workflow korrekt gesetzt sind,
 - Privacy-/Accessibility-/SEO-Prüfungen erfolgt sind,
-- und der Inhalt das neue Landesverein-Betriebsmodell unterstützt.
+- und der Inhalt das neue Enterprise-Betriebsmodell unterstützt.
 
 ---
 
@@ -2618,8 +2618,8 @@ A feature is complete only when:
 
 ## Dokumentstatus
 - Version: 1.0
-- Zweck: Projektliefermodell, Workstreams, Meilensteine, Abhängigkeiten, Governance und Rollout-Logik für die neue Karriereplattform des Landesvereins
-- Gültigkeit: Landesverein-spezifisch, benchmark-frei, umsetzungsorientiert
+- Zweck: Projektliefermodell, Workstreams, Meilensteine, Abhängigkeiten, Governance und Rollout-Logik für die neue Karriereplattform des Enterprises
+- Gültigkeit: Enterprise-spezifisch, benchmark-frei, umsetzungsorientiert
 - Regel: Wenn dieses Dokument mit Final Source of Truth oder Sicherheits-/Privacy-Regeln kollidiert, gelten die dort definierten harten Regeln
 
 ---
@@ -2633,13 +2633,13 @@ Dieses Dokument definiert:
 - die Meilensteine,
 - die Abhängigkeiten,
 - die Governance- und Entscheidungswege,
-- und die empfohlene Rollout-Reihenfolge für die neue Karriereplattform des Landesvereins.
+- und die empfohlene Rollout-Reihenfolge für die neue Karriereplattform des Enterprises.
 
 ---
 
 ## 2. Projektziel
 
-Die neue Karriereplattform soll den aktuellen Landesverein-Kontext in eine strukturierte Zielarchitektur überführen:
+Die neue Karriereplattform soll den aktuellen Enterprise-Kontext in eine strukturierte Zielarchitektur überführen:
 - mehrere Karrierepfade,
 - strukturierte Stellenanzeigen,
 - zentrale HR-Karriere-Governance,
@@ -2757,7 +2757,7 @@ Inhalte:
 ### Phase 0 – Alignment & Freeze
 Deliverables:
 - Final Source of Truth
-- Landesverein-clean Master Concept
+- Enterprise-clean Master Concept
 - Rollen-/Operating-Model
 - Security baseline
 - Migration baseline
@@ -2948,7 +2948,7 @@ Es gilt erst dann als erfolgreich, wenn:
 - lokale Recruiting-Beteiligung kontrolliert funktioniert,
 - Datenschutz/Sicherheit funktioniert,
 - Inhalte korrekt migriert sind,
-- und die Plattform im Landesverein-Betriebsmodell stabil nutzbar ist.
+- und die Plattform im Enterprise-Betriebsmodell stabil nutzbar ist.
 
 ---
 
@@ -2956,8 +2956,8 @@ Es gilt erst dann als erfolgreich, wenn:
 
 ## Dokumentstatus
 - Version: 1.0
-- Zweck: Umsetzungsnaher Backlog-Rahmen mit Epics, Features, User Stories und Akzeptanzkriterien für die neue Landesverein-Karriereplattform
-- Gültigkeit: Landesverein-spezifisch, benchmark-frei, Zielmodell-konform
+- Zweck: Umsetzungsnaher Backlog-Rahmen mit Epics, Features, User Stories und Akzeptanzkriterien für die neue Enterprise-Karriereplattform
+- Gültigkeit: Enterprise-spezifisch, benchmark-frei, Zielmodell-konform
 - Regel: Stories dürfen den Final Source of Truth nicht widersprechen
 
 ---
@@ -2973,7 +2973,7 @@ Dieses Dokument übersetzt das Zielmodell in:
 Die Stories sind so formuliert, dass sie:
 - für Product / Architecture / Delivery nutzbar sind,
 - vom Senior Developer Agent in Umsetzungspakete zerlegt werden können,
-- und gleichzeitig Landesverein-spezifisch bleiben.
+- und gleichzeitig Enterprise-spezifisch bleiben.
 
 ---
 
@@ -3088,9 +3088,9 @@ Die Stories sind so formuliert, dass sie:
 
 ## 6. Final Rule
 
-These Epics and Stories are Landesverein-specific implementation backlog framing.  
+These Epics and Stories are Enterprise-specific implementation backlog framing.  
 They are not a generic recruiting software backlog and must always remain aligned with:
-- the Landesverein operating model,
+- the Enterprise operating model,
 - the Final Source of Truth,
 - and the mandatory privacy/security/governance controls.
 
@@ -3100,8 +3100,8 @@ They are not a generic recruiting software backlog and must always remain aligne
 
 ## Dokumentstatus
 - Version: 1.0
-- Zweck: Master-Index und Nutzungsleitfaden für das gesamte Landesverein-Karriereplattform-Paket
-- Gültigkeit: Landesverein-spezifisch, benchmark-frei
+- Zweck: Master-Index und Nutzungsleitfaden für das gesamte Enterprise-Karriereplattform-Paket
+- Gültigkeit: Enterprise-spezifisch, benchmark-frei
 - Regel: Dieses Dokument erklärt, welches Dokument für welchen Zweck maßgeblich ist. Fachlich-technisch verbindlich bleibt der Final Source of Truth.
 
 ---
@@ -3124,7 +3124,7 @@ Das wichtigste Dokument des Gesamtpakets ist:
 
 #### `00_FINAL_SOURCE_OF_TRUTH.md`
 
-Dieses Dokument ist die **einzige verbindliche fachlich-technische Zielquelle** für die neue Landesverein-Karriereplattform.
+Dieses Dokument ist die **einzige verbindliche fachlich-technische Zielquelle** für die neue Enterprise-Karriereplattform.
 
 ### 2.2 Unterstützende Dokumente
 Alle anderen Dokumente sind:
@@ -3220,14 +3220,14 @@ Das Dokumentenset ist nur dann korrekt genutzt, wenn:
 ## Dokumentstatus
 - Version: 1.0
 - Zweck: finale, kontrollierte Übergabeinstruktion für den Senior Developer Agent
-- Gültigkeit: Landesverein-spezifisch, benchmark-frei, umsetzungssteuernd
+- Gültigkeit: Enterprise-spezifisch, benchmark-frei, umsetzungssteuernd
 - Regel: Der Agent darf nur innerhalb der hier definierten Grenzen arbeiten
 
 ---
 
 ## 1. Rolle und Mission
 
-Du agierst als **Senior Developer Agent** für die neue Karriereplattform des Landesvereins.
+Du agierst als **Senior Developer Agent** für die neue Karriereplattform des Enterprises.
 
 Du entwickelst **nicht**:
 - ein generisches Bewerbermanagementsystem,
@@ -3235,7 +3235,7 @@ Du entwickelst **nicht**:
 - keine beliebige Karriereseite.
 
 Du entwickelst:
-- eine **spezialisierte Karriereplattform für den Landesverein**,
+- eine **spezialisierte Karriereplattform für den Enterprise**,
 - auf Basis des dokumentierten Zielmodells,
 - mit zentraler HR-Karriere-Governance,
 - lokaler fachlicher Recruiting-Beteiligung,
@@ -3410,7 +3410,7 @@ Keine produktionsnahe Freigabe bei:
 ## 14. Letzte verbindliche Regel
 
 Du bist nicht beauftragt, kreativ zu improvisieren.  
-Du bist beauftragt, das dokumentierte Landesverein-Zielsystem **präzise, sicher, kontrolliert und nachvollziehbar** umzusetzen.
+Du bist beauftragt, das dokumentierte Enterprise-Zielsystem **präzise, sicher, kontrolliert und nachvollziehbar** umzusetzen.
 
 ---
 
@@ -3418,8 +3418,8 @@ Du bist beauftragt, das dokumentierte Landesverein-Zielsystem **präzise, sicher
 
 ## Dokumentstatus
 - Version: 1.0
-- Zweck: Konkretes Umsetzungs- und Steuerungspaket für Wave 1 der neuen Landesverein-Karriereplattform
-- Gültigkeit: Landesverein-spezifisch, benchmark-frei, umsetzungsorientiert
+- Zweck: Konkretes Umsetzungs- und Steuerungspaket für Wave 1 der neuen Enterprise-Karriereplattform
+- Gültigkeit: Enterprise-spezifisch, benchmark-frei, umsetzungsorientiert
 - Ziel: dem Senior Developer Agent einen klaren, kontrollierten und priorisierten Einstieg in die reale Umsetzung geben
 - Regel: Wenn dieses Dokument dem Final Source of Truth widerspricht, gilt immer der Final Source of Truth
 
@@ -3427,7 +3427,7 @@ Du bist beauftragt, das dokumentierte Landesverein-Zielsystem **präzise, sicher
 
 ## 1. Ziel dieses Dokuments
 
-Wave 1 ist die **erste kontrollierte Landesverein-fähige Lieferwelle**.
+Wave 1 ist die **erste kontrollierte Enterprise-fähige Lieferwelle**.
 
 Es soll sicherstellen, dass:
 - die zentrale Plattformbasis steht,
@@ -3616,7 +3616,7 @@ Keine Release-Readiness bei:
 ## 14. Finale Regel
 
 Wave 1 ist keine “schnelle erste Version”.  
-Wave 1 ist die **erste kontrollierte Landesverein-fähige Lieferwelle**.
+Wave 1 ist die **erste kontrollierte Enterprise-fähige Lieferwelle**.
 
 ---
 
@@ -3681,7 +3681,7 @@ Fokus:
 ## Dokumentstatus
 - Version: 1.0
 - Zweck: Finales operatives Übergabedokument für den Senior Developer Agent
-- Gültigkeit: Landesverein-spezifisch, benchmark-frei, ausführungssteuernd
+- Gültigkeit: Enterprise-spezifisch, benchmark-frei, ausführungssteuernd
 - Ziel: Einen einzigen, klaren, geordneten und kontrollierten Einstiegspunkt für die technische Umsetzung bereitstellen
 - Regel: Dieses Dokument ist ein Ausführungs-Bundle. Fachlich-technisch bindend bleibt der Final Source of Truth.
 
@@ -3864,7 +3864,7 @@ Verboten:
 ## 12. Abschlussregel
 
 Dieses Dokument ist das operative Ausführungs-Bundle für den Senior Developer Agent.
-Es stellt sicher, dass die Landesverein-Karriereplattform:
+Es stellt sicher, dass die Enterprise-Karriereplattform:
 - in der richtigen Reihenfolge,
 - mit der richtigen Governance,
 - mit der richtigen Security-/Privacy-Basis,

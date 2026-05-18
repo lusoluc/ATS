@@ -2,7 +2,7 @@ const https = require('https');
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-https.get('https://landesverein.de/', (res) => {
+https.get('https://Enterprise.de/', (res) => {
   let data = '';
   res.on('data', chunk => data += chunk);
   res.on('end', () => {

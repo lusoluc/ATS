@@ -8,7 +8,7 @@ async function geocode(name: string): Promise<{ lat: number; lng: number } | nul
   try {
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(name)},Deutschland&format=json&limit=1&countrycodes=de`;
     const res = await fetch(url, {
-      headers: { 'User-Agent': 'Landesverein-Karriereplattform/1.0' },
+      headers: { 'User-Agent': 'Enterprise-Karriereplattform/1.0' },
       signal: AbortSignal.timeout(5000),
     });
     const data = await res.json();

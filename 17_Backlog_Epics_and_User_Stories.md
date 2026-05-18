@@ -2,8 +2,8 @@
 
 ## Dokumentstatus
 - Version: 1.0
-- Zweck: Umsetzungsnaher Backlog-Rahmen mit Epics, Features, User Stories und Akzeptanzkriterien für die neue Landesverein-Karriereplattform
-- Gültigkeit: Landesverein-spezifisch, benchmark-frei, Zielmodell-konform
+- Zweck: Umsetzungsnaher Backlog-Rahmen mit Epics, Features, User Stories und Akzeptanzkriterien für die neue Enterprise-Karriereplattform
+- Gültigkeit: Enterprise-spezifisch, benchmark-frei, Zielmodell-konform
 - Regel: Stories dürfen den Final Source of Truth nicht widersprechen
 
 ---
@@ -19,7 +19,7 @@ Dieses Dokument übersetzt das Zielmodell in:
 Die Stories sind so formuliert, dass sie:
 - für Product / Architecture / Delivery nutzbar sind,
 - vom Senior Developer Agent in Umsetzungspakete zerlegt werden können,
-- und gleichzeitig Landesverein-spezifisch bleiben.
+- und gleichzeitig Enterprise-spezifisch bleiben.
 
 ---
 
@@ -70,7 +70,7 @@ so that I can access relevant information without usability barriers.
 ## Feature 1.2 – Employer Area
 ### Story 1.2.1
 As a candidate,  
-I want to understand who the Landesverein is as an employer,  
+I want to understand who the Enterprise is as an employer,  
 so that I can assess fit and relevance.
 
 #### Acceptance Criteria
@@ -124,7 +124,7 @@ so that I can decide whether to apply.
 ### Story 3.1.1
 As the platform,  
 I must support CareerPath as a first-class concept,  
-so that Landesverein-specific entry paths such as Ausbildung or FSJ/BFD can be represented clearly.
+so that Enterprise-specific entry paths such as Ausbildung or FSJ/BFD can be represented clearly.
 
 #### Acceptance Criteria
 - CareerPath entity exists
@@ -161,7 +161,7 @@ so that professional fields and recruiting entry paths do not get mixed.
 ### Story 4.1.1
 As an interested person without a concrete vacancy,  
 I want a dedicated initiative application path,  
-so that I can still express interest in working for the Landesverein.
+so that I can still express interest in working for the Enterprise.
 
 #### Acceptance Criteria
 - initiative application page exists
@@ -388,7 +388,7 @@ so that relevant opportunities can be found through search engines.
 ## Feature 10.1 – Content Inventory
 ### Story 10.1.1
 As the migration team,  
-I want all current Landesverein career content to be inventoried and classified,  
+I want all current Enterprise career content to be inventoried and classified,  
 so that nothing important is migrated blindly or lost.
 
 #### Acceptance Criteria
@@ -489,8 +489,8 @@ so that approvals, applicant access and compliance-sensitive changes are traceab
 
 # 16. Final Rule
 
-These Epics and Stories are Landesverein-specific implementation backlog framing.  
+These Epics and Stories are Enterprise-specific implementation backlog framing.  
 They are not a generic recruiting software backlog and must always remain aligned with:
-- the Landesverein operating model,
+- the Enterprise operating model,
 - the Final Source of Truth,
 - and the mandatory privacy/security/governance controls.

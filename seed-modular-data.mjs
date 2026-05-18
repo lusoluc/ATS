@@ -42,7 +42,7 @@ async function seed() {
     data: {
       firstName: "Dr. Matthias",
       lastName: "Hollmann",
-      email: "m.hollmann@landesverein.de",
+      email: "m.hollmann@Enterprise.de",
       phone: "04328 18 279",
       photoUrl: "https://ui-avatars.com/api/?name=Matthias+Hollmann&background=6b2361&color=fff&size=256",
       quote: "Suchtmedizin ist mehr als nur Therapie – es ist die Begleitung von Menschen zurück ins Leben. Ich freue mich auf Ihre Unterstützung in unserem Team!",

@@ -52,7 +52,7 @@ export default function AdminDashboard() {
         {view === 'dashboard' && (
           <div>
             <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem', color: 'var(--primary)' }}>Willkommen im CMS</h1>
-            <p style={{ opacity: 0.7, marginBottom: '2.5rem' }}>Verwalte alle Inhalte der Landesverein Karriereplattform.</p>
+            <p style={{ opacity: 0.7, marginBottom: '2.5rem' }}>Verwalte alle Inhalte der Enterprise Karriereplattform.</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
               {[
                 { icon: '📑', title: 'Seiten verwalten', desc: 'Neue Seiten anlegen, bearbeiten, Slug & Navigation setzen', v: 'pages' as View },

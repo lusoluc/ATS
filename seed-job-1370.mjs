@@ -7,7 +7,7 @@ async function seed() {
 
   // 1. Organization
   let org = await prisma.organization.findFirst();
-  if (!org) org = await prisma.organization.create({ data: { name: "Landesverein für Innere Mission in Schleswig-Holstein" } });
+  if (!org) org = await prisma.organization.create({ data: { name: "Enterprise" } });
 
   // 2. Location
   let loc = await prisma.location.findFirst({ where: { name: "Rickling" } });
@@ -27,7 +27,7 @@ async function seed() {
 
   // Job Description in Markdown
   const markdownDesc = `
-Der Landesverein für Innere Mission in Schleswig-Holstein ist ein diakonischer Komplexträger mit ca. 4.000 Mitarbeitenden und Beschäftigten. In über 110 Einrichtungen leistet er wichtige Dienste für ca. 4.500 Menschen aller Altersgruppen mit psychischen Störungen, mit Suchtverhalten und mit Behinderungen durch professionelle Begleitung, Behandlung, Beratung, Betreuung, Pflege und Schutz.
+Der Enterprise ist ein diakonischer Komplexträger mit ca. 4.000 Mitarbeitenden und Beschäftigten. In über 110 Einrichtungen leistet er wichtige Dienste für ca. 4.500 Menschen aller Altersgruppen mit psychischen Störungen, mit Suchtverhalten und mit Behinderungen durch professionelle Begleitung, Behandlung, Beratung, Betreuung, Pflege und Schutz.
 
 Wir suchen zur Verstärkung unseres Teams im Psychiatrischen Krankenhaus Rickling ab sofort eine/n **Oberärztin/Oberarzt für Psychiatrie und Psychotherapie (m/w/d)** für die 2. Klinik Suchtpsychiatrie und Psychotherapie (unbefristet | Voll- und Teilzeit).
 
@@ -35,7 +35,7 @@ Das Psychiatrische Krankenhaus Rickling ist mit 360 Betten ein zentraler Bestand
 
 Die 2. Klinik für Suchtpsychiatrie und Psychotherapie führt suchtpsychiatrische Akut- und Komplexbehandlungen für Menschen mit substanzbezogenen Störungen und psychiatrischer Komorbidität aus Schleswig-Holstein und der Metropolregion Hamburg durch. Dafür stehen aktuell insgesamt 127 suchtspezifische stationäre Behandlungsplätze verteilt auf fünf Stationen zur Verfügung. Die Therapie erfolgt in kleineren Einheiten, die eine Spezialisierung sowohl nach der Art der komorbiden psychischen Störungen wie auch der Substanz bzw. Lebenswelt der Patient*innen ermöglichen.
 
-Werden Sie Teil unseres engagierten Teams und prägen Sie aktiv die Zukunft unseres Landesvereins mit. Freuen Sie sich auf eine spannende Herausforderung, die Möglichkeit, Ihre Ideen einzubringen, und ein Umfeld, in dem Sie Ihr Potenzial voll entfalten können.
+Werden Sie Teil unseres engagierten Teams und prägen Sie aktiv die Zukunft unseres Enterprises mit. Freuen Sie sich auf eine spannende Herausforderung, die Möglichkeit, Ihre Ideen einzubringen, und ein Umfeld, in dem Sie Ihr Potenzial voll entfalten können.
 
 ### Ihre Aufgabe:
 - Oberärztliche Leitung einer offen geführten Suchtstation mit dem Schwerpunkt der qualifizierten Entzugsbehandlung
@@ -46,7 +46,7 @@ Werden Sie Teil unseres engagierten Teams und prägen Sie aktiv die Zukunft unse
 - Teilnahme an Leitungskonferenzen und Weiterentwicklung der Stations- und Behandlungskonzepte in enger Abstimmung mit dem Leitungsteam
 - Sicherstellung des strukturierten Entlassungsmanagements unter Einbeziehung des Sozialdienstes mit Planung der Weiterbehandlung
 - Teilnahme am oberärztlichen Hintergrunddienst
-- Kooperation mit den umliegenden Suchhilfesystem, psychosozialen Einrichtungen sowie den Einrichtungen des Landesvereins
+- Kooperation mit den umliegenden Suchhilfesystem, psychosozialen Einrichtungen sowie den Einrichtungen des Enterprises
 
 ### Wir wünschen uns:
 - Abgeschlossene Facharztausbildung in Psychiatrie und Psychotherapie

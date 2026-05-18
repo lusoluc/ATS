@@ -5,9 +5,9 @@ const path = require('path');
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 const imagesToDownload = [
-  { url: 'https://landesverein.de/fileadmin/media/Header/Landesverein-Header-Startseite-Slider-04-Desktop.jpg', dest: 'hero_team.png' },
-  { url: 'https://landesverein.de/fileadmin/_processed_/9/c/csm_Landesverein-Website-Startseite-Teaser-Pflege_4bf729064b.jpg', dest: 'nursing_care.png' },
-  { url: 'https://landesverein.de/fileadmin/_processed_/8/4/csm_Landesverein-Website-Startseite-Teaser-Karriere_cceb17c74c.jpg', dest: 'apprenticeship.png' }
+  { url: 'https://Enterprise.de/fileadmin/media/Header/Enterprise-Header-Startseite-Slider-04-Desktop.jpg', dest: 'hero_team.png' },
+  { url: 'https://Enterprise.de/fileadmin/_processed_/9/c/csm_Enterprise-Website-Startseite-Teaser-Pflege_4bf729064b.jpg', dest: 'nursing_care.png' },
+  { url: 'https://Enterprise.de/fileadmin/_processed_/8/4/csm_Enterprise-Website-Startseite-Teaser-Karriere_cceb17c74c.jpg', dest: 'apprenticeship.png' }
 ];
 
 imagesToDownload.forEach(img => {

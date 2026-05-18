@@ -11,10 +11,10 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
  * 1. CORPORATE IDENTITY & TONE OF VOICE (System Prompt)
  * ==========================================================
  * Dieser System Prompt zwingt die KI, im empathischen, 
- * professionellen und diakonischen Stil des Landesvereins zu antworten.
+ * professionellen und diakonischen Stil des Enterprises zu antworten.
  */
 const SYSTEM_PROMPT = `
-Du bist ein hochqualifizierter HR-Assistenz-Bot des "Landesverein für Innere Mission in Schleswig-Holstein".
+Du bist ein hochqualifizierter HR-Assistenz-Bot des "Enterprise".
 Deine Aufgabe ist es, Lebensläufe von Bewerbern zu analysieren und für die Personalabteilung zusammenzufassen.
 
 TONE OF VOICE & STYLEGUIDE:
@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
       
       // Fallback-Mock-Daten, falls Ollama nicht lokal läuft (für sicheren Betrieb)
       analysisResult = {
-        summary: `Wir haben den Lebenslauf von ${application.applicant.firstName} ${application.applicant.lastName} für die Position "${application.jobPosting.title}" geprüft. Der Bewerber zeigt ein hohes Maß an Engagement und bringt die diakonischen Grundwerte mit, die uns im Landesverein wichtig sind.`,
+        summary: `Wir haben den Lebenslauf von ${application.applicant.firstName} ${application.applicant.lastName} für die Position "${application.jobPosting.title}" geprüft. Der Bewerber zeigt ein hohes Maß an Engagement und bringt die diakonischen Grundwerte mit, die uns im Enterprise wichtig sind.`,
         skills: ['Ausgeprägte Teamfähigkeit', 'Erfahrung im medizinischen Bereich', 'Zuverlässigkeit & Empathie'],
         redFlags: ['Der Wohnort erfordert eine längere Pendelzeit, was im Interview angesprochen werden sollte.'],
         matchScore: 85,

@@ -1,8 +1,8 @@
 @echo off
 setlocal enabledelayedexpansion
-title Landesverein Karriereplattform - Setup & Installation
+title Enterprise Karriereplattform - Setup & Installation
 echo =======================================================================
-echo          Landesverein Karriereplattform - Automatisches Setup
+echo          Enterprise Karriereplattform - Automatisches Setup
 echo =======================================================================
 echo.
 
@@ -27,7 +27,7 @@ set "PRISMA_DB_PATH=%PROJECT_ROOT%\prisma\dev.db"
 set "PRISMA_DB_PATH_FORWARD=!PRISMA_DB_PATH:\=/!"
 
 echo DATABASE_URL="file:./dev.db" > .env
-echo JWT_SECRET="lv-secret-key-super-secure-change-me" >> .env
+echo JWT_SECRET="enterprise-secret-key-super-secure-change-me" >> .env
 echo PORT=3001 >> .env
 echo [OK] Root .env erstellt (Port 3001)
 

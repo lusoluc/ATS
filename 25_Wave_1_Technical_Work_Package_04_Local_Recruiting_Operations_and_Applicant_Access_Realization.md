@@ -12,14 +12,14 @@
   - Security Architect
   - Privacy / Compliance Reviewer
   - Delivery Lead
-- Gültigkeit: Landesverein-spezifisch, benchmark-frei, Wave-1-umsetzungsorientiert
+- Gültigkeit: Enterprise-spezifisch, benchmark-frei, Wave-1-umsetzungsorientiert
 - Regel: Wenn dieses Arbeitspaket dem Final Source of Truth widerspricht, gilt immer der Final Source of Truth
 
 ---
 
 # 1. Ziel dieses Arbeitspakets
 
-Dieses Arbeitspaket realisiert den ersten belastbaren **internen Recruiting-Operations-Layer** für den Landesverein.
+Dieses Arbeitspaket realisiert den ersten belastbaren **internen Recruiting-Operations-Layer** für den Enterprise.
 
 Es soll sicherstellen, dass:
 - Bewerbungen nicht nur eingehen, sondern kontrolliert an den richtigen lokalen Kontext gebunden werden,
@@ -42,7 +42,7 @@ Dieses Arbeitspaket ist erfolgreich, wenn danach:
 Nach Work Package 03 ist die öffentliche Karriereerfahrung und die zentrale Job-Governance-Basis realisiert.  
 Der nächste logische Schritt ist nun die **interne Recruiting-Ausführung**.
 
-Das passt direkt zum Landesverein-Kontext:
+Das passt direkt zum Enterprise-Kontext:
 - Die aktuelle Stellenlogik sagt bereits, dass Bewerbungen an die zuständige Fachabteilung oder Einrichtung weitergeleitet werden.  
 - Die aktuelle Bewerbungs-/Service-Logik zeigt außerdem, dass unterschiedliche Bewerbungswege existieren.  
 Damit ist klar: Die Plattform braucht nach dem öffentlichen Entry jetzt den **kontrollierten internen Bearbeitungsschritt**. [1](https://www.dvinci.de/karrierewebseite/)
@@ -501,4 +501,4 @@ Fokus:
 Dieses Arbeitspaket ist nur dann erfolgreich, wenn der Senior Developer Agent:
 - lokale Recruiting-Beteiligung funktional ermöglicht,
 - dabei aber keine unkontrollierte Datenoffenlegung zulässt,
-- und die Landesverein-Zielbalance aus zentraler Governance und lokaler operativer Auswahl strikt einhält.
+- und die Enterprise-Zielbalance aus zentraler Governance und lokaler operativer Auswahl strikt einhält.

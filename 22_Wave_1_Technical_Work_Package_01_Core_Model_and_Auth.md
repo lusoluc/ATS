@@ -10,14 +10,14 @@
   - Enterprise Architect
   - Security Architect
   - Delivery Lead
-- Gültigkeit: Landesverein-spezifisch, benchmark-frei, Wave-1-startfähig
+- Gültigkeit: Enterprise-spezifisch, benchmark-frei, Wave-1-startfähig
 - Regel: Wenn dieses Arbeitspaket dem Final Source of Truth widerspricht, gilt immer der Final Source of Truth
 
 ---
 
 # 1. Ziel dieses Arbeitspakets
 
-Dieses Arbeitspaket ist der **erste konkrete technische Einstieg** in die Umsetzung der neuen Landesverein-Karriereplattform.
+Dieses Arbeitspaket ist der **erste konkrete technische Einstieg** in die Umsetzung der neuen Enterprise-Karriereplattform.
 
 Es soll die Grundlage schaffen für:
 - stabile Zielentitäten,
@@ -36,7 +36,7 @@ Dieses Arbeitspaket ist erfolgreich, wenn danach:
 
 # 2. Warum dieses Arbeitspaket zuerst kommt
 
-Der aktuelle Landesverein-Kontext zeigt bereits:
+Der aktuelle Enterprise-Kontext zeigt bereits:
 - mehrere Karrierepfade,
 - strukturierte Jobfelder,
 - unterschiedliche Einrichtungen und Orte,

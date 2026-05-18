@@ -2,13 +2,13 @@
 
 ## Dokumentstatus
 - Version: 1.0
-- Zweck: Verbindliches Entity-Data-Model für die Landesverein Karriereplattform
+- Zweck: Verbindliches Entity-Data-Model für die Enterprise Karriereplattform
 - Basis: Abgeleitet aus `00_FINAL_SOURCE_OF_TRUTH.md` und WP-Definitionen.
 
 ## 1. Kernentitäten (Core Domain)
 
 ### 1.1 Organization Domain
-- **Organization**: Die Trägergesellschaft (z.B. Landesverein).
+- **Organization**: Die Trägergesellschaft (z.B. Enterprise).
 - **Facility**: Eine konkrete organisatorische Einrichtung (z.B. ein Psychiatrisches Zentrum). Darf nicht mit Location vermischt werden.
 - **Location**: Ein geografischer Standort.
 - **JobFamily**: Ein fachliches Berufsfeld (z.B. Pflege, Medizin, Verwaltung).

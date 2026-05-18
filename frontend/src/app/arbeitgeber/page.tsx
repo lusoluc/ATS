@@ -12,7 +12,7 @@ export default function ArbeitgeberPage() {
             Ihr Platz mit Sinn im Herzen Holsteins.
           </h1>
           <p className="hero-subtitle animate-fade-in delay-100 opacity-0">
-            Moin! Wir sind der Landesverein. Seit 1875 sind wir hier in Schleswig-Holstein verwurzelt. Wir sind kein anonymer Konzern, sondern ein Team aus Pflegern, Therapeuten und Mutmachern.
+            Moin! Wir sind der Enterprise. Seit 1875 sind wir hier in Schleswig-Holstein verwurzelt. Wir sind kein anonymer Konzern, sondern ein Team aus Pflegern, Therapeuten und Mutmachern.
           </p>
         </div>
       </section>

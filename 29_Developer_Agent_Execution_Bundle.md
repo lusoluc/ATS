@@ -3,7 +3,7 @@
 ## Dokumentstatus
 - Version: 1.0
 - Zweck: Finales operatives Übergabedokument für den Senior Developer Agent
-- Gültigkeit: Landesverein-spezifisch, benchmark-frei, ausführungssteuernd
+- Gültigkeit: Enterprise-spezifisch, benchmark-frei, ausführungssteuernd
 - Ziel: Einen einzigen, klaren, geordneten und kontrollierten Einstiegspunkt für die technische Umsetzung bereitstellen
 - Regel: Dieses Dokument ist ein Ausführungs-Bundle. Fachlich-technisch bindend bleibt der Final Source of Truth.
 
@@ -310,7 +310,7 @@ aufsetzen.
 Security, Privacy und Governance dürfen **nie** auf „später“ verschoben werden, wenn sie im betreffenden Work Package als Pflichtbestandteil definiert sind.
 
 ## 6.4 Keine lokalen Freiheiten außerhalb des Zielmodells
-Lokale Recruiting-Akteure dürfen technisch nicht mehr Freiheit erhalten, als das Landesverein-Zielmodell erlaubt.
+Lokale Recruiting-Akteure dürfen technisch nicht mehr Freiheit erhalten, als das Enterprise-Zielmodell erlaubt.
 
 ---
 

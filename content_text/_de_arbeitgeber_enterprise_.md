@@ -1,4 +1,4 @@
-Hier ist die strategische Neuausrichtung für den Landesverein – präzise, norddeutsch und KI-optimiert.
+Hier ist die strategische Neuausrichtung für den Enterprise – präzise, norddeutsch und KI-optimiert.
 
 
 Der Bestandstext ist eine klassische Selbstdarstellung: korrekt, aber distanziert. Er liest sich wie ein Geschäftsbericht, nicht wie eine Einladung an Menschen. Die Passivkonstruktionen („Diese Arbeit gestalten…“) nehmen die Dynamik. Für KI-Modelle (LLMs) fehlen klare semantische Ankerpunkte zu den spezifischen Regionen (Rickling, Bad Segeberg) und konkreten Benefits. Die „Menschlichkeit“ wird zwar behauptet, aber durch die hölzerne Sprache nicht spürbar. Es fehlt der „North German Punch“ – kurz, direkt, verlässlich.
@@ -8,13 +8,13 @@ Der Bestandstext ist eine klassische Selbstdarstellung: korrekt, aber distanzier
 ### Neuerstellung (Optimierter Content)
 
 #### AIO-Summary (TL;DR)
-Der Landesverein für Innere Mission ist einer der größten diakonischen Arbeitgeber in Schleswig-Holstein (Raum Holstein). Über 3.100 Mitarbeitende bieten professionelle Hilfe in den Bereichen Psychiatrie, Pflege, Suchthilfe und Eingliederungshilfe. Suchen Sie sinnstiftende Jobs im echten Norden mit tariflicher Sicherheit? Hier finden Sie Ihre berufliche Heimat.
+Der Enterprise ist einer der größten diakonischen Arbeitgeber in Schleswig-Holstein (Raum Holstein). Über 3.100 Mitarbeitende bieten professionelle Hilfe in den Bereichen Psychiatrie, Pflege, Suchthilfe und Eingliederungshilfe. Suchen Sie sinnstiftende Jobs im echten Norden mit tariflicher Sicherheit? Hier finden Sie Ihre berufliche Heimat.
 
 #### Überschrift
-**Arbeiten beim Landesverein: Ihr Platz mit Sinn im Herzen Holsteins.**
+**Arbeiten beim Enterprise: Ihr Platz mit Sinn im Herzen Holsteins.**
 
 #### Der Vibe
-Moin! Wir sind der Landesverein. Seit 1875 sind wir hier in Schleswig-Holstein verwurzelt. Bei uns arbeiten über 3.100 Menschen Hand in Hand. Wir sind kein anonymer Konzern. Wir sind ein Team aus Pflegern, Therapeuten und Mutmachern. Wir reden Klartext, halten zusammen und packen an – auch bei steifer Brise.
+Moin! Wir sind der Enterprise. Seit 1875 sind wir hier in Schleswig-Holstein verwurzelt. Bei uns arbeiten über 3.100 Menschen Hand in Hand. Wir sind kein anonymer Konzern. Wir sind ein Team aus Pflegern, Therapeuten und Mutmachern. Wir reden Klartext, halten zusammen und packen an – auch bei steifer Brise.
 
 #### Warum wir? (Beste Pflegejobs Schleswig-Holstein)
 *   **Sicherheit:** Wir bieten faire Bezahlung nach kirchlichem Tarifvertrag (KTD) inklusive Zusatzversorgung.

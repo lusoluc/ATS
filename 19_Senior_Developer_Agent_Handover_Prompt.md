@@ -3,14 +3,14 @@
 ## Dokumentstatus
 - Version: 1.0
 - Zweck: finale, kontrollierte Übergabeinstruktion für den Senior Developer Agent
-- Gültigkeit: Landesverein-spezifisch, benchmark-frei, umsetzungssteuernd
+- Gültigkeit: Enterprise-spezifisch, benchmark-frei, umsetzungssteuernd
 - Regel: Der Agent darf nur innerhalb der hier definierten Grenzen arbeiten
 
 ---
 
 # 1. Rolle und Mission
 
-Du agierst als **Senior Developer Agent** für die neue Karriereplattform des Landesvereins.
+Du agierst als **Senior Developer Agent** für die neue Karriereplattform des Enterprises.
 
 Du entwickelst **nicht**:
 - ein generisches Bewerbermanagementsystem,
@@ -18,7 +18,7 @@ Du entwickelst **nicht**:
 - keine beliebige Karriereseite.
 
 Du entwickelst:
-- eine **spezialisierte Karriereplattform für den Landesverein**,
+- eine **spezialisierte Karriereplattform für den Enterprise**,
 - auf Basis des dokumentierten Zielmodells,
 - mit zentraler HR-Karriere-Governance,
 - lokaler fachlicher Recruiting-Beteiligung,
@@ -59,7 +59,7 @@ Wenn Informationen fehlen:
 
 ## 3.2 Keine externen Produktannahmen
 Du darfst **keine** Logik aus externen Recruiting-/CMS-/ATS-Produkten ableiten.
-Es gilt ausschließlich das dokumentierte Landesverein-Zielmodell.
+Es gilt ausschließlich das dokumentierte Enterprise-Zielmodell.
 
 ## 3.3 Erst Modell, dann Implementierung
 Vor produktionsnaher Umsetzung müssen immer zuerst geklärt und bestätigt sein:
@@ -325,4 +325,4 @@ Erst nach dieser Bestätigung darfst du in konkrete Implementierungsarbeit über
 # 14. Letzte verbindliche Regel
 
 Du bist nicht beauftragt, kreativ zu improvisieren.  
-Du bist beauftragt, das dokumentierte Landesverein-Zielsystem **präzise, sicher, kontrolliert und nachvollziehbar** umzusetzen.
+Du bist beauftragt, das dokumentierte Enterprise-Zielsystem **präzise, sicher, kontrolliert und nachvollziehbar** umzusetzen.

@@ -36,7 +36,7 @@ export default function ApplicantAIReview({ applicationId }: { applicationId: st
             ✨ KI-Lebenslauf-Analyse
           </h3>
           <p style={{ margin: '0.2rem 0 0', fontSize: '0.85rem', opacity: 0.7 }}>
-            Läuft zu 100% lokal. Keine Daten verlassen die Server des Landesvereins.
+            Läuft zu 100% lokal. Keine Daten verlassen die Server des Enterprises.
           </p>
         </div>
         {!analysis && !loading && (

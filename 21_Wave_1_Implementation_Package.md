@@ -2,8 +2,8 @@
 
 ## Dokumentstatus
 - Version: 1.0
-- Zweck: Konkretes Umsetzungs- und Steuerungspaket für Wave 1 der neuen Landesverein-Karriereplattform
-- Gültigkeit: Landesverein-spezifisch, benchmark-frei, umsetzungsorientiert
+- Zweck: Konkretes Umsetzungs- und Steuerungspaket für Wave 1 der neuen Enterprise-Karriereplattform
+- Gültigkeit: Enterprise-spezifisch, benchmark-frei, umsetzungsorientiert
 - Ziel: dem Senior Developer Agent einen klaren, kontrollierten und priorisierten Einstieg in die reale Umsetzung geben
 - Regel: Wenn dieses Dokument dem Final Source of Truth widerspricht, gilt der Final Source of Truth
 
@@ -11,7 +11,7 @@
 
 # 1. Ziel dieses Dokuments
 
-Dieses Dokument definiert den **ersten realen Umsetzungsumfang** (“Wave 1”) für die neue Karriereplattform des Landesvereins.
+Dieses Dokument definiert den **ersten realen Umsetzungsumfang** (“Wave 1”) für die neue Karriereplattform des Enterprises.
 
 Wave 1 soll sicherstellen, dass:
 - die zentrale Plattformbasis steht,
@@ -27,12 +27,12 @@ Wave 1 ist die **erste produktionsnahe, kontrollierte Lieferwelle**.
 
 # 2. Wave-1-Leitidee
 
-Wave 1 soll genau die Elemente liefern, die direkt aus dem aktuellen Landesverein-Kontext und dem Zielmodell abgeleitet werden können:
+Wave 1 soll genau die Elemente liefern, die direkt aus dem aktuellen Enterprise-Kontext und dem Zielmodell abgeleitet werden können:
 
 - eine Karriere-Startlogik mit mehreren Einstiegen, da die aktuelle Seite bereits unterschiedliche Karrierepfade und Hauptnavigationsbereiche sichtbar macht, 
 - eine strukturierte Stellenplattform, weil die aktuelle Stellenliste bereits mit Feldern wie Referenz, Einrichtung, Ort, Beginn, Stundenumfang und Befristung arbeitet, [1](https://www.dvinci.de/karrierewebseite/)
 - eine Initiativbewerbungs-/Bewerbungsweg-Basis, weil „Initiativbewerbung“, „Ihr Weg zu uns“ und „Ihre Bewerbung“ bereits sichtbar vorhanden sind, 
-- einen Arbeitgeber- und CareerPath-Basisbereich, weil der Landesverein bereits Arbeitgeberinhalte, Arbeits- und Berufsfelder sowie Karrierepfade sichtbar ausspielt, [3](https://www.dvinci.de/bewerbermanagement-software/)[2](https://www.dvinci.de/features/)
+- einen Arbeitgeber- und CareerPath-Basisbereich, weil der Enterprise bereits Arbeitgeberinhalte, Arbeits- und Berufsfelder sowie Karrierepfade sichtbar ausspielt, [3](https://www.dvinci.de/bewerbermanagement-software/)[2](https://www.dvinci.de/features/)
 - und eine Governance-/Privacy-/Security-Basis, weil die aktuelle Plattform bereits Datenschutz- und Löschhinweise im Bewerbungsumfeld sowie Barrierefreiheitsbezug sichtbar macht. 
 
 ---
@@ -236,7 +236,7 @@ Technische Sicherheitsmindestbasis herstellen.
 
 ## Workstream 6 – Migration Wave 1
 ### Ziel
-Erste Landesverein-Inhalte in die Zielstruktur überführen.
+Erste Enterprise-Inhalte in die Zielstruktur überführen.
 
 ### Deliverables
 - mapped homepage content
@@ -525,7 +525,7 @@ Ohne diese Struktur darf Wave 1 nicht gestartet werden.
 
 Wave 1 ist keine “schnelle erste Version”.
 
-Wave 1 ist die **erste kontrollierte Landesverein-fähige Lieferwelle** und muss deshalb:
+Wave 1 ist die **erste kontrollierte Enterprise-fähige Lieferwelle** und muss deshalb:
 - fachlich korrekt,
 - governance-konform,
 - datenschutzkonform,

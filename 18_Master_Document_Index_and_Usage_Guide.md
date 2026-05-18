@@ -2,8 +2,8 @@
 
 ## Dokumentstatus
 - Version: 1.0
-- Zweck: Master-Index und Nutzungsleitfaden für das gesamte Landesverein-Karriereplattform-Paket
-- Gültigkeit: Landesverein-spezifisch, benchmark-frei
+- Zweck: Master-Index und Nutzungsleitfaden für das gesamte Enterprise-Karriereplattform-Paket
+- Gültigkeit: Enterprise-spezifisch, benchmark-frei
 - Regel: Dieses Dokument erklärt, welches Dokument für welchen Zweck maßgeblich ist. Fachlich-technisch verbindlich bleibt der Final Source of Truth.
 
 ---
@@ -32,7 +32,7 @@ Das wichtigste Dokument des Gesamtpakets ist:
 
 ### `00_FINAL_SOURCE_OF_TRUTH.md`
 
-Dieses Dokument ist die **einzige verbindliche fachlich-technische Zielquelle** für die neue Landesverein-Karriereplattform.
+Dieses Dokument ist die **einzige verbindliche fachlich-technische Zielquelle** für die neue Enterprise-Karriereplattform.
 
 Wenn andere Dokumente davon abweichen, gilt immer:
 - `00_FINAL_SOURCE_OF_TRUTH.md` hat Vorrang.

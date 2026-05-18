@@ -14,7 +14,7 @@
   - Privacy / Compliance Reviewer
   - QA Lead
   - Central HR Career Department
-- Gültigkeit: Landesverein-spezifisch, benchmark-frei, finaler Wave-1-Release-Track
+- Gültigkeit: Enterprise-spezifisch, benchmark-frei, finaler Wave-1-Release-Track
 - Regel: Wenn dieses Arbeitspaket dem Final Source of Truth widerspricht, gilt immer der Final Source of Truth
 
 ---
@@ -50,7 +50,7 @@ zu
 
 abgeschlossen werden.
 
-Das ist im Landesverein-Kontext besonders wichtig, weil die aktuelle Karrierepräsenz bereits öffentlich sichtbare Kernbereiche enthält, die in Wave 1 nicht nur technisch existieren, sondern auch inhaltlich sauber und konsistent bereitstehen müssen:
+Das ist im Enterprise-Kontext besonders wichtig, weil die aktuelle Karrierepräsenz bereits öffentlich sichtbare Kernbereiche enthält, die in Wave 1 nicht nur technisch existieren, sondern auch inhaltlich sauber und konsistent bereitstehen müssen:
 - Arbeitgeberbereich,
 - Beruf und Karriere,
 - Stellenangebote,
@@ -288,7 +288,7 @@ Führe die finale Accessibility-Baseline-Prüfung auf allen öffentlichen Wave-1
 - semantic headings
 - meaningful links/CTAs
 
-Die aktuelle Landesverein-Plattform weist bereits sichtbar auf Barrierefreiheit hin; daher ist eine klare Accessibility-Basis für Wave 1 notwendig. 
+Die aktuelle Enterprise-Plattform weist bereits sichtbar auf Barrierefreiheit hin; daher ist eine klare Accessibility-Basis für Wave 1 notwendig. 
 
 ### Output
 - accessibility pass/fail summary

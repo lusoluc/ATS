@@ -1,4 +1,4 @@
-# Landesverein Karriereplattform - Installations- und Support-Handbuch
+# Enterprise Karriereplattform - Installations- und Support-Handbuch
 
 Dieses Dokument richtet sich an Administratoren, HR-Mitarbeiter und den IT-Support. Es beschreibt die einfache und sichere Installation der Plattform sowie Schritte zur Fehlerbehebung.
 
@@ -59,7 +59,7 @@ Um die Plattform sicher im Internet (Live-Betrieb) zur Verfügung zu stellen, m�
 1. **Sichere Umgebungsvariablen:** Die kryptografischen Schlüssel (z.B. `JWT_SECRET`) in der `.env` Datei müssen durch starke, zufällige Passwörter ersetzt werden.
 2. **Server-Absicherung (Reverse Proxy):** Die Node.js Applikation darf niemals direkt ans Internet gehängt werden. Es muss ein sogenannter "Reverse Proxy" (Nginx oder IIS) davor geschaltet werden, der als sicherer Türsteher fungiert.
 3. **SSL/HTTPS Verschlüsselung:** Der Reverse Proxy muss mit einem gültigen SSL-Zertifikat (z.B. Let's Encrypt) ausgestattet werden, damit alle Bewerberdaten abhörsicher übertragen werden.
-4. **Domain Integration:** In den DNS-Einstellungen Ihrer Domain (z.B. `karriere.landesverein.de`) muss ein A-Record auf die IP-Adresse des Servers zeigen.
+4. **Domain Integration:** In den DNS-Einstellungen Ihrer Domain (z.B. `karriere.Enterprise.de`) muss ein A-Record auf die IP-Adresse des Servers zeigen.
 5. **E-Mail Service anbinden:** Damit automatische E-Mails (Bewerbungseingang, Passwort vergessen) versendet werden können, müssen die SMTP-Daten Ihres Mailservers (Host, Port, User, Passwort) in die `.env` Datei eingetragen werden.
 
 **Die genauen technischen Schritte, Befehle und Checklisten für diese Produktions-Einrichtung (Sicherheit, Domain, Mail) finden Sie im beiliegenden `00_Developer_Installation_1x1.md` Handbuch ab Kapitel 6.**

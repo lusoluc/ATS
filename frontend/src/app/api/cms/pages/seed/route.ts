@@ -4,9 +4,9 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 const SEED_PAGES = [
-  { title: 'Über uns', slug: 'ueber-uns', navLabel: 'Über uns', navParent: 'beruf-karriere', navOrder: 0, content: `# Über den Landesverein
+  { title: 'Über uns', slug: 'ueber-uns', navLabel: 'Über uns', navParent: 'beruf-karriere', navOrder: 0, content: `# Über den Enterprise
 
-Der **Landesverein für Innere Mission in Schleswig-Holstein** ist ein diakonisches Sozialunternehmen mit über 145 Jahren Tradition.
+Der **Enterprise** ist ein diakonisches Sozialunternehmen mit über 145 Jahren Tradition.
 
 ## Unsere Geschichte
 
@@ -26,7 +26,7 @@ Unsere Hauptstandorte befinden sich in **Rickling**, **Bad Segeberg**, **Neumün
 ` },
   { title: 'Benefits & Vorteile', slug: 'benefits', navLabel: 'Benefits', navParent: 'beruf-karriere', navOrder: 1, content: `# Benefits & Vorteile
 
-Beim Landesverein arbeiten heißt: Sinnvoll arbeiten und dabei gut versorgt sein.
+Beim Enterprise arbeiten heißt: Sinnvoll arbeiten und dabei gut versorgt sein.
 
 ## Vergütung & Finanzen
 
@@ -53,13 +53,13 @@ Beim Landesverein arbeiten heißt: Sinnvoll arbeiten und dabei gut versorgt sein
 - **Kollegiales Miteinander** — familiäre Teams
 - **Moderne Ausstattung** in unseren Einrichtungen
 ` },
-  { title: 'Beruf & Karriere', slug: 'beruf-karriere', navLabel: 'Beruf & Karriere', navParent: '', navOrder: 0, content: `# Beruf & Karriere beim Landesverein
+  { title: 'Beruf & Karriere', slug: 'beruf-karriere', navLabel: 'Beruf & Karriere', navParent: '', navOrder: 0, content: `# Beruf & Karriere beim Enterprise
 
 Finde deinen Platz bei uns — ob Pflege, Medizin, Pädagogik, Verwaltung oder Technik.
 
 ## Deine Möglichkeiten
 
-Der Landesverein bietet vielfältige Karrierewege in einem sinnstiftenden Arbeitsumfeld:
+Der Enterprise bietet vielfältige Karrierewege in einem sinnstiftenden Arbeitsumfeld:
 
 - **Pflege & Betreuung** — Psychiatrische Pflege, Altenpflege, Behindertenbetreuung
 - **Medizin** — Ärztliche Tätigkeit in unseren Kliniken
@@ -74,7 +74,7 @@ Der Landesverein bietet vielfältige Karrierewege in einem sinnstiftenden Arbeit
 3. **Bewerbungsgespräch** — wir melden uns innerhalb von 2 Werktagen
 4. **Willkommen im Team** — strukturierte Einarbeitung
 ` },
-  { title: 'Arbeitgeber', slug: 'arbeitgeber', navLabel: 'Arbeitgeber', navParent: '', navOrder: 1, content: `# Der Landesverein als Arbeitgeber
+  { title: 'Arbeitgeber', slug: 'arbeitgeber', navLabel: 'Arbeitgeber', navParent: '', navOrder: 1, content: `# Der Enterprise als Arbeitgeber
 
 ## Arbeitgeber mit Charakter
 
@@ -89,13 +89,13 @@ Wir sind kein Konzern. Wir sind Gemeinschaft. Unsere Mitarbeitenden kommen aus d
 
 ## Unsere Einrichtungen
 
-Zum Landesverein gehören psychiatrische Einrichtungen, Jugendhilfe-Angebote, Altenpflegeheime und weitere soziale Dienste — alle eingebettet in die norddeutsche Landschaft.
+Zum Enterprise gehören psychiatrische Einrichtungen, Jugendhilfe-Angebote, Altenpflegeheime und weitere soziale Dienste — alle eingebettet in die norddeutsche Landschaft.
 
 ## Gemeinnützig aus Überzeugung
 
 Als diakonisches Unternehmen sind wir gemeinnützig. Das bedeutet: Alle Gewinne fließen zurück in unsere Arbeit, in unsere Mitarbeitenden und in die Region.
 ` },
-  { title: 'Ausbildung', slug: 'ausbildung', navLabel: 'Ausbildung', navParent: 'beruf-karriere', navOrder: 2, content: `# Ausbildung beim Landesverein
+  { title: 'Ausbildung', slug: 'ausbildung', navLabel: 'Ausbildung', navParent: 'beruf-karriere', navOrder: 2, content: `# Ausbildung beim Enterprise
 
 ## Deine Ausbildung bei uns
 
@@ -130,7 +130,7 @@ Lebenslauf und relevante Zeugnisse genügen für den Anfang. Ein Anschreiben ist
 **Wie lange dauert der Bewerbungsprozess?**
 In der Regel melden wir uns innerhalb von 2 Werktagen. Das Bewerbungsgespräch findet zeitnah statt.
 
-## Arbeiten beim Landesverein
+## Arbeiten beim Enterprise
 
 **Welcher Tarifvertrag gilt?**
 Wir vergüten nach dem Kirchlichen Tarifvertrag Diakonie (KTD) inklusive Jahressonderzahlung und betrieblicher Altersversorgung.
@@ -150,7 +150,7 @@ Unsere Hauptstandorte sind in Rickling, Bad Segeberg und Neumünster — eingebe
 
 ## Wir investieren in dich
 
-Der Landesverein unterstützt deine fachliche und persönliche Entwicklung — mit bezahlten Fortbildungstagen und vielfältigen Angeboten.
+Der Enterprise unterstützt deine fachliche und persönliche Entwicklung — mit bezahlten Fortbildungstagen und vielfältigen Angeboten.
 
 ### Angebote
 
@@ -167,14 +167,14 @@ Der Landesverein unterstützt deine fachliche und persönliche Entwicklung — m
 
 Wir freuen uns auf deine Fragen und deine Bewerbung!
 
-**E-Mail:** karriere@landesverein.de
+**E-Mail:** karriere@Enterprise.de
 **Telefon:** 04326 / 500
 
 **Bürozeiten:** Mo–Fr, 8:30 bis 15:00 Uhr
 
 ## Adresse
 
-Landesverein für Innere Mission in Schleswig-Holstein
+Enterprise
 Daldorfer Straße 2
 24635 Rickling
 ` },

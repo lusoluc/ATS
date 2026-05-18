@@ -1,4 +1,4 @@
-# AI-DEV Guidelines: Landesverein Karriereplattform
+# AI-DEV Guidelines: Enterprise Karriereplattform
 
 **ATTENTION ALL FUTURE AI AGENTS / LLMs**: 
 Before making any changes to this codebase, you MUST read and understand these architectural and security guidelines. Failure to do so may result in critical security vulnerabilities or broken business logic.

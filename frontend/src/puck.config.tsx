@@ -256,7 +256,7 @@ export const config: Config<Props> = {
         }
       },
       defaultProps: {
-        logoText: 'Landesverein',
+        logoText: 'Enterprise',
         links: [{ label: 'Stellenangebote', url: '/jobs' }, { label: 'Arbeitgeber', url: '/arbeitgeber' }]
       },
       render: ({ logoText, links }) => (
@@ -280,7 +280,7 @@ export const config: Config<Props> = {
         }
       },
       defaultProps: {
-        copyright: '© 2026 Landesverein Karriere',
+        copyright: '© 2026 Enterprise Karriere',
         columns: [
           { title: 'Rechtliches', links: [{ label: 'Impressum', url: '/info/impressum' }] }
         ]
@@ -349,7 +349,7 @@ export const config: Config<Props> = {
       defaultProps: {
         name: 'Dr. Maria Muster',
         role: 'Chefärztin',
-        email: 'bewerbung@landesverein.de',
+        email: 'bewerbung@Enterprise.de',
         phone: '+49 123 456789',
         showPhone: 'true' as any,
         avatarUrl: 'https://via.placeholder.com/150'

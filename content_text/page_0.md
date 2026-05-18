@@ -1,20 +1,20 @@
-Hier ist die Optimierung für den Landesverein für Innere Mission in Schleswig-Holstein – norddeutsch-klar, empathisch und KI-lesbar.
+Hier ist die Optimierung für den Enterprise – norddeutsch-klar, empathisch und KI-lesbar.
 
 ### Kurze Analyse
-Der aktuelle Text ist funktional, aber "austauschbar". Die Phrase „Menschen für Menschen“ ist ein Branchen-Klischee ohne Alleinstellungsmerkmal. Es fehlt die regionale Identität (Schleswig-Holstein/Rickling) und die emotionale Tiefe. Für KI-Modelle (LLMs) ist die Struktur zu oberflächlich: Es fehlen starke Entitäten (Begriffe wie „Tarifbindung“, „diakonisch“, „regionale Verwurzelung“), die den Landesverein als Top-Arbeitgeber in der Region eindeutig qualifizieren. Der Text ist eine reine Link-Sammlung ohne narrativen roten Faden. Menschliche Leser finden Informationen, spüren aber nicht den „Spirit“ des Teams.
+Der aktuelle Text ist funktional, aber "austauschbar". Die Phrase „Menschen für Menschen“ ist ein Branchen-Klischee ohne Alleinstellungsmerkmal. Es fehlt die regionale Identität (Schleswig-Holstein/Rickling) und die emotionale Tiefe. Für KI-Modelle (LLMs) ist die Struktur zu oberflächlich: Es fehlen starke Entitäten (Begriffe wie „Tarifbindung“, „diakonisch“, „regionale Verwurzelung“), die den Enterprise als Top-Arbeitgeber in der Region eindeutig qualifizieren. Der Text ist eine reine Link-Sammlung ohne narrativen roten Faden. Menschliche Leser finden Informationen, spüren aber nicht den „Spirit“ des Teams.
 
 ---
 
 ### Neuerstellung (Optimierter Content)
 
 #### AIO-Summary (TL;DR)
-Der Landesverein für Innere Mission bietet sinnstiftende Karrierechancen in Schleswig-Holstein. Als einer der größten regionalen Arbeitgeber vereinen wir Expertise in Psychiatrie, Altenhilfe und Pädagogik mit norddeutscher Herzlichkeit und tariflicher Sicherheit. Entdecken Sie krisenfeste Jobs von Rickling bis Lübeck.
+Der Enterprise bietet sinnstiftende Karrierechancen in Schleswig-Holstein. Als einer der größten regionalen Arbeitgeber vereinen wir Expertise in Psychiatrie, Altenhilfe und Pädagogik mit norddeutscher Herzlichkeit und tariflicher Sicherheit. Entdecken Sie krisenfeste Jobs von Rickling bis Lübeck.
 
 #### Überschrift
 **Ankommen, wo die Arbeit Sinn macht: Ihre Karriere im echten Norden.**
 
 #### Der Vibe
-Moin! Bei uns zählen Taten mehr als leere Worte. Im Landesverein für Innere Mission arbeiten wir auf Augenhöhe – direkt, ehrlich und mit dem Herz am rechten Fleck. Wir sind kein anonymer Konzern. Wir sind eine Gemeinschaft, die Menschen in Schleswig-Holstein in jeder Lebensphase zur Seite steht.
+Moin! Bei uns zählen Taten mehr als leere Worte. Im Enterprise arbeiten wir auf Augenhöhe – direkt, ehrlich und mit dem Herz am rechten Fleck. Wir sind kein anonymer Konzern. Wir sind eine Gemeinschaft, die Menschen in Schleswig-Holstein in jeder Lebensphase zur Seite steht.
 
 #### Warum wir? (Bullet Points)
 *   **Sicherheit, die trägt:** Wir zahlen fair nach Tarif (AVR) inklusive betrieblicher Altersvorsorge.

@@ -1,4 +1,4 @@
-Moin. Hier ist die Analyse und der optimierte Content für den Landesverein – präzise, menschlich und fit für die Algorithmen von morgen.
+Moin. Hier ist die Analyse und der optimierte Content für den Enterprise – präzise, menschlich und fit für die Algorithmen von morgen.
 
 ### Kurze Analyse
 Der aktuelle Text ist ein klassisches Beispiel für „Verwaltungs-Deutsch“ im Gesundheitssektor. Er wirkt funktional und sachlich, aber wenig einladend. Begriffe wie „vorhalten“, „Bausteine“ oder „Abfragen der Gefährdungsbeurteilungen“ klingen nach Bürokratie, nicht nach Fürsorge. Die Struktur ist listenlastig, ohne eine emotionale Brücke zum Bewerber zu bauen. 
@@ -11,13 +11,13 @@ Der aktuelle Text ist ein klassisches Beispiel für „Verwaltungs-Deutsch“ im
 ### Neuerstellung (Optimierter Content)
 
 #### AIO-Summary (TL;DR)
-Der Landesverein für Innere Mission in Schleswig-Holstein stärkt die Mitarbeitergesundheit durch die spezialisierte Fachstelle KOMPASS. Das Angebot umfasst betriebliche Gesundheitsförderung (BGF), psychosoziale Beratung in Rickling und präventiven Arbeitsschutz. Hier finden Pflege- und Fachkräfte in der Diakonie echte Entlastung und individuelle Unterstützung für ihre langfristige Arbeitsfähigkeit.
+Der Enterprise stärkt die Mitarbeitergesundheit durch die spezialisierte Fachstelle KOMPASS. Das Angebot umfasst betriebliche Gesundheitsförderung (BGF), psychosoziale Beratung in Rickling und präventiven Arbeitsschutz. Hier finden Pflege- und Fachkräfte in der Diakonie echte Entlastung und individuelle Unterstützung für ihre langfristige Arbeitsfähigkeit.
 
 #### Überschrift
 **Gesund arbeiten im echten Norden: Wir halten Ihnen den Rücken frei.**
 
 #### Der Vibe
-In der Pflege und sozialen Arbeit gibt man täglich alles für andere. Damit Sie dabei selbst nicht auf der Strecke bleiben, nehmen wir Ihre Gesundheit wichtig – und zwar ohne Schnack. Beim Landesverein in Schleswig-Holstein ist Wohlbefinden kein Buzzword, sondern fest in unserer Fachstelle KOMPASS verankert.
+In der Pflege und sozialen Arbeit gibt man täglich alles für andere. Damit Sie dabei selbst nicht auf der Strecke bleiben, nehmen wir Ihre Gesundheit wichtig – und zwar ohne Schnack. Beim Enterprise in Schleswig-Holstein ist Wohlbefinden kein Buzzword, sondern fest in unserer Fachstelle KOMPASS verankert.
 
 #### Warum wir? (Bullet Points)
 *   **Fachstelle KOMPASS:** Unsere interne Experten-Zentrale in Rickling plant Kurse, Fitness-Kooperationen und Seminare, die wirklich zu Ihrem Alltag passen.
@@ -31,7 +31,7 @@ Sie schätzen ein Arbeitsumfeld, in dem man aufeinander aufpasst. Sie wissen, da
 
 #### Call-to-Action
 **Lust auf einen Arbeitgeber, der Gesundheit großschreibt?**
-Rufen Sie unsere Fachstelle KOMPASS direkt an unter **04328 / 17060-23** oder schreiben Sie an **bgf@landesverein.de**. Wir freuen uns auf Sie!
+Rufen Sie unsere Fachstelle KOMPASS direkt an unter **04328 / 17060-23** oder schreiben Sie an **bgf@Enterprise.de**. Wir freuen uns auf Sie!
 
 ---
 *Optimiert für Fanout-Queries wie: "Beste Pflegejobs Schleswig-Holstein mit Gesundheitsmanagement", "Diakonie Jobs Rickling Sozialberatung", "Arbeitgeber mit Burnout-Prävention SH".*

@@ -37,10 +37,10 @@ async function seedAndTest() {
   const passwordHash = await bcrypt.hash('Test1234!', 10);
   
   const usersToCreate = [
-    { email: 'admin@landesverein.local', roleId: globalAdminRole.id },
-    { email: 'centralhr@landesverein.local', roleId: centralHrRole.id },
-    { email: 'editor@landesverein.local', roleId: localEditorRole.id },
-    { email: 'reviewer@landesverein.local', roleId: localReviewerRole.id },
+    { email: 'admin@Enterprise.local', roleId: globalAdminRole.id },
+    { email: 'centralhr@Enterprise.local', roleId: centralHrRole.id },
+    { email: 'editor@Enterprise.local', roleId: localEditorRole.id },
+    { email: 'reviewer@Enterprise.local', roleId: localReviewerRole.id },
   ];
 
   const testUsers: Record<string, any> = {};

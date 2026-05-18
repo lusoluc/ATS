@@ -8,7 +8,7 @@ Diese Checkliste führt Sie methodisch durch die Erst-Einrichtung Ihres Systems.
 ## Phase 1: Stammdaten & Basis-Architektur definieren
 In dieser Phase bauen Sie das Fundament Ihres Unternehmens auf der Plattform ab.
 
-- [ ] **Organisationen anlegen:** Legen Sie die juristischen Personen oder Dachverbände an (z.B. "Landesverein für Innere Mission").
+- [ ] **Organisationen anlegen:** Legen Sie die juristischen Personen oder Dachverbände an (z.B. "Enterprise").
 - [ ] **Standorte & Regionen erstellen:** Tragen Sie Städte / Adressen ein, an denen Sie rekrutieren. Diese dienen Bewerbern als Filter.
 - [ ] **Einrichtungen (Facilities) definieren:** Fügen Sie Ihre spezifischen Kliniken, Heime oder Beratungsstellen hinzu und weisen Sie diese einem Standort zu (inkl. Kurztext und Foto für die Landing-Page).
 - [ ] **Job-Familien / Kategorien festlegen:** Erstellen Sie die Haupt-Rubriken für Stellenangebote (z.B. "Pflege", "Medizin", "Verwaltung", "Hauswirtschaft").

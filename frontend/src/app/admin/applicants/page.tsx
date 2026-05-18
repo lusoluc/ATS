@@ -49,7 +49,7 @@ export default async function ApplicantListPage() {
               </tr>
             </thead>
             <tbody>
-              {applications.map((app) => {
+              {applications.map((app: any) => {
                 const colors = getStatusColor(app.status);
                 return (
                   <tr key={app.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.2s' }}>

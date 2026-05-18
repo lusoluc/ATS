@@ -47,7 +47,7 @@ export default async function AdminCalendarPage() {
             
             {interviews.length > 0 ? (
               <div style={{ display: 'grid', gap: '1rem' }}>
-                {interviews.map(inv => (
+                {interviews.map((inv: any) => (
                   <div key={inv.id} style={{ padding: '1.5rem', border: '1px solid #bbf7d0', backgroundColor: '#f0fdf4', borderRadius: '8px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                       <strong style={{ fontSize: '1.1rem', color: '#166534' }}>
@@ -75,7 +75,7 @@ export default async function AdminCalendarPage() {
             
             {openSlots.length > 0 ? (
               <div style={{ display: 'grid', gap: '1rem' }}>
-                {openSlots.map(slot => (
+                {openSlots.map((slot: any) => (
                   <div key={slot.id} style={{ padding: '1rem', border: '1px dashed #fcd34d', backgroundColor: '#fffbeb', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                       <strong style={{ display: 'block', color: '#b45309' }}>

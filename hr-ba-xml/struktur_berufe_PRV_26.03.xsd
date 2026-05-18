@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Mit XMLSpy v2007 sp1 bearbeitet (http://www.altova.com) von BA-IT-Systemhaus (BA-IT-Systemhaus) -->
+<!-- Mit XMLSpy v2009 (http://www.altova.com) von Martin Wenig (Bundesagentur fuer Arbeit) bearbeitet -->
+<!-- edited with XML Spy v4.4 U (http://www.xmlspy.com) by Accenture (Accenture) -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:complexType name="qualifikationsNiveau-typ">
+		<xs:attribute name="niveau" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:enumeration value="1"/>
+					<xs:enumeration value="2"/>
+					<xs:enumeration value="3"/>
+					<xs:enumeration value="4"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:element name="berufeliste">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="beruf" maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>Beinhaltet die Kurzbezeichnung des Berufes  +++ ueber das Attribut wird die zugehoerige "ID" referenziert, welche an den VAM zur eindeutigen Zuordnung uebergeben werden muss</xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="typ">
+								<xs:annotation>
+									<xs:documentation>Enthaelt die Angabe ob Ausbildungsbezeichung ("a") oder Berufsbezeichnung ("t") +++ Diese Angabe muss mit dem HR-BA-XML Kriterieum JPP/JobPositionInformation/JobOfferType bzw. JPS/Profile/DesiredTypeOfJobPosition/OfferType korrespondieren</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element name="lbkgruppe" minOccurs="0" maxOccurs="unbounded"/>
+							<xs:element name="qualifikationsNiveaus">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="qualifikationsNiveau" type="qualifikationsNiveau-typ" minOccurs="0" maxOccurs="unbounded"/>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="hochschulberuf" minOccurs="0" maxOccurs="1">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:enumeration value="ja"/>
+										<xs:enumeration value="nein"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="ebene">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:enumeration value="-"/>
+										<xs:enumeration value="1"/>
+										<xs:enumeration value="2"/>
+										<xs:enumeration value="3"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="zustand">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:enumeration value="E"/>
+										<xs:enumeration value="M"/>
+										<xs:enumeration value="L"/>
+										<xs:enumeration value="R"/>
+										<xs:enumeration value="A"/>
+										<xs:enumeration value="S"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="kuenstler">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:enumeration value="ja"/>
+										<xs:enumeration value="nein"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="bezeichnung">
+								<xs:annotation>
+									<xs:documentation>Enthaelt die detaillierten Bezeichnungen fuer den jeweilgen Beruf</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="bezeichnung_nl">
+											<xs:annotation>
+												<xs:documentation>Neutrale Form - lang</xs:documentation>
+											</xs:annotation>
+										</xs:element>
+										<xs:element name="bezeichnung_nk">
+											<xs:annotation>
+												<xs:documentation>Neutrale Form - kurz</xs:documentation>
+											</xs:annotation>
+										</xs:element>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="suchname_nl">
+								<xs:annotation>
+									<xs:documentation>Enthaelt den aufbereiteten Suchname fuer dieses Beruf</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element name="suchwort" minOccurs="0" maxOccurs="unbounded">
+								<xs:annotation>
+									<xs:documentation>Enthaelt die fuer den jeweiligen Beruf referenzierten Suchworte</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="suchwortgruppe"/>
+										<xs:element name="suchwort_normale_schreibweise"/>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+						<xs:attribute name="id" use="required"/>
+						<xs:attribute name="bkz" use="required"/>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

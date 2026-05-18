@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Bundesagentur fuer Arbeit - Typdefinitionen fuer den HRBAXML Im- und Export-->
+<!-- Version: 1.3 / VerBIS PRV 26.03 -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	elementFormDefault="qualified" attributeFormDefault="unqualified">
+
+	<xs:complexType name="HeaderType">
+		<xs:sequence>
+			<xs:element name="SupplierId">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Ihre ID - diese wird Ihnen
+						nach
+						Abschluss der Kooperationsvereinbarung mitgeteilt.
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:minLength value="1" />
+						<xs:maxLength value="10" />
+						<xs:pattern value="[A|P|V|K][0-9]{9}" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="Timestamp" type="xs:dateTime">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Zeitpunkt der
+						Dateierstellung
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Amount" type="xs:integer">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Anzahl der in der Datei
+						enthaltenen Datensaetze
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="TypeOfLoad">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Art der Lieferung +++
+						ATTRIBUTE: vollstaendig (F), nur Aenderungen seit letzter
+						Lieferung (D)
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="F" />
+						<xs:enumeration value="D" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="PdfPreviewOnly" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Schaltet Vorschaumodus ein. 
+						Es wird nur ein PDF mit dem SteA generiert, ohne es in der DB zu speichern 
+						+++
+						ATTRIBUTE: ja(1), nein(0)
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:integer">
+						<xs:minInclusive value="0" />
+						<xs:maxInclusive value="1" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>	
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="AddressType">
+		<xs:sequence>
+			<xs:element name="CountryCode">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Land +++ ATTRIBUTE: ISO 3166-1,
+						alpha-2 Klassifizierung, ggf. 'XX' für 'unbekannt' oder 'von/nach See
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:minLength value="1" />
+						<xs:maxLength value="2" />
+						<xs:pattern value="[a-zA-Z][a-zA-Z]" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="PostalCode" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Postleitzahl</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:minLength value="0" />
+						<xs:maxLength value="15" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="Region">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Bundesland +++ ATTRIBUTE: zu
+						entnehmen aus der Datei Regionen-VAM-Code die im Outverzeichnis
+						der Software Connect:Direct des jeweiligen Kooperationspartners
+						zur Verfuegung gestellt wird. Falls dort nicht enthalten:
+						Sonstiges (17)
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:union>
+						<xs:simpleType>
+							<xs:restriction base="xs:integer">
+								<xs:minInclusive value="1" />
+								<xs:maxInclusive value="128" />
+							</xs:restriction>
+						</xs:simpleType>
+						<xs:simpleType>
+							<xs:restriction base="xs:integer">
+								<xs:minInclusive value="144" />
+								<xs:maxInclusive value="303" />
+							</xs:restriction>
+						</xs:simpleType>
+					</xs:union>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="Municipality" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Ort</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:minLength value="0" />
+						<xs:maxLength value="36" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="District" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Ortsteil</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:minLength value="0" />
+						<xs:maxLength value="40" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="AddressLine" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Zusaetzliche Adressangaben
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:minLength value="0" />
+						<xs:maxLength value="30" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="StreetName" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Strasse
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:minLength value="0" />
+						<xs:maxLength value="30" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="StreetNumber" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Hausnummer
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:minLength value="0" />
+						<xs:maxLength value="9" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="PostOfficeBox" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Postfach</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:minLength value="0" />
+						<xs:maxLength value="30" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="TelecommuncationType">
+		<xs:sequence>
+			<xs:element name="IntlCode">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Internationale Laendervorwahl
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:minLength value="1" />
+						<xs:maxLength value="6" />
+						<xs:pattern value="(\+[0-9]+)|(00[0-9]+)" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="AreaCode">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Netzvorwahl</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:integer">
+						<xs:maxInclusive value="99999999999999" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="TelNumber">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Rufnummer</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:minLength value="1" />
+						<xs:maxLength value="23" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+		</xs:sequence>
+
+	</xs:complexType>
+
+	<xs:complexType name="DeleteEntryType">
+		<xs:sequence>
+			<xs:element name="EntryId">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Hier hinterlegen sie die von
+						Ihnen beim Import festgelegte eindeutige ID
+						des zu löschenden
+						Datensatzes.
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:minLength value="1" />
+						<xs:maxLength value="27" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>

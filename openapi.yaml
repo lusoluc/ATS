@@ -1,0 +1,129 @@
+openapi: 3.0.3
+info:
+  title: Landesverein Karriereplattform API
+  description: API Contracts (Wave 1) - Public, Governance, Recruiting, Sensitive
+  version: 1.0.0
+servers:
+  - url: https://api.karriere.landesverein.de/v1
+    description: Production Server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    PublicJob:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        facilityName:
+          type: string
+        locationName:
+          type: string
+        jobFamilyName:
+          type: string
+      required: [id, title, facilityName, locationName, jobFamilyName]
+
+    ApplicationSubmission:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        jobPostingId:
+          type: string
+          format: uuid
+        privacy_notice_version_id:
+          type: string
+          format: uuid
+      required: [firstName, lastName, email, privacy_notice_version_id]
+
+paths:
+  /public/jobs:
+    get:
+      summary: Get published jobs
+      tags: [Public API]
+      responses:
+        '200':
+          description: List of published jobs (No internal fields)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PublicJob'
+
+  /public/applications:
+    post:
+      summary: Submit a new application
+      tags: [Public API]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplicationSubmission'
+      responses:
+        '201':
+          description: Created
+        '400':
+          description: Bad Request (e.g. missing privacy_notice_version_id)
+
+  /admin/jobs/{id}/approve:
+    post:
+      summary: Approve a job (Central HR)
+      tags: [Internal Governance API]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Approved
+        '403':
+          description: Forbidden (RBAC violation)
+
+  /recruiting/jobs:
+    post:
+      summary: Create a job draft (Local Editor)
+      tags: [Internal Recruiting API]
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Draft Created
+
+  /recruiting/applications/{id}:
+    get:
+      summary: Get sensitive applicant data
+      tags: [Sensitive Applicant API]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Applicant Data
+        '404':
+          description: Not Found / BOLA Guard (No ApplicantAccessAssignment)

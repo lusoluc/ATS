@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:complexType name="studienfeld-type">
+		<xs:sequence>
+			<xs:element name="beruf" type="beruf-type" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attributeGroup ref="studienfeldAttributes"/>
+	</xs:complexType>
+	<xs:complexType name="beruf-type">
+		<xs:attributeGroup ref="berufAttributes"/>
+	</xs:complexType>
+	<xs:attributeGroup name="studienfeldAttributes">
+		<xs:attribute name="id" type="xs:integer" use="required"/>
+		<xs:attribute name="schluessel" type="xs:string" use="required"/>
+		<xs:attribute name="bezeichnung" type="xs:string" use="required"/>
+	</xs:attributeGroup>
+	<xs:attributeGroup name="berufAttributes">
+		<xs:attribute name="idref" use="required"/>
+	</xs:attributeGroup>
+	<xs:element name="studienfelder">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="studienfeld" type="studienfeld-type" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

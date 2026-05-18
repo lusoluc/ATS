@@ -1,0 +1,2979 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Bundesagentur fuer Arbeit - Schema für den Im- und Export von Stellenangeboten 
+	ueber HRBAXML -->
+<!-- Version: 1.15 / Verbis PRV 26.03 -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:include schemaLocation="HRBAXML.xsd" />
+	<xs:element name="HRBAXMLJobPositionPosting">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="Header" type="HeaderType" />
+				<xs:element name="Data">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="JobPositionPosting" type="JobPositionPostingType"
+								minOccurs="0" maxOccurs="unbounded" />
+							<xs:element name="DeleteEntry" type="DeleteEntryType"
+								minOccurs="0" maxOccurs="unbounded" />
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:complexType name="JobPositionPostingType">
+		<xs:sequence>
+			<xs:element name="JobPositionPostingId">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Hier vergeben Sie fuer den
+						jeweiligen Datensatz eine eindeutige ID. Es wird eine fortlaufende
+						Nummerierung empfohlen, zusaetzlich sollte die Jahreszahl
+						ersichtlich sein. Fuer Aktualisierung / Loeschung wird diese ID
+						wieder benoetigt.
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:minLength value="1" />
+						<xs:maxLength value="27" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="Boxnumber" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Hier können Sie eine
+						Chiffrenummer zur zusätzlichen Kennzeichnung ihres
+						Stellenangebotes angeben. Diese wird von Ihnen manuell vergeben
+						und kann beliebige Zeichen enthalten. Sie dient zum einfacheren
+						Auffinden des Stellenangebotes, z.B bei der Kommunikation mit
+						Mitarbeitern der Bundesagentur für Arbeit.
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:minLength value="1" />
+						<xs:maxLength value="30" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="HiringOrg">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Angaben zum Arbeitgeber
+					</xs:documentation>
+				</xs:annotation>
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="HiringOrgName">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Name des Arbeitgebers
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:minLength value="1" />
+									<xs:maxLength value="90" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="HiringOrgId" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Es handelt sich um ein
+									wichtiges Pflichtfeld fuer Arbeitgeber und wird mit der
+									Kundennummer des Arbeitgebers bzw. der
+									Arbeitgeber-Niederlassung befuellt. Durch diese Angabe steuert
+									der Arbeitgeber die Verteilung
+									der Stellenangebote auf einen
+									oder mehrere Datensätze – zu
+									bedenken sind
+									AG-Darstellung und
+									Nutzung des AG-Accounts. Die Kundennummer bzw.
+									Kundennummern
+									werden Ihnen auf Anfrage vom Account- und
+									Allianzmanagement der
+									BA mitgeteilt. E-Mail-Adresse:
+									Zentrale.Vam-AccountMgmt@arbeitsagentur.de
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:minLength value="10" />
+									<xs:maxLength value="10" />
+									<xs:pattern
+										value="[ABCEFGHJKLMNPQRSTUVWXYZ]{1}[0-9]{3}[ABCDEFGHJKLMNPQRSTUVWXY]{1}[0-9]{5}" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="ProfileWebSite" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Internetpraesenz des
+									Unternehmens.
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:minLength value="0" />
+									<xs:maxLength value="254" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="HiringOrgSize" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Unternehmensgroesse +++
+									ATTRIBUTE: weniger als 6(1) , zwischen 6 und 50(2) , zwischen
+									51 und 500(3) , zwischen 501 und 5000(4) , zwischen 5001 und
+									50000(5) , mehr als 50000(6)
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:integer">
+									<xs:minInclusive value="1" />
+									<xs:maxInclusive value="6" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="Industry" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Angaben zur Branche
+								</xs:documentation>
+							</xs:annotation>
+							<xs:complexType>
+								<xs:sequence>
+									<xs:element name="NAICS" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Branche des Arbeitgebers
+												+++ ATTRIBUTE: Moegliche Werte sind dem zu Grunde liegenden
+												Katalog zu entnehmen (WZ2025) der im Outverzeichnis des
+												WebTool dem jeweiligen Kooperationspartners
+												zur Verfuegung
+												gestellt wird
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:string">
+												<xs:pattern value="(([0-9]{1,2}\.{1})*[0-9]{1,2}|[A-Z]{1})" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+								</xs:sequence>
+							</xs:complexType>
+						</xs:element>
+						<xs:element name="Contact">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Kontaktdaten des
+									Arbeitgebers
+								</xs:documentation>
+							</xs:annotation>
+							<xs:complexType>
+								<xs:sequence>
+									<xs:element name="Salutation">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Anrede +++ ATTRIBUTE:
+												Herr(1) , Frau(2), Herr/Frau(3)
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:integer">
+												<xs:minInclusive value="1" />
+												<xs:maxInclusive value="3" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="Title" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Titel</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:string">
+												<xs:minLength value="0" />
+												<xs:maxLength value="15" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="GivenName" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Vorname
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:string">
+												<xs:minLength value="0" />
+												<xs:maxLength value="30" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="NamePrefix" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Vorsatzwort
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:string">
+												<xs:minLength value="0" />
+												<xs:maxLength value="30" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="FamilyName">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Familienname
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:string">
+												<xs:minLength value="1" />
+												<xs:maxLength value="30" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="PositionTitle" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Angaben zur Position im
+												Unternehmen
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:string">
+												<xs:minLength value="0" />
+												<xs:maxLength value="40" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="PostalAddress" type="AddressType"
+										minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Adresse des Arbeitgebers
+											</xs:documentation>
+										</xs:annotation>
+									</xs:element>
+									<xs:element name="VoiceNumber" type="TelecommuncationType"
+										minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Telefonnummer
+											</xs:documentation>
+										</xs:annotation>
+									</xs:element>
+									<xs:element name="MobilNumber" type="TelecommuncationType"
+										minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Mobilnummer
+											</xs:documentation>
+										</xs:annotation>
+									</xs:element>
+									<xs:element name="FaxNumber" type="TelecommuncationType"
+										minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Faxnummer
+											</xs:documentation>
+										</xs:annotation>
+									</xs:element>
+									<xs:element name="EMail" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: E-Mail Adresse fuer
+												Kontakt
+												mit
+												dem Arbeitgeber
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:string">
+												<xs:minLength value="0" />
+												<xs:maxLength value="254" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="GeneralWebSite" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Internetpraesenz des
+												Arbeitgebers. Verweist auf die Homepage des Arbeitgebers
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:string">
+												<xs:minLength value="0" />
+												<xs:maxLength value="254" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+								</xs:sequence>
+							</xs:complexType>
+						</xs:element>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="PostDetail">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Weitere Angaben zum
+						Stellenangebot
+					</xs:documentation>
+				</xs:annotation>
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="StartDate" type="xs:date" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Beginn der Veroeffentlichung
+									des Stellenangebots
+								</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="EndDate" type="xs:date" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Ende der Veroeffentlichung
+									des
+									Stellenangebots
+								</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="LastModificationDate" type="xs:dateTime">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Datum der letzten Aenderung
+									an
+									diesem Stellenangebot
+								</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="Status">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Angaben zum
+									Veroeffentlichungsstatus des Stellenangebots. Die Status
+									"intern
+									veroeffentlicht"(6), "intern anonym veroeffentlicht"(7),
+									"intern und im Portal anonym veröffentlicht"(8) sind reine
+									Exportstatus,
+									die ausschliesslich an zugelassene kommunale
+									Traeger gemeldet
+									werden. +++ ATTRIBUTE: veroeffentlicht(1),
+									anonym
+									veroeffentlicht(2), nicht veroeffentlicht(3), intern
+									veroeffentlicht(6), intern anonym veroeffentlicht(7), intern 
+									und im Portal anonym veröffentlicht(8)
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:integer">
+									<xs:enumeration value="1" />
+									<xs:enumeration value="2" />
+									<xs:enumeration value="3" />
+									<xs:enumeration value="6" />
+									<xs:enumeration value="7" />
+									<xs:enumeration value="8" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="EuresPublicationDesired" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Angabe, ob eine EURES-Veroeffentlichung des
+									Stellenangebots gewuenscht wird. +++ ATTRIBUTE:	ja(1), nein(0)
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:integer">
+									<xs:minInclusive value="0" />
+									<xs:maxInclusive value="1" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="ExternalPublications" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Angaben zu
+									gewuenschten externen Veroeffentlichungen
+								</xs:documentation>
+							</xs:annotation>
+							<xs:complexType>
+								<xs:sequence>
+									<xs:element name="ExternalPublicationToAllPartnersDesired" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Angabe, ob eine Veroeffentlichung bei allen 
+												(kostenlosen und kostenpflichtigen) Stellenboersen gewuenscht wird. 
+												+++ ATTRIBUTE:	ja(1), nein(0)
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:integer">
+												<xs:minInclusive value="0" />
+												<xs:maxInclusive value="1" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="ExternalPublicationToAllGratuitousPartnersDesired" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Angabe, ob eine Veroeffentlichung bei allen 
+												kostenlosen Stellenboersen gewuenscht wird. 
+												+++ ATTRIBUTE:	ja(1), nein(0)
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:integer">
+												<xs:minInclusive value="0" />
+												<xs:maxInclusive value="1" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="ExternalPartner" type="xs:string" minOccurs="0" maxOccurs="unbounded">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Supplier-ID einer externen Stellenboerse, 
+												bei welcher eine Veroeffentlichung gewuenscht wird.
+												+++ ATTRIBUTE: siehe mit der aktuellen Versionsinfo uebersendete Liste
+											</xs:documentation>
+										</xs:annotation>
+									</xs:element>
+								</xs:sequence>
+							</xs:complexType>
+						</xs:element>
+						<xs:element name="Action">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Angaben zur Uebermittlung
+									+++
+									ATTRIBUTE: Neuanlage(1), Aktualisierung(2)
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:integer">
+									<xs:minInclusive value="1" />
+									<xs:maxInclusive value="2" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="SupplierId">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Wird mit der Kundennummer
+									des Datenlieferanten (Kooperationspartner) befüllt
+									– Sie weicht
+									bei Dienstleistern und Kooperationsbörsen von der
+									Kundennummer
+									des Arbeitgebers mit dem konkreten Stellenangebot
+									ab -.
+									Die
+									Kundennummer/n werden Ihnen auf Anfrage vom
+									VAM-Account-Management unter
+									Zentrale.Vam-AccountMgmt@arbeitsagentur.de mitgeteilt.
+
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:minLength value="1" />
+									<xs:maxLength value="10" />
+									<xs:pattern value="[A|P|V|K][0-9]{9}" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="SupplierName">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Name des Datenlieferanten
+									(Partner), von dem das Stellenangebot bezogen wird (muss nicht
+									das einstellende Unternehmen sein).
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:minLength value="1" />
+									<xs:maxLength value="45" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="SupplierIndustrie" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Art des Anbieters +++
+									ATTRIBUTE: Allgemeine Stellenboersen (1) , Regionale
+									Stellenboersen (2) , Berufs- und branchenspez. Stellenboersen
+									(3)
+									, Sonstige spezielle Stellenboersen (4) , Arbeitgeber(5)
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:integer">
+									<xs:minInclusive value="1" />
+									<xs:maxInclusive value="6" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="InternetReference" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Link auf die Detailansicht
+									des
+									zugehoerigen Stellenangebots auf der Internetpräsenz des
+									Anbieters (DeepLink)
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:minLength value="0" />
+									<xs:maxLength value="254" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="PostedBy" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Angaben zum Anbieter des
+									Stellenangebots
+								</xs:documentation>
+							</xs:annotation>
+							<xs:complexType>
+								<xs:sequence>
+									<xs:element name="Contact" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Kontaktdaten des
+												Anbieters
+											</xs:documentation>
+										</xs:annotation>
+										<xs:complexType>
+											<xs:sequence>
+												<xs:element name="Company" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Firmenname
+														</xs:documentation>
+													</xs:annotation>
+													<xs:simpleType>
+														<xs:restriction base="xs:string">
+															<xs:minLength value="0" />
+															<xs:maxLength value="90" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+												<xs:element name="Salutation" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Anrede +++ ATTRIBUTE:
+															Herr (1), Frau (2), Herr/Frau (3)
+														</xs:documentation>
+													</xs:annotation>
+													<xs:simpleType>
+														<xs:restriction base="xs:integer">
+															<xs:minInclusive value="1" />
+															<xs:maxInclusive value="3" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+												<xs:element name="Title" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Titel
+														</xs:documentation>
+													</xs:annotation>
+													<xs:simpleType>
+														<xs:restriction base="xs:string">
+															<xs:minLength value="0" />
+															<xs:maxLength value="15" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+												<xs:element name="GivenName" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Vorname
+														</xs:documentation>
+													</xs:annotation>
+													<xs:simpleType>
+														<xs:restriction base="xs:string">
+															<xs:minLength value="0" />
+															<xs:maxLength value="30" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+												<xs:element name="NamePrefix" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Vorsatzwort
+														</xs:documentation>
+													</xs:annotation>
+													<xs:simpleType>
+														<xs:restriction base="xs:string" />
+													</xs:simpleType>
+												</xs:element>
+												<xs:element name="FamilyName" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Familienname
+														</xs:documentation>
+													</xs:annotation>
+													<xs:simpleType>
+														<xs:restriction base="xs:string">
+															<xs:minLength value="0" />
+															<xs:maxLength value="30" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+												<xs:element name="PositionTitle" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Position des
+															Ansprechpartners im Unternehmen
+														</xs:documentation>
+													</xs:annotation>
+													<xs:simpleType>
+														<xs:restriction base="xs:string">
+															<xs:minLength value="0" />
+															<xs:maxLength value="40" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+												<xs:element name="PostalAddress" type="AddressType"
+													minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Postanschrift
+														</xs:documentation>
+													</xs:annotation>
+												</xs:element>
+												<xs:element name="VoiceNumber" type="TelecommuncationType"
+													minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Telefonnummer
+														</xs:documentation>
+													</xs:annotation>
+												</xs:element>
+												<xs:element name="MobilNumber" type="TelecommuncationType"
+													minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Mobilnummer
+														</xs:documentation>
+													</xs:annotation>
+												</xs:element>
+												<xs:element name="FaxNumber" type="TelecommuncationType"
+													minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Faxnummer
+														</xs:documentation>
+													</xs:annotation>
+												</xs:element>
+												<xs:element name="EMail" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: E-Mail des Anbieters
+														</xs:documentation>
+													</xs:annotation>
+													<xs:simpleType>
+														<xs:restriction base="xs:string">
+															<xs:minLength value="0" />
+															<xs:maxLength value="254" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+												<xs:element name="JobContactWebSite" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Internetpraesenz des
+															Stellenangebots. Verweist auf die Onlinebewerbungsseite
+															fuer dieses Stellenangebot beim Anbieter
+														</xs:documentation>
+													</xs:annotation>
+													<xs:simpleType>
+														<xs:restriction base="xs:string">
+															<xs:minLength value="0" />
+															<xs:maxLength value="254" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+												<xs:element name="InterviewContact" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Alternativer
+															Ansprechpartner
+														</xs:documentation>
+													</xs:annotation>
+													<xs:complexType>
+														<xs:sequence>
+															<xs:element name="Salutation" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Anrede +++
+																		ATTRIBUTE:
+																		Herr(1) , Frau(2), Herr/Frau(3)
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:integer">
+																		<xs:minInclusive value="1" />
+																		<xs:maxInclusive value="3" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="Title" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Titel
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:string">
+																		<xs:minLength value="0" />
+																		<xs:maxLength value="15" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="GivenName" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Vorname
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:string">
+																		<xs:minLength value="1" />
+																		<xs:maxLength value="30" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="NamePrefix" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Vorsatzwort
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:string">
+																		<xs:minLength value="0" />
+																		<xs:maxLength value="30" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="FamilyName" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Nachname
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:string">
+																		<xs:minLength value="1" />
+																		<xs:maxLength value="30" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="PositionTitle" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Typ des
+																		Ansprechpartners
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:string">
+																		<xs:minLength value="1" />
+																		<xs:maxLength value="40" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="VoiceNumber" type="TelecommuncationType"
+																minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Telefonnummer
+																	</xs:documentation>
+																</xs:annotation>
+															</xs:element>
+															<xs:element name="MobilNumber" type="TelecommuncationType"
+																minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Mobile
+																		Telefonnummer
+																	</xs:documentation>
+																</xs:annotation>
+															</xs:element>
+															<xs:element name="FaxNumber" type="TelecommuncationType"
+																minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Faxnummer
+																	</xs:documentation>
+																</xs:annotation>
+															</xs:element>
+															<xs:element name="EMail" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: E-Mail-Adresse
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:string">
+																		<xs:minLength value="1" />
+																		<xs:maxLength value="254" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+														</xs:sequence>
+													</xs:complexType>
+												</xs:element>
+												<xs:element name="InterviewLocation" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Alternativer
+															Vorstellungsort
+														</xs:documentation>
+													</xs:annotation>
+													<xs:complexType>
+														<xs:sequence>
+															<xs:element name="Location" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Veranstaltungsort
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:string">
+																		<xs:minLength value="1" />
+																		<xs:maxLength value="90" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="CountryCode" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Land ++ ATTRIBUTE:
+																		ISO 3166-1, alpha-2 Klassifizierung, ggf. 'XX' für 'unbekannt' oder 'von/nach See
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:string">
+																		<xs:minLength value="1" />
+																		<xs:maxLength value="2" />
+																		<xs:pattern value="[a-zA-Z][a-zA-Z]" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="PostalCode" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Postleitzahl
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:string">
+																		<xs:minLength value="1" />
+																		<xs:maxLength value="15" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="Region" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Bundesland +++
+																		ATTRIBUTE: zu entnehmen aus der Datei
+																		Regionen-VAM-Code
+																		die im Outverzeichnis des WebTool des
+																		jeweiligen Kooperationspartners zur
+																		Verfuegung
+																		gestellt
+																		wird. Falls dort nicht enthalten:
+																		Sonstiges (17)
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:union>
+																		<xs:simpleType>
+																			<xs:restriction base="xs:integer">
+																				<xs:minInclusive value="1" />
+																				<xs:maxInclusive value="128" />
+																			</xs:restriction>
+																		</xs:simpleType>
+																		<xs:simpleType>
+																			<xs:restriction base="xs:integer">
+																				<xs:minInclusive value="144" />
+																				<xs:maxInclusive value="303" />
+																			</xs:restriction>
+																		</xs:simpleType>
+																	</xs:union>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="Municipality" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Ort
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:string">
+																		<xs:minLength value="1" />
+																		<xs:maxLength value="36" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="District" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Ortsteil
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:string">
+																		<xs:minLength value="0" />
+																		<xs:maxLength value="40" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="AddressLine" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Adresszusatz
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:string">
+																		<xs:minLength value="0" />
+																		<xs:maxLength value="30" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="StreetName" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Strasse +++
+																	    Es ist (weiterhin) erlaubt Strasse und Hausnummer
+																	    gemeinsam im Attribut StreetName zu uebermitteln
+																	    und das Attribut StreetNumber leer zu lassen. Zu
+																	    beachten ist dabei nur, dass die maximale Laenge
+																	    von StreetName dabei trotzdem nicht ueberschritten
+																	    werden darf. 
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:string">
+																		<xs:minLength value="1" />
+																		<xs:maxLength value="30" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="StreetNumber" minOccurs="0">
+															    <xs:annotation>
+															        <xs:documentation>+++ BESCHREIBUNG: Hausnummer +++
+															            Es ist (weiterhin) erlaubt Strasse und Hausnummer
+																	    gemeinsam im Attribut StreetName zu uebermitteln
+																	    und das Attribut StreetNumber leer zu lassen. Zu
+																	    beachten ist dabei nur, dass die maximale Laenge
+																	    von StreetName dabei trotzdem nicht ueberschritten
+																	    werden darf.
+															        </xs:documentation>
+															    </xs:annotation>
+															    <xs:simpleType>
+															        <xs:restriction base="xs:string">
+															            <xs:minLength value="0" />
+															            <xs:maxLength value="9" />
+															        </xs:restriction>
+															    </xs:simpleType>
+															</xs:element>
+														</xs:sequence>
+													</xs:complexType>
+												</xs:element>
+												<xs:element name="Interview" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Zusätzliche
+															Informationen zum alternativen Vorstellungsort
+														</xs:documentation>
+													</xs:annotation>
+													<xs:complexType>
+														<xs:sequence>
+															<xs:element name="InterviewDate" type="xs:date"
+																minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Interviewdatum
+																	</xs:documentation>
+																</xs:annotation>
+															</xs:element>
+															<xs:element name="InterviewTime" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Interview Uhrzeit
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:string">
+																		<xs:minLength value="5" />
+																		<xs:maxLength value="5" />
+																		<xs:pattern value="[0-9][0-9]:[0-9][0-9]" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="RoomNumber" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Zimmernummer
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:string">
+																		<xs:minLength value="1" />
+																		<xs:maxLength value="25" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="AdditionalInformation"
+																minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Zusatzinformationen
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:string">
+																		<xs:minLength value="1" />
+																		<xs:maxLength value="100" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+														</xs:sequence>
+													</xs:complexType>
+												</xs:element>
+											</xs:sequence>
+										</xs:complexType>
+									</xs:element>
+								</xs:sequence>
+							</xs:complexType>
+						</xs:element>
+						<xs:element name="BASupervision" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Angabe, ob das
+									Stellenangebot
+									durch die Bundesagentur fuer Arbeit betreut wird
+									+++ ATTRIBUTE:
+									ja(1), nein(0)
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:integer">
+									<xs:minInclusive value="0" />
+									<xs:maxInclusive value="1" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="SupervisionDesired" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Wichtiges Feld fuer
+									Arbeitgeber: Angabe, ob eine Uebernahme in die Betreuung durch
+									die Bundesagentur fuer Arbeit gewuenscht wird. +++ ATTRIBUTE:
+									ja(1), nein(0)
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:integer">
+									<xs:minInclusive value="0" />
+									<xs:maxInclusive value="1" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="BAContact" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Ansprechpartner auf Seiten
+									der
+									Bundesagentur fuer Arbeit
+								</xs:documentation>
+							</xs:annotation>
+							<xs:complexType>
+								<xs:sequence>
+									<xs:element name="Department" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Betreuende Dienststelle
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:string">
+												<xs:minLength value="0" />
+												<xs:maxLength value="100" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="Salutation" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Anrede +++ ATTRIBUTE:
+												Herr(1), Frau(2), Herr/Frau(3)
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:integer">
+												<xs:minInclusive value="1" />
+												<xs:maxInclusive value="3" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="Title" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Titel</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:string">
+												<xs:minLength value="0" />
+												<xs:maxLength value="15" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="NamePrefix" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Vorsatzwort
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:string" />
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="FamilyName" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Nachname
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:string">
+												<xs:minLength value="0" />
+												<xs:maxLength value="64" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="PostalAddress" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Postanschrift
+											</xs:documentation>
+										</xs:annotation>
+										<xs:complexType>
+											<xs:sequence>
+												<xs:element name="CountryCode">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Land ++ ATTRIBUTE: ISO
+															3166-1, alpha-2 Klassifizierung, ggf. 'XX' für 'unbekannt' oder 'von/nach See
+														</xs:documentation>
+													</xs:annotation>
+													<xs:simpleType>
+														<xs:restriction base="xs:string">
+															<xs:minLength value="1" />
+															<xs:maxLength value="2" />
+															<xs:pattern value="[a-zA-Z][a-zA-Z]" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+												<xs:element name="PostalCode">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Postleitzahl
+														</xs:documentation>
+													</xs:annotation>
+													<xs:simpleType>
+														<xs:restriction base="xs:string">
+															<xs:minLength value="1" />
+															<xs:maxLength value="15" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+												<xs:element name="Region">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Bundesland +++
+															ATTRIBUTE: zu entnehmen aus der Datei Regionen-VAM-Code
+															die
+															im Outverzeichnis des WebTool des
+															jeweiligen
+															Kooperationspartners zur Verfuegung gestellt
+															wird. Falls
+															dort nicht enthalten: Sonstiges (17)
+														</xs:documentation>
+													</xs:annotation>
+													<xs:simpleType>
+														<xs:union>
+															<xs:simpleType>
+																<xs:restriction base="xs:integer">
+																	<xs:minInclusive value="1" />
+																	<xs:maxInclusive value="128" />
+																</xs:restriction>
+															</xs:simpleType>
+															<xs:simpleType>
+																<xs:restriction base="xs:integer">
+																	<xs:minInclusive value="144" />
+																	<xs:maxInclusive value="303" />
+																</xs:restriction>
+															</xs:simpleType>
+														</xs:union>
+													</xs:simpleType>
+												</xs:element>
+												<xs:element name="Municipality">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Ort</xs:documentation>
+													</xs:annotation>
+													<xs:simpleType>
+														<xs:restriction base="xs:string">
+															<xs:minLength value="1" />
+															<xs:maxLength value="36" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+												<xs:element name="District" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Ortsteil
+														</xs:documentation>
+													</xs:annotation>
+													<xs:simpleType>
+														<xs:restriction base="xs:string">
+															<xs:minLength value="0" />
+															<xs:maxLength value="40" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+												<xs:element name="AddressLine" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Adresszusatz
+														</xs:documentation>
+													</xs:annotation>
+													<xs:simpleType>
+														<xs:restriction base="xs:string">
+															<xs:minLength value="0" />
+															<xs:maxLength value="30" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+												<xs:element name="StreetName">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Strasse +++
+														    Es ist (weiterhin) erlaubt Strasse und Hausnummer gemeinsam im
+												            Attribut StreetName zu uebermitteln und das Attribut StreetNumber
+												            leer zu lassen. Zu beachten ist dabei nur, dass die maximale
+												            Laenge von StreetName dabei trotzdem nicht ueberschritten
+												            werden darf.
+														</xs:documentation>
+													</xs:annotation>
+													<xs:simpleType>
+														<xs:restriction base="xs:string">
+															<xs:minLength value="1" />
+															<xs:maxLength value="30" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+												<xs:element name="StreetNumber" minOccurs="0">
+												    <xs:annotation>
+												        <xs:documentation>+++ BESCHREIBUNG: Hausnummer +++
+												            Es ist (weiterhin) erlaubt Strasse und Hausnummer gemeinsam im
+												            Attribut StreetName zu uebermitteln und das Attribut StreetNumber
+												            leer zu lassen. Zu beachten ist dabei nur, dass die maximale
+												            Laenge von StreetName dabei trotzdem nicht ueberschritten
+												            werden darf.
+												        </xs:documentation>
+												    </xs:annotation>
+												    <xs:simpleType>
+												        <xs:restriction base="xs:string">
+												            <xs:minLength value="0" />
+												            <xs:maxLength value="9" />
+												        </xs:restriction>
+												    </xs:simpleType>
+												</xs:element>
+											</xs:sequence>
+										</xs:complexType>
+									</xs:element>
+									<xs:element name="VoiceNumber" type="TelecommuncationType"
+										minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Telefonnummer
+											</xs:documentation>
+										</xs:annotation>
+									</xs:element>
+									<xs:element name="FaxNumber" type="TelecommuncationType"
+										minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Faxnummer
+											</xs:documentation>
+										</xs:annotation>
+									</xs:element>
+									<xs:element name="EMail">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: E-Mail-Adresse
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:string">
+												<xs:minLength value="1" />
+												<xs:maxLength value="254" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+								</xs:sequence>
+							</xs:complexType>
+						</xs:element>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="JobPositionInformation">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Weitere Angaben zum
+						Stellenangebot
+					</xs:documentation>
+				</xs:annotation>
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="JobPositionTitle">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Angaben zum Beruf
+								</xs:documentation>
+							</xs:annotation>
+							<xs:complexType>
+								<xs:sequence>
+									<xs:element name="TitleCode" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Angaben zur
+												Berufsbezeichnung oder Taetigkeit. +++ ATTRIBUTE: gemaess
+												DKZ
+												(Identifikationsnummer) bzw. Berufe-Id aus Datei
+												"vam_beruf.xml" die im Outverzeichnis des WebTool des
+												jeweiligen Kooperationspartners zur
+												Verfuegung gestellt wird
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:integer">
+												<xs:pattern value="[0-9]{3,7}" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="Degree" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Hochschulabschlussart +++
+												ATTRIBUTE: Nicht relevant (1), Bachelor (14), 
+												Master / Diplom / Magister (15), Staatsexamen (13),
+												Kirchliches Examen (8), Promotion (12)
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:integer">
+												<xs:enumeration value="1" />
+												<xs:enumeration value="8" />
+												<xs:enumeration value="12" />
+												<xs:enumeration value="13" />
+												<xs:enumeration value="14" />
+												<xs:enumeration value="15" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="Course" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>
+												+++ BESCHREIBUNG: Angaben zum Studiengang. +++ ATTRIBUTE: gemaess
+												DKZ
+												(Identifikationsnummer) bzw. Berufe-Id aus Datei
+												"vam_beruf.xml" die im Outverzeichnis des WebTool des
+												jeweiligen Kooperationspartners zur
+												Verfuegung gestellt wird
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:integer">
+												<xs:pattern value="[0-9]{3,7}" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+								</xs:sequence>
+							</xs:complexType>
+						</xs:element>
+						<xs:element name="AlternativeJobPositionTitle"
+							minOccurs="0" maxOccurs="2">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Angaben zu
+									Berufsalternativen
+								</xs:documentation>
+							</xs:annotation>
+							<xs:complexType>
+								<xs:sequence>
+									<xs:element name="TitleCode">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Angaben zu alternativen
+												Berufsbezeichnungen oder Taetigkeiten. +++ ATTRIBUTE:
+												gemaess
+												DKZ (Identifikationsnummer) bzw. Berufe-Id aus Datei
+												"vam_beruf.xml" die im Outverzeichnis des WebTool des
+												jeweiligen Kooperationspartners zur
+												Verfuegung gestellt wird
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:integer">
+												<xs:pattern value="[0-9]{3,7}" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="Degree" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Hochschulabschlussart +++
+												ATTRIBUTE: Nicht relevant (1), Bachelor (14), 
+												Master / Diplom / Magister (15), Staatsexamen (13),
+												Kirchliches Examen (8), Promotion (12)
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:integer">
+												<xs:enumeration value="1" />
+												<xs:enumeration value="8" />
+												<xs:enumeration value="12" />
+												<xs:enumeration value="13" />
+												<xs:enumeration value="14" />
+												<xs:enumeration value="15" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+								</xs:sequence>
+							</xs:complexType>
+						</xs:element>
+						<xs:element name="AdditionalJobPositionTitles" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>
+								    +++ BESCHREIBUNG: Weitere Berufe in rein textueller Form. Einzelne
+								    Werte müssen durch Strichpunkt getrennt werden.
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+							    <xs:restriction base="xs:string">
+							        <xs:minLength value="0" />
+									<xs:maxLength value="250" />
+							    </xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="JobPositionTitleDescription"
+							minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Titel des Stellenangebots
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:minLength value="0" />
+									<xs:maxLength value="100" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="JobOfferType">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Klassifizierung der Art des
+									Stellenangebots +++ ATTRIBUTE: Arbeitsplatz (1), Selbstaendigkeit (2),
+									Ausbildung/Duales Studium (4), Praktikum/Trainee/Werkstudentstelle(34), Kuenstler(40)
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:integer">
+									<xs:enumeration value="1" />
+									<xs:enumeration value="2" />
+									<xs:enumeration value="4" />
+									<xs:enumeration value="34" />
+									<xs:enumeration value="40" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="SocialInsurance" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Angabe ob das Stellenangebot
+									sozialversicherungspflichtig ist oder nicht +++ ATTRIBUTE:
+									ja(1),
+									nein(0)
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:integer">
+									<xs:minInclusive value="0" />
+									<xs:maxInclusive value="1" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="EducationType" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>
+									+++ BESCHREIBUNG: Klassifizierung der Art der Ausbildung des Stellenangebots
+									+++ ATTRIBUTE: Ausbildung (0), Duales Studium (1)
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:integer">
+									<xs:enumeration value="0"/>
+									<xs:enumeration value="1"/>
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="DegreeType" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>
+									+++ BESCHREIBUNG: Klassifizierung der Art des Dualen Studiums des Stellenangebots
+									+++ ATTRIBUTE: praxisintegrierend (1), ausbildungsintegrierend (2)
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:integer">
+									<xs:enumeration value="1"/>
+									<xs:enumeration value="2"/>
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="Objective" minOccurs="0" maxOccurs="1">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Weitere, Beschreibungen zu	den	Taetigkeiten /
+								der Ausbildung. 
+								Fuer Lieferungen an die BA: gelieferte Texte werden als Markdown interpretiert. 
+								Fuer Lieferungen von der BA: enthaelt eine Plain Text Version des Felds ObjectiveFormatted
+								Naeheres zu erlaubten/ interpretierten Formatierungen finden Sie im BA-XML Whitepaper
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:maxLength value="10000" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="ObjectiveFormatted" minOccurs="0" maxOccurs="1">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Wird beim Import ignoriert. Enthaelt bei Exporten das 
+								Feld Objective inklusive Markdown Formatierungen. Naeheres zu den verwendeten Formatierungen 
+								finden Sie im BA-XML Whitepaper.
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:maxLength value="10000" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="EducationAuthorisation">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Angabe, ob das Unternehmen
+									eine Ausbildungsberechtigung fuer die angegebene Taetigkeit
+									besitzt +++ ATTRIBUTE: ja(1), nein(0)
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:integer">
+									<xs:minInclusive value="0" />
+									<xs:maxInclusive value="1" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="JobPositionDescription">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Stellenbeschreibung
+								</xs:documentation>
+							</xs:annotation>
+							<xs:complexType>
+								<xs:sequence>
+									<xs:element name="JobPositionLocation">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Ausuebungsort. Es muss
+												mindestens ein Ausuebungsort angegeben werden. Die
+												Obergrenze liegt jedoch bei 10 Ausuebungsorten.
+												Außerdem koennen hier Angaben zum Homeoffice gemacht werden.
+											</xs:documentation>
+										</xs:annotation>
+										<xs:complexType>
+											<xs:sequence>
+												<xs:element name="Location" maxOccurs="10">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Angaben zum
+															Ausuebungsort
+														</xs:documentation>
+													</xs:annotation>
+													<xs:complexType>
+														<xs:sequence>
+															<xs:element name="CountryCode">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Land+++ ATTRIBUTE:
+																		ISO 3166-1, alpha-2 Klassifizierung, ggf. 'XX' für 'unbekannt' oder 'von/nach See
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:string">
+																		<xs:minLength value="1" />
+																		<xs:maxLength value="2" />
+																		<xs:pattern value="[a-zA-Z][a-zA-Z]" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="PostalCode" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Postleitzahl
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:string">
+																		<xs:minLength value="1" />
+																		<xs:maxLength value="15" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="Region" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Bundesland +++
+																		ATTRIBUTE: zu entnehmen aus der Datei
+																		Regionen-VAM-Code
+																		die im Outverzeichnis des WebTool des
+																		jeweiligen Kooperationspartners zur
+																		Verfuegung
+																		gestellt
+																		wird. Falls dort nicht enthalten:
+																		Sonstiges (17)
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:union>
+																		<xs:simpleType>
+																			<xs:restriction base="xs:integer">
+																				<xs:minInclusive value="1" />
+																				<xs:maxInclusive value="128" />
+																			</xs:restriction>
+																		</xs:simpleType>
+																		<xs:simpleType>
+																			<xs:restriction base="xs:integer">
+																				<xs:minInclusive value="144" />
+																				<xs:maxInclusive value="303" />
+																			</xs:restriction>
+																		</xs:simpleType>
+																	</xs:union>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="Municipality" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Ort
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:string">
+																		<xs:minLength value="1" />
+																		<xs:maxLength value="36" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="District" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Ortsteil
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:string">
+																		<xs:minLength value="0" />
+																		<xs:maxLength value="40" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="AddressLine" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Zusaetzliche
+																		Adressangabe
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:string">
+																		<xs:minLength value="0" />
+																		<xs:maxLength value="30" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="StreetName" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Strasse +++
+																		Es ist (weiterhin) erlaubt Strasse und Hausnummer
+															            gemeinsam im Attribut StreetName zu uebermitteln
+															            und das Attribut StreetNumber leer zu lassen. Zu
+															            beachten ist dabei nur, dass die maximale Laenge
+															            von StreetName dabei trotzdem nicht ueberschritten
+															            werden darf.
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:string">
+																		<xs:minLength value="0" />
+																		<xs:maxLength value="30" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="StreetNumber" minOccurs="0">
+															    <xs:annotation>
+															        <xs:documentation>+++ BESCHREIBUNG: Hausnummer +++
+															            Es ist (weiterhin) erlaubt Strasse und Hausnummer
+															            gemeinsam im Attribut StreetName zu uebermitteln
+															            und das Attribut StreetNumber leer zu lassen. Zu
+															            beachten ist dabei nur, dass die maximale Laenge
+															            von StreetName dabei trotzdem nicht ueberschritten
+															            werden darf.
+															        </xs:documentation>
+															    </xs:annotation>
+															    <xs:simpleType>
+															        <xs:restriction base="xs:string">
+															            <xs:minLength value="0" />
+															            <xs:maxLength value="9" />
+															        </xs:restriction>
+															    </xs:simpleType>
+															</xs:element>
+														</xs:sequence>
+													</xs:complexType>
+												</xs:element>
+												<xs:element name="Homeoffice" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Angaben zur
+															Arbeit im Homeoffice
+														</xs:documentation>
+													</xs:annotation>
+													<xs:complexType>
+														<xs:sequence>
+															<xs:element name="HomeofficePossible" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Angabe, ob es
+																		moeglich ist, im Homeoffice zu arbeiten +++
+																		ATTRIBUTE: ja(1), nein(0)
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:integer">
+																		<xs:minInclusive value="0" />
+																		<xs:maxInclusive value="1" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="HomeofficeType" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Angabe zum Anteil
+																		des Homeoffice an der Gesamtarbeitszeit +++
+																		ATTRIBUTE: nach Vereinbarung(1), Angabe in Prozent(2)
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:integer">
+																		<xs:enumeration value="1" />
+																		<xs:enumeration value="2" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="HomeofficePercentage" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Anteil 
+																		des Homeoffice als Prozentsatz +++
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:integer">
+																		<xs:minInclusive value="1" />
+																		<xs:maxInclusive value="100" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+														</xs:sequence>
+													</xs:complexType>
+												</xs:element>
+											</xs:sequence>
+										</xs:complexType>
+									</xs:element>
+									<xs:element name="Application" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Angaben zur gewuenschten
+												Bewerbungsart
+											</xs:documentation>
+										</xs:annotation>
+										<xs:complexType>
+											<xs:sequence>
+												<xs:element name="KindOfApplication" minOccurs="0"
+													maxOccurs="unbounded">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Gewuenschte
+															Bewerbungsart +++ ATTRIBUTE: telefonisch(1) ,
+															schriftlich(2) , per E-Mail(3) , persoenlich(4) , ueber Internet(6) , ueber
+															www.arbeitsagentur.de(8)
+														</xs:documentation>
+													</xs:annotation>
+													<xs:simpleType>
+														<xs:restriction base="xs:integer">
+															<xs:enumeration value="1" />
+															<xs:enumeration value="2" />
+															<xs:enumeration value="3" />
+															<xs:enumeration value="4" />
+															<xs:enumeration value="6" />
+															<xs:enumeration value="8" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+												<xs:element name="ApplicationStartDate" type="xs:date"
+													minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Start des Zeitraums
+															fuer
+															Bewerbungen
+														</xs:documentation>
+													</xs:annotation>
+												</xs:element>
+												<xs:element name="ApplicationEndDate" type="xs:date"
+													minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Ende des Zeitraums
+															fuer
+															Bewerbungen
+														</xs:documentation>
+													</xs:annotation>
+												</xs:element>
+												<xs:element name="EnclosuresRequired" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Geforderte Anlagen zur
+															Bewerbung
+														</xs:documentation>
+													</xs:annotation>
+													<xs:simpleType>
+														<xs:restriction base="xs:string">
+															<xs:minLength value="0" />
+															<xs:maxLength value="255" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+											</xs:sequence>
+										</xs:complexType>
+									</xs:element>
+									<xs:element name="Leadership" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Angabe zur
+												Führungsverantwortung
+												+++ ATTRIBUTE: Keine
+												Führungsverantwortung (1), Alle
+												Führungsebenen (2),
+												Teamleitung, Projektleitung,
+												Gruppenleitung (3),
+												Abteilungsleitung, Bereichsleitung,
+												Ressortleitung (4),
+												Geschäftsleitung, Vorstand,
+												Betriebsleitung (5)
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:integer">
+												<xs:minInclusive value="1" />
+												<xs:maxInclusive value="5" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="MiniJob" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Angabe, ob es sich beim
+												übertragenen Stellenangebot um einen Minijob handelt. +++
+												ATTRIBUTE: ja (1), nein (0)
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:integer">
+												<xs:minInclusive value="0" />
+												<xs:maxInclusive value="1" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="PrivatePlacement" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Angabe, ob es sich beim
+												übertragenen Stellenangebot um ein Stellenangebot der 
+												privaten Arbeitsvermittlung (PAV) handelt. +++
+												ATTRIBUTE: ja (1), nein (0)
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:integer">
+												<xs:minInclusive value="0" />
+												<xs:maxInclusive value="1" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="LabourLeasing" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Angabe, ob es sich beim
+												übertragenen Stellenangebot um eine Arbeitnehmerüberlassung handelt. +++
+												ATTRIBUTE: ja (1), nein (0)
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:integer">
+												<xs:minInclusive value="0" />
+												<xs:maxInclusive value="1" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="Classification" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Angaben zur Arbeitszeit
+												und
+												Befristung des Stellenangebots
+											</xs:documentation>
+										</xs:annotation>
+										<xs:complexType>
+											<xs:sequence>
+												<xs:element name="Schedule" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Angaben zu
+															Arbeitszeiten
+														</xs:documentation>
+													</xs:annotation>
+													<xs:complexType>
+														<xs:sequence>
+															<xs:element name="WorkingPlan" minOccurs="0"
+																maxOccurs="unbounded">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Angaben zur
+																		Arbeitszeit +++ ATTRIBUTE: Vollzeit(1),
+																		Schicht / Nacht / Wochenende(2), Teilzeit -
+																		Vormittag(7), Teilzeit - Nachmittag(8), Teilzeit -
+																		Abend(9), Teilzeit - flexibel(10)
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:integer">
+																		<xs:enumeration value="1" />
+																		<xs:enumeration value="2" />
+																		<xs:enumeration value="7" />
+																		<xs:enumeration value="8" />
+																		<xs:enumeration value="9" />
+																		<xs:enumeration value="10" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+														</xs:sequence>
+													</xs:complexType>
+												</xs:element>
+												<xs:element name="Duration" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Angaben zur Befristung
+															des Stellenangebots
+														</xs:documentation>
+													</xs:annotation>
+													<xs:complexType>
+														<xs:sequence>
+															<xs:element name="TermLength" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Dauer der
+																		Befristung,
+																		bis x Monate
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:integer">
+																		<xs:maxInclusive value="120" />
+																		<xs:minInclusive value="1" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="TermDate" type="xs:date"
+																minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Dauer der
+																		Befristung,
+																		bis Datum
+																	</xs:documentation>
+																</xs:annotation>
+															</xs:element>
+															<xs:element name="TemporaryOrRegular"
+																minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Angabe, ob
+																		Stellenangebot befristet ist. Wenn "ja", sollte Angabe
+																		ueber die Dauer erfolgen. +++ ATTRIBUTE: befristet
+																		(1),
+																		unbefristet (2), alle (3)
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:integer">
+																		<xs:minInclusive value="1" />
+																		<xs:maxInclusive value="3" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="TakeOver" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Angabe, ob nach
+																		Ablauf der Befristung eine Uebernahme moeglich ist +++
+																		ATTRIBUTE: ja (1), nein (0)
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:integer">
+																		<xs:minInclusive value="0" />
+																		<xs:maxInclusive value="1" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+														</xs:sequence>
+													</xs:complexType>
+												</xs:element>
+											</xs:sequence>
+										</xs:complexType>
+									</xs:element>
+									<xs:element name="CompensationDescription"
+										minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Angaben zur Verguetung
+											</xs:documentation>
+										</xs:annotation>
+										<xs:complexType>
+											<xs:sequence>
+											    <xs:element name="CompensationProfile" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Form der Vergütungsangabe.
+														    ++++ ATTRIBUTE: "Jahresgehalt" (1), "Stundenlohn" (2),
+														    "Ausbildungs/Studienvergütung nach Jahren" (3),
+														    "Keine Vergütungsangabe" (4)
+														</xs:documentation>
+													</xs:annotation>
+													<xs:simpleType>
+														<xs:restriction base="xs:integer">
+															<xs:minInclusive value="1" />
+															<xs:maxInclusive value="4" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+												<xs:element name="CompensationType" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>
+														    +++ BESCHREIBUNG: Art der Vergütungsangabe.
+														    ++++ ATTRIBUTE: "als Festbetrag" (1), "als Spanne" (2)
+														</xs:documentation>
+													</xs:annotation>
+													<xs:simpleType>
+														<xs:restriction base="xs:integer">
+															<xs:minInclusive value="1" />
+															<xs:maxInclusive value="2" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+												<xs:element name="FixedSalary" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>
+														    +++ BESCHREIBUNG: Angebotenes Festgehalt.
+														</xs:documentation>
+													</xs:annotation>
+													<xs:simpleType>
+														<xs:restriction base="xs:decimal">
+															<xs:totalDigits value="10" />
+													        <xs:fractionDigits value="2" />
+															<xs:minInclusive value="0.01" />
+															<xs:maxInclusive value="9999999.99" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+												<xs:element name="SalaryRange" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>
+														    +++ BESCHREIBUNG: Gehaltsspanne.
+														</xs:documentation>
+													</xs:annotation>
+													<xs:complexType>
+													    <xs:sequence>
+													        <xs:element name="SalaryFrom" minOccurs="0">
+													            <xs:annotation>
+													                <xs:documentation>
+													                    +++ BESCHREIBUNG: Angebotene Gehaltsspanne von.
+													                </xs:documentation>
+													            </xs:annotation>
+													            <xs:simpleType>
+													                <xs:restriction base="xs:decimal">
+													                    <xs:totalDigits value="10" />
+													                    <xs:fractionDigits value="2" />
+													                    <xs:minInclusive value="0.01" />
+																		<xs:maxInclusive value="9999999.99" />
+													                </xs:restriction>
+													            </xs:simpleType>
+													        </xs:element>
+													        <xs:element name="SalaryTo" minOccurs="0">
+													            <xs:annotation>
+													                <xs:documentation>
+													                    +++ BESCHREIBUNG: Angebotene Gehaltsspanne bis.
+													                </xs:documentation>
+													            </xs:annotation>
+													            <xs:simpleType>
+													                <xs:restriction base="xs:decimal">
+													                    <xs:totalDigits value="10" />
+													                    <xs:fractionDigits value="2" />
+													                    <xs:minInclusive value="0.01" />
+																		<xs:maxInclusive value="9999999.99" />
+													                </xs:restriction>
+													            </xs:simpleType>
+													        </xs:element>
+														</xs:sequence>
+													</xs:complexType>
+												</xs:element>
+												<xs:element name="ApprenticePay" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>
+														    +++ BESCHREIBUNG: Monatliche Ausbildungs/Studienvergütungen in bis zu 4 Ausbildungs/Studienjahren
+														</xs:documentation>
+													</xs:annotation>
+													<xs:complexType>
+													    <xs:sequence>
+													        <xs:element name="Year1" minOccurs="0">
+													            <xs:annotation>
+													                <xs:documentation>
+													                    +++ BESCHREIBUNG: Monatliche Ausbildungs/Studienvergütung im 1. Ausbildungs/Studienjahr
+													                </xs:documentation>
+													            </xs:annotation>
+													            <xs:simpleType>
+													                <xs:restriction base="xs:decimal">
+													                    <xs:totalDigits value="10" />
+													                    <xs:fractionDigits value="2" />
+													                    <xs:minInclusive value="0.01" />
+																		<xs:maxInclusive value="9999999.99" />
+													                </xs:restriction>
+													            </xs:simpleType>
+													        </xs:element>
+													        <xs:element name="Year2" minOccurs="0">
+													            <xs:annotation>
+													                <xs:documentation>
+													                    +++ BESCHREIBUNG: Monatliche Ausbildungs/Studienvergütung im 2. Ausbildungs/Studienjahr
+													                </xs:documentation>
+													            </xs:annotation>
+													            <xs:simpleType>
+													                <xs:restriction base="xs:decimal">
+													                    <xs:totalDigits value="10" />
+													                    <xs:fractionDigits value="2" />
+													                    <xs:minInclusive value="0.01" />
+																		<xs:maxInclusive value="9999999.99" />
+													                </xs:restriction>
+													            </xs:simpleType>
+													        </xs:element>
+													        <xs:element name="Year3" minOccurs="0">
+													            <xs:annotation>
+													                <xs:documentation>
+													                    +++ BESCHREIBUNG: Monatliche Ausbildungs/Studienvergütung im 3. Ausbildungs/Studienjahr
+													                </xs:documentation>
+													            </xs:annotation>
+													            <xs:simpleType>
+													                <xs:restriction base="xs:decimal">
+													                    <xs:totalDigits value="10" />
+													                    <xs:fractionDigits value="2" />
+													                    <xs:minInclusive value="0.01" />
+																		<xs:maxInclusive value="9999999.99" />
+													                </xs:restriction>
+													            </xs:simpleType>
+													        </xs:element>
+													        <xs:element name="Year4" minOccurs="0">
+													            <xs:annotation>
+													                <xs:documentation>
+													                    +++ BESCHREIBUNG: Monatliche Ausbildungs/Studienvergütung im 4. Ausbildungs/Studienjahr
+													                </xs:documentation>
+													            </xs:annotation>
+													            <xs:simpleType>
+													                <xs:restriction base="xs:decimal">
+													                    <xs:totalDigits value="10" />
+													                    <xs:fractionDigits value="2" />
+													                    <xs:minInclusive value="0.01" />
+																		<xs:maxInclusive value="9999999.99" />
+													                </xs:restriction>
+													            </xs:simpleType>
+													        </xs:element>
+														</xs:sequence>
+													</xs:complexType>
+												</xs:element>
+												<xs:element name="DailyRate" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Angaben zum Tagessatz.
+															Diese Information kann nur beim Stellenangebot vom Typ
+															"Künstler" angegeben werden. +++ ATTRIBUTE: Bis 49
+															(1),
+															50
+															- 199 (2), 200 - 299 (3), 300 - 499 (4), 500 - 749
+															(5),
+															750 - 999 (6), 1000 - 1499 (7), 1500 - 1999 (8),
+															2000 -
+															2999 (9), 3000 - 3999 (10), 4000 - 4999 (11), 5000
+															- 5999
+															(12), 6000 - 6999 (13), 7000 - 7999 (14), 8000 -
+															8999
+															(15),
+															9000 - 10000 (16), Über 10000 (17)
+														</xs:documentation>
+													</xs:annotation>
+													<xs:simpleType>
+														<xs:restriction base="xs:integer">
+															<xs:minInclusive value="1" />
+															<xs:maxInclusive value="17" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+												<xs:element name="EmployerPayscaleBound"
+													minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Ist der Arbeitgeber
+															tarifgebunden?
+															+++ ATTRIBUTE: ja(1), nein(0)
+														</xs:documentation>
+													</xs:annotation>
+													<xs:simpleType>
+														<xs:restriction base="xs:integer">
+															<xs:minInclusive value="0" />
+															<xs:maxInclusive value="1" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+												<xs:element name="CollectiveAgreement" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Weitere Angaben zum
+															Tarifvertrag
+														</xs:documentation>
+													</xs:annotation>
+													<xs:simpleType>
+														<xs:restriction base="xs:string">
+															<xs:minLength value="0" />
+															<xs:maxLength value="100" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+												<xs:element name="InternalCompensation"
+													minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Vertrauliche Angaben
+															zur Kompensation, die für Bewerber nicht einsehbar sind
+														</xs:documentation>
+													</xs:annotation>
+													<xs:simpleType>
+														<xs:restriction base="xs:string">
+															<xs:minLength value="0" />
+															<xs:maxLength value="255" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:element>
+											</xs:sequence>
+										</xs:complexType>
+									</xs:element>
+									<xs:element name="Housing" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Angabe, ob Unterkunft
+												gestellt wird +++ ATTRIBUTE: ja (1), nein (0)
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:integer">
+												<xs:minInclusive value="0" />
+												<xs:maxInclusive value="1" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="LateralEntry" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Angabe, ob Quereinstieg 
+												moeglich ist. Kann nur bei Klassifizierung der Art des
+												Stellenangebots Arbeitsplatz (1) gesetzt werden.												
+												 +++ ATTRIBUTE: ja (1), nein (0)
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:integer">
+												<xs:minInclusive value="0" />
+												<xs:maxInclusive value="1" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+								</xs:sequence>
+							</xs:complexType>
+						</xs:element>
+						<xs:element name="JobPositionRequirements" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Angaben zu Vorraussetzungen
+									eines Bewerbers
+								</xs:documentation>
+							</xs:annotation>
+							<xs:complexType>
+								<xs:sequence>
+									<xs:element name="QualificationsRequired" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Angaben zur geforderten
+												Qualifikation
+											</xs:documentation>
+										</xs:annotation>
+										<xs:complexType>
+											<xs:sequence>
+												<xs:element name="EducationQualifs" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Angaben zur
+															geforderten
+															Schulbildung
+														</xs:documentation>
+													</xs:annotation>
+													<xs:complexType>
+														<xs:sequence>
+															<xs:element name="EduDegree" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Hoechster
+																		Bildungsabschluss +++ ATTRIBUTE: kein Schulabschluss
+																		(1), Hauptschulabschluss (2), Mittlere Reife /
+																		Mittlerer Bildungsabschluss (3), Fachhochschulreife
+																		(einschl. nur theoret. Teil) (4), Fachabitur /
+																		Fachgebundene Hochschulreife (5), Abitur / Allgemeine
+																		Hochschulreife (6), Schulabschluss der Foerderschule
+																		(11), Qualifizierender / erweiterter 
+																		Haupschulabschluss (12), nicht relevant (15)
+																		
+																		Restriction Pattern Regex verfüllt die oben genannten numeralien einschränkungen
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>																
+																		<xs:restriction base="xs:integer">
+																			<xs:enumeration value="1" />
+																			<xs:enumeration value="2" />
+																			<xs:enumeration value="3" />
+																			<xs:enumeration value="4" />
+																			<xs:enumeration value="5" />
+																			<xs:enumeration value="6" />
+																			<xs:enumeration value="11" />
+																			<xs:enumeration value="12" />
+																			<xs:enumeration value="15" />
+																		</xs:restriction>																										
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="EduDegreeRequired"
+																minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Bewerber muss genau
+																		diesen Bildungsabschluss besitzen (1), Bewerber muss
+																		mindestens diesen Bildungsabschluss besitzen (2)
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:integer">
+																		<xs:minInclusive value="1" />
+																		<xs:maxInclusive value="2" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="School" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Angaben zu
+																		erreichten
+																		Schulnoten
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:complexType>
+																	<xs:sequence>
+																		<xs:element name="SubjectGerman" minOccurs="0">
+																			<xs:annotation>
+																				<xs:documentation>+++ BESCHREIBUNG: Deutschnote
+																				</xs:documentation>
+																			</xs:annotation>
+																			<xs:simpleType>
+																				<xs:restriction base="xs:integer">
+																					<xs:minInclusive value="1" />
+																					<xs:maxInclusive value="6" />
+																				</xs:restriction>
+																			</xs:simpleType>
+																		</xs:element>
+																		<xs:element name="SubjectEnglish"
+																			minOccurs="0">
+																			<xs:annotation>
+																				<xs:documentation>+++ BESCHREIBUNG: Englischnote
+																				</xs:documentation>
+																			</xs:annotation>
+																			<xs:simpleType>
+																				<xs:restriction base="xs:integer">
+																					<xs:minInclusive value="1" />
+																					<xs:maxInclusive value="6" />
+																				</xs:restriction>
+																			</xs:simpleType>
+																		</xs:element>
+																		<xs:element name="SubjectMaths" minOccurs="0">
+																			<xs:annotation>
+																				<xs:documentation>+++ BESCHREIBUNG: Mathematiknote
+																				</xs:documentation>
+																			</xs:annotation>
+																			<xs:simpleType>
+																				<xs:restriction base="xs:integer">
+																					<xs:minInclusive value="1" />
+																					<xs:maxInclusive value="6" />
+																				</xs:restriction>
+																			</xs:simpleType>
+																		</xs:element>
+																		<xs:element name="OtherSubjects" minOccurs="0">
+																			<xs:annotation>
+																				<xs:documentation>+++ BESCHREIBUNG: Beschreibung
+																					weiterer Unterrichtsfaecher
+																				</xs:documentation>
+																			</xs:annotation>
+																			<xs:simpleType>
+																				<xs:restriction base="xs:string">
+																					<xs:minLength value="0" />
+																					<xs:maxLength value="1000" />
+																				</xs:restriction>
+																			</xs:simpleType>
+																		</xs:element>
+																	</xs:sequence>
+																</xs:complexType>
+															</xs:element>
+														</xs:sequence>
+													</xs:complexType>
+												</xs:element>
+												<xs:element name="ManagementQualifs" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Angaben zu den
+															Fuehrungskompetenzen
+														</xs:documentation>
+													</xs:annotation>
+													<xs:complexType>
+														<xs:sequence>
+															<xs:element name="Authority" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: hatte Erfahrung im Bereich Vollmachten
+																		+++ ATTRIBUTE:  nicht
+																			gefordert (0), gefordert (1)
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:integer">
+																		<xs:minInclusive value="0" />
+																		<xs:maxInclusive value="1" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="LeadershipEx" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Fuehrungserfahrung
+																		+++ ATTRIBUTE: bis 2 Jahre (1), 2 bis 5 Jahre (2),
+																		mehr
+																		als 5 Jahre (3)
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:integer">
+																		<xs:minInclusive value="1" />
+																		<xs:maxInclusive value="3" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="BudgetResp" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: hatte Erfahrung im Bereich Budgetverantwortung
+																		+++ ATTRIBUTE:  nicht
+																			gefordert (0), gefordert (1)
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:integer">
+																		<xs:minInclusive value="0" />
+																		<xs:maxInclusive value="1" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+															<xs:element name="EmployeeResp" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG:
+																		Personalverantwortung
+																		+++ ATTRIBUTE: bis 9
+																		Mitarbeiter/innen (1), 10 – 49
+																		Mitarbeiter/innen (2),
+																		50 – 499 Mitarbeiter/innen (3),
+																		500 und mehr
+																		Mitarbeiter/innen (4)
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:simpleType>
+																	<xs:restriction base="xs:integer">
+																		<xs:minInclusive value="1" />
+																		<xs:maxInclusive value="4" />
+																	</xs:restriction>
+																</xs:simpleType>
+															</xs:element>
+														</xs:sequence>
+													</xs:complexType>
+												</xs:element>
+												<xs:element name="LanguageQualifs" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Angaben zu
+															gewuenschten
+															Sprachkenntnissen
+														</xs:documentation>
+													</xs:annotation>
+													<xs:complexType>
+														<xs:sequence>
+															<xs:element name="Language" maxOccurs="unbounded">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Gruppierendes
+																		Element
+																		für Sprachen
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:complexType>
+																	<xs:sequence>
+																		<xs:element name="LanguageName" type="xs:integer">
+																			<xs:annotation>
+																				<xs:documentation>+++ BESCHREIBUNG: Id der
+																					Sprachkenntnis
+																					+++ ATTRIBUTE: siehe
+																					Kompetenzkatalog,
+																					Sektion Sprachen
+																				</xs:documentation>
+																			</xs:annotation>
+																		</xs:element>
+																		<xs:element name="LanguageLevel">
+																			<xs:annotation>
+																				<xs:documentation>
+																				    +++ BESCHREIBUNG: Ausprägung der Sprachkenntnis +++
+																				    ATTRIBUTE:
+																					Grundkenntnisse	(1),
+																					Erweiterte Kenntnisse (2),
+																					Verhandlungssicher (3),
+																					Zwingend erforderlich (4)
+																				</xs:documentation>
+																			</xs:annotation>
+																			<xs:simpleType>
+																				<xs:union>
+																					<xs:simpleType>
+																						<xs:restriction base="xs:integer">
+																							<xs:minInclusive value="1" />
+																							<xs:maxInclusive value="4" />
+																						</xs:restriction>
+																					</xs:simpleType>
+																				</xs:union>
+																			</xs:simpleType>
+																		</xs:element>
+																	</xs:sequence>
+																</xs:complexType>
+															</xs:element>
+														</xs:sequence>
+													</xs:complexType>
+												</xs:element>
+												<xs:element name="ProfessionalTrainingQualifs"
+													minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Angaben zu
+															gewuenschten
+															Ausbildungen
+														</xs:documentation>
+													</xs:annotation>
+													<xs:complexType>
+														<xs:sequence>
+															<xs:element name="ProfessionalTraining"
+																minOccurs="0" maxOccurs="10">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Gruppierendes
+																		Element
+																		für Ausbildungen
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:complexType>
+																	<xs:sequence>
+																		<xs:element name="Title">
+																			<xs:annotation>
+																				<xs:documentation>+++ BESCHREIBUNG: Angaben zur
+																					Ausbildung
+																				</xs:documentation>
+																			</xs:annotation>
+																			<xs:complexType>
+																				<xs:sequence>
+																					<xs:element name="TitleCode">
+																						<xs:annotation>
+																							<xs:documentation>+++ BESCHREIBUNG: Angaben zur
+																								Berufsbezeichnung oder Taetigkeit. +++
+																								ATTRIBUTE:
+																								gemaess DKZ (Identifikationsnummer)
+																								bzw. Berufe-Id
+																								aus Datei "vam_beruf.xml" die im
+																								Outverzeichnis
+																								des WebTool des
+																								jeweiligen
+																								Kooperationspartners zur Verfuegung
+																								gestellt
+																								wird
+																							</xs:documentation>
+																						</xs:annotation>
+																						<xs:simpleType>
+																							<xs:restriction base="xs:integer">
+																								<xs:pattern value="[0-9]{3,7}" />
+																							</xs:restriction>
+																						</xs:simpleType>
+																					</xs:element>
+																					<xs:element name="Degree" minOccurs="0">
+																						<xs:annotation>
+																							<xs:documentation>+++ BESCHREIBUNG:
+																								Hochschulabschlussart +++ ATTRIBUTE: 
+																								Nicht relevant (1), Bachelor (14), 
+																								Master / Diplom / Magister (15), Staatsexamen (13),
+																								Kirchliches Examen (8), Promotion (12)
+																							</xs:documentation>
+																						</xs:annotation>
+																						<xs:simpleType>
+																							<xs:restriction base="xs:integer">
+																								<xs:enumeration value="1" />
+																								<xs:enumeration value="8" />
+																								<xs:enumeration value="12" />
+																								<xs:enumeration value="13" />
+																								<xs:enumeration value="14" />
+																								<xs:enumeration value="15" />
+																							</xs:restriction>
+																						</xs:simpleType>
+																					</xs:element>
+																				</xs:sequence>
+																			</xs:complexType>
+																		</xs:element>
+																	</xs:sequence>
+																</xs:complexType>
+															</xs:element>
+														</xs:sequence>
+													</xs:complexType>
+												</xs:element>
+												<xs:element name="Licences" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Angaben zu
+															gewuenschten
+															Lizenzen
+														</xs:documentation>
+													</xs:annotation>
+													<xs:complexType>
+														<xs:sequence>
+															<xs:element name="Licence" maxOccurs="unbounded">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Gruppierendes
+																		Element
+																		fuer Lizenzen
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:complexType>
+																	<xs:sequence>
+																		<xs:element name="LicenceName" type="xs:integer">
+																			<xs:annotation>
+																				<xs:documentation>+++ BESCHREIBUNG: Id der Lizenz
+																					+++
+																					ATTRIBUTE: siehe Kompetenzkatalog, Sektion
+																					Lizenzen
+																				</xs:documentation>
+																			</xs:annotation>
+																		</xs:element>
+																		<xs:element name="LicenceLevel">
+																			<xs:annotation>
+																				<xs:documentation>+++ BESCHREIBUNG: Ausprägung der
+																					Lizenz
+																					+++ ATTRIBUTE: Wünschenswert (1), Zwingend
+																					erforderlich
+																					(2)
+																				</xs:documentation>
+																			</xs:annotation>
+																			<xs:simpleType>
+																				<xs:restriction base="xs:integer">
+																					<xs:minInclusive value="1" />
+																					<xs:maxInclusive value="2" />
+																				</xs:restriction>
+																			</xs:simpleType>
+																		</xs:element>
+																	</xs:sequence>
+																</xs:complexType>
+															</xs:element>
+														</xs:sequence>
+													</xs:complexType>
+												</xs:element>
+												<xs:element name="CertificationQualifs"
+													minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Angaben zu geforderten
+															Weiterbildungen / Zertifikaten
+														</xs:documentation>
+													</xs:annotation>
+													<xs:complexType>
+														<xs:sequence>
+															<xs:element name="Certification" maxOccurs="20">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Gruppierendes
+																		Element
+																		für Weiterbildungen, Zertifikate,
+																		Berechtigungen
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:complexType>
+																	<xs:sequence>
+																		<xs:element name="CertificationName">
+																			<xs:annotation>
+																				<xs:documentation>+++ BESCHREIBUNG: Name der
+																					benoetigten Qualifikation in Form von z.B.
+																					Weiterbildung, Zertifikat, Berechtigung
+																				</xs:documentation>
+																			</xs:annotation>
+																			<xs:simpleType>
+																				<xs:restriction base="xs:string">
+																					<xs:minLength value="1" />
+																					<xs:maxLength value="100" />
+																				</xs:restriction>
+																			</xs:simpleType>
+																		</xs:element>
+																		<xs:element name="Description" minOccurs="0">
+																			<xs:annotation>
+																				<xs:documentation>+++ BESCHREIBUNG: Beschreibung der
+																					benoetigten Qualifikation in Form von z.B.
+																					Weiterbildung, Zertifikat, Berechtigung
+																				</xs:documentation>
+																			</xs:annotation>
+																			<xs:simpleType>
+																				<xs:restriction base="xs:string">
+																					<xs:minLength value="0" />
+																					<xs:maxLength value="255" />
+																				</xs:restriction>
+																			</xs:simpleType>
+																		</xs:element>
+																	</xs:sequence>
+																</xs:complexType>
+															</xs:element>
+														</xs:sequence>
+													</xs:complexType>
+												</xs:element>
+												<xs:element name="SkillQualifs" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Angaben zu geforderten
+															Faehigkeiten und sozialen Kompetenzen
+														</xs:documentation>
+													</xs:annotation>
+													<xs:complexType>
+														<xs:sequence>
+															<xs:element name="HardSkill" minOccurs="0"
+																maxOccurs="unbounded">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Angaben zu
+																		geforderten Faehigkeiten
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:complexType>
+																	<xs:sequence>
+																		<xs:element name="SkillName" type="xs:integer">
+																			<xs:annotation>
+																				<xs:documentation>+++ BESCHREIBUNG: Bezeichnung der
+																					Faehigkeit+++ ATTRIBUTE: gemaess Kompetenzkataloge
+																					die im Outverzeichnis des WebTool
+																					des
+																					jeweiligen
+																					Kooperationspartners zur Verfuegung
+																					gestellt werden
+																				</xs:documentation>
+																			</xs:annotation>
+																		</xs:element>
+																		<xs:element name="SkillLevel">
+																			<xs:annotation>
+																				<xs:documentation>+++ BESCHREIBUNG: Auspraegung der
+																					Faehigkeit +++ ATTRIBUTE: Grundkenntnisse (1),
+																					Erweiterte Kenntnisse (2), Expertenkenntnisse (3);
+																					Zwingend erforderlich (4)
+																				</xs:documentation>
+																			</xs:annotation>
+																			<xs:simpleType>
+																				<xs:restriction base="xs:integer">
+																					<xs:minInclusive value="1" />
+																					<xs:maxInclusive value="4" />
+																				</xs:restriction>
+																			</xs:simpleType>
+																		</xs:element>
+																	</xs:sequence>
+																</xs:complexType>
+															</xs:element>
+															<xs:element name="SoftSkill" minOccurs="0"
+																maxOccurs="5">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Angaben zu
+																		geforderten sozialen Kompetenzen
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:complexType>
+																	<xs:sequence>
+																		<xs:element name="SkillName">
+																			<xs:annotation>
+																				<xs:documentation>+++ BESCHREIBUNG: Soziale
+																					Kompetenz
+																					+++ ATTRIBUTE: Analyse- und
+																					Problemlösefähigkeit (1),
+																					Auffassungsfähigkeit/-gabe (2),
+																					Entscheidungsfähigkeit (3), Ganzheitliches Denken
+																					(4), Organisationsfähigkeit (5), Belastbarkeit (6),
+																					Eigeninitiative (7), Motivation/
+																					Leistungsbereitschaft (8), Selbständiges Arbeiten
+																					(9), Zielstrebigkeit/Ergebnisorientierung (10),
+																					Einfühlungsvermögen (11), Führungsfähigkeit (12),
+																					Kommunikationsfähigkeit (13), Kundenorientierung
+																					(14), Teamfähigkeit (15), Flexibilität (16),
+																					Kreativität (17), Lernbereitschaft (18),
+																					Sorgfalt/Genauigkeit (19), Zuverlässigkeit (20)
+																				</xs:documentation>
+																			</xs:annotation>
+																			<xs:simpleType>
+																				<xs:restriction base="xs:integer">
+																					<xs:minInclusive value="1" />
+																					<xs:maxInclusive value="20" />
+																				</xs:restriction>
+																			</xs:simpleType>
+																		</xs:element>
+																	</xs:sequence>
+																</xs:complexType>
+															</xs:element>
+														</xs:sequence>
+													</xs:complexType>
+												</xs:element>
+												<xs:element name="Mobility" minOccurs="0">
+													<xs:annotation>
+														<xs:documentation>+++ BESCHREIBUNG: Angaben zur
+															geforderten
+															Mobilitaet
+														</xs:documentation>
+													</xs:annotation>
+													<xs:complexType>
+														<xs:sequence>
+															<xs:element name="DrivingLicence" minOccurs="0"
+																maxOccurs="unbounded">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Gruppierendes
+																		Element
+																		fuer Fuehrerscheine
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:complexType>
+																	<xs:sequence>
+																		<xs:element name="DrivingLicenceName" type="xs:integer">
+																			<xs:annotation>
+																				<xs:documentation>+++ BESCHREIBUNG: Id des
+																					Fuehrerscheins
+																					+++ ATTRIBUTE: siehe
+																					Kompetenzkatalog,
+																					Sektion
+																					Fuehrerscheine
+																				</xs:documentation>
+																			</xs:annotation>
+																		</xs:element>
+																		<xs:element name="DrivingLicenceRequired">
+																			<xs:annotation>
+																				<xs:documentation>+++ BESCHREIBUNG: Ausprägung der
+																					Forderung nach einem Fuehrerschein
+																					+++ ATTRIBUTE:
+																					Wünschenswert (1), Zwingend erforderlich
+																					(2)
+																				</xs:documentation>
+																			</xs:annotation>
+																			<xs:simpleType>
+																				<xs:restriction base="xs:integer">
+																					<xs:minInclusive value="1" />
+																					<xs:maxInclusive value="2" />
+																				</xs:restriction>
+																			</xs:simpleType>
+																		</xs:element>
+																	</xs:sequence>
+																</xs:complexType>
+															</xs:element>
+															<xs:element name="Vehicle" minOccurs="0">
+																<xs:annotation>
+																	<xs:documentation>+++ BESCHREIBUNG: Angaben zu
+																		vorhandenen Fahrzeugen
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:complexType>
+																	<xs:sequence>
+																		<xs:element name="VehicleRequired" minOccurs="0">
+																			<xs:annotation>
+																				<xs:documentation>+++ BESCHREIBUNG: Angabe ob
+           																			ein Fahrzeug gefordert wird
+																					+++ ATTRIBUTE: nicht
+																					gefordert (0), gefordert (1)
+																				</xs:documentation>
+																			</xs:annotation>
+																			<xs:simpleType>
+																				<xs:restriction base="xs:integer">
+																					<xs:minInclusive value="0" />
+																					<xs:maxInclusive value="1" />
+																				</xs:restriction>
+																			</xs:simpleType>
+																		</xs:element>
+																	</xs:sequence>
+																</xs:complexType>
+															</xs:element>
+														</xs:sequence>
+													</xs:complexType>
+												</xs:element>
+											</xs:sequence>
+										</xs:complexType>
+									</xs:element>
+									<xs:element name="ProfessionalExperience" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Angaben zur
+												Einstiegsebene
+												+++ Berufseinsteiger (1), Mit Berufserfahrung
+												(2)
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:integer">
+												<xs:minInclusive value="1" />
+												<xs:maxInclusive value="2" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="TravelRequired" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Reisebereitschaft (auf
+												Basis der Gesamtarbeitszeit) +++ ATTRIBUTE: nicht
+												erforderlich(1), zeitweise(2), uneingeschraenkt(3)
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:integer">
+												<xs:minInclusive value="1" />
+												<xs:maxInclusive value="3" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+									<xs:element name="Handicap" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>+++ BESCHREIBUNG: Art des Stellenangebots bezogen
+												auf
+												die Schwerbehinderung +++ ATTRIBUTE: nur
+												Schwerbehinderte/Gleichgestellte (1), sowohl
+												Schwerbehinderte/Gleichgestellte als auch nicht
+												Schwerbehinderte/Gleichgestellte (2)
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:integer">
+												<xs:minInclusive value="1" />
+												<xs:maxInclusive value="2" />
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:element>
+								</xs:sequence>
+							</xs:complexType>
+						</xs:element>
+						<xs:element name="NumberToFill">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Anzahl der offenen Stellen
+									des
+									Stellenangebots
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:integer">
+									<xs:minInclusive value="0" />
+									<xs:maxInclusive value="999" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="AssignmentStartDate" type="xs:date">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Fruehester Eintrittstermin
+								</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="AssignmentEndDate" type="xs:date"
+							minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Spaetester Eintrittstermin
+								</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="BAInternalInformation" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Statistische Informationen zu
+						dem
+						Stellenangebot. Werden nur an zugelassene kommunale Traeger
+						exportiert
+					</xs:documentation>
+				</xs:annotation>
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="InternalInformation" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Interne Informationen zum
+									Stellenangebot
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:minLength value="0" />
+									<xs:maxLength value="255" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="MaximumPlacementSuggestions"
+							minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Maximal gewuenschte Anzahl
+									an
+									Vermittlungsvorschlaegen fuer dieses Stellenangebot
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:integer">
+									<xs:minInclusive value="0" />
+									<xs:maxInclusive value="9999" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="PlacementSuggestionsIssued"
+							minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Bereits gesendete
+									Vermittlungsvorschlaege fuer dieses Stellenangebot
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:integer">
+									<xs:minInclusive value="0" />
+									<xs:maxInclusive value="9999" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="MatchingStrategy" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Ausgewaehlte
+									Matchingstrategie
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:integer">
+									<xs:minInclusive value="1" />
+									<xs:maxInclusive value="8" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>

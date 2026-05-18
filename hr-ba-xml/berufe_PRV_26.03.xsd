@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:simpleType name="ja-nein-type">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="nein"/>
+			<xs:enumeration value="ja"/>
+		</xs:restriction>	
+	</xs:simpleType>
+	<xs:complexType name="beruf-type">
+		<xs:sequence>
+			<xs:element name="kompetenz" type="kompetenz-type" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="alternative" type="alternative-type" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="aehnlichkeit" type="aehnlichkeit-type" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="studienfach" type="studienfach-type" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="nachfolger_genealogisch" type="nachfolger_genealogisch-type" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="nachfolger_technisch" type="nachfolger_technisch-type" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="verschluesselungsposition" type="verschluesselungsposition-type" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="id" type="xs:integer" use="required"/>
+		<xs:attribute name="name" type="xs:string" use="required"/>
+	</xs:complexType>
+	<xs:complexType name="kompetenz-type">
+		<xs:attribute name="idref" type="xs:integer" use="required"/>
+		<xs:attribute name="gruppenkompetenz" type="ja-nein-type" use="required"/>
+	</xs:complexType>
+	<xs:complexType name="alternative-type">
+		<xs:attribute name="idref" type="xs:integer" use="required"/>
+		<xs:attribute name="prio" type="xs:integer" use="required"/>
+	</xs:complexType>
+	<xs:complexType name="aehnlichkeit-type">
+		<xs:attribute name="idref" type="xs:integer" use="required"/>
+		<xs:attribute name="klasse" type="xs:integer" use="required"/>
+	</xs:complexType>
+	<xs:complexType name="studienfach-type">
+		<xs:attribute name="idref" type="xs:integer" use="required"/>
+	</xs:complexType>
+	<xs:complexType name="nachfolger_genealogisch-type">
+		<xs:attribute name="idref" type="xs:integer" use="required"/>
+	</xs:complexType>
+	<xs:complexType name="nachfolger_technisch-type">
+		<xs:attribute name="idref" type="xs:integer" use="required"/>
+		<xs:attribute name="schwerpunkt" type="ja-nein-type" use="required"/>
+	</xs:complexType>
+	<xs:complexType name="verschluesselungsposition-type">
+		<xs:attribute name="idref" type="xs:integer" use="required"/>
+	</xs:complexType>
+	<xs:element name="berufe">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="beruf" type="beruf-type" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2008 rel. 2 (http://www.altova.com) by Bundesagentur fuer Arbeit (Bundesagentur fuer Arbeit) -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:complexType name="ebene1-type">
+		<xs:choice>
+			<xs:element name="ebene_2" type="ebene2-type" maxOccurs="unbounded"/>
+			<xs:element name="kompetenz" type="kompetenz-type" maxOccurs="unbounded"/>
+		</xs:choice>
+		<xs:attributeGroup ref="ebeneAttributes"/>
+	</xs:complexType>
+	<xs:complexType name="ebene2-type">
+		<xs:choice>
+			<xs:element name="ebene_3" type="ebene3-type" maxOccurs="unbounded"/>
+			<xs:element name="kompetenz" type="kompetenz-type" maxOccurs="unbounded"/>
+		</xs:choice>
+		<xs:attributeGroup ref="ebeneAttributes"/>
+	</xs:complexType>
+	<xs:complexType name="ebene3-type">
+		<xs:sequence>
+			<xs:element name="kompetenz" type="kompetenz-type" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attributeGroup ref="ebeneAttributes"/>
+	</xs:complexType>
+	<xs:complexType name="kompetenz-type">
+		<xs:sequence>
+			<xs:element name="unter-kompetenz" type="unter-kompetenz-type" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attributeGroup ref="kompetenzAttributes"/>
+	</xs:complexType>
+	<xs:complexType name="unter-kompetenz-type">
+		<xs:attributeGroup ref="kompetenzAttributes"/>
+	</xs:complexType>
+	<xs:element name="hierarchie">
+		<xs:annotation>
+			<xs:documentation>Comment describing your root element</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="ebene_1" type="ebene1-type" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:attributeGroup name="ebeneAttributes">
+		<xs:attribute name="id" type="xs:integer" use="required"/>
+		<xs:attribute name="schluessel" type="xs:string" use="required"/>
+		<xs:attribute name="bezeichnung" type="xs:string" use="required"/>
+	</xs:attributeGroup>
+	<xs:attributeGroup name="kompetenzAttributes">
+		<xs:attribute name="idref" type="xs:integer" use="required"/>
+	</xs:attributeGroup>
+</xs:schema>

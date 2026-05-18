@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Bundesagentur fuer Arbeit - Schema für den Im- und Export von Bewerberdaten 
+	über HRBAXML -->
+<!-- Version: 1.1 / Verbis PRV 26.03-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:include schemaLocation="HRBAXML.xsd" />
+
+
+	<xs:element name="HRBAXMLJobPositionProposalResponse">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="Header" type="HeaderType" />
+				<xs:element name="Data">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="JobPositionProposalResponse" type="JobPositionProposalResponseType"
+								minOccurs="0" maxOccurs="unbounded" />
+							<xs:element name="DeleteEntry" type="DeleteEntryType"
+								minOccurs="0" maxOccurs="unbounded" />
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:complexType name="JobPositionProposalResponseType">
+		<xs:sequence>
+			<xs:element name="JobPositionProposalId">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: ID aus dem dazugehörigen JobPositionProposal zu der
+						die Rückmeldung des Vermittlungsvorschlags erfolgen soll
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:minLength value="1" />
+						<xs:maxLength value="30" />
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="Supplier">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Angaben zum Anbieter
+					</xs:documentation>
+				</xs:annotation>
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="SupplierId">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Ihre ID - diese wird Ihnen
+									nach Abschluss der Kooperationsvereinbarung mitgeteilt.
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:minLength value="1" />
+									<xs:maxLength value="10" />
+									<xs:pattern value="[V]{1}[0-9]{9}" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="ResponseData">
+				<xs:annotation>
+					<xs:documentation>+++ BESCHREIBUNG: Angaben zur Rückmeldung
+					</xs:documentation>
+				</xs:annotation>
+				<xs:complexType>
+					<xs:sequence>						
+						<xs:element name="HiringDate" type="xs:date" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Datum der Einstellung
+								</xs:documentation>
+							</xs:annotation>
+						</xs:element>						
+						<xs:element name="ProposalStatus">
+							<xs:annotation>
+								<xs:documentation>+++ BESCHREIBUNG: Klassifizierung der Art
+									des Rückmeldung +++ ATTRIBUTE: in Bearbeitung(1), zur Bewerbung aufgefordert(2), 
+									Beworben(3), Eingang bestaetigt(4), Auswahlverfahren laeuft(5), Bewerbung 
+									zurueckgezogen(6), Absage erhalten(7), Zusage erhalten(8), Eingestellt(9),
+									nicht vorgestellt/ beworben(10), eingestellt auf sonstige Stelle(11)
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:integer">
+									<xs:enumeration value="1" />
+									<xs:enumeration value="2" />
+									<xs:enumeration value="3" />
+									<xs:enumeration value="4" />
+									<xs:enumeration value="5" />
+									<xs:enumeration value="6" />
+									<xs:enumeration value="7" />
+									<xs:enumeration value="8" />
+									<xs:enumeration value="9" />
+									<xs:enumeration value="10" />
+									<xs:enumeration value="11" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>					
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>

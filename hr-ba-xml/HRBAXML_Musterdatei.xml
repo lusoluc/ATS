@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<HRBAXMLJobPositionPosting>
+    <Header>
+        <SupplierId>Vxxxxxxxxx</SupplierId>
+        <Timestamp>2025-09-10T10:40:15.757+01:00</Timestamp>
+        <Amount>1</Amount>
+        <TypeOfLoad>D</TypeOfLoad>
+    </Header>
+    <Data>
+        <JobPositionPosting>
+            <JobPositionPostingId>LLLLL-XXXXXXXXXXXX-S</JobPositionPostingId>
+            <HiringOrg>
+                <HiringOrgName>Beispiel AG Name</HiringOrgName>
+                <HiringOrgId>Axxxxxxxxx</HiringOrgId>
+                <ProfileWebSite>https://www.xxxxxxxx.de</ProfileWebSite>
+                <HiringOrgSize>4</HiringOrgSize>
+                <Industry>
+                    <NAICS>xx.x</NAICS>
+                </Industry>
+                <Contact>
+                    <Salutation>x</Salutation>
+                    <GivenName>Vorname</GivenName>
+                    <FamilyName>Nachname</FamilyName>
+                </Contact>
+            </HiringOrg>
+            <PostDetail>
+                <LastModificationDate>2025-09-10T10:40:02.028+01:00</LastModificationDate>
+                <Status>1</Status>
+                <Action>1</Action>
+                <SupplierId>Vxxxxxxxxx</SupplierId>
+                <SupplierName>Stellenanbieter Name</SupplierName>
+                <PostedBy>
+                    <Contact>
+                        <Company>Firmenname für Bewerbungen</Company>
+                        <Salutation>1</Salutation>
+                        <GivenName>Max</GivenName>
+                        <FamilyName>Mustermann</FamilyName>
+                        <PositionTitle>Personalchef</PositionTitle>
+                        <JobContactWebSite>http://www.bewerbungen.de</JobContactWebSite>
+                    </Contact>
+                </PostedBy>
+                <SupervisionDesired>1</SupervisionDesired>
+            </PostDetail>
+            <JobPositionInformation>
+                <JobPositionTitle>
+                    <TitleCode>10233</TitleCode>
+                </JobPositionTitle>
+                <JobPositionTitleDescription>Reinigungskraft (m/w/d)</JobPositionTitleDescription>
+                <JobOfferType>1</JobOfferType>
+                <SocialInsurance>1</SocialInsurance>
+                <Objective>Stellenangebotstext Max 10000 Zeichen, min 30 Zeichen</Objective>
+                <EducationAuthorisation>0</EducationAuthorisation>
+                <JobPositionDescription>
+                    <JobPositionLocation>
+                        <Location>
+                            <CountryCode>DE</CountryCode>
+                            <PostalCode>99999</PostalCode>
+                            <Region>9</Region>
+                            <Municipality>Musterstadt</Municipality>
+                            <StreetName>Musterstraße 7</StreetName>
+                        </Location>
+                    </JobPositionLocation>
+                    <Application>
+                        <KindOfApplication>6</KindOfApplication>
+                    </Application>
+                    <Classification>
+                        <Schedule>
+                            <WorkingPlan>7</WorkingPlan>
+                            <WorkingPlan>8</WorkingPlan>
+                            <WorkingPlan>9</WorkingPlan>
+                            <WorkingPlan>1</WorkingPlan>
+                            <WorkingPlan>2</WorkingPlan>
+                        </Schedule>
+                    </Classification>
+                    <CompensationDescription>
+					    <CompensationProfile>4</CompensationProfile>
+                        <EmployerPayscaleBound>1</EmployerPayscaleBound>
+                        <CollectiveAgreement>Tarifvertrag</CollectiveAgreement>
+                    </CompensationDescription>
+                </JobPositionDescription>
+                <JobPositionRequirements>
+                    <ProfessionalExperience>2</ProfessionalExperience>
+                    <Handicap>2</Handicap>
+                </JobPositionRequirements>
+                <NumberToFill>1</NumberToFill>
+                <AssignmentStartDate>2025-10-15+01:00</AssignmentStartDate>
+            </JobPositionInformation>
+        </JobPositionPosting>
+    </Data>
+</HRBAXMLJobPositionPosting>

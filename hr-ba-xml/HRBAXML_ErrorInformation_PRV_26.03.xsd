@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Version: 4.5 / VerBIS 26.03 -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	elementFormDefault="qualified" attributeFormDefault="unqualified">
+
+	<xs:element name="HRBAXMLErrorInformation">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="ErrorInformation">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Timestamp" type="xs:dateTime">
+								<xs:annotation>
+									<xs:documentation>+++ BESCHREIBUNG: Timestamp aus dem
+										ursprünglich der Anfrage zu Grunde
+										liegenden HRBAXML File
+									</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element name="Filename" type="xs:string">
+								<xs:annotation>
+									<xs:documentation>+++ BESCHREIBUNG: Dateiname des urspüglichen
+										HRBAXML Files
+									</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element name="SupplierId" type="xs:int">
+								<xs:annotation>
+									<xs:documentation>+++ BESCHREIBUNG: ID der Organisation, welche
+										die Datensätze geliefert hat
+									</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element name="W3CCompatibility">
+								<xs:annotation>
+									<xs:documentation>+++ BESCHREIBUNG: Angabe, ob Datensatz W3C
+										kompatibel ist
+									</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="Wellformed" type="xs:boolean" />
+										<xs:element name="Row" type="xs:int" minOccurs="0"
+											maxOccurs="1" />
+										<xs:element name="Column" type="xs:int" minOccurs="0"
+											maxOccurs="1" />
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="ErrorMessage" minOccurs="0"
+								maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="ReferenceId" type="xs:string">
+											<xs:annotation>
+												<xs:documentation>+++ BESCHREIBUNG: Eindeutige ID des
+													einzelnen Datensatzes
+												</xs:documentation>
+											</xs:annotation>
+										</xs:element>
+										<xs:element name="ErrorCode" type="xs:string">
+											<xs:annotation>
+												<xs:documentation>+++ BESCHREIBUNG: Code zur
+													Fehlerbeschreibung
+												</xs:documentation>
+											</xs:annotation>
+										</xs:element>
+										<xs:element name="AdditionalInformation" type="xs:string">
+											<xs:annotation>
+												<xs:documentation>+++ BESCHREIBUNG: Zusatzinformationen zum
+													Fehlercode
+												</xs:documentation>
+											</xs:annotation>
+										</xs:element>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+</xs:schema>

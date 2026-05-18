@@ -23,13 +23,20 @@ export default async function RootLayout({
 }) {
   let headerData = null;
   let footerData = null;
+  let navPages = [];
   try {
-    const [headerPage, footerPage] = await Promise.all([
+    const [headerPage, footerPage, dbNavPages] = await Promise.all([
       prisma.page.findUnique({ where: { slug: '_global_header' } }),
-      prisma.page.findUnique({ where: { slug: '_global_footer' } })
+      prisma.page.findUnique({ where: { slug: '_global_footer' } }),
+      prisma.page.findMany({ 
+        where: { status: 'published', navEnabled: true },
+        orderBy: { navOrder: 'asc' },
+        select: { id: true, slug: true, title: true, navLabel: true, navParent: true }
+      })
     ]);
     if (headerPage) headerData = JSON.parse(headerPage.content);
     if (footerPage) footerData = JSON.parse(footerPage.content);
+    navPages = dbNavPages || [];
   } catch (e) {
     // Ignore parse errors or missing DB in build step
   }
@@ -40,7 +47,7 @@ export default async function RootLayout({
         {headerData && headerData.content ? (
           <PuckRenderer data={headerData} />
         ) : (
-          <Navbar />
+          <Navbar cmsPages={navPages} />
         )}
         
         {children}

@@ -2,9 +2,20 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
-export default function Navbar() {
+type NavPage = {
+  id: string;
+  slug: string;
+  title: string;
+  navLabel: string | null;
+  navParent: string | null;
+};
+
+export default function Navbar({ cmsPages = [] }: { cmsPages?: NavPage[] }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
+
+  const parents = cmsPages.filter(p => !p.navParent);
+  const children = cmsPages.filter(p => p.navParent);
 
   return (
     <nav className="navbar glass-panel">
@@ -23,22 +34,35 @@ export default function Navbar() {
         </button>
 
         <div className={`nav-links ${isOpen ? 'active' : ''}`}>
-          <div 
-            className="dropdown" 
-            onClick={() => setDropdownOpen(!dropdownOpen)}
-            onMouseEnter={() => setDropdownOpen(true)}
-            onMouseLeave={() => setDropdownOpen(false)}
-          >
-            <span className="dropdown-trigger">Beruf & Karriere ▾</span>
-            <div className={`dropdown-content glass-panel ${dropdownOpen ? 'show' : ''}`}>
-              <Link href="/info/_de_beruf_und_karriere_ausbildung_" onClick={() => setIsOpen(false)}>Ausbildung</Link>
-              <Link href="/info/_de_beruf_und_karriere_praktikum_" onClick={() => setIsOpen(false)}>Praktikum</Link>
-              <Link href="/info/_de_beruf_und_karriere_freiwilligendienst_fsj_und_bfd_" onClick={() => setIsOpen(false)}>FSJ & BFD</Link>
-              <Link href="/info/_de_beruf_und_karriere_praktisches_jahr_und_aerztliche_weiterbildung_" onClick={() => setIsOpen(false)}>Ärztliche Weiterbildung</Link>
-            </div>
-          </div>
+          {parents.map(parent => {
+            const myChildren = children.filter(c => c.navParent === parent.slug);
+            if (myChildren.length > 0) {
+              return (
+                <div 
+                  key={parent.id}
+                  className="dropdown" 
+                  onClick={() => setDropdownOpen(dropdownOpen === parent.id ? null : parent.id)}
+                  onMouseEnter={() => setDropdownOpen(parent.id)}
+                  onMouseLeave={() => setDropdownOpen(null)}
+                >
+                  <span className="dropdown-trigger">{parent.navLabel || parent.title} ▾</span>
+                  <div className={`dropdown-content glass-panel ${dropdownOpen === parent.id ? 'show' : ''}`}>
+                    {myChildren.map(child => (
+                      <Link key={child.id} href={`/info/${child.slug}`} onClick={() => setIsOpen(false)}>
+                        {child.navLabel || child.title}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <Link key={parent.id} href={`/info/${parent.slug}`} onClick={() => setIsOpen(false)}>
+                {parent.navLabel || parent.title}
+              </Link>
+            );
+          })}
           
-          <Link href="/arbeitgeber" onClick={() => setIsOpen(false)}>Arbeitgeber</Link>
           <Link href="/jobs" onClick={() => setIsOpen(false)}>Stellenangebote</Link>
           <Link href="/job-alert" onClick={() => setIsOpen(false)}>Job-Alert</Link>
           <Link href="/info/_de_initiativbewerbung_" className="btn-primary mobile-btn" onClick={() => setIsOpen(false)}>

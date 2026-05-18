@@ -30,6 +30,7 @@ export default function AdminPages() {
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
@@ -106,8 +107,45 @@ export default function AdminPages() {
 
   const input = { width:'100%', padding:'0.7rem', borderRadius:'8px', border:'1px solid var(--border)', background:'var(--background)', color:'var(--foreground)', fontSize:'0.92rem' } as const;
 
-  const filtered = filterStatus === 'all' ? pages : pages.filter(p => p.status === filterStatus);
+  const filtered = (filterStatus === 'all' ? pages : pages.filter(p => p.status === filterStatus))
+    .filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()) || p.slug.toLowerCase().includes(searchQuery.toLowerCase()));
+  
   const publishedParents = pages.filter(p => p.status === 'published' && p.navEnabled);
+
+  const getTreeSortedPages = (list: Page[]) => {
+    if (searchQuery.trim() !== '') return list.map(p => ({ ...p, level: 0 }));
+
+    const parents = list.filter(p => !p.navParent);
+    const children = list.filter(p => p.navParent);
+    
+    parents.sort((a,b) => a.navOrder - b.navOrder);
+    
+    const result: (Page & { level: number })[] = [];
+    
+    const addChildren = (parentSlug: string, level: number) => {
+      const myChildren = children.filter(c => c.navParent === parentSlug);
+      myChildren.sort((a,b) => a.navOrder - b.navOrder);
+      for (const child of myChildren) {
+        result.push({ ...child, level });
+        addChildren(child.slug, level + 1);
+      }
+    };
+    
+    for (const parent of parents) {
+      result.push({ ...parent, level: 0 });
+      addChildren(parent.slug, 1);
+    }
+    
+    const addedIds = new Set(result.map(r => r.id));
+    const orphans = list.filter(p => !addedIds.has(p.id));
+    for (const orphan of orphans) {
+      result.push({ ...orphan, level: 0 });
+    }
+    
+    return result;
+  };
+
+  const treePages = getTreeSortedPages(filtered);
 
   // ── EDITOR VIEW ──
   if (view !== 'list') return (
@@ -242,7 +280,16 @@ export default function AdminPages() {
           <h1 style={{ fontSize:'2rem', color:'var(--primary)' }}>Seitenmanager</h1>
           <p style={{ opacity:0.7 }}>{pages.length} Seiten verwaltet · Vollständiges CMS</p>
         </div>
-        <button className="btn-primary" onClick={openNew}>➕ Neue Seite erstellen</button>
+        <div style={{ display:'flex', gap:'1rem', alignItems:'center', flexWrap:'wrap' }}>
+          <input 
+            type="text" 
+            placeholder="🔍 Seiten durchsuchen..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ padding:'0.7rem 1rem', borderRadius:'8px', border:'1px solid var(--border)', background:'var(--surface)', minWidth:'250px' }}
+          />
+          <button className="btn-primary" onClick={openNew}>➕ Neue Seite erstellen</button>
+        </div>
       </div>
 
       {/* Status Tabs */}
@@ -254,11 +301,14 @@ export default function AdminPages() {
 
       {loading ? <p style={{ textAlign:'center', padding:'3rem', opacity:0.6 }}>Lädt...</p> : (
         <div style={{ display:'flex', flexDirection:'column', gap:'0.6rem' }}>
-          {filtered.length === 0 && <div style={{ textAlign:'center', padding:'3rem', opacity:0.6, border:'1px dashed var(--border)', borderRadius:'12px' }}>Keine Seiten in dieser Kategorie.</div>}
-          {filtered.map(page => {
+          {treePages.length === 0 && <div style={{ textAlign:'center', padding:'3rem', opacity:0.6, border:'1px dashed var(--border)', borderRadius:'12px' }}>Keine Seiten gefunden.</div>}
+          {treePages.map(page => {
             const st = STATUS_META[page.status] || STATUS_META.draft;
+            const isTree = searchQuery.trim() === '';
+            const indent = isTree ? page.level * 2 : 0;
             return (
-              <div key={page.id} className="glass-panel" style={{ padding:'1rem 1.5rem', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'1rem', flexWrap:'wrap', opacity: page.status==='archived' ? 0.7 : 1 }}>
+              <div key={page.id} className="glass-panel" style={{ position:'relative', padding:`1rem 1.5rem 1rem ${1.5 + indent}rem`, marginLeft: indent > 0 ? '1rem' : '0', borderLeft: indent > 0 ? '4px solid var(--border)' : '1px solid var(--glass-border)', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'1rem', flexWrap:'wrap', opacity: page.status==='archived' ? 0.7 : 1 }}>
+                {isTree && page.level > 0 && <span style={{position:'absolute', left:'-0.6rem', top:'50%', transform:'translateY(-50%)', opacity:0.4, fontSize:'1.2rem', color:'var(--primary)'}}>↳</span>}
                 <div style={{ minWidth:0 }}>
                   <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', flexWrap:'wrap', marginBottom:'0.2rem' }}>
                     <p style={{ fontWeight:700 }}>{page.title}</p>

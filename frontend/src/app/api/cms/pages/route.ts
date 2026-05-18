@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { revalidatePath } from 'next/cache';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -76,6 +77,7 @@ export async function POST(req: NextRequest) {
         metaDesc: metaDesc || null,
       },
     });
+    revalidatePath('/', 'layout');
     return NextResponse.json({ page }, { status: 201 });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -112,6 +114,7 @@ export async function PUT(req: NextRequest) {
         ...(metaDesc !== undefined && { metaDesc: metaDesc || null }),
       },
     });
+    revalidatePath('/', 'layout');
     return NextResponse.json({ page });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -125,6 +128,7 @@ export async function DELETE(req: NextRequest) {
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID fehlt' }, { status: 400 });
     await prisma.page.delete({ where: { id } });
+    revalidatePath('/', 'layout');
     return NextResponse.json({ success: true });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

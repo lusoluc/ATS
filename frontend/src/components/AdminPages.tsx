@@ -205,8 +205,10 @@ export default function AdminPages() {
               <label style={{ display:'block', fontWeight:700, marginBottom:'0.35rem', fontSize:'0.85rem' }}>Übergeordnete Seite</label>
               <select value={form.navParent} onChange={e=>setForm(f=>({...f,navParent:e.target.value}))} style={input}>
                 <option value="">— Hauptmenü (keine Überordnung) —</option>
-                {publishedParents.filter(p=>p.id !== editing?.id).map(p=>(
-                  <option key={p.id} value={p.slug}>{p.navLabel||p.title}</option>
+                {getTreeSortedPages(publishedParents).filter(p=>p.id !== editing?.id).map(p=>(
+                  <option key={p.id} value={p.slug}>
+                    {'\u00A0\u00A0'.repeat(p.level * 2)}{p.level > 0 ? '↳ ' : ''}{p.navLabel||p.title}
+                  </option>
                 ))}
               </select>
             </div>

@@ -14,7 +14,8 @@ export default function Navbar({ cmsPages = [] }: { cmsPages?: NavPage[] }) {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
 
-  const parents = cmsPages.filter(p => !p.navParent);
+  const initiativPage = cmsPages.find(p => p.slug.includes('initiativbewerbung'));
+  const parents = cmsPages.filter(p => !p.navParent && p.id !== initiativPage?.id);
   const children = cmsPages.filter(p => p.navParent);
 
   return (
@@ -65,9 +66,11 @@ export default function Navbar({ cmsPages = [] }: { cmsPages?: NavPage[] }) {
           
           <Link href="/jobs" onClick={() => setIsOpen(false)}>Stellenangebote</Link>
           <Link href="/job-alert" onClick={() => setIsOpen(false)}>Job-Alert</Link>
-          <Link href="/info/_de_initiativbewerbung_" className="btn-primary mobile-btn" onClick={() => setIsOpen(false)}>
-            Initiativbewerbung
-          </Link>
+          {initiativPage && (
+            <Link href={`/info/${initiativPage.slug}`} className="btn-primary mobile-btn" onClick={() => setIsOpen(false)}>
+              {initiativPage.navLabel || initiativPage.title}
+            </Link>
+          )}
           <Link href="/login" className="cms-link" onClick={() => setIsOpen(false)}>
             🔒 CMS Login
           </Link>

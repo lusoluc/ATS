@@ -52,11 +52,30 @@ export default function Navbar({ cmsPages = [] }: { cmsPages?: NavPage[] }) {
                 >
                   <span className="dropdown-trigger">{parent.navLabel || parent.title} ▾</span>
                   <div className={`dropdown-content glass-panel ${dropdownOpen === parent.id ? 'show' : ''}`}>
-                    {myChildren.map(child => (
-                      <Link key={child.id} href={`/info/${child.slug}`} onClick={() => setIsOpen(false)}>
-                        {child.navLabel || child.title}
-                      </Link>
-                    ))}
+                    {myChildren.map(child => {
+                      const subChildren = children.filter(c => c.navParent === child.slug);
+                      if (subChildren.length > 0) {
+                        return (
+                          <div key={child.id} className="nested-dropdown">
+                            <span className="nested-dropdown-trigger" style={{ padding: '0.65rem 1.2rem', cursor: 'pointer', fontSize: '0.9rem' }}>
+                              {child.navLabel || child.title} <span style={{ opacity: 0.5 }}>▸</span>
+                            </span>
+                            <div className="nested-dropdown-content glass-panel">
+                              {subChildren.map(sub => (
+                                <Link key={sub.id} href={`/info/${sub.slug}`} onClick={() => setIsOpen(false)}>
+                                  {sub.navLabel || sub.title}
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      }
+                      return (
+                        <Link key={child.id} href={`/info/${child.slug}`} onClick={() => setIsOpen(false)}>
+                          {child.navLabel || child.title}
+                        </Link>
+                      );
+                    })}
                   </div>
                 </div>
               );

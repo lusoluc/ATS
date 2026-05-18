@@ -15,7 +15,11 @@ export default function Navbar({ cmsPages = [] }: { cmsPages?: NavPage[] }) {
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
 
   const initiativPage = cmsPages.find(p => p.slug.includes('initiativbewerbung'));
-  const parents = cmsPages.filter(p => !p.navParent && p.id !== initiativPage?.id);
+  const jobsPage = cmsPages.find(p => p.slug.includes('stellenangebote') || p.slug === 'jobs');
+  const alertPage = cmsPages.find(p => p.slug.includes('job-alert') || p.slug.includes('job_alert'));
+
+  const specialIds = [initiativPage?.id, jobsPage?.id, alertPage?.id].filter(Boolean);
+  const parents = cmsPages.filter(p => !p.navParent && !specialIds.includes(p.id));
   const children = cmsPages.filter(p => p.navParent);
 
   return (
@@ -63,9 +67,16 @@ export default function Navbar({ cmsPages = [] }: { cmsPages?: NavPage[] }) {
               </Link>
             );
           })}
-          
-          <Link href="/jobs" onClick={() => setIsOpen(false)}>Stellenangebote</Link>
-          <Link href="/job-alert" onClick={() => setIsOpen(false)}>Job-Alert</Link>
+          {jobsPage && (
+            <Link href="/jobs" onClick={() => setIsOpen(false)}>
+              {jobsPage.navLabel || jobsPage.title}
+            </Link>
+          )}
+          {alertPage && (
+            <Link href="/job-alert" onClick={() => setIsOpen(false)}>
+              {alertPage.navLabel || alertPage.title}
+            </Link>
+          )}
           {initiativPage && (
             <Link href={`/info/${initiativPage.slug}`} className="btn-primary mobile-btn" onClick={() => setIsOpen(false)}>
               {initiativPage.navLabel || initiativPage.title}

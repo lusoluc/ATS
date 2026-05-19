@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 type NavPage = {
   id: string;
@@ -25,8 +26,9 @@ export default function Navbar({ cmsPages = [] }: { cmsPages?: NavPage[] }) {
   return (
     <nav className="navbar glass-panel">
       <div className="container nav-content">
-        <Link href="/" className="nav-logo" onClick={() => setIsOpen(false)}>
-          Enterprise
+        <Link href="/" className="nav-logo" onClick={() => setIsOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+          <Image src="/logo.png" alt="SecurATS Logo" width={32} height={32} style={{ borderRadius: '6px' }} />
+          SecurATS
         </Link>
         
         {/* Mobile Toggle Button */}

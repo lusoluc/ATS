@@ -129,3 +129,9 @@ Das System ist darauf ausgelegt, autark zu laufen. Wir nutzen sichere, quelloffe
 *   **Recruiting-Spezifische Module:** Eigene dynamische Komponenten für *Ansprechpartner-Karten* (mit Telefon/E-Mail Umschalter), *Standort-Infos* und *Highlight-Jobkarten* mit Direktbewerbungs-Button.
 *   **Globale Navigation & Footer:** Der Header und Footer der gesamten Plattform können dynamisch als JSON-Blöcke (Puck) über das CMS gepflegt werden, ohne dass ein Server-Neustart nötig ist.
 *   **AI Co-Designer Readiness:** Durch die Speicherung des Layouts als maschinenlesbares JSON kann die lokale KI in Zukunft auf Zuruf komplette Seitenlayouts generieren ("Erstelle mir eine Landingpage für Pflegekräfte").
+
+### 4.9 High Availability, Disaster Recovery & Zero-Downtime Deployment
+*   **Zero-Downtime Deployments:** Updates der Plattform erfolgen nahtlos via `pm2 reload`. Der alte Prozess läuft weiter, bis der neue Build im Hintergrund 100% fehlerfrei abgeschlossen ist. Bewerber-Sessions gehen nicht verloren.
+*   **Point-in-Time Recovery (Automated Vault):** Ein automatisierter Cronjob sichert Datenbank (pg_dump) und das Dateisystem (Lebensläufe) in komprimierten, versionierten Archiven. Dies ermöglicht eine Wiederherstellung auf den exakten Stand vor einem Systemausfall (Minimaler RPO).
+*   **Emergency Restore (Disaster Recovery):** Über ein `emergency-restore.sh` Skript kann ein komplett zerstörter Server in unter 5 Minuten (RTO) aus dem Backup-Vault hochgezogen und live geschaltet werden.
+*   **Rückwärtskompatible Migrationen:** Prisma-Datenbankschemata werden nach dem "Expand and Contract"-Pattern migriert. Dadurch stürzt das alte Frontend bei einem Datenbank-Rollout nicht ab.

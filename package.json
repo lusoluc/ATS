@@ -1,8 +1,8 @@
 {
-  "name": "enterprise-karriereplattform",
+  "name": "securats-core",
   "version": "1.0.0",
-  "description": "Enterprise Karriereplattform - Wave 1 Core Model",
-  "author": "Carlos Lucas - Hamburg / Germany (https://www.linkedin.com/in/director-it-development/)",
+  "description": "SecurATS - Datensouveränes Bewerbermanagementsystem",
+  "author": "Carlos Lucas (https://www.linkedin.com/in/director-it-development/)",
   "main": "index.js",
   "scripts": {
     "db:generate": "prisma generate",

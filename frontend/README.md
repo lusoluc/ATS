@@ -1,4 +1,4 @@
-# Enterprise ATS & Karriereplattform (Frontend)
+# SecurATS (Frontend)
 
 Dieses Frontend wurde entwickelt, um eine nahtlose, barrierefreie und sichere Nutzererfahrung für Bewerber und Administratoren zu gewährleisten.
 

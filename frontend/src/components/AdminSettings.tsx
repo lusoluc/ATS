@@ -493,6 +493,108 @@ export default function AdminSettings() {
               })}
             </form>
           </div>
+
+          <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '12px' }}>
+            <h3 style={{ marginBottom: '1rem', color: 'var(--primary)' }}>StepStone Integration (Dual-Mode)</h3>
+            <p style={{ opacity: 0.8, marginBottom: '2rem' }}>
+              Konfigurieren Sie hier die passive XML-Schnittstelle oder die aktive REST-Push API für StepStone.
+            </p>
+
+            <form onSubmit={saveSetting} style={{ display: 'grid', gap: '1.5rem', maxWidth: '600px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: 'var(--background)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                <input 
+                  type="checkbox" 
+                  checked={settings.find(s => s.key === 'stepstone_xml_active')?.value === 'true'}
+                  onChange={(e) => {
+                    const val = e.target.checked ? 'true' : 'false';
+                    const newSettings = [...settings];
+                    const idx = newSettings.findIndex(s => s.key === 'stepstone_xml_active');
+                    if(idx >= 0) newSettings[idx].value = val;
+                    else newSettings.push({ key: 'stepstone_xml_active', value: val });
+                    setSettings(newSettings);
+                    setEditSetting({ key: 'stepstone_xml_active', value: val });
+                    setTimeout(() => saveSetting({ preventDefault: ()=>{} } as any), 100);
+                  }}
+                  style={{ width: '20px', height: '20px' }}
+                />
+                <div>
+                  <strong style={{ display: 'block' }}>Passiver XML-Feed aktivieren</strong>
+                  <span style={{ fontSize: '0.85rem', opacity: 0.7 }}>Erreichbar unter /api/cms/export/stepstone-xml</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: 'var(--background)', borderRadius: '8px', border: '1px solid var(--border)', marginTop: '1rem' }}>
+                <input 
+                  type="checkbox" 
+                  checked={settings.find(s => s.key === 'stepstone_api_active')?.value === 'true'}
+                  onChange={(e) => {
+                    const val = e.target.checked ? 'true' : 'false';
+                    const newSettings = [...settings];
+                    const idx = newSettings.findIndex(s => s.key === 'stepstone_api_active');
+                    if(idx >= 0) newSettings[idx].value = val;
+                    else newSettings.push({ key: 'stepstone_api_active', value: val });
+                    setSettings(newSettings);
+                    setEditSetting({ key: 'stepstone_api_active', value: val });
+                    setTimeout(() => saveSetting({ preventDefault: ()=>{} } as any), 100);
+                  }}
+                  style={{ width: '20px', height: '20px' }}
+                />
+                <div>
+                  <strong style={{ display: 'block' }}>Aktive REST Push-API aktivieren</strong>
+                  <span style={{ fontSize: '0.85rem', opacity: 0.7 }}>Erlaubt das direkte Veröffentlichen aus dem Job-Wizard</span>
+                </div>
+              </div>
+
+              {settings.find(s => s.key === 'stepstone_api_active')?.value === 'true' && (
+                <div style={{ display: 'grid', gap: '1.5rem', marginTop: '1rem', padding: '1.5rem', borderLeft: '3px solid var(--primary)', background: 'var(--card-bg)' }}>
+                  {['stepstone_customer_id', 'stepstone_api_key'].map(key => {
+                    const settingObj = settings.find(s => s.key === key) || { key, value: '' };
+                    const label = key === 'stepstone_customer_id' ? 'StepStone Customer ID' : 'API Bearer Token (Key)';
+                    
+                    return (
+                      <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <label style={{ fontWeight: 'bold' }}>{label}</label>
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                          <input 
+                            type={key === 'stepstone_api_key' ? 'password' : 'text'}
+                            value={settingObj.value} 
+                            onChange={(e) => {
+                              const newSettings = [...settings];
+                              const idx = newSettings.findIndex(s => s.key === key);
+                              if(idx >= 0) newSettings[idx].value = e.target.value;
+                              else newSettings.push({ key, value: e.target.value });
+                              setSettings(newSettings);
+                              setEditSetting({ key, value: e.target.value }); 
+                            }}
+                            placeholder={key === 'stepstone_customer_id' ? 'z.B. CUST-1234' : 'eyJhbGci...'}
+                            style={inputStyle}
+                          />
+                          <button type="button" onClick={() => saveSetting({ preventDefault: ()=>{} } as any)} className="btn-primary" style={{ padding: '0 1.5rem' }}>Speichern</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={settings.find(s => s.key === 'stepstone_quick_apply')?.value === 'true'}
+                      onChange={(e) => {
+                        const val = e.target.checked ? 'true' : 'false';
+                        const newSettings = [...settings];
+                        const idx = newSettings.findIndex(s => s.key === 'stepstone_quick_apply');
+                        if(idx >= 0) newSettings[idx].value = val;
+                        else newSettings.push({ key: 'stepstone_quick_apply', value: val });
+                        setSettings(newSettings);
+                        setEditSetting({ key: 'stepstone_quick_apply', value: val });
+                        setTimeout(() => saveSetting({ preventDefault: ()=>{} } as any), 100);
+                      }}
+                    />
+                    <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>"StepStone Quick Apply" (App-Link ins lokale Kanban) aktivieren</span>
+                  </div>
+                </div>
+              )}
+            </form>
+          </div>
         </div>
       )}
 

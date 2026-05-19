@@ -72,7 +72,13 @@ Eine hochsichere, modulare "Candidate-to-Employee" API-Bridge. Sie eliminiert fe
 *   Vollautomatische Schnittstelle zur Generierung von X.509-konformen XML-Dateien. 
 *   Ermöglicht die direkte, massenhafte Einspeisung von Vakanzen in das Portal der Arbeitsagentur ohne manuellen Pflegeaufwand.
 
-**3. Google for Jobs (Schema.org API) & SEO**
+**3. StepStone Integration (Dual-Mode)**
+SecurATS bietet eine hochflexible Schnittstellen-Architektur zur größten europäischen Job-Plattform, die sich exakt an die Bedürfnisse des Unternehmens anpasst:
+*   **StepStone XML-Feed (Passiv):** Ein automatisierter Feed (`stepstone-feed.xml`), der von StepStone im Turnus abgerufen wird. Ideal für unkomplizierte, skalierende Publikationen ohne API-Restriktionen.
+*   **StepStone REST Push-API (Aktiv):** Ermöglicht das sofortige Publizieren (Push) von Stellenanzeigen direkt aus dem SecurATS Job-Wizard. Über das Admin-Dashboard lassen sich Customer-IDs und API-Keys zentral hinterlegen und die Schnittstelle granular aktivieren/deaktivieren.
+*   **StepStone Quick Apply & App-Link:** Verlinkt die StepStone-Anzeige direkt mit dem hochkonvertierenden SecurATS-Bewerbungsformular, sodass Kandidaten ohne Reibungsverlust direkt ins lokale Kanban-Board fließen.
+
+**4. Google for Jobs (Schema.org API) & SEO**
 *   Automatische Generierung von JSON-LD strukturierten Daten inkl. Geodaten-Übermittlung für organische Top-Rankings in der Google-Suche.
 *   **SEO-Optimiertes CMS:** Hierarchisches URL-Routing und dynamisch anpassbare Slugs sorgen für maximale organische Sichtbarkeit und reduzieren Abhängigkeiten von teuren Stellenbörsen.
 

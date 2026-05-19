@@ -1,13 +1,12 @@
-# System-Architektur & Feature-Katalog: SecurATS – Datensouveränes Bewerbermanagementsystem
+# System-Architektur & Feature-Katalog: Open-Source Enterprise ATS & Karriereplattform
 
-**Autor & Urheber:** Carlos Lucas  
-**Adresse:** Weg am Denkmal 34, 22844 Norderstedt - Deutschland  
-**Kontakt:** [LinkedIn - Director IT Development](https://www.linkedin.com/in/director-it-development/)
+**Autor & Urheber:** Carlos Lucas - Hamburg / Germany  
+**Profil:** [LinkedIn - Director IT Development](https://www.linkedin.com/in/director-it-development/)
 
 ## 1. Executive Summary
 Diese hochmoderne, quelloffene Karriereplattform ist eine vollständig integrierte Enterprise-Lösung. Sie vereint ein leistungsstarkes Content-Management-System (CMS), vollautomatisiertes Job-Multiposting und ein Applicant Tracking System (ATS) in einer einzigen, nahtlosen Umgebung.
 
-Der absolute USP (Unique Selling Proposition) dieser Architektur ist der kompromisslose Fokus auf **Datensouveränität** und **Legal Compliance**. Durch eine Zero-Data-Transfer-Policy, integrierte lokale Sprachmodell-Unterstützung und extrem hohe Verschlüsselungsstandards (AES-256) löst SecurATS die größten Schmerzpunkte heutiger HR-Abteilungen: Den Schutz hochsensibler Personendaten bei gleichzeitiger Sicherstellung höchster Prozessstabilität.
+Der absolute USP (Unique Selling Proposition) dieser Architektur ist der kompromisslose Fokus auf **Datensouveränität (Privacy by Design)** und **Legal Compliance**. Durch eine Zero-Data-Transfer-Policy, integrierte lokale KI und militärisch anmutende Verschlüsselungsstandards (AES-256) löst die Plattform die größten Schmerzpunkte heutiger HR-Abteilungen: Den Schutz hochsensibler Personendaten bei gleichzeitiger Nutzung modernster Automatisierung.
 
 Dieses System ist nicht nur eine Recruiting-Software, sondern ein aktives Risikomanagement- und Compliance-Tool. Durch die extrem hohen Standards an Datensicherheit und Informationsschutz ist diese Plattform out-of-the-box für streng regulierte Branchen konzipiert. Dazu gehören insbesondere:
 *   **Krankenhauswesen & Gesundheitssektor:** Sicherer Umgang mit Gesundheitsdaten nach Art. 9 DSGVO.
@@ -40,8 +39,8 @@ Die Architektur wurde explizit darauf ausgelegt, die strengsten nationalen und i
 
 ### 2.3 Arbeitsrecht & Gleichbehandlung
 *   **AGG (Allgemeines Gleichbehandlungsgesetz, Deutschland):**
-    *   Ein intelligenter "Legal-Tech-Check" analysiert Stellenanzeigen vor Veröffentlichung in Echtzeit auf Diskriminierungen (Alter, Geschlecht, Herkunft) und erzwingt z.B. das `(m/w/d)`.
-    *   Die lokale Sprachmodell-Unterstützung zur Bewerberanalyse ist durch den System-Prompt gezwungen, "farbblind" zu sein. Die Auswertung von Fotos, Ethnie, Religion oder Alter ist technisch untersagt.
+    *   Ein KI-gestützter "Legal-Tech-Check" analysiert Stellenanzeigen vor Veröffentlichung in Echtzeit auf Diskriminierungen (Alter, Geschlecht, Herkunft) und erzwingt z.B. das `(m/w/d)`.
+    *   Die KI zur Bewerberanalyse ist durch den System-Prompt gezwungen, "farbblind" zu sein. Die Auswertung von Fotos, Ethnie, Religion oder Alter ist technisch untersagt.
 *   **ISO 9001 (Qualitätsmanagement):**
     *   Reproduzierbare Prozesse durch den Workflow-Builder und standardisierte K.O.-Fragen-Kataloge stellen sicher, dass Bewerbungen prozesssicher und in gleichbleibender Qualität bearbeitet werden.
 
@@ -51,7 +50,7 @@ Die Architektur wurde explizit darauf ausgelegt, die strengsten nationalen und i
 
 *   **AES-256-GCM Dateiverschlüsselung:** Hochgeladene PDFs werden nicht als Klartext gespeichert. Ein AES-256 Wrapper verschlüsselt die Dateien, bevor sie im Storage landen. Ohne den Master-Key des Servers sind gestohlene Festplatten wertlos.
 *   **BOLA-Schutz (Broken Object Level Authorization):** Die API vertraut niemals nur auf IDs. Jede Datenbankabfrage (z.B. "Bewerbung anzeigen") erzwingt einen Abgleich mit den Berechtigungen des Nutzers (`facilityId`).
-*   **Zero-Data-Transfer & Lokale Infrastruktur:** Das System integriert die lokale Sprachmodell-Unterstützung direkt im internen Netzwerk. Weder Lebensläufe noch Jobbeschreibungen verlassen die eigene Infrastruktur.
+*   **Zero-Data-Transfer & Lokale KI:** Das System integriert Ollama/Gemma lokal. Weder Lebensläufe noch Jobbeschreibungen werden an amerikanische Cloud-Provider gesendet.
 *   **Strict Security Headers:** Das System erzwingt HSTS, blockiert Framing (X-Frame-Options) zur Verhinderung von Clickjacking und implementiert eine strikte Content-Security-Policy (CSP) sowie Permissions-Policys.
 *   **Rate-Limiting & XSS-Sanitizer:** Eingebauter Schutz gegen DDoS-Botnetze beim Bewerbungseingang und Bereinigung von potenziell gefährlichem HTML in Stellenanzeigen.
 
@@ -100,18 +99,19 @@ Eine hochsichere, modulare "Candidate-to-Employee" API-Bridge. Sie eliminiert fe
 *   **Vollständiges Audit-Logging:** Lückenlose Aufzeichnung aller sicherheitsrelevanten Zugriffe (wer hat welchen Lebenslauf wann heruntergeladen?) zur Erfüllung von ISO 27001.
 *   **Automatisierte Lösch-Cronjobs:** Garantierte Einhaltung der DSGVO-Löschfristen durch verschlüsselte Vernichtung und Daten-Anonymisierung.
 
-### 4.6 Lokale Sprachmodell-Unterstützung (Air-Gapped)
-*   **Anti-Bias CV-Analyzer:** Das Sprachmodell liest Lebensläufe, extrahiert Kompetenzen und berechnet Matching-Scores völlig diskriminierungsfrei.
-*   **Automatisierte "Leichte Sprache" (Default-On):** Jeder neu erstellte Text oder Job wird von der Sprachmodell-Unterstützung standardmäßig und vollautomatisch im Hintergrund in zertifizierte "Leichte Sprache" übersetzt. Der Mensch muss nicht aktiv werden, kann die Übersetzung aber bei Bedarf editieren oder deaktivieren.
+### 4.6 Lokale Künstliche Intelligenz (Air-Gapped)
+*   **Anti-Bias CV-Analyzer:** Die KI liest Lebensläufe, extrahiert Kompetenzen und berechnet Matching-Scores völlig diskriminierungsfrei.
+*   **Automatisierte "Leichte Sprache" (Default-On):** Jeder neu erstellte Text oder Job wird von der KI standardmäßig und vollautomatisch im Hintergrund in zertifizierte "Leichte Sprache" übersetzt. Der Mensch muss nicht aktiv werden, kann die Übersetzung aber bei Bedarf editieren oder deaktivieren.
 *   **AGG-Checker:** Ein "digitaler Anwalt", der Jobtexte vor Veröffentlichung auf Gleichbehandlungsverstöße prüft.
-*   **Tone of Voice Enforcement:** Das Modell kommuniziert stets im Einklang mit der festgelegten Corporate Identity.
-*   **Prompt-Injection Protection:** Strikte Heuristik-Filter und XML-Sandboxing verhindern böswillige Manipulationen der Analyse-Engine durch Bewerber.
+*   **Tone of Voice Enforcement:** Die KI kommuniziert stets im Einklang mit der festgelegten Corporate Identity.
+*   **Prompt-Injection Protection:** Strikte Heuristik-Filter und XML-Sandboxing verhindern böswillige Manipulationen der KI-Engine durch Bewerber.
 
-**Installation & Betrieb der Sprachmodell-Unterstützung:**
-Das System ist darauf ausgelegt, autark zu laufen. Wir nutzen sichere, quelloffene und lokal lauffähige Sprachmodelle.
-1. Installieren Sie die lokale Inferenz-Engine.
-2. Das ATS verbindet sich ohne weitere Konfiguration direkt mit dem lokalen Dienst (Port `11434`). 
-*Hinweis: Sollte der lokale Dienst (z.B. nach einem Server-Neustart) nicht erreichbar sein, greift SecurATS nahtlos auf einen sicheren Fallback-Mock zurück, sodass der Bewerberprozess niemals blockiert wird.*
+**Installation & Betrieb (Ollama / gemma4:e4b):**
+Das System ist darauf ausgelegt, autark zu laufen. Wir nutzen das speziell angepasste Modell **gemma4:e4b**.
+1. Installieren Sie [Ollama](https://ollama.com).
+2. Führen Sie im Terminal `ollama run gemma4:e4b` aus, um das Modell herunterzuladen.
+3. Ollama läuft automatisch als lokaler Dienst (Port `11434`). Das ATS verbindet sich ohne weitere Konfiguration direkt. 
+*Hinweis: Sollte Ollama (z.B. nach einem Server-Neustart) nicht erreichbar sein, greift das ATS nahtlos auf einen sicheren Fallback-Mock zurück, sodass der Bewerberprozess niemals blockiert wird.*
 
 **Entwickler-Modus (Developer Mode) & Telemetry:**
 Über das Admin-Dashboard lässt sich jederzeit ein "Developer Mode" zuschalten. Ist dieser aktiviert, reichert das Audit-Log alle Events und Klicks (sowie API-Calls an die KI) zusätzlich mit tiefgehenden Performance-Metriken an (z.B. Ladezeiten und JS-Heap Size). So können UI-Lags oder fehlerhafte Agent-Verbindungen frühzeitig erkannt und präventiv gelöst werden.

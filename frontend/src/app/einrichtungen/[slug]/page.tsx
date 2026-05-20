@@ -59,7 +59,7 @@ export default async function FacilityDetailPage({ params }: { params: Promise<{
       <section className="hero-section" style={{ minHeight: '55vh', backgroundColor: 'var(--primary)', color: 'white', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
           <img 
-            src="https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=2000&auto=format&fit=crop" 
+            src="/hospital_exterior.png" 
             alt={`Standort ${fac.name}`} 
             style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }} 
           />

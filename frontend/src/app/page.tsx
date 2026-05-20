@@ -34,7 +34,7 @@ export default function HomePage() {
           <div className="animate-fade-in delay-200 opacity-0 hide-mobile" style={{ position: 'relative' }}>
             {/* Workwise #4: Keine Stockfotos -> Authentisches Teambild simulieren */}
             <div style={{ borderRadius: '24px', overflow: 'hidden', aspectRatio: '4/5', position: 'relative', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
-              <img src="https://images.unsplash.com/photo-1551076805-e166946c9eb9?q=80&w=1000&auto=format&fit=crop" alt="Pflegeteam Nordicum Health im Einsatz"
+              <img src="/pflege_portrait.png" alt="Pflegeteam Nordicum Health im Einsatz"
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               <div style={{ position: 'absolute', bottom: '1.5rem', left: '1.5rem', right: '1.5rem', background: 'rgba(255,255,255,0.95)', padding: '1rem 1.5rem', borderRadius: '16px', backdropFilter: 'blur(10px)' }}>
                 <p style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '1rem', display: 'flex', justifyContent: 'space-between' }}>
@@ -188,7 +188,7 @@ export default function HomePage() {
             </Link>
           </div>
           {/* Workwise #7: Es soll Spaß machen & Videos */}
-          <div style={{ background: 'url(https://images.unsplash.com/photo-1579684385127-1ef15d508118?q=80&w=1000&auto=format&fit=crop) center/cover', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
+          <div style={{ background: 'url(/kultur_augenhoehe.png) center/cover', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
              <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)' }}></div>
              <button style={{ zIndex: 10, width: '90px', height: '90px', background: 'var(--primary)', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.3)', transition: 'transform 0.2s' }}
                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}

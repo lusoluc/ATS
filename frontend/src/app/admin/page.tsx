@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import dynamic from 'next/dynamic';
 
 const AdminJobs = dynamic(() => import('../../components/AdminJobs'), { ssr: false });
@@ -34,22 +35,40 @@ export default function AdminDashboard() {
     <button key={v} onClick={() => setView(v)} style={{
       display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem',
       borderRadius: '8px', border: 'none', width: '100%', textAlign: 'left',
-      background: view === v ? 'var(--primary)' : 'transparent',
-      color: view === v ? 'white' : 'var(--foreground)',
-      cursor: 'pointer', fontSize: '0.95rem', fontWeight: 500, transition: 'all 0.2s',
-    }}>
-      <span>{icon}</span> {label}
+      background: view === v ? 'rgba(255,255,255,0.1)' : 'transparent',
+      color: view === v ? 'white' : 'rgba(255,255,255,0.7)',
+      cursor: 'pointer', fontSize: '0.95rem', fontWeight: view === v ? 600 : 400, transition: 'all 0.2s',
+    }}
+    onMouseEnter={e => { if (view !== v) e.currentTarget.style.color = 'white'; }}
+    onMouseLeave={e => { if (view !== v) e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
+    >
+      <span style={{ fontSize: '1.1rem' }}>{icon}</span> {label}
     </button>
   );
 
   return (
-    <main style={{ display: 'flex', minHeight: '100vh' }}>
-      {/* Sidebar */}
-      <aside style={{ width: '240px', flexShrink: 0, background: 'var(--card-bg)', borderRight: '1px solid var(--border)', padding: '2rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-        <div style={{ padding: '0 0.5rem 1.5rem', borderBottom: '1px solid var(--border)', marginBottom: '0.5rem' }}>
-          <p style={{ fontSize: '0.7rem', opacity: 0.5, textTransform: 'uppercase', letterSpacing: '1px' }}>CMS</p>
-          <p style={{ fontWeight: 700, color: 'var(--primary)', fontFamily: 'var(--font-outfit)' }}>Admin-Bereich</p>
+    <main style={{ display: 'flex', minHeight: 'calc(100vh - 70px)' }}>
+      {/* Sidebar - SecurATS Dark Theme */}
+      <aside style={{ 
+        width: '260px', 
+        flexShrink: 0, 
+        background: 'linear-gradient(180deg, #111827 0%, #1f2937 100%)', 
+        color: 'white',
+        borderRight: '1px solid rgba(255,255,255,0.1)', 
+        padding: '2rem 1.2rem', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: '0.4rem',
+        boxShadow: '4px 0 15px rgba(0,0,0,0.05)'
+      }}>
+        <div style={{ padding: '0 0.5rem 2rem', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+          <Image src="/logo.png" alt="SecurATS Logo" width={38} height={38} style={{ borderRadius: '8px', boxShadow: '0 4px 10px rgba(0,0,0,0.2)' }} />
+          <div>
+            <p style={{ fontWeight: 800, fontSize: '1.2rem', fontFamily: 'var(--font-outfit)', letterSpacing: '-0.5px', margin: 0, lineHeight: 1.2 }}>SecurATS</p>
+            <p style={{ fontSize: '0.7rem', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>HR Control Center</p>
+          </div>
         </div>
+        
         {nav('Dashboard', '🏠', 'dashboard')}
         {hasAccess('analytics') && nav('Statistiken', '📊', 'analytics')}
         {hasAccess('applicants') && nav('Bewerber (Kanban)', '👥', 'applicants')}
@@ -59,13 +78,16 @@ export default function AdminDashboard() {
         {hasAccess('masterdata') && nav('Standorte & Kategorien', '🏷️', 'masterdata')}
         {hasAccess('workflows') && nav('Prozessflows', '🔄', 'workflows')}
         {hasAccess('settings') && nav('Einstellungen', '⚙️', 'settings')}
-        <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', opacity: 0.6, padding: '0.5rem' }}>← Zur Website</Link>
+        
+        <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', opacity: 0.6, padding: '0.5rem', color: 'white', textDecoration: 'none', transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '1'} onMouseLeave={e => e.currentTarget.style.opacity = '0.6'}>
+            ← Zurück zur Website
+          </Link>
         </div>
       </aside>
 
-      {/* Main */}
-      <div style={{ flex: 1, padding: '2.5rem', overflow: 'auto' }}>
+      {/* Main Content Area */}
+      <div style={{ flex: 1, padding: '2.5rem', overflow: 'auto', background: 'var(--background)' }}>
 
         {/* DASHBOARD */}
         {view === 'dashboard' && (

@@ -23,12 +23,17 @@ async function main() {
     console.log(`Upserted page: ${page.slug}`);
   }
 
-  // 2. Setup Base Data (Workflow States)
+  // 2. Setup Base Data (Workflow States & Organization)
   let draftState = await prisma.workflowState.findUnique({ where: { name: 'draft' } });
   if (!draftState) draftState = await prisma.workflowState.create({ data: { name: 'draft', description: 'Entwurf' } });
   
   let publishedState = await prisma.workflowState.findUnique({ where: { name: 'published' } });
   if (!publishedState) publishedState = await prisma.workflowState.create({ data: { name: 'published', description: 'Veröffentlicht' } });
+
+  let org = await prisma.organization.findFirst();
+  if (!org) {
+    org = await prisma.organization.create({ data: { name: 'Nordicum Health Group' } });
+  }
 
   // 3. Job Families
   const families = ['Pflege & Betreuung', 'Medizin & Ärzte', 'IT & Technik', 'Verwaltung'];
@@ -55,8 +60,8 @@ async function main() {
     // Create Facility
     const facName = `Klinikum ${l.name}`;
     let fac = await prisma.facility.findFirst({ where: { name: facName } });
-    if (!fac) fac = await prisma.facility.create({ data: { name: facName, locationId: loc.id, address: `Hauptstraße 1, ${l.name}` } });
-    else await prisma.facility.update({ where: { id: fac.id }, data: { locationId: loc.id } });
+    if (!fac) fac = await prisma.facility.create({ data: { name: facName, organizationId: org.id } });
+    else await prisma.facility.update({ where: { id: fac.id }, data: { organizationId: org.id } });
     
     // Create Facility Profile so /einrichtungen/[slug] works!
     const slug = facName.toLowerCase().replace(/[^a-z0-9]/g, '-');
@@ -70,6 +75,7 @@ async function main() {
     }
   }
 
+
   // 5. Active Jobs
   const jobs = [
     { title: 'Gesundheits- und Krankenpfleger (m/w/d)', family: 'Pflege & Betreuung', loc: 'Hamburg-Mitte' },
@@ -80,29 +86,30 @@ async function main() {
     { title: 'HR Generalist (m/w/d)', family: 'Verwaltung', loc: 'Hamburg-Mitte' },
   ];
 
-  for (const [index, j] of jobs.entries()) {
+  for (const j of jobs) {
     const facName = `Klinikum ${j.loc}`;
-    const fac = await prisma.facility.findUnique({ where: { name: facName } });
+    const fac = await prisma.facility.findFirst({ where: { name: facName } });
     
-    // Ensure unique external ID to avoid collision
-    const externalId = `DEMO-JOB-${index + 1}`;
-    
-    await prisma.jobPosting.upsert({
-      where: { externalId },
-      update: { title: j.title, workflowStateId: publishedState.id },
-      create: {
-        externalId,
-        title: j.title,
-        description: `Wir suchen eine engagierte Fachkraft für den Bereich ${j.title}. Bewirb dich jetzt in unter 60 Sekunden!`,
-        jobFamilyId: familyIds[j.family],
-        locationId: locIds[j.loc],
-        facilityId: fac.id,
-        workflowStateId: publishedState.id,
-        workModel: 'Vollzeit',
-        employmentType: 'Unbefristet',
-        screeningQuestionsJson: JSON.stringify(['Haben Sie eine abgeschlossene Ausbildung?', 'Ab wann sind Sie verfügbar?'])
-      }
-    });
+    let job = await prisma.jobPosting.findFirst({ where: { title: j.title, facilityId: fac.id } });
+    if (!job) {
+      await prisma.jobPosting.create({
+        data: {
+          title: j.title,
+          description: `Wir suchen eine engagierte Fachkraft für den Bereich ${j.title}. Bewirb dich jetzt in unter 60 Sekunden!`,
+          jobFamilyId: familyIds[j.family],
+          locationId: locIds[j.loc],
+          facilityId: fac.id,
+          workflowStateId: publishedState.id,
+          organizationId: org.id,
+          screeningQuestionsJson: JSON.stringify(['Haben Sie eine abgeschlossene Ausbildung?', 'Ab wann sind Sie verfügbar?'])
+        }
+      });
+    } else {
+      await prisma.jobPosting.update({
+        where: { id: job.id },
+        data: { workflowStateId: publishedState.id }
+      });
+    }
   }
   
   console.log('--- DEMO SEED COMPLETED ---');

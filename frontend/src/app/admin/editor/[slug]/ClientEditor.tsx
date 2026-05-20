@@ -19,5 +19,34 @@ export function ClientEditor({ initialData, slug }: { initialData: any, slug: st
     }
   };
 
-  return <Puck config={config} data={initialData} onPublish={save} />;
+  return (
+    <Puck 
+      config={config} 
+      data={initialData} 
+      onPublish={save} 
+      overrides={{
+        headerActions: ({ children }) => (
+          <>
+            <a 
+              href="/admin" 
+              style={{
+                marginRight: '1rem',
+                padding: '8px 16px',
+                background: '#f1f5f9',
+                color: '#334155',
+                borderRadius: '6px',
+                textDecoration: 'none',
+                fontWeight: '600',
+                fontSize: '14px',
+                border: '1px solid #cbd5e1'
+              }}
+            >
+              ← Zurück zum Dashboard
+            </a>
+            {children}
+          </>
+        )
+      }}
+    />
+  );
 }

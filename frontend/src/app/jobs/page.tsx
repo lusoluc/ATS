@@ -60,6 +60,11 @@ function JobsList() {
       params.set('searchLocation', state.searchLocation.trim());
       params.set('radiusKm', String(state.radiusKm));
     }
+    
+    // Update browser URL without reloading
+    const newUrl = window.location.pathname + (params.toString() ? `?${params.toString()}` : '');
+    window.history.replaceState({}, '', newUrl);
+
     try {
       const res = await fetch(`/api/public/jobs?${params}`);
       const data = await res.json();

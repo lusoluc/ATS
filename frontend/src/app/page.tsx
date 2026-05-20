@@ -55,16 +55,16 @@ export default function HomePage() {
       {/* ── STAT BAR ── */}
       <section className="stat-bar" style={{ marginTop: '-2rem', zIndex: 10, position: 'relative' }}>
         <div className="container">
-          <div className="stat-bar-inner" style={{ background: 'white', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
+          <div className="stat-bar-inner" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-around', background: 'white', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
             {[
               { num: '4.500+', label: 'Mitarbeitende' },
               { num: '12',     label: 'Klinikstandorte' },
               { num: '30 Tage', label: 'Urlaub (KTD Tarif)' },
               { num: 'Top 100',   label: 'Arbeitgeber 2026' },
             ].map(s => (
-              <div key={s.label} className="stat-item" style={{ padding: '2rem 1rem' }}>
-                <span className="stat-number" style={{ color: 'var(--primary)', fontSize: '2.5rem' }}>{s.num}</span>
-                <span className="stat-label" style={{ fontWeight: 600 }}>{s.label}</span>
+              <div key={s.label} className="stat-item" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '2rem 1rem' }}>
+                <span className="stat-number" style={{ color: 'var(--primary)', fontSize: '2.5rem', fontWeight: 800 }}>{s.num}</span>
+                <span className="stat-label" style={{ color: 'var(--foreground)', fontWeight: 600, marginTop: '0.5rem' }}>{s.label}</span>
               </div>
             ))}
           </div>

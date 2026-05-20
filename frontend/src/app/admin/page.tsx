@@ -10,8 +10,9 @@ const AdminPages = dynamic(() => import('../../components/AdminPages'), { ssr: f
 const AdminSettings = dynamic(() => import('../../components/AdminSettings'), { ssr: false });
 const AdminWorkflows = dynamic(() => import('../../components/AdminWorkflows'), { ssr: false });
 const AdminApplicants = dynamic(() => import('../../components/AdminApplicants'), { ssr: false });
+const AdminAnalytics = dynamic(() => import('../../components/AdminAnalytics'), { ssr: false });
 
-type View = 'dashboard' | 'applicants' | 'jobs' | 'job-alerts' | 'masterdata' | 'pages' | 'settings' | 'workflows';
+type View = 'dashboard' | 'analytics' | 'applicants' | 'jobs' | 'job-alerts' | 'masterdata' | 'pages' | 'settings' | 'workflows';
 
 export default function AdminDashboard() {
   const [view, setView] = useState<View>('dashboard');
@@ -24,7 +25,7 @@ export default function AdminDashboard() {
 
   const hasAccess = useCallback((v: View) => {
     if (role === 'global_admin') return true;
-    if (role === 'content_editor') return ['dashboard', 'pages'].includes(v);
+    if (role === 'content_editor') return ['dashboard', 'pages', 'analytics'].includes(v);
     if (role === 'local_hr') return ['dashboard', 'applicants', 'jobs', 'job-alerts', 'workflows'].includes(v);
     return false;
   }, [role]);
@@ -50,6 +51,7 @@ export default function AdminDashboard() {
           <p style={{ fontWeight: 700, color: 'var(--primary)', fontFamily: 'var(--font-outfit)' }}>Admin-Bereich</p>
         </div>
         {nav('Dashboard', '🏠', 'dashboard')}
+        {hasAccess('analytics') && nav('Statistiken', '📊', 'analytics')}
         {hasAccess('applicants') && nav('Bewerber (Kanban)', '👥', 'applicants')}
         {hasAccess('pages') && nav('Seiten verwalten', '📑', 'pages')}
         {hasAccess('jobs') && nav('Stellenangebote', '💼', 'jobs')}
@@ -74,6 +76,7 @@ export default function AdminDashboard() {
             <p style={{ opacity: 0.7, marginBottom: '2.5rem' }}>Verwalte alle Inhalte der Enterprise Karriereplattform.</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
               {[
+                { icon: '📊', title: 'Statistiken', desc: 'Erfolgsmetriken und Engpässe', v: 'analytics' as View },
                 { icon: '👥', title: 'Bewerber (Kanban)', desc: 'Alle Bewerber per Drag & Drop verwalten', v: 'applicants' as View },
                 { icon: '📑', title: 'Seiten verwalten', desc: 'Neue Seiten anlegen, bearbeiten, Slug & Navigation setzen', v: 'pages' as View },
                 { icon: '💼', title: 'Stellenangebote', desc: 'Jobs anlegen, bearbeiten, löschen', v: 'jobs' as View },
@@ -95,7 +98,8 @@ export default function AdminDashboard() {
           </div>
         )}
 
-
+        {/* ANALYTICS */}
+        {view === 'analytics' && <AdminAnalytics />}
 
         {/* BEWERBER – Kanban */}
         {view === 'applicants' && <AdminApplicants />}

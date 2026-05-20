@@ -105,26 +105,44 @@ export default function AdminAI() {
               </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
               <div>
-                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}>Mindest-Score für Kategorie B (HR-Sichtung)</label>
+                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem', color: '#ef4444' }}>
+                  Kategorie D (&lt; X%)<br/><span style={{fontSize:'0.75rem',opacity:0.7}}>(Auto-Absage)</span>
+                </label>
                 <input 
                   type="number" 
-                  value={settings.AI_AUTO_REJECT_THRESHOLD} 
-                  onChange={e => handleChange('AI_AUTO_REJECT_THRESHOLD', e.target.value)}
+                  value={settings.AI_THRESHOLD_D_REJECT} 
+                  onChange={e => handleChange('AI_THRESHOLD_D_REJECT', e.target.value)}
                   style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)' }}
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}>Score für Kategorie A (Auto-Einladung)</label>
+                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem', color: '#f59e0b' }}>
+                  Kategorie C (&lt; X%)<br/><span style={{fontSize:'0.75rem',opacity:0.7}}>(Waitlist / Manuell)</span>
+                </label>
                 <input 
                   type="number" 
-                  value={settings.AI_AUTO_INVITE_THRESHOLD} 
-                  onChange={e => handleChange('AI_AUTO_INVITE_THRESHOLD', e.target.value)}
+                  value={settings.AI_THRESHOLD_C_WAITLIST} 
+                  onChange={e => handleChange('AI_THRESHOLD_C_WAITLIST', e.target.value)}
+                  style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem', color: '#10b981' }}>
+                  Kategorie A (&gt; X%)<br/><span style={{fontSize:'0.75rem',opacity:0.7}}>(Auto-Einladung)</span>
+                </label>
+                <input 
+                  type="number" 
+                  value={settings.AI_THRESHOLD_A_INVITE} 
+                  onChange={e => handleChange('AI_THRESHOLD_A_INVITE', e.target.value)}
                   style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)' }}
                 />
               </div>
             </div>
+            <p style={{ fontSize: '0.85rem', opacity: 0.7, marginTop: '-0.5rem' }}>
+              <em>Hinweis: Bewerber, die zwischen C und A liegen, werden automatisch in Kategorie B (Standard HR-Sichtung) eingestuft.</em>
+            </p>
           </div>
         </div>
 

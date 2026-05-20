@@ -2,11 +2,13 @@
 import { useState, useEffect } from 'react';
 
 type WorkflowStep = { id: string; name: string; type: 'SYSTEM' | 'HUMAN' | 'APPROVAL'; description?: string };
-type Workflow = { id: string; name: string; locationIdsJson?: string; stepsJson: string };
+type Workflow = { id: string; name: string; locationIdsJson?: string; categoryIdsJson?: string; jobIdsJson?: string; stepsJson: string };
 
 export default function AdminWorkflows() {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<any[]>([]);
   const [editing, setEditing] = useState<Workflow | null>(null);
   const [parsedSteps, setParsedSteps] = useState<WorkflowStep[]>([]);
   const [msg, setMsg] = useState('');
@@ -17,13 +19,23 @@ export default function AdminWorkflows() {
 
   const load = async () => {
     try {
-      const wfRes = await fetch('/api/cms/workflows');
+      const [wfRes, locRes, catRes, jobRes] = await Promise.all([
+        fetch('/api/cms/workflows'),
+        fetch('/api/cms/locations'),
+        fetch('/api/cms/categories'),
+        fetch('/api/cms/jobs')
+      ]);
       const wfData = await wfRes.json();
       setWorkflows(wfData.workflows || []);
 
-      const locRes = await fetch('/api/cms/locations');
       const locData = await locRes.json();
       setLocations(locData.locations || []);
+
+      const catData = await catRes.json();
+      setCategories(catData.categories || []);
+
+      const jobData = await jobRes.json();
+      setJobs(jobData.jobs || []);
     } catch (e) {
       console.error(e);
     }
@@ -57,6 +69,8 @@ export default function AdminWorkflows() {
         id: editing.id || undefined,
         name: editing.name,
         locationIdsJson: editing.locationIdsJson || '[]',
+        categoryIdsJson: editing.categoryIdsJson || '[]',
+        jobIdsJson: editing.jobIdsJson || '[]',
         stepsJson: JSON.stringify(parsedSteps)
       };
       
@@ -125,17 +139,17 @@ export default function AdminWorkflows() {
     setParsedSteps(newSteps);
   };
 
-  const toggleLocation = (locId: string) => {
+  const toggleSelection = (field: 'locationIdsJson' | 'categoryIdsJson' | 'jobIdsJson', id: string) => {
     if (!editing) return;
     let current = [];
-    try { current = JSON.parse(editing.locationIdsJson || '[]'); } catch {}
+    try { current = JSON.parse(editing[field] || '[]'); } catch {}
     
-    if (current.includes(locId)) {
-      current = current.filter((id: string) => id !== locId);
+    if (current.includes(id)) {
+      current = current.filter((x: string) => x !== id);
     } else {
-      current.push(locId);
+      current.push(id);
     }
-    setEditing({ ...editing, locationIdsJson: JSON.stringify(current) });
+    setEditing({ ...editing, [field]: JSON.stringify(current) });
   };
 
   const inputStyle = { padding: '0.5rem', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--foreground)' };
@@ -155,29 +169,61 @@ export default function AdminWorkflows() {
 
         <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '12px', marginBottom: '2rem' }}>
           <h3 style={{ marginBottom: '1rem' }}>Allgemeine Einstellungen</h3>
-          <div style={{ display: 'flex', gap: '2rem' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}>Name des Workflows</label>
-              <input value={editing.name} onChange={e => setEditing({...editing, name: e.target.value})} style={{ ...inputStyle, width: '100%', fontSize: '1.1rem' }} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}>Gültigkeitsbereich (Standorte)</label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '2rem', marginTop: '1.5rem' }}>
+            <div>
+              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}>🌍 Standorte</label>
               <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '6px', padding: '0.5rem', background: 'var(--background)' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem', cursor: 'pointer', borderBottom: '1px solid var(--border)', fontWeight: 'bold', opacity: (!editing.locationIdsJson || editing.locationIdsJson === '[]') ? 1 : 0.5 }}>
-                  <input 
-                    type="checkbox" 
-                    checked={!editing.locationIdsJson || editing.locationIdsJson === '[]'} 
-                    onChange={() => setEditing({ ...editing, locationIdsJson: '[]' })} 
-                  />
-                  🌍 Globaler Standard (Greift überall, wo nichts anderes definiert ist)
+                  <input type="checkbox" checked={!editing.locationIdsJson || editing.locationIdsJson === '[]'} onChange={() => setEditing({ ...editing, locationIdsJson: '[]' })} />
+                  Alle Standorte (Global)
                 </label>
                 {locations.map(loc => {
                   let isSelected = false;
                   try { isSelected = JSON.parse(editing.locationIdsJson || '[]').includes(loc.id); } catch {}
                   return (
                     <label key={loc.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}>
-                      <input type="checkbox" checked={isSelected} onChange={() => toggleLocation(loc.id)} />
-                      📍 {loc.name}
+                      <input type="checkbox" checked={isSelected} onChange={() => toggleSelection('locationIdsJson', loc.id)} />
+                      {loc.name}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}>🏷️ Berufsfelder</label>
+              <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '6px', padding: '0.5rem', background: 'var(--background)' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem', cursor: 'pointer', borderBottom: '1px solid var(--border)', fontWeight: 'bold', opacity: (!editing.categoryIdsJson || editing.categoryIdsJson === '[]') ? 1 : 0.5 }}>
+                  <input type="checkbox" checked={!editing.categoryIdsJson || editing.categoryIdsJson === '[]'} onChange={() => setEditing({ ...editing, categoryIdsJson: '[]' })} />
+                  Alle Berufsfelder
+                </label>
+                {categories.map(cat => {
+                  let isSelected = false;
+                  try { isSelected = JSON.parse(editing.categoryIdsJson || '[]').includes(cat.id); } catch {}
+                  return (
+                    <label key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}>
+                      <input type="checkbox" checked={isSelected} onChange={() => toggleSelection('categoryIdsJson', cat.id)} />
+                      {cat.name}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}>💼 Spezielle Jobs</label>
+              <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '6px', padding: '0.5rem', background: 'var(--background)' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem', cursor: 'pointer', borderBottom: '1px solid var(--border)', fontWeight: 'bold', opacity: (!editing.jobIdsJson || editing.jobIdsJson === '[]') ? 1 : 0.5 }}>
+                  <input type="checkbox" checked={!editing.jobIdsJson || editing.jobIdsJson === '[]'} onChange={() => setEditing({ ...editing, jobIdsJson: '[]' })} />
+                  Alle Jobs (Keine Ausnahme)
+                </label>
+                {jobs.map(job => {
+                  let isSelected = false;
+                  try { isSelected = JSON.parse(editing.jobIdsJson || '[]').includes(job.id); } catch {}
+                  return (
+                    <label key={job.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}>
+                      <input type="checkbox" checked={isSelected} onChange={() => toggleSelection('jobIdsJson', job.id)} />
+                      {job.title}
                     </label>
                   );
                 })}
@@ -246,14 +292,29 @@ export default function AdminWorkflows() {
             <div key={wf.id} className="glass-panel" style={{ padding: '1.5rem', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: wf.facilityId ? '4px solid var(--primary)' : '4px solid #10b981' }}>
               <div>
                 <h3 style={{ fontSize: '1.3rem', marginBottom: '0.3rem' }}>{wf.name}</h3>
-                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.9rem', opacity: 0.7 }}>
-                  <span>📍 {(() => {
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', fontSize: '0.9rem', opacity: 0.7 }}>
+                  <span>📍 Standorte: {(() => {
                     try {
                       const ids = JSON.parse(wf.locationIdsJson || '[]');
-                      if (ids.length === 0) return 'Globaler Standard';
-                      const names = ids.map((id: string) => locations.find(l => l.id === id)?.name || id);
-                      return names.join(', ');
-                    } catch { return 'Globaler Standard'; }
+                      if (ids.length === 0) return 'Global (Alle)';
+                      return ids.map((id: string) => locations.find(l => l.id === id)?.name || id).join(', ');
+                    } catch { return 'Global (Alle)'; }
+                  })()}</span>
+                  <span>|</span>
+                  <span>🏷️ Berufsfelder: {(() => {
+                    try {
+                      const ids = JSON.parse(wf.categoryIdsJson || '[]');
+                      if (ids.length === 0) return 'Global (Alle)';
+                      return ids.map((id: string) => categories.find(c => c.id === id)?.name || id).join(', ');
+                    } catch { return 'Global (Alle)'; }
+                  })()}</span>
+                  <span>|</span>
+                  <span>💼 Ausnahmen: {(() => {
+                    try {
+                      const ids = JSON.parse(wf.jobIdsJson || '[]');
+                      if (ids.length === 0) return 'Keine speziellen Jobs';
+                      return `${ids.length} Jobs`;
+                    } catch { return 'Keine speziellen Jobs'; }
                   })()}</span>
                   <span>|</span>
                   <span>📑 {stepsCount} Prozessschritte</span>

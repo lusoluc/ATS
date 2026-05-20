@@ -26,6 +26,8 @@ export async function POST(req: NextRequest) {
         data: {
           name: body.name,
           locationIdsJson: body.locationIdsJson || '[]',
+          categoryIdsJson: body.categoryIdsJson || '[]',
+          jobIdsJson: body.jobIdsJson || '[]',
           stepsJson: body.stepsJson
         }
       });
@@ -35,6 +37,8 @@ export async function POST(req: NextRequest) {
         data: {
           name: body.name,
           locationIdsJson: body.locationIdsJson || '[]',
+          categoryIdsJson: body.categoryIdsJson || '[]',
+          jobIdsJson: body.jobIdsJson || '[]',
           stepsJson: body.stepsJson
         }
       });

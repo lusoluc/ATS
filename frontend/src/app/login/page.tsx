@@ -1,17 +1,39 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter();
   const [role, setRole] = useState('global_admin');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // RBAC Mock: Rolle im localStorage speichern
-    localStorage.setItem('securats_role', role);
-    router.push('/admin');
+    setError('');
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role, password })
+      });
+
+      if (res.ok) {
+        // Für das Frontend UI auch im localStorage speichern (RBAC Ansicht)
+        localStorage.setItem('securats_role', role);
+        router.push('/admin');
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Falsches Passwort.');
+      }
+    } catch (err) {
+      setError('Verbindungsfehler.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -38,11 +60,25 @@ export default function LoginPage() {
             <input type="email" placeholder="name@Enterprise.local" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--foreground)' }} />
           </div>
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Passwort (Optional)</label>
-            <input type="password" placeholder="••••••••" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--foreground)' }} />
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Passwort (Demo-Schutz)</label>
+            <input 
+              type="password" 
+              placeholder="••••••••" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--foreground)' }} 
+            />
           </div>
-          <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '1rem', textAlign: 'center' }}>
-            Als {role.replace('_', ' ')} anmelden
+
+          {error && (
+            <div style={{ padding: '0.75rem', borderRadius: '8px', background: '#ffebee', color: '#c62828', fontSize: '0.9rem', border: '1px solid #ef9a9a' }}>
+              {error}
+            </div>
+          )}
+
+          <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', marginTop: '0.5rem', textAlign: 'center', opacity: loading ? 0.7 : 1 }}>
+            {loading ? 'Wird angemeldet...' : `Als ${role.replace('_', ' ')} anmelden`}
           </button>
         </form>
         

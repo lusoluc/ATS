@@ -8,8 +8,9 @@ const AdminJobAlerts = dynamic(() => import('../../components/AdminJobAlerts'), 
 const AdminMasterData = dynamic(() => import('../../components/AdminMasterData'), { ssr: false });
 const AdminPages = dynamic(() => import('../../components/AdminPages'), { ssr: false });
 const AdminSettings = dynamic(() => import('../../components/AdminSettings'), { ssr: false });
+const AdminWorkflows = dynamic(() => import('../../components/AdminWorkflows'), { ssr: false });
 
-type View = 'dashboard' | 'jobs' | 'job-alerts' | 'masterdata' | 'pages' | 'settings';
+type View = 'dashboard' | 'jobs' | 'job-alerts' | 'masterdata' | 'pages' | 'settings' | 'workflows';
 
 export default function AdminDashboard() {
   const [view, setView] = useState<View>('dashboard');
@@ -23,7 +24,7 @@ export default function AdminDashboard() {
   const hasAccess = useCallback((v: View) => {
     if (role === 'global_admin') return true;
     if (role === 'content_editor') return ['dashboard', 'pages'].includes(v);
-    if (role === 'local_hr') return ['dashboard', 'jobs', 'job-alerts'].includes(v);
+    if (role === 'local_hr') return ['dashboard', 'jobs', 'job-alerts', 'workflows'].includes(v);
     return false;
   }, [role]);
 
@@ -52,6 +53,7 @@ export default function AdminDashboard() {
         {hasAccess('jobs') && nav('Stellenangebote', '💼', 'jobs')}
         {hasAccess('job-alerts') && nav('Job-Alerts & KPIs', '🔔', 'job-alerts')}
         {hasAccess('masterdata') && nav('Standorte & Kategorien', '🏷️', 'masterdata')}
+        {hasAccess('workflows') && nav('Prozessflows', '🔄', 'workflows')}
         {hasAccess('settings') && nav('Einstellungen', '⚙️', 'settings')}
         <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', opacity: 0.6, padding: '0.5rem' }}>← Zur Website</Link>
@@ -74,6 +76,7 @@ export default function AdminDashboard() {
                 { icon: '💼', title: 'Stellenangebote', desc: 'Jobs anlegen, bearbeiten, löschen', v: 'jobs' as View },
                 { icon: '🔔', title: 'Job-Alerts & KPIs', desc: 'Abonnenten verwalten und Statistiken einsehen', v: 'job-alerts' as View },
                 { icon: '🏷️', title: 'Standorte & Kategorien', desc: 'Eigene Standorte und Berufsfelder anlegen', v: 'masterdata' as View },
+                { icon: '🔄', title: 'Prozessflows', desc: 'Bewerber-Pipelines (Kanban) konfigurieren', v: 'workflows' as View },
                 { icon: '⚙️', title: 'Einstellungen', desc: 'Systemstatus und Sicherheit', v: 'settings' as View },
               ].filter(card => hasAccess(card.v)).map(card => (
                 <div key={card.v} onClick={() => setView(card.v)} className="glass-panel"
@@ -105,6 +108,9 @@ export default function AdminDashboard() {
 
         {/* SETTINGS */}
         {view === 'settings' && <AdminSettings />}
+
+        {/* WORKFLOWS */}
+        {view === 'workflows' && <AdminWorkflows />}
       </div>
     </main>
   );

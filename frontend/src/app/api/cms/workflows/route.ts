@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
         where: { id: body.id },
         data: {
           name: body.name,
-          facilityId: body.facilityId || null,
+          locationIdsJson: body.locationIdsJson || '[]',
           stepsJson: body.stepsJson
         }
       });
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       const created = await prisma.appWorkflowDef.create({
         data: {
           name: body.name,
-          facilityId: body.facilityId || null,
+          locationIdsJson: body.locationIdsJson || '[]',
           stepsJson: body.stepsJson
         }
       });

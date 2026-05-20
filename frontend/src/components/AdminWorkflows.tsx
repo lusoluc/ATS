@@ -2,11 +2,11 @@
 import { useState, useEffect } from 'react';
 
 type WorkflowStep = { id: string; name: string; type: 'SYSTEM' | 'HUMAN' | 'APPROVAL'; description?: string };
-type Workflow = { id: string; name: string; facilityId?: string | null; stepsJson: string; facility?: { name: string } };
+type Workflow = { id: string; name: string; locationIdsJson?: string; stepsJson: string };
 
 export default function AdminWorkflows() {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
-  const [facilities, setFacilities] = useState<any[]>([]);
+  const [locations, setLocations] = useState<any[]>([]);
   const [editing, setEditing] = useState<Workflow | null>(null);
   const [parsedSteps, setParsedSteps] = useState<WorkflowStep[]>([]);
   const [msg, setMsg] = useState('');
@@ -21,10 +21,9 @@ export default function AdminWorkflows() {
       const wfData = await wfRes.json();
       setWorkflows(wfData.workflows || []);
 
-      // Actually, we don't have a direct /api/cms/facilities endpoint.
-      // But we can fetch locations as a proxy, or just let users type the facility ID for now, 
-      // or we just fetch /api/cms/locations? (Locations are not facilities though).
-      // Let's just allow global workflows for this demo, or input facility manually.
+      const locRes = await fetch('/api/cms/locations');
+      const locData = await locRes.json();
+      setLocations(locData.locations || []);
     } catch (e) {
       console.error(e);
     }
@@ -57,7 +56,7 @@ export default function AdminWorkflows() {
       const payload = {
         id: editing.id || undefined,
         name: editing.name,
-        facilityId: editing.facilityId,
+        locationIdsJson: editing.locationIdsJson || '[]',
         stepsJson: JSON.stringify(parsedSteps)
       };
       
@@ -126,6 +125,19 @@ export default function AdminWorkflows() {
     setParsedSteps(newSteps);
   };
 
+  const toggleLocation = (locId: string) => {
+    if (!editing) return;
+    let current = [];
+    try { current = JSON.parse(editing.locationIdsJson || '[]'); } catch {}
+    
+    if (current.includes(locId)) {
+      current = current.filter((id: string) => id !== locId);
+    } else {
+      current.push(locId);
+    }
+    setEditing({ ...editing, locationIdsJson: JSON.stringify(current) });
+  };
+
   const inputStyle = { padding: '0.5rem', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--foreground)' };
 
   if (editing) {
@@ -149,8 +161,27 @@ export default function AdminWorkflows() {
               <input value={editing.name} onChange={e => setEditing({...editing, name: e.target.value})} style={{ ...inputStyle, width: '100%', fontSize: '1.1rem' }} />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}>Gültigkeitsbereich (Facility ID)</label>
-              <input value={editing.facilityId || ''} onChange={e => setEditing({...editing, facilityId: e.target.value})} placeholder="Leer = Globaler Standard-Workflow" style={{ ...inputStyle, width: '100%', fontSize: '1.1rem' }} />
+              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}>Gültigkeitsbereich (Standorte)</label>
+              <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '6px', padding: '0.5rem', background: 'var(--background)' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem', cursor: 'pointer', borderBottom: '1px solid var(--border)', fontWeight: 'bold', opacity: (!editing.locationIdsJson || editing.locationIdsJson === '[]') ? 1 : 0.5 }}>
+                  <input 
+                    type="checkbox" 
+                    checked={!editing.locationIdsJson || editing.locationIdsJson === '[]'} 
+                    onChange={() => setEditing({ ...editing, locationIdsJson: '[]' })} 
+                  />
+                  🌍 Globaler Standard (Greift überall, wo nichts anderes definiert ist)
+                </label>
+                {locations.map(loc => {
+                  let isSelected = false;
+                  try { isSelected = JSON.parse(editing.locationIdsJson || '[]').includes(loc.id); } catch {}
+                  return (
+                    <label key={loc.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}>
+                      <input type="checkbox" checked={isSelected} onChange={() => toggleLocation(loc.id)} />
+                      📍 {loc.name}
+                    </label>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
@@ -216,7 +247,14 @@ export default function AdminWorkflows() {
               <div>
                 <h3 style={{ fontSize: '1.3rem', marginBottom: '0.3rem' }}>{wf.name}</h3>
                 <div style={{ display: 'flex', gap: '1rem', fontSize: '0.9rem', opacity: 0.7 }}>
-                  <span>📍 {wf.facilityId ? `Standort: ${wf.facilityId}` : 'Globaler Standard (Greift überall, wo nichts anderes definiert ist)'}</span>
+                  <span>📍 {(() => {
+                    try {
+                      const ids = JSON.parse(wf.locationIdsJson || '[]');
+                      if (ids.length === 0) return 'Globaler Standard';
+                      const names = ids.map((id: string) => locations.find(l => l.id === id)?.name || id);
+                      return names.join(', ');
+                    } catch { return 'Globaler Standard'; }
+                  })()}</span>
                   <span>|</span>
                   <span>📑 {stepsCount} Prozessschritte</span>
                 </div>

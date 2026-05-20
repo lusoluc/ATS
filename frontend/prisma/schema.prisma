@@ -391,6 +391,7 @@ model AppWorkflowDef {
   name        String
   facilityId  String?
   facility    Facility? @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  locationIdsJson String @default("[]") // Workaround für SQLite (Array von Location-IDs)
   stepsJson   String   @default("[]") // Definition der Schritte
   createdAt   DateTime @default(now())
   

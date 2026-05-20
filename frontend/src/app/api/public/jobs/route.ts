@@ -47,13 +47,22 @@ export async function GET(req: NextRequest) {
     let jobs = await prisma.jobPosting.findMany({
       where: {
         workflowState: { name: 'published' },
-        ...(q && { title: { contains: q } }),
         ...(locationId && { locationId }),
         ...(categoryId && { jobFamilyId: categoryId }),
       },
       include: { facility: true, location: true, jobFamily: true, workflowState: true },
       orderBy: { createdAt: 'desc' },
     });
+
+    // In-Memory Filter für Stichwort (da SQLite case-insensitive in Prisma nicht unterstützt)
+    if (q) {
+      const qLower = q.toLowerCase();
+      jobs = jobs.filter(job => 
+        job.title.toLowerCase().includes(qLower) || 
+        (job.description && job.description.toLowerCase().includes(qLower)) ||
+        (job.jobFamily && job.jobFamily.name.toLowerCase().includes(qLower))
+      );
+    }
 
     // Umkreissuche: Wenn searchLocation gesetzt, geocodieren und filtern
     let geocodeResult: { lat: number; lng: number; displayName: string } | null = null;

@@ -38,6 +38,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  optimizeFonts: false,
   async headers() {
     return [
       {

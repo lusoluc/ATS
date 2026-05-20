@@ -34,11 +34,8 @@ async function main() {
   const families = ['Pflege & Betreuung', 'Medizin & Ärzte', 'IT & Technik', 'Verwaltung'];
   const familyIds = {};
   for (const name of families) {
-    const f = await prisma.jobFamily.upsert({
-      where: { name },
-      update: {},
-      create: { name }
-    });
+    let f = await prisma.jobFamily.findFirst({ where: { name } });
+    if (!f) f = await prisma.jobFamily.create({ data: { name } });
     familyIds[name] = f.id;
   }
   
@@ -50,28 +47,27 @@ async function main() {
   ];
   const locIds = {};
   for (const l of locations) {
-    const loc = await prisma.location.upsert({
-      where: { name: l.name },
-      update: { lat: l.lat, lng: l.lng },
-      create: { name: l.name, lat: l.lat, lng: l.lng }
-    });
+    let loc = await prisma.location.findFirst({ where: { name: l.name } });
+    if (!loc) loc = await prisma.location.create({ data: { name: l.name, lat: l.lat, lng: l.lng } });
+    else await prisma.location.update({ where: { id: loc.id }, data: { lat: l.lat, lng: l.lng } });
     locIds[l.name] = loc.id;
     
     // Create Facility
     const facName = `Klinikum ${l.name}`;
-    const fac = await prisma.facility.upsert({
-      where: { name: facName },
-      update: { locationId: loc.id },
-      create: { name: facName, locationId: loc.id, address: `Hauptstraße 1, ${l.name}` }
-    });
+    let fac = await prisma.facility.findFirst({ where: { name: facName } });
+    if (!fac) fac = await prisma.facility.create({ data: { name: facName, locationId: loc.id, address: `Hauptstraße 1, ${l.name}` } });
+    else await prisma.facility.update({ where: { id: fac.id }, data: { locationId: loc.id } });
     
     // Create Facility Profile so /einrichtungen/[slug] works!
     const slug = facName.toLowerCase().replace(/[^a-z0-9]/g, '-');
-    await prisma.facilityProfile.upsert({
-      where: { slug },
-      update: { facilityId: fac.id },
-      create: { slug, facilityId: fac.id, description: JSON.stringify({ content: [{ type: 'HeroBlock', props: { title: facName, subtitle: 'Ein moderner Standort der Nordicum Health Group.', alignment: 'left', titleSize: 'medium', textColor: 'dark' } }], root: { props: { title: facName } } }) }
-    });
+    let facProfile = await prisma.facilityProfile.findUnique({ where: { slug } });
+    if (!facProfile) {
+      facProfile = await prisma.facilityProfile.create({ 
+        data: { slug, facilityId: fac.id, description: JSON.stringify({ content: [{ type: 'HeroBlock', props: { title: facName, subtitle: 'Ein moderner Standort der Nordicum Health Group.', alignment: 'left', titleSize: 'medium', textColor: 'dark' } }], root: { props: { title: facName } } }) }
+      });
+    } else {
+      await prisma.facilityProfile.update({ where: { id: facProfile.id }, data: { facilityId: fac.id } });
+    }
   }
 
   // 5. Active Jobs

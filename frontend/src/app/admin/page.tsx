@@ -13,6 +13,19 @@ type View = 'dashboard' | 'jobs' | 'job-alerts' | 'masterdata' | 'pages' | 'sett
 
 export default function AdminDashboard() {
   const [view, setView] = useState<View>('dashboard');
+  const [role, setRole] = useState<string>('global_admin');
+
+  useEffect(() => {
+    const savedRole = localStorage.getItem('securats_role') || 'global_admin';
+    setRole(savedRole);
+  }, []);
+
+  const hasAccess = useCallback((v: View) => {
+    if (role === 'global_admin') return true;
+    if (role === 'content_editor') return ['dashboard', 'pages'].includes(v);
+    if (role === 'local_hr') return ['dashboard', 'jobs', 'job-alerts'].includes(v);
+    return false;
+  }, [role]);
 
   const nav = (label: string, icon: string, v: View) => (
     <button key={v} onClick={() => setView(v)} style={{
@@ -35,11 +48,11 @@ export default function AdminDashboard() {
           <p style={{ fontWeight: 700, color: 'var(--primary)', fontFamily: 'var(--font-outfit)' }}>Admin-Bereich</p>
         </div>
         {nav('Dashboard', '🏠', 'dashboard')}
-        {nav('Seiten verwalten', '📑', 'pages')}
-        {nav('Stellenangebote', '💼', 'jobs')}
-        {nav('Job-Alerts & KPIs', '🔔', 'job-alerts')}
-        {nav('Standorte & Kategorien', '🏷️', 'masterdata')}
-        {nav('Einstellungen', '⚙️', 'settings')}
+        {hasAccess('pages') && nav('Seiten verwalten', '📑', 'pages')}
+        {hasAccess('jobs') && nav('Stellenangebote', '💼', 'jobs')}
+        {hasAccess('job-alerts') && nav('Job-Alerts & KPIs', '🔔', 'job-alerts')}
+        {hasAccess('masterdata') && nav('Standorte & Kategorien', '🏷️', 'masterdata')}
+        {hasAccess('settings') && nav('Einstellungen', '⚙️', 'settings')}
         <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', opacity: 0.6, padding: '0.5rem' }}>← Zur Website</Link>
         </div>
@@ -51,7 +64,9 @@ export default function AdminDashboard() {
         {/* DASHBOARD */}
         {view === 'dashboard' && (
           <div>
-            <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem', color: 'var(--primary)' }}>Willkommen im CMS</h1>
+            <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem', color: 'var(--primary)' }}>
+              Willkommen im CMS ({role === 'global_admin' ? 'Global Admin' : role === 'content_editor' ? 'Redakteur' : 'HR Manager'})
+            </h1>
             <p style={{ opacity: 0.7, marginBottom: '2.5rem' }}>Verwalte alle Inhalte der Enterprise Karriereplattform.</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
               {[
@@ -60,7 +75,7 @@ export default function AdminDashboard() {
                 { icon: '🔔', title: 'Job-Alerts & KPIs', desc: 'Abonnenten verwalten und Statistiken einsehen', v: 'job-alerts' as View },
                 { icon: '🏷️', title: 'Standorte & Kategorien', desc: 'Eigene Standorte und Berufsfelder anlegen', v: 'masterdata' as View },
                 { icon: '⚙️', title: 'Einstellungen', desc: 'Systemstatus und Sicherheit', v: 'settings' as View },
-              ].map(card => (
+              ].filter(card => hasAccess(card.v)).map(card => (
                 <div key={card.v} onClick={() => setView(card.v)} className="glass-panel"
                   style={{ padding: '1.5rem', borderRadius: '12px', cursor: 'pointer', border: '2px solid transparent', transition: 'border-color 0.2s' }}
                   onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}

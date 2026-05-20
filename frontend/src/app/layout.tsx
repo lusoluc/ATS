@@ -86,7 +86,7 @@ export default async function RootLayout({
         )}
 
         {/* Floating Powered By Badge for Demo */}
-        <a href="https://securats.de" target="_blank" rel="noopener noreferrer" style={{ position: 'fixed', bottom: '20px', right: '20px', background: 'white', padding: '8px 16px', borderRadius: '30px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 9999, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: '#334155', textDecoration: 'none', border: '1px solid #e2e8f0', transition: 'transform 0.2s', outline: 'none' }} onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}>
+        <a href="https://securats.de" target="_blank" rel="noopener noreferrer" style={{ position: 'fixed', bottom: '20px', right: '20px', background: 'white', padding: '8px 16px', borderRadius: '30px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 9999, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: '#334155', textDecoration: 'none', border: '1px solid #e2e8f0', outline: 'none' }} className="hover:-translate-y-1 transition-transform">
           <span style={{ opacity: 0.7 }}>Powered by</span> <strong style={{ color: '#2563eb' }}>SecurATS</strong>
         </a>
       </body>

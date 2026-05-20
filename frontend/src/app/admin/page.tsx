@@ -12,8 +12,9 @@ const AdminSettings = dynamic(() => import('../../components/AdminSettings'), { 
 const AdminWorkflows = dynamic(() => import('../../components/AdminWorkflows'), { ssr: false });
 const AdminApplicants = dynamic(() => import('../../components/AdminApplicants'), { ssr: false });
 const AdminAnalytics = dynamic(() => import('../../components/AdminAnalytics'), { ssr: false });
+const AdminAI = dynamic(() => import('../../components/AdminAI'), { ssr: false });
 
-type View = 'dashboard' | 'analytics' | 'applicants' | 'jobs' | 'job-alerts' | 'masterdata' | 'pages' | 'settings' | 'workflows';
+type View = 'dashboard' | 'analytics' | 'applicants' | 'jobs' | 'job-alerts' | 'masterdata' | 'pages' | 'settings' | 'workflows' | 'ai';
 
 export default function AdminDashboard() {
   const [view, setView] = useState<View>('dashboard');
@@ -26,8 +27,8 @@ export default function AdminDashboard() {
 
   const hasAccess = useCallback((v: View) => {
     if (role === 'global_admin') return true;
-    if (role === 'content_editor') return ['dashboard', 'pages', 'analytics'].includes(v);
-    if (role === 'local_hr') return ['dashboard', 'applicants', 'jobs', 'job-alerts', 'workflows'].includes(v);
+    if (role === 'content_editor') return ['dashboard', 'pages', 'analytics', 'ai'].includes(v);
+    if (role === 'local_hr') return ['dashboard', 'applicants', 'jobs', 'job-alerts', 'workflows', 'ai'].includes(v);
     return false;
   }, [role]);
 
@@ -74,6 +75,7 @@ export default function AdminDashboard() {
         {hasAccess('applicants') && nav('Bewerber (Kanban)', '👥', 'applicants')}
         {hasAccess('pages') && nav('Seiten verwalten', '📑', 'pages')}
         {hasAccess('jobs') && nav('Stellenangebote', '💼', 'jobs')}
+        {hasAccess('ai') && nav('KI-Einstellungen', '🧠', 'ai')}
         {hasAccess('job-alerts') && nav('Job-Alerts & KPIs', '🔔', 'job-alerts')}
         {hasAccess('masterdata') && nav('Standorte & Kategorien', '🏷️', 'masterdata')}
         {hasAccess('workflows') && nav('Prozessflows', '🔄', 'workflows')}
@@ -99,6 +101,7 @@ export default function AdminDashboard() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
               {[
                 { icon: '📊', title: 'Statistiken', desc: 'Erfolgsmetriken und Engpässe', v: 'analytics' as View },
+                { icon: '🧠', title: 'KI-Einstellungen', desc: 'Tonalität, Auto-Absagen und Training', v: 'ai' as View },
                 { icon: '👥', title: 'Bewerber (Kanban)', desc: 'Alle Bewerber per Drag & Drop verwalten', v: 'applicants' as View },
                 { icon: '📑', title: 'Seiten verwalten', desc: 'Neue Seiten anlegen, bearbeiten, Slug & Navigation setzen', v: 'pages' as View },
                 { icon: '💼', title: 'Stellenangebote', desc: 'Jobs anlegen, bearbeiten, löschen', v: 'jobs' as View },
@@ -122,6 +125,9 @@ export default function AdminDashboard() {
 
         {/* ANALYTICS */}
         {view === 'analytics' && <AdminAnalytics />}
+
+        {/* AI */}
+        {view === 'ai' && <AdminAI />}
 
         {/* BEWERBER – Kanban */}
         {view === 'applicants' && <AdminApplicants />}

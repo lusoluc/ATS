@@ -66,7 +66,7 @@ function JobsList() {
     window.history.replaceState({}, '', newUrl);
 
     try {
-      const res = await fetch(`/api/public/jobs?${params}`);
+      const res = await fetch(`/api/public/jobs?${params}`, { cache: 'no-store' });
       const data = await res.json();
       setJobs(data.jobs || []);
       if (data.geocodeResult) {

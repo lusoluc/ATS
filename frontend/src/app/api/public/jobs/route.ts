@@ -87,7 +87,10 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ jobs, geocodeResult, totalFound: jobs.length });
+    return NextResponse.json(
+      { jobs, geocodeResult, totalFound: jobs.length },
+      { headers: { 'Cache-Control': 'no-store, max-age=0' } }
+    );
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

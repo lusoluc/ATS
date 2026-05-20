@@ -6,6 +6,7 @@ import { join } from 'path';
 import { randomBytes } from 'crypto';
 import { encryptBuffer } from '../../../../lib/encryption';
 import { applyRateLimit } from '../../../../lib/rate-limit';
+import { analyzeCVWithLocalModel } from '../../../../lib/ollama';
 
 const prisma = new PrismaClient();
 
@@ -130,12 +131,46 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      return { application, token };
+      return { application, token, job };
     });
 
     // 4. E-Mail Versand simulieren
     const magicLink = `http://localhost:3000/bewerber/${result.token.token}`;
     console.log(`\n\n[MAIL-SIMULATION] An: ${email}\nBetreff: Eingangsbestätigung deiner Bewerbung\n\nHallo ${firstName},\nvielen Dank für deine Bewerbung! Du kannst den aktuellen Status deiner Bewerbung jederzeit unter folgendem, sicheren Link einsehen:\n👉 ${magicLink}\n\nDein Enterprise Team\n\n`);
+
+    // 5. ASYNCHRONE KI-ANALYSE (Lokales Modell)
+    // Wir lassen diesen Prozess im Hintergrund laufen, damit der User nicht auf das LLM warten muss.
+    (async () => {
+      try {
+        console.log('[AI] Starte asynchrone CV-Analyse mit lokalem LLM...');
+        const jobTitle = result.job?.title || 'Unbekannt';
+        // Simulation des aus dem PDF extrahierten Textes
+        const simulatedCvText = `Bewerber: ${firstName} ${lastName}. Ausbildung: Examen 2018. Erfahrung: 5 Jahre auf der Intensivstation. Motivation: Suche neue Herausforderung.`;
+        
+        const aiResult = await analyzeCVWithLocalModel(simulatedCvText, jobTitle, 'gemma4:e4b');
+        console.log('[AI] Analyse abgeschlossen. Score:', aiResult.score);
+
+        // Score in Kategorie umwandeln (A, B, C, D)
+        // Normalerweise holen wir hier die echten Schwellenwerte aus der DB, hier als Simulation:
+        let category = 'B';
+        if (aiResult.score >= 80) category = 'A';
+        else if (aiResult.score >= 50) category = 'B';
+        else if (aiResult.score >= 15) category = 'C';
+        else category = 'D';
+
+        await prisma.application.update({
+          where: { id: result.application.id },
+          data: {
+            aiScore: category,
+            aiRationale: aiResult.reason + ` (Score: ${aiResult.score}%)`
+          }
+        });
+        
+        console.log(`[AI] Datenbank aktualisiert für Bewerbung ${result.application.id} -> Kategorie ${category}`);
+      } catch (err) {
+        console.error('[AI] Fehler bei asynchroner Analyse:', err);
+      }
+    })();
 
     return NextResponse.json({ 
       success: true, 

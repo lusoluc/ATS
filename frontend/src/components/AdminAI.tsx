@@ -195,14 +195,24 @@ export default function AdminAI() {
                   onChange={e => handleChange('AI_AGG_CHECK_ENABLED', e.target.checked ? 'true' : 'false')}
                   style={{ width: '18px', height: '18px' }}
                 />
-                Automatischer AGG-Check für Stellenanzeigen
+                AGG-Check in Stellenangeboten aktivieren
               </label>
               <p style={{ fontSize: '0.8rem', opacity: 0.6, marginTop: '0.4rem', marginLeft: '2rem' }}>
-                Die KI prüft alle neu erstellten Job-Profile auf Konformität mit dem Allgemeinen Gleichbehandlungsgesetz (AGG) und warnt vor diskriminierenden Formulierungen, bevor der Job online geht.
+                Schaltet im Job-Editor einen Button frei, mit dem Recruiter den Jobtext manuell von der KI auf Diskriminierung prüfen lassen können.
               </p>
+              {settings.AI_AGG_CHECK_ENABLED === 'true' && (
+                <div style={{ marginLeft: '2rem', marginTop: '1rem' }}>
+                  <label style={{ display: 'block', fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.4rem' }}>AGG-Prüfungs-Regelwerk (Prompt):</label>
+                  <textarea 
+                    value={settings.AI_AGG_PROMPT} 
+                    onChange={e => handleChange('AI_AGG_PROMPT', e.target.value)}
+                    style={{ width: '100%', height: '80px', padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)' }}
+                  />
+                </div>
+              )}
             </div>
 
-            <div>
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', fontWeight: 'bold', cursor: 'pointer' }}>
                 <input 
                   type="checkbox" 
@@ -210,11 +220,21 @@ export default function AdminAI() {
                   onChange={e => handleChange('AI_TRANSLATE_EASY_LANGUAGE', e.target.checked ? 'true' : 'false')}
                   style={{ width: '18px', height: '18px' }}
                 />
-                "Leichte Sprache" Modus (Barrierefreiheit) aktivieren
+                "Leichte Sprache" Übersetzer aktivieren
               </label>
               <p style={{ fontSize: '0.8rem', opacity: 0.6, marginTop: '0.4rem', marginLeft: '2rem' }}>
-                Das LLM übersetzt auf Wunsch automatisch alle Job-Texte und E-Mail-Vorlagen in "Leichte Sprache" (Barrierefreiheit / Inklusion), um eine breitere Zielgruppe (z.B. Migranten oder Menschen mit Lernschwäche) anzusprechen.
+                Schaltet einen Button im Job-Editor frei, mit dem Texte auf Knopfdruck in barrierefreie Sprache übersetzt werden.
               </p>
+              {settings.AI_TRANSLATE_EASY_LANGUAGE === 'true' && (
+                <div style={{ marginLeft: '2rem', marginTop: '1rem' }}>
+                  <label style={{ display: 'block', fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.4rem' }}>Übersetzungs-Regelwerk (Prompt):</label>
+                  <textarea 
+                    value={settings.AI_EASY_LANGUAGE_PROMPT} 
+                    onChange={e => handleChange('AI_EASY_LANGUAGE_PROMPT', e.target.value)}
+                    style={{ width: '100%', height: '80px', padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)' }}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>

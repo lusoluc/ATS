@@ -13,7 +13,9 @@ const DEFAULT_AI_SETTINGS = {
   AI_THRESHOLD_A_INVITE: '80',
   AI_CV_LEARNING_MODE: 'true',
   AI_AGG_CHECK_ENABLED: 'true',
-  AI_TRANSLATE_EASY_LANGUAGE: 'false'
+  AI_AGG_PROMPT: 'Prüfe den folgenden Text auf Diskriminierung (Alter, Geschlecht, Herkunft, Religion) nach dem deutschen AGG. Zeige kritische Stellen auf und mache neutrale Formulierungsvorschläge.',
+  AI_TRANSLATE_EASY_LANGUAGE: 'false',
+  AI_EASY_LANGUAGE_PROMPT: 'Übersetze den folgenden Text in leichte Sprache (A2/B1 Niveau). Nutze kurze Sätze, vermeide Fachwörter und verwende aktive Verben.'
 };
 
 export async function GET() {

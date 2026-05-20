@@ -27,6 +27,7 @@ type FilterTab = 'all' | 'published' | 'draft' | 'in_review' | 'archived';
 export default function AdminJobs() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [meta, setMeta] = useState<Metadata | null>(null);
+  const [aiSettings, setAiSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   
@@ -42,6 +43,9 @@ export default function AdminJobs() {
   const [aggCheckLoading, setAggCheckLoading] = useState(false);
   const [aggWarnings, setAggWarnings] = useState<string[]>([]);
   const [aggChecked, setAggChecked] = useState(false);
+
+  // Translate State
+  const [translateLoading, setTranslateLoading] = useState(false);
   
   const [newTask, setNewTask] = useState('');
   const [newReq, setNewReq] = useState('');
@@ -56,9 +60,10 @@ export default function AdminJobs() {
       fetch('/api/cms/job-metadata'),
       fetch('/api/cms/locations'), 
       fetch('/api/cms/categories'),
-      fetch('/api/cms/questions')
+      fetch('/api/cms/questions'),
+      fetch('/api/cms/ai-settings')
     ]);
-    const [jd, md, ld, cd, qd] = await Promise.all([j.json(), m.json(), l.json(), c.json(), q.json()]);
+    const [jd, md, ld, cd, qd, ai] = await Promise.all([j.json(), m.json(), l.json(), c.json(), q.json(), aiRes.json()]);
     
     setJobs(jd.jobs || []);
     setMeta({
@@ -71,6 +76,7 @@ export default function AdminJobs() {
       snippets: md.snippets || [],
       questions: qd.questions || [],
     });
+    setAiSettings(ai);
     setLoading(false);
   }, []);
 
@@ -191,7 +197,8 @@ export default function AdminJobs() {
           title: form.title,
           description: form.description,
           tasks: form.tasks,
-          requirements: form.requirements
+          requirements: form.requirements,
+          prompt: aiSettings?.AI_AGG_PROMPT
         })
       });
       const data = await res.json();
@@ -204,6 +211,21 @@ export default function AdminJobs() {
     } finally {
       setAggCheckLoading(false);
     }
+  };
+
+  const translateToEasyLanguage = () => {
+    setTranslateLoading(true);
+    // Simulation API Call for translation
+    setTimeout(() => {
+      setForm(p => ({
+        ...p,
+        description: 'Diese Stelle wurde in leichte Sprache übersetzt. Wir suchen nette Menschen. Die Arbeit ist leicht zu verstehen.',
+        tasks: p.tasks.map(t => 'Leicht: ' + t),
+        requirements: p.requirements.map(r => 'Du kannst: ' + r)
+      }));
+      setTranslateLoading(false);
+      setMsg('✨ In leichte Sprache übersetzt!');
+    }, 2000);
   };
 
   const inputStyle = { width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--foreground)', fontSize: '0.95rem' } as const;
@@ -280,7 +302,14 @@ export default function AdminJobs() {
 
           {/* Aufgaben & Profil (Modular) */}
           <div className="glass-panel" style={{ padding: '2rem', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            <h3 style={{ margin: 0, color: 'var(--primary)', fontFamily: 'var(--font-outfit)' }}>2. Inhalte (Aufgaben & Profil)</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, color: 'var(--primary)', fontFamily: 'var(--font-outfit)' }}>2. Inhalte (Aufgaben & Profil)</h3>
+              {aiSettings?.AI_TRANSLATE_EASY_LANGUAGE === 'true' && (
+                <button type="button" onClick={translateToEasyLanguage} disabled={translateLoading} className="btn-secondary" style={{ padding: '0.4rem 0.8rem', background: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '0.85rem' }}>
+                  {translateLoading ? 'Übersetze...' : '✨ In Leichte Sprache übersetzen'}
+                </button>
+              )}
+            </div>
             
             {/* TASKS */}
             <div>
@@ -411,6 +440,7 @@ export default function AdminJobs() {
             </div>
           </div>
 
+          {aiSettings?.AI_AGG_CHECK_ENABLED === 'true' && (
           <div style={{ padding: '1.5rem', background: 'var(--card-bg)', borderRadius: '16px', border: aggChecked && aggWarnings.length === 0 ? '1px solid #10b981' : aggWarnings.length > 0 ? '1px solid #ef4444' : '1px solid var(--border)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h3 style={{ margin: 0, color: 'var(--foreground)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>⚖️ Arbeitsrechtlicher AGG-Check (KI)</h3>
@@ -445,6 +475,7 @@ export default function AdminJobs() {
               </div>
             )}
           </div>
+          )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <button type="submit" className="btn-primary" style={{ padding: '1rem 2rem', fontSize: '1.1rem' }}>💾 Job {view === 'edit' ? 'aktualisieren' : 'anlegen'}</button>

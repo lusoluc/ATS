@@ -12,6 +12,7 @@ const STATUS_META: Record<string, { label: string; color: string; bg: string }> 
   published: { label: '✅ Veröffentlicht', color: 'var(--green-dark)', bg: 'rgba(133,172,55,0.12)' },
   draft:     { label: '📝 Entwurf',        color: '#e0932a',           bg: 'rgba(224,147,42,0.12)' },
   archived:  { label: '📦 Archiviert',     color: '#888',              bg: 'rgba(128,128,128,0.1)' },
+  system:    { label: '⚙️ System-Seite',   color: '#2563eb',           bg: 'rgba(37,99,235,0.1)' },
 };
 
 function slugify(t: string) {
@@ -172,10 +173,11 @@ export default function AdminPages() {
           </div>
           <div>
             <label style={{ display:'block', fontWeight:700, marginBottom:'0.35rem', fontSize:'0.85rem' }}>Status</label>
-            <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))} style={input}>
+            <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))} style={input} disabled={form.status === 'system'}>
               <option value="published">✅ Veröffentlicht</option>
               <option value="draft">📝 Entwurf (nicht sichtbar)</option>
               <option value="archived">📦 Archiviert</option>
+              {form.status === 'system' && <option value="system">⚙️ System-Seite</option>}
             </select>
           </div>
           <div>
@@ -271,6 +273,7 @@ export default function AdminPages() {
   const tabs = [
     { key:'all', label:`Alle (${pages.length})` },
     { key:'published', label:`Aktiv (${pages.filter(p=>p.status==='published').length})` },
+    { key:'system', label:`System (${pages.filter(p=>p.status==='system').length})` },
     { key:'draft', label:`Entwürfe (${pages.filter(p=>p.status==='draft').length})` },
     { key:'archived', label:`Archiv (${pages.filter(p=>p.status==='archived').length})` },
   ];
@@ -317,6 +320,9 @@ export default function AdminPages() {
                     <span style={{ fontSize:'0.72rem', padding:'0.15rem 0.55rem', borderRadius:'20px', background:st.bg, color:st.color, whiteSpace:'nowrap' }}>{st.label}</span>
                     {page.navEnabled && page.status==='published' && (
                       <span style={{ fontSize:'0.72rem', opacity:0.6 }}>🧭 {page.navParent ? `↳ unter ${page.navParent}` : 'Hauptmenü'} (Pos. {page.navOrder})</span>
+                    )}
+                    {page.status === 'system' && (
+                      <span style={{ fontSize:'0.72rem', opacity:0.8, color: 'var(--blue)' }}>⚠️ Code-basiertes Layout</span>
                     )}
                   </div>
                   <p style={{ fontSize:'0.78rem', opacity:0.5, fontFamily:'monospace' }}>/info/{page.slug}</p>

@@ -22,7 +22,7 @@ export default function AdminAnalytics() {
   };
 
   if (loading) return <p>Lade Statistiken...</p>;
-  if (!data) return <p>Fehler beim Laden der Daten.</p>;
+  if (!data || data.error || !data.metrics) return <p>Fehler beim Laden der Daten: {data?.error || 'Unbekannt'}</p>;
 
   return (
     <div>

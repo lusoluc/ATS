@@ -1,5 +1,6 @@
 import { Config } from '@measured/puck';
 import React from 'react';
+import { HomeHero, HomeStatBar, HomeTargetGroups, HomeBenefits, HomeEmployerBranding, HomeFAQ, HomeJobsTeaser } from './puck.home-components';
 
 // Props Types für unsere Komponenten
 export type Props = {
@@ -18,7 +19,7 @@ export type Props = {
   JobCard: { jobTitle: string; location: string; jobType: string; url: string; showApplyButton: boolean };
 };
 
-export const config: Config<Props> = {
+export const config: Config<any> = {
   components: {
     HeroBlock: {
       fields: {
@@ -401,6 +402,13 @@ export const config: Config<Props> = {
           </div>
         </div>
       )
-    }
+    },
+    HomeHero,
+    HomeStatBar,
+    HomeTargetGroups,
+    HomeBenefits,
+    HomeEmployerBranding,
+    HomeFAQ,
+    HomeJobsTeaser
   }
 };

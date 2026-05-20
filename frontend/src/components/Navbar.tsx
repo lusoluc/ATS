@@ -26,9 +26,9 @@ export default function Navbar({ cmsPages = [] }: { cmsPages?: NavPage[] }) {
   return (
     <nav className="navbar glass-panel">
       <div className="container nav-content">
-        <Link href="/" className="nav-logo" onClick={() => setIsOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-          <Image src="/logo.png" alt="SecurATS Logo" width={32} height={32} style={{ borderRadius: '6px' }} />
-          SecurATS
+        <Link href="/" className="nav-logo" onClick={() => setIsOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Image src="/logo.png" alt="SecurATS Logo" width={48} height={48} style={{ objectFit: 'contain' }} />
+          <span style={{ fontSize: '1.4rem' }}>SecurATS</span>
         </Link>
         
         {/* Mobile Toggle Button */}

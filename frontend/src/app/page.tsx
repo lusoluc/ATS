@@ -5,7 +5,7 @@ export default function HomePage() {
   return (
     <main>
       {/* ── HERO (Workwise #2 & #4: Klarer CTA & Authentische Bilder) ── */}
-      <section className="hero-section" style={{ padding: '6rem 0 0', minHeight: 'auto', background: 'var(--surface-1)' }}>
+      <section className="hero-section" style={{ padding: '6rem 0 0', minHeight: 'auto', background: 'var(--background)' }}>
         <div className="container" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '4rem', alignItems: 'center' }}>
           <div className="animate-fade-in opacity-0">
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
@@ -14,11 +14,11 @@ export default function HomePage() {
                 ⭐ 4.6 Kununu Score
               </div>
             </div>
-            <h1 className="hero-title" style={{ fontSize: 'clamp(3rem, 5vw, 4.5rem)', lineHeight: 1.05 }}>
+            <h1 className="hero-title" style={{ fontSize: 'clamp(3rem, 5vw, 4.5rem)', lineHeight: 1.05, color: 'var(--foreground)' }}>
               Gemeinsam für
-              <span className="accent" style={{ display: 'block', marginTop: '0.5rem' }}>die Gesundheit.</span>
+              <span className="accent" style={{ display: 'block', marginTop: '0.5rem', color: 'var(--primary)' }}>die Gesundheit.</span>
             </h1>
-            <p className="hero-subtitle" style={{ fontSize: '1.25rem', marginTop: '1.5rem' }}>
+            <p className="hero-subtitle" style={{ fontSize: '1.25rem', marginTop: '1.5rem', color: 'var(--muted)' }}>
               Wir sind einer der führenden Maximalversorger in Norddeutschland. 
               Modernste Medizin, familiäre Teams und echte Wertschätzung für deine Arbeit.
             </p>

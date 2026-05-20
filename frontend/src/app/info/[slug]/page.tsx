@@ -5,6 +5,9 @@ import * as path from 'path';
 import { PrismaClient } from '@prisma/client';
 import DOMPurify from 'isomorphic-dompurify';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const prisma = new PrismaClient();
 const CONTENT_DIR = 'c:/Users/Admin/Desktop/lv/content_texte';
 

@@ -3,6 +3,9 @@ import { notFound } from 'next/navigation';
 import { PrismaClient } from '@prisma/client';
 import { PuckRenderer } from '../../info/[slug]/PuckRenderer';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const prisma = new PrismaClient();
 
 async function getFacilityProfile(slug: string) {

@@ -2,6 +2,9 @@ import { PrismaClient } from '@prisma/client';
 import { PuckRenderer } from './info/[slug]/PuckRenderer';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const prisma = new PrismaClient();
 
 export default async function HomePage() {

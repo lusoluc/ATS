@@ -336,38 +336,68 @@ export const HomeJobsTeaser = {
       { title: 'Auszubildende (m/w/d) Pflegefachfrau/-mann', location: 'Campus Hamburg-Mitte', category: 'Ausbildung', type: 'Ausbildung', salary: '1.300€ im 1. Jahr', url: '/jobs/4' },
     ]
   },
-  render: ({ label, title, btnText, btnUrl, jobs }: any) => (
-    <section style={{ padding: '2rem 0 6rem', background: 'var(--background)' }}>
-      <div className="container">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem', flexWrap: 'wrap', gap: '1rem' }}>
-          <div>
-            <p className="section-label">{label}</p>
-            <h2 className="section-title" style={{ marginBottom: 0 }}>{title}</h2>
-          </div>
-          <a href={btnUrl} className="btn-outline" style={{textDecoration:'none'}}>{btnText}</a>
-        </div>
+  render: ({ label, title, btnText, btnUrl, jobs }: any) => {
+    const [liveJobs, setLiveJobs] = React.useState<any[]>([]);
+    const [loading, setLoading] = React.useState(true);
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '3rem' }}>
-          {jobs?.map((job:any, i:number) => (
-            <a href={job.url} key={i} className="job-list-item animate-fade-in"
-              style={{ padding: '1.5rem 2rem', background: 'white', borderRadius: '16px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem', textDecoration: 'none' }}
-            >
-              <div style={{ flex: '1 1 500px' }}>
-                <h3 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--text)', marginBottom: '0.8rem' }}>{job.title}</h3>
-                <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', color: 'var(--muted)', fontSize: '0.9rem' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>📍 <strong>{job.location}</strong></span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>⏱️ {job.type}</span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>💶 {job.salary}</span>
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                <span className="badge" style={{ background: 'var(--surface-2)', color: 'var(--text)' }}>{job.category}</span>
-                <span className="btn-primary" style={{ padding: '0.6rem 1.5rem', fontSize: '0.95rem', borderRadius: '8px' }}>Bewerben</span>
-              </div>
-            </a>
-          ))}
+    React.useEffect(() => {
+      fetch('/api/public/jobs?limit=4')
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.jobs) {
+            setLiveJobs(data.jobs.slice(0, 4).map((j: any) => ({
+              title: j.title,
+              location: j.location?.name || 'Home Office',
+              category: j.jobFamily?.name || 'Allgemein',
+              type: 'Vollzeit / Teilzeit', // Fallback for demo
+              salary: 'Nach Tarif', // Fallback for demo
+              url: `/jobs/${j.id}`
+            })));
+          }
+        })
+        .catch(err => console.error("Error fetching live jobs:", err))
+        .finally(() => setLoading(false));
+    }, []);
+
+    const displayJobs = liveJobs.length > 0 ? liveJobs : (jobs || []);
+
+    return (
+      <section style={{ padding: '2rem 0 6rem', background: 'var(--background)' }}>
+        <div className="container">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <div>
+              <p className="section-label">{label}</p>
+              <h2 className="section-title" style={{ marginBottom: 0 }}>{title}</h2>
+            </div>
+            <a href={btnUrl} className="btn-outline" style={{textDecoration:'none'}}>{btnText}</a>
+          </div>
+
+          {loading ? (
+            <div style={{ textAlign: 'center', opacity: 0.5, padding: '2rem' }}>Lade aktuelle Stellen...</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '3rem' }}>
+              {displayJobs.map((job:any, i:number) => (
+                <a href={job.url} key={i} className="job-list-item animate-fade-in"
+                  style={{ padding: '1.5rem 2rem', background: 'white', borderRadius: '16px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem', textDecoration: 'none' }}
+                >
+                  <div style={{ flex: '1 1 500px' }}>
+                    <h3 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--text)', marginBottom: '0.8rem' }}>{job.title}</h3>
+                    <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', color: 'var(--muted)', fontSize: '0.9rem' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>📍 <strong>{job.location}</strong></span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>⏱️ {job.type}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>💶 {job.salary}</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <span className="badge" style={{ background: 'var(--surface-2)', color: 'var(--text)' }}>{job.category}</span>
+                    <span className="btn-primary" style={{ padding: '0.6rem 1.5rem', fontSize: '0.95rem', borderRadius: '8px' }}>Bewerben</span>
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
         </div>
-      </div>
-    </section>
-  )
+      </section>
+    );
+  }
 };

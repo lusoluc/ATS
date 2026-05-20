@@ -21,6 +21,7 @@ export default function AdminApplicants() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
 
   useEffect(() => {
     loadWorkflows();
@@ -36,12 +37,15 @@ export default function AdminApplicants() {
   };
 
   useEffect(() => {
-    if (selectedWorkflow) loadTickets();
-  }, [selectedWorkflow, search]);
+    if (viewMode === 'table' || selectedWorkflow) {
+      loadTickets();
+    }
+  }, [selectedWorkflow, search, viewMode]);
 
   const loadTickets = async () => {
     setLoading(true);
-    const res = await fetch(`/api/cms/applications?workflowId=${selectedWorkflow}&q=${encodeURIComponent(search)}`);
+    const wfParam = viewMode === 'table' ? '' : selectedWorkflow;
+    const res = await fetch(`/api/cms/applications?workflowId=${wfParam}&q=${encodeURIComponent(search)}`);
     const data = await res.json();
     setTickets(data.tickets || []);
     setLoading(false);
@@ -98,6 +102,21 @@ export default function AdminApplicants() {
         </div>
 
         <div style={{ display: 'flex', gap: '1rem' }}>
+          <div style={{ display: 'flex', background: 'var(--card-bg)', borderRadius: '8px', border: '1px solid var(--border)', overflow: 'hidden' }}>
+            <button 
+              onClick={() => setViewMode('kanban')} 
+              style={{ padding: '0.6rem 1rem', border: 'none', background: viewMode === 'kanban' ? 'var(--primary)' : 'transparent', color: viewMode === 'kanban' ? 'white' : 'var(--foreground)', cursor: 'pointer', fontWeight: viewMode === 'kanban' ? 'bold' : 'normal' }}
+            >
+              📋 Kanban
+            </button>
+            <button 
+              onClick={() => setViewMode('table')} 
+              style={{ padding: '0.6rem 1rem', border: 'none', background: viewMode === 'table' ? 'var(--primary)' : 'transparent', color: viewMode === 'table' ? 'white' : 'var(--foreground)', cursor: 'pointer', fontWeight: viewMode === 'table' ? 'bold' : 'normal' }}
+            >
+              🗂️ Gesamtübersicht
+            </button>
+          </div>
+
           <input 
             type="text" 
             placeholder="Suchen (Name, E-Mail)..." 
@@ -105,19 +124,80 @@ export default function AdminApplicants() {
             onChange={e => setSearch(e.target.value)}
             style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--foreground)' }}
           />
-          <select 
-            value={selectedWorkflow} 
-            onChange={e => setSelectedWorkflow(e.target.value)}
-            style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid var(--primary)', background: 'var(--card-bg)', color: 'var(--foreground)', fontWeight: 'bold' }}
-          >
-            {workflows.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-          </select>
+          {viewMode === 'kanban' && (
+            <select 
+              value={selectedWorkflow} 
+              onChange={e => setSelectedWorkflow(e.target.value)}
+              style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid var(--primary)', background: 'var(--card-bg)', color: 'var(--foreground)', fontWeight: 'bold' }}
+            >
+              {workflows.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+            </select>
+          )}
         </div>
       </div>
 
-      {!currentWorkflow && <p>Lade Workflows...</p>}
+      {!currentWorkflow && viewMode === 'kanban' && <p>Lade Workflows...</p>}
 
-      {currentWorkflow && (
+      {viewMode === 'table' && (
+        <div className="glass-panel" style={{ flex: 1, borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ overflowX: 'auto', flex: 1 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead style={{ background: 'rgba(0,0,0,0.05)', borderBottom: '2px solid var(--border)' }}>
+                <tr>
+                  <th style={{ padding: '1rem' }}>Bewerber</th>
+                  <th style={{ padding: '1rem' }}>Jobtitel</th>
+                  <th style={{ padding: '1rem' }}>Workflow</th>
+                  <th style={{ padding: '1rem' }}>Aktueller Status</th>
+                  <th style={{ padding: '1rem' }}>Aktion</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tickets.map(ticket => {
+                  const wf = workflows.find(w => w.id === ticket.workflowId);
+                  let currentStepName = 'Unbekannt';
+                  try {
+                    const parsedSteps = JSON.parse(wf?.stepsJson || '[]');
+                    const order = ticket.steps?.[0]?.stepOrder || 0;
+                    currentStepName = parsedSteps[order]?.name || `Schritt ${order + 1}`;
+                  } catch {}
+
+                  return (
+                    <tr key={ticket.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '1rem' }}>
+                        <div style={{ fontWeight: 'bold' }}>{ticket.application.applicant.firstName} {ticket.application.applicant.lastName}</div>
+                        <div style={{ fontSize: '0.85rem', opacity: 0.6 }}>{ticket.application.applicant.email}</div>
+                      </td>
+                      <td style={{ padding: '1rem' }}>{ticket.application.jobPosting.title}</td>
+                      <td style={{ padding: '1rem' }}>
+                        <span style={{ fontSize: '0.85rem', background: 'var(--background)', padding: '0.3rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border)' }}>
+                          {wf?.name || 'Standard'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '1rem' }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--primary)' }}>
+                          {currentStepName}
+                        </span>
+                      </td>
+                      <td style={{ padding: '1rem' }}>
+                        <Link href={`/admin/applications/${ticket.application.id}`} style={{ padding: '0.5rem 1rem', background: 'var(--primary)', color: 'white', borderRadius: '6px', textDecoration: 'none', fontSize: '0.85rem' }}>
+                          Öffnen
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {tickets.length === 0 && (
+                  <tr>
+                    <td colSpan={5} style={{ padding: '3rem', textAlign: 'center', opacity: 0.5 }}>Keine Bewerber gefunden.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {viewMode === 'kanban' && currentWorkflow && (
         <div style={{ display: 'flex', gap: '1.5rem', overflowX: 'auto', flex: 1, paddingBottom: '1rem' }}>
           {steps.map((step, index) => {
             const columnTickets = tickets.filter(t => {

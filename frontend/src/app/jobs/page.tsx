@@ -41,10 +41,16 @@ export default function JobsPage() {
     setCategories((cd.categories || []).filter((c: Filter) => !c.archived));
   };
 
-  const search = async (overrides?: Partial<{ q: string; locationId: string; categoryId: string; searchLocation: string; radiusKm: number; useRadius: boolean }>) => {
+  const search = async (overrides?: Partial<{ q: string; locationId: string; categoryId: string; searchLocation: string; radiusKm: number; useRadius: boolean; catShorthand?: string | null }>) => {
     setLoading(true);
     setGeocodeMsg('');
     const state = { q, locationId, categoryId, searchLocation, radiusKm, useRadius, ...overrides };
+    
+    if (state.catShorthand && !state.q) {
+      state.q = state.catShorthand;
+      setQ(state.catShorthand);
+    }
+    
     const params = new URLSearchParams();
     if (state.q) params.set('q', state.q);
     if (state.locationId) params.set('locationId', state.locationId);
@@ -69,7 +75,18 @@ export default function JobsPage() {
 
   useEffect(() => {
     loadMeta();
-    search();
+    const searchParams = new URLSearchParams(window.location.search);
+    const urlQ = searchParams.get('q') || '';
+    const urlLocId = searchParams.get('locationId') || '';
+    let urlCatId = searchParams.get('categoryId') || '';
+    // Support shorthand categories from home page
+    const catShorthand = searchParams.get('category');
+    
+    if (urlQ) setQ(urlQ);
+    if (urlLocId) setLocationId(urlLocId);
+    if (urlCatId) setCategoryId(urlCatId);
+    
+    search({ q: urlQ, locationId: urlLocId, categoryId: urlCatId, catShorthand });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

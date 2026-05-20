@@ -66,16 +66,16 @@ export default async function RootLayout({
                 <h4 style={{ marginBottom: '1rem' }}>Über uns</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.9rem', opacity: 0.8 }}>
                   <Link href="/arbeitgeber">Warum wir?</Link>
-                  <Link href="/info/_de_arbeitgeber_Enterprise_wer_wir_sind_">Wer wir sind</Link>
-                  <Link href="/info/_de_arbeitgeber_Enterprise_was_uns_auszeichnet_">Was uns auszeichnet</Link>
+                  <Link href="/info/ueber-uns">Wer wir sind</Link>
+                  <Link href="/info/kultur">Kultur & Werte</Link>
                 </div>
               </div>
               <div>
                 <h4 style={{ marginBottom: '1rem' }}>Rechtliches</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.9rem', opacity: 0.8 }}>
-                  <Link href="/info/_de_impressum_">Impressum</Link>
-                  <Link href="/info/_de_datenschutz_">Datenschutz</Link>
-                  <Link href="/info/_de_barrierefreiheit_">Barrierefreiheit</Link>
+                  <Link href="/info/impressum">Impressum</Link>
+                  <Link href="/info/datenschutz">Datenschutz</Link>
+                  <Link href="/info/barrierefreiheit">Barrierefreiheit</Link>
                 </div>
               </div>
             </div>

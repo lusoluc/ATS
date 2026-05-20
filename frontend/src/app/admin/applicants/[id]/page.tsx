@@ -83,7 +83,7 @@ export default async function ApplicantSuitabilityReview({ params }: { params: P
                   <strong>{application.cvStorageId || 'Lebenslauf.pdf'}</strong>
                 </div>
                 {/* Da wir MinIO hier mocken, zeigen wir nur einen Button ohne echte Funktion an */}
-                <button className="btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }} onClick={() => console.log('Mock: Download PDF')}>PDF Ansehen (Sicherer Link)</button>
+                <button className="btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}>PDF Ansehen (Sicherer Link)</button>
               </div>
             </div>
 

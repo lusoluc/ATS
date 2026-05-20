@@ -87,32 +87,44 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       
-      {/* 1. HERO SECTION */}
+      {/* 1. HERO SECTION (Workwise: Authentische Bilder & Mobile First) */}
       <section style={{ 
-        background: 'linear-gradient(135deg, var(--primary) 0%, #4a1542 100%)', 
-        color: 'white', 
-        padding: '5rem 0 4rem',
         position: 'relative',
+        background: 'var(--primary)', 
+        color: 'white', 
+        padding: '6rem 0 4rem',
         overflow: 'hidden'
       }}>
-        {/* Dekoratives Hintergrund-Muster */}
-        <div style={{ position: 'absolute', right: '-10%', top: '-20%', width: '500px', height: '500px', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', border: '40px solid rgba(255,255,255,0.05)' }}></div>
-        <div style={{ position: 'absolute', left: '-5%', bottom: '-20%', width: '300px', height: '300px', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', border: '20px solid rgba(255,255,255,0.05)' }}></div>
+        {/* Authentisches Hintergrundbild (Abgedunkelt) */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+          <img 
+            src="https://images.unsplash.com/photo-1584515979956-d9319b9ce4f9?q=80&w=2000&auto=format&fit=crop" 
+            alt="Team Nordicum Health" 
+            style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.2 }} 
+          />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, var(--primary) 0%, rgba(10,37,64,0.8) 100%)' }}></div>
+        </div>
 
         <div className="container" style={{ position: 'relative', zIndex: 10 }}>
-          <Link href="/jobs" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: 'rgba(255,255,255,0.8)', fontWeight: 600, fontSize: '0.9rem', marginBottom: '2rem', transition: 'color 0.2s' }}>
+          <Link href="/jobs" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: 'rgba(255,255,255,0.8)', fontWeight: 600, fontSize: '0.95rem', marginBottom: '2.5rem', transition: 'color 0.2s' }}>
             ← Zurück zur Stellenübersicht
           </Link>
 
-          <span style={{ display: 'inline-block', padding: '0.4rem 1rem', background: 'rgba(255,255,255,0.15)', borderRadius: '50px', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '1.5rem', backdropFilter: 'blur(10px)' }}>
-            {job.jobFamily.name}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+            <span style={{ display: 'inline-block', padding: '0.4rem 1.2rem', background: 'var(--secondary)', color: 'white', borderRadius: '50px', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', boxShadow: '0 4px 10px rgba(0,0,0,0.2)' }}>
+              {job.jobFamily.name}
+            </span>
+            {/* Workwise: Arbeitgebermarke / Kununu */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', padding: '0.35rem 1rem', borderRadius: '50px', fontSize: '0.85rem', fontWeight: 700, border: '1px solid rgba(255,255,255,0.2)' }}>
+              <span style={{ color: '#4ade80' }}>★</span> 4.6 (Kununu Top Company)
+            </div>
+          </div>
           
-          <h1 style={{ fontSize: 'clamp(2.2rem, 5vw, 3.5rem)', fontFamily: 'var(--font-outfit)', margin: '0 0 2rem', lineHeight: 1.1, maxWidth: '900px' }}>
+          <h1 style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontFamily: 'var(--font-outfit)', margin: '0 0 2.5rem', lineHeight: 1.1, maxWidth: '1000px', fontWeight: 900, textShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
             {job.title}
           </h1>
 
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
             {[
               { icon: '📍', label: job.location.name, desc: 'Standort' },
               { icon: '🏢', label: job.facility.name, desc: 'Einrichtung', link: job.facility.profile?.slug ? `/einrichtungen/${job.facility.profile.slug}` : undefined },
@@ -194,25 +206,39 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
             )}
           </div>
 
-          <div style={{ marginTop: '4rem', padding: '2rem', background: 'rgba(133,172,55,0.05)', borderRadius: '16px', border: '1px solid rgba(133,172,55,0.2)' }}>
-            <h3 style={{ fontSize: '1.4rem', color: 'var(--green-dark)', marginBottom: '1rem', fontFamily: 'var(--font-outfit)' }}>Wir sind klimaneutral auf dem Weg</h3>
-            <p style={{ margin: 0, color: '#4b5563', lineHeight: 1.6 }}>Nachhaltigkeit ist uns wichtig. Mit Dienstradleasing, Ökostrom und regionaler Verpflegung setzen wir uns für die Schöpfung ein.</p>
+          <div style={{ marginTop: '4rem', padding: '2.5rem', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+            <h3 style={{ fontSize: '1.5rem', color: 'var(--primary)', marginBottom: '1rem', fontFamily: 'var(--font-outfit)' }}>Lerne dein Team kennen</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '1.5rem', alignItems: 'center' }}>
+              <div style={{ width: '120px', height: '120px', borderRadius: '50%', overflow: 'hidden', border: '4px solid white', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
+                <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=200&auto=format&fit=crop" alt="Teammitglied" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+              <div>
+                <p style={{ margin: 0, color: '#475569', lineHeight: 1.6, fontStyle: 'italic', fontSize: '1.1rem' }}>
+                  "Bei uns wird niemand ins kalte Wasser geworfen. Wir haben ein echtes Mentoring-Programm in den ersten 6 Monaten und helfen uns immer gegenseitig. Ich freue mich auf dich!"
+                </p>
+                <p style={{ margin: '0.5rem 0 0', fontWeight: 700, color: 'var(--text)' }}>— Julian, dein zukünftiger Kollege</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Rechte Spalte: Sidebar & CTA */}
         <div style={{ flex: '0 1 380px', position: 'sticky', top: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           
-          {/* Bewerbungs-Card */}
-          <div style={{ background: 'white', padding: '2rem', borderRadius: '16px', boxShadow: '0 10px 40px rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.05)' }}>
-            <h3 style={{ fontSize: '1.5rem', fontFamily: 'var(--font-outfit)', marginBottom: '0.5rem', color: 'var(--primary)' }}>Interesse geweckt?</h3>
-            <p style={{ color: '#6b7280', marginBottom: '1.5rem', fontSize: '0.95rem', lineHeight: 1.5 }}>
-              Bewirb dich jetzt in weniger als 3 Minuten. Kein langes Anschreiben nötig!
+          {/* Bewerbungs-Card (Workwise: Klarer CTA & Mobile Friendly) */}
+          <div style={{ background: 'white', padding: '2.5rem 2rem', borderRadius: '16px', boxShadow: '0 10px 40px rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.05)' }}>
+            <h3 style={{ fontSize: '1.6rem', fontFamily: 'var(--font-outfit)', marginBottom: '0.5rem', color: 'var(--primary)', fontWeight: 800 }}>Bereit für den Wechsel?</h3>
+            <p style={{ color: '#64748b', marginBottom: '2rem', fontSize: '1rem', lineHeight: 1.6 }}>
+              Bewirb dich jetzt in unter 2 Minuten. Du brauchst <strong>kein Anschreiben</strong> – ein Lebenslauf (oder Link) reicht völlig!
             </p>
-            <Link href={`/bewerben?jobId=${job.id}`} className="btn-primary" style={{ display: 'block', textAlign: 'center', fontSize: '1.1rem', padding: '1rem', width: '100%', borderRadius: '8px' }}>
-              🚀 Jetzt bewerben
+            <Link href={`/bewerben?jobId=${job.id}`} className="btn-primary" style={{ display: 'block', textAlign: 'center', fontSize: '1.15rem', padding: '1.1rem', width: '100%', borderRadius: '8px', boxShadow: '0 8px 20px rgba(0, 80, 255, 0.25)', marginBottom: '1rem' }}>
+              🚀 1-Klick Bewerbung
             </Link>
-            <p style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.8rem', color: '#9ca3af' }}>Referenz: {job.id} • Frist: fortlaufend</p>
+            {/* Workwise: Mobile Recruiting / WhatsApp */}
+            <a href="https://wa.me/4912345678?text=Hallo%20Nordicum-Team,%20ich%20interessiere%20mich%20f%C3%BCr%20den%20Job..." target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', width: '100%', padding: '1rem', borderRadius: '8px', background: 'rgba(37,211,102,0.1)', color: '#16a34a', fontWeight: 700, textDecoration: 'none', transition: 'background 0.2s' }}>
+              💬 Per WhatsApp bewerben
+            </a>
+            
+            <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.85rem', color: '#94a3b8' }}>Job-ID: {job.id.substring(0,8).toUpperCase()} • Ohne Frist</p>
           </div>
 
           {/* Ansprechpartner-Card */}

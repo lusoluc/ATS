@@ -55,17 +55,36 @@ export default async function FacilityDetailPage({ params }: { params: Promise<{
   return (
     <main style={{ minHeight: '100vh', backgroundColor: 'var(--background)', paddingBottom: '6rem' }}>
       
-      {/* Hero Section (Facility Specific) */}
-      <section className="hero-section" style={{ minHeight: '50vh', borderBottom: '1px solid var(--border)', backgroundColor: 'var(--primary)', color: 'white' }}>
-        <div className="container" style={{ position: 'relative', zIndex: 10, paddingTop: '4rem' }}>
-          <Link href="/jobs" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: 'rgba(255,255,255,0.8)', fontWeight: 600, marginBottom: '2rem' }}>
-            ← Zurück zu den Jobs
+      {/* Hero Section (Workwise: Authentische Bilder & Local Branding) */}
+      <section className="hero-section" style={{ minHeight: '55vh', backgroundColor: 'var(--primary)', color: 'white', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+          <img 
+            src="https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=2000&auto=format&fit=crop" 
+            alt={`Standort ${fac.name}`} 
+            style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }} 
+          />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--primary) 0%, transparent 100%)' }}></div>
+        </div>
+
+        <div className="container" style={{ position: 'relative', zIndex: 10, paddingTop: '6rem', paddingBottom: '3rem', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '100%' }}>
+          <Link href="/jobs" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: 'rgba(255,255,255,0.9)', fontWeight: 600, marginBottom: '2rem', transition: 'color 0.2s' }}>
+            ← Zurück zu allen Jobs
           </Link>
-          <h1 className="hero-title animate-fade-in opacity-0" style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', textAlign: 'left', marginBottom: '1rem', fontFamily: 'var(--font-outfit)' }}>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+            <span style={{ display: 'inline-block', padding: '0.4rem 1.2rem', background: 'var(--secondary)', color: 'white', borderRadius: '50px', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', boxShadow: '0 4px 10px rgba(0,0,0,0.2)' }}>
+              📍 {fac.name}
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', padding: '0.35rem 1rem', borderRadius: '50px', fontSize: '0.85rem', fontWeight: 700, border: '1px solid rgba(255,255,255,0.2)' }}>
+              <span style={{ color: '#4ade80' }}>★</span> 4.8 (Mitarbeiterbewertung)
+            </div>
+          </div>
+
+          <h1 className="hero-title animate-fade-in opacity-0" style={{ fontSize: 'clamp(2.5rem, 5vw, 4.5rem)', textAlign: 'left', marginBottom: '1rem', fontFamily: 'var(--font-outfit)', textShadow: '0 4px 20px rgba(0,0,0,0.3)', fontWeight: 900 }}>
             {fac.name}
           </h1>
-          <p className="hero-subtitle animate-fade-in delay-100 opacity-0" style={{ textAlign: 'left', margin: '0', maxWidth: '800px', fontSize: '1.2rem', opacity: 0.9 }}>
-            Entdecke deine Karrierechancen an diesem Standort.
+          <p className="hero-subtitle animate-fade-in delay-100 opacity-0" style={{ textAlign: 'left', margin: '0', maxWidth: '800px', fontSize: '1.25rem', opacity: 0.9, lineHeight: 1.6 }}>
+            Modernste Ausstattung, ein kollegiales Team vor Ort und echte Karrierechancen. Entdecke, was unseren Standort besonders macht.
           </p>
         </div>
       </section>
@@ -138,8 +157,12 @@ export default async function FacilityDetailPage({ params }: { params: Promise<{
                   📞 Anrufen
                 </a>
               )}
+              {/* Workwise: WhatsApp Integration */}
+              <a href="https://wa.me/4912345678" target="_blank" rel="noreferrer" style={{ width: '100%', display: 'block', textAlign: 'center', padding: '0.8rem', marginBottom: '0.5rem', backgroundColor: 'rgba(37,211,102,0.1)', color: '#16a34a', borderRadius: '8px', fontWeight: 600, textDecoration: 'none', transition: 'background 0.2s' }}>
+                💬 Per WhatsApp schreiben
+              </a>
               {mainContact.email && (
-                <a href={`mailto:${mainContact.email}`} className="btn-secondary" style={{ width: '100%', display: 'block', textAlign: 'center', padding: '0.8rem' }}>
+                <a href={`mailto:${mainContact.email}`} className="btn-outline" style={{ width: '100%', display: 'block', textAlign: 'center', padding: '0.8rem' }}>
                   ✉️ Nachricht senden
                 </a>
               )}

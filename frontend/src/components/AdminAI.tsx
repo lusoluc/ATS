@@ -182,6 +182,43 @@ export default function AdminAI() {
           </div>
         </div>
         
+        {/* Assistenz & Compliance */}
+        <div className="glass-panel" style={{ padding: '2rem', borderRadius: '12px', borderLeft: '4px solid #f59e0b' }}>
+          <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>4. Text-Assistenz & Compliance</h2>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', fontWeight: 'bold', cursor: 'pointer' }}>
+                <input 
+                  type="checkbox" 
+                  checked={settings.AI_AGG_CHECK_ENABLED === 'true'} 
+                  onChange={e => handleChange('AI_AGG_CHECK_ENABLED', e.target.checked ? 'true' : 'false')}
+                  style={{ width: '18px', height: '18px' }}
+                />
+                Automatischer AGG-Check für Stellenanzeigen
+              </label>
+              <p style={{ fontSize: '0.8rem', opacity: 0.6, marginTop: '0.4rem', marginLeft: '2rem' }}>
+                Die KI prüft alle neu erstellten Job-Profile auf Konformität mit dem Allgemeinen Gleichbehandlungsgesetz (AGG) und warnt vor diskriminierenden Formulierungen, bevor der Job online geht.
+              </p>
+            </div>
+
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', fontWeight: 'bold', cursor: 'pointer' }}>
+                <input 
+                  type="checkbox" 
+                  checked={settings.AI_TRANSLATE_EASY_LANGUAGE === 'true'} 
+                  onChange={e => handleChange('AI_TRANSLATE_EASY_LANGUAGE', e.target.checked ? 'true' : 'false')}
+                  style={{ width: '18px', height: '18px' }}
+                />
+                "Leichte Sprache" Modus (Barrierefreiheit) aktivieren
+              </label>
+              <p style={{ fontSize: '0.8rem', opacity: 0.6, marginTop: '0.4rem', marginLeft: '2rem' }}>
+                Das LLM übersetzt auf Wunsch automatisch alle Job-Texte und E-Mail-Vorlagen in "Leichte Sprache" (Barrierefreiheit / Inklusion), um eine breitere Zielgruppe (z.B. Migranten oder Menschen mit Lernschwäche) anzusprechen.
+              </p>
+            </div>
+          </div>
+        </div>
+        
         {/* Save Button */}
         <div>
           <button 

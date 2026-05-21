@@ -74,7 +74,9 @@ export default async function InfoPage({ params }: { params: Promise<{ slug: str
     contentHtml = page.content.replace(/\n/g, '<br/>');
   }
 
-  const cleanHtml = DOMPurify.sanitize(contentHtml);
+  const cleanHtml = DOMPurify.sanitize(contentHtml, {
+    ADD_ATTR: ['target', 'style']
+  });
 
   return (
     <main style={{ minHeight: '100vh', paddingBottom: '5rem', background: 'var(--background)' }}>

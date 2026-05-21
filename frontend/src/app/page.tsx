@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { PuckRenderer } from './info/[slug]/PuckRenderer';
-import Link from 'next/link';
+import DOMPurify from 'isomorphic-dompurify';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -8,30 +7,32 @@ export const revalidate = 0;
 const prisma = new PrismaClient();
 
 export default async function HomePage() {
-  let isPuck = false;
-  let puckData: any = null;
+  const page = await prisma.page.findUnique({ where: { slug: 'home' } });
 
-  try {
-    const page = await prisma.page.findUnique({ where: { slug: 'home' } });
-    if (page && page.content) {
-      const parsed = JSON.parse(page.content);
-      if (parsed && parsed.content) {
-        isPuck = true;
-        puckData = parsed;
-      }
-    }
-  } catch(e) {
-    console.error("Error parsing homepage puck data:", e);
+  if (!page || !page.content) {
+    return (
+      <main style={{ padding: '6rem 0', textAlign: 'center' }}>
+        <h1>Startseite noch leer</h1>
+        <p>Bitte logge dich im Admin-Bereich ein und fülle die Startseite mit Inhalten.</p>
+      </main>
+    );
   }
 
-  if (isPuck && puckData) {
-    return <PuckRenderer data={puckData} />;
+  // We check if it is old Puck JSON data (starts with {) or new HTML
+  let contentHtml = page.content;
+  if (page.content.trim().startsWith('{')) {
+    contentHtml = '<div style="text-align: center; padding: 4rem;"><h2>Hinweis</h2><p>Dies ist noch das alte Puck-Layout. Bitte öffne die Seite im Editor und speichere sie einmal als neuen Text ab.</p></div>';
   }
+
+  const cleanHtml = DOMPurify.sanitize(contentHtml);
 
   return (
-    <main style={{ padding: '6rem 0', textAlign: 'center' }}>
-      <h1>Bitte migriere die Startseite in den Editor.</h1>
-      <p>Führe das Migration-Skript aus, um das Layout in den Puck-Editor zu laden.</p>
+    <main>
+      <div 
+        className="ql-editor prose prose-lg max-w-none container" 
+        style={{ padding: '4rem 1rem', background: 'var(--background)' }}
+        dangerouslySetInnerHTML={{ __html: cleanHtml }} 
+      />
     </main>
   );
 }

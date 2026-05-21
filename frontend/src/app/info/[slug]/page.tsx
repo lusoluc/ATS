@@ -59,39 +59,25 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-import { PuckRenderer } from './PuckRenderer';
-
 export default async function InfoPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const page = await getPage(slug);
   if (!page) notFound();
 
-  let isPuck = false;
-  let puckData = null;
-
-  try {
-    puckData = JSON.parse(page.content);
-    if (puckData && puckData.content) {
-      isPuck = true;
-    }
-  } catch (e) {
-    // Es ist kein JSON, also normales Markdown
+  let contentHtml = page.content;
+  if (page.source === 'file') {
+    contentHtml = mdToHtml(page.content);
+  } else if (page.content.trim().startsWith('{')) {
+    contentHtml = '<div style="text-align: center; padding: 4rem;"><h2>Hinweis</h2><p>Dies ist noch das alte Puck-Layout. Bitte öffne die Seite im Editor und speichere sie einmal als neuen Text ab.</p></div>';
+  } else if (!page.content.includes('<') && page.content.includes('#')) {
+    // Very basic fallback if there's old markdown left
+    contentHtml = page.content.replace(/\n/g, '<br/>');
   }
 
-  if (isPuck) {
-    return (
-      <main style={{ minHeight: '100vh', paddingBottom: '5rem', background: '#f9fafb' }}>
-        <PuckRenderer data={puckData} />
-      </main>
-    );
-  }
-
-  const rawHtml = mdToHtml(page.content);
-  // XSS Protection
-  const html = DOMPurify.sanitize(rawHtml);
+  const cleanHtml = DOMPurify.sanitize(contentHtml);
 
   return (
-    <main style={{ minHeight: '100vh', paddingBottom: '5rem' }}>
+    <main style={{ minHeight: '100vh', paddingBottom: '5rem', background: 'var(--background)' }}>
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: 'white', padding: '3.5rem 0 4rem' }}>
         <div className="container animate-fade-in opacity-0">
@@ -106,8 +92,8 @@ export default async function InfoPage({ params }: { params: Promise<{ slug: str
       <div className="container animate-fade-in delay-100 opacity-0" style={{ maxWidth: '780px', paddingTop: '3rem', marginTop: '-2rem' }}>
         <div style={{ background: 'var(--surface)', borderRadius: '16px', padding: 'clamp(1.5rem,4vw,3rem)', boxShadow: 'var(--shadow)' }}>
           <article
-            className="markdown-content"
-            dangerouslySetInnerHTML={{ __html: html }}
+            className="ql-editor prose prose-lg max-w-none"
+            dangerouslySetInnerHTML={{ __html: cleanHtml }}
           />
         </div>
       </div>

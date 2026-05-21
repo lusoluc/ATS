@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { PrismaClient } from '@prisma/client';
-import { PuckRenderer } from '../../info/[slug]/PuckRenderer';
+import DOMPurify from 'isomorphic-dompurify';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -99,13 +99,18 @@ export default async function FacilityDetailPage({ params }: { params: Promise<{
           <h2 style={{ fontSize: '2rem', fontFamily: 'var(--font-outfit)', marginBottom: '1.5rem', color: 'var(--primary)' }}>Über diese Einrichtung</h2>
           <div style={{ opacity: 0.9, fontSize: '1.1rem', lineHeight: 1.8, marginBottom: '3rem', color: 'var(--foreground)' }}>
             {(() => {
-              try {
-                const data = JSON.parse(profile.description || '{}');
-                if (data.content) {
-                  return <PuckRenderer data={data} />;
-                }
-              } catch (e) {}
-              return <p>{profile.description || "Hier entsteht die neue Informationsseite für diese Einrichtung."}</p>;
+              const desc = profile.description || "Hier entsteht die neue Informationsseite für diese Einrichtung.";
+              let cleanDesc = desc;
+              if (desc.trim().startsWith('{')) {
+                cleanDesc = "Dies ist noch das alte Puck-Layout. Bitte aktualisiere das Profil im Admin-Bereich.";
+              }
+              const cleanHtml = DOMPurify.sanitize(cleanDesc);
+              return (
+                <div 
+                  className="ql-editor prose max-w-none" 
+                  dangerouslySetInnerHTML={{ __html: cleanHtml }} 
+                />
+              );
             })()}
           </div>
 

@@ -1,5 +1,9 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import dynamic from 'next/dynamic';
+import 'react-quill-new/dist/quill.snow.css';
+
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false, loading: () => <p>Lade Editor...</p> });
 
 type Page = {
   id: string; title: string; slug: string; content: string;
@@ -254,13 +258,25 @@ export default function AdminPages() {
         {/* INHALT-EDITOR */}
         <div className="glass-panel" style={{ padding:'1.5rem' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.75rem' }}>
-            <h3 style={{ fontSize:'1.1rem' }}>📄 Seiteninhalt (Markdown)</h3>
+            <h3 style={{ fontSize:'1.1rem' }}>📄 Seiteninhalt</h3>
             {editing && <a href={`/info/${editing.slug}`} target="_blank" rel="noreferrer" style={{ fontSize:'0.85rem', color:'var(--primary)' }}>Vorschau →</a>}
           </div>
-          <p style={{ fontSize:'0.78rem', opacity:0.5, marginBottom:'0.75rem' }}>Markdown: **fett**, *kursiv*, ## Überschrift, - Liste, [Link](URL)</p>
-          <textarea rows={20} value={form.content} onChange={e=>setForm(f=>({...f,content:e.target.value}))}
-            style={{ ...input, fontFamily:'monospace', fontSize:'0.88rem', lineHeight:1.7, resize:'vertical' }}
-            placeholder={'# Seitentitel\n\nHier kommt dein Inhalt...\n\n## Abschnitt\n\nText Absatz...'} />
+          <div style={{ background: 'white', color: 'black', borderRadius: '8px', overflow: 'hidden' }}>
+            <ReactQuill 
+              theme="snow" 
+              value={form.content} 
+              onChange={val => setForm(f=>({...f, content: val}))} 
+              style={{ minHeight: '400px' }}
+              modules={{
+                toolbar: [
+                  [{ 'header': [1, 2, 3, false] }],
+                  ['bold', 'italic', 'underline', 'strike'],
+                  [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                  ['link', 'image', 'clean']
+                ]
+              }}
+            />
+          </div>
         </div>
 
         {msg && <p style={{ padding:'0.75rem', borderRadius:'8px', background: msg.startsWith('✅')||msg.startsWith('🖼️') ? 'rgba(133,172,55,0.12)' : 'rgba(239,68,68,0.1)', color: msg.startsWith('✅')||msg.startsWith('🖼️') ? 'var(--green-dark)' : '#ef4444' }}>{msg}</p>}
@@ -328,9 +344,8 @@ export default function AdminPages() {
                   <p style={{ fontSize:'0.78rem', opacity:0.5, fontFamily:'monospace' }}>/info/{page.slug}</p>
                 </div>
                 <div style={{ display:'flex', gap:'0.4rem', flexShrink:0, flexWrap:'wrap' }}>
-                  <button onClick={() => openEdit(page)} style={{ padding:'0.4rem 0.8rem', fontSize:'0.82rem', background:'var(--primary)', color:'white', border:'none', borderRadius:'6px', cursor:'pointer' }}>✏️ Info</button>
-                  <a href={`/admin/editor/${page.slug}`} style={{ padding:'0.4rem 0.8rem', fontSize:'0.82rem', background:'var(--secondary)', color:'white', border:'none', borderRadius:'6px', cursor:'pointer', textDecoration:'none' }}>🎨 Visual Editor</a>
-                  {page.status !== 'archived' && <a href={`/info/${page.slug}`} target="_blank" rel="noreferrer" style={{ padding:'0.4rem 0.7rem', fontSize:'0.82rem', background:'transparent', border:'1px solid var(--border)', borderRadius:'6px', cursor:'pointer', color:'var(--foreground)', display:'inline-flex', alignItems:'center' }}>👁️ Ansehen</a>}
+                  <button onClick={() => openEdit(page)} style={{ padding:'0.4rem 0.8rem', fontSize:'0.82rem', background:'var(--primary)', color:'white', border:'none', borderRadius:'6px', cursor:'pointer' }}>✏️ Bearbeiten</button>
+                  {page.status !== 'archived' && <a href={page.slug === 'home' ? '/' : `/info/${page.slug}`} target="_blank" rel="noreferrer" style={{ padding:'0.4rem 0.7rem', fontSize:'0.82rem', background:'transparent', border:'1px solid var(--border)', borderRadius:'6px', cursor:'pointer', color:'var(--foreground)', display:'inline-flex', alignItems:'center', textDecoration:'none' }}>👁️ Ansehen</a>}
                   {page.status !== 'archived' && <button onClick={() => archive(page)} style={{ padding:'0.4rem 0.7rem', fontSize:'0.82rem', background:'rgba(128,128,128,0.08)', border:'1px solid rgba(128,128,128,0.25)', borderRadius:'6px', cursor:'pointer', color:'#888' }}>📦 Archivieren</button>}
                   {page.status === 'archived' && <button onClick={() => { openEdit(page); }} style={{ padding:'0.4rem 0.7rem', fontSize:'0.82rem', background:'rgba(133,172,55,0.1)', border:'1px solid var(--green)', borderRadius:'6px', cursor:'pointer', color:'var(--green-dark)' }}>♻️ Reaktivieren</button>}
                   <button onClick={() => del(page.id)} title="Endgültig löschen" style={{ padding:'0.4rem 0.6rem', fontSize:'0.82rem', background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:'6px', cursor:'pointer', color:'#ef4444' }}>🗑️</button>

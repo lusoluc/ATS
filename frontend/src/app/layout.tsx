@@ -4,8 +4,7 @@ import './globals.css';
 import Link from 'next/link';
 import Navbar from '../components/Navbar';
 import { PrismaClient } from '@prisma/client';
-import { PuckRenderer } from './info/[slug]/PuckRenderer';
-
+import DOMPurify from 'isomorphic-dompurify';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' });
 
@@ -34,8 +33,14 @@ export default async function RootLayout({
         select: { id: true, slug: true, title: true, navLabel: true, navParent: true }
       })
     ]);
-    if (headerPage) headerData = JSON.parse(headerPage.content);
-    if (footerPage) footerData = JSON.parse(footerPage.content);
+    if (headerPage) {
+      if (headerPage.content.startsWith('{')) headerData = JSON.parse(headerPage.content);
+      else headerData = headerPage;
+    }
+    if (footerPage) {
+      if (footerPage.content.startsWith('{')) footerData = JSON.parse(footerPage.content);
+      else footerData = footerPage;
+    }
     navPages = dbNavPages || [];
   } catch (e) {
     // Ignore parse errors or missing DB in build step
@@ -45,7 +50,7 @@ export default async function RootLayout({
     <html lang="de">
       <body className={`${inter.variable} ${outfit.variable}`}>
         {headerData && headerData.content ? (
-          <PuckRenderer data={headerData} />
+          <div className="ql-editor prose max-w-none" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(headerData.content) }} />
         ) : (
           <Navbar cmsPages={navPages} />
         )}
@@ -54,7 +59,7 @@ export default async function RootLayout({
         
         {/* Global Footer */}
         {footerData && footerData.content ? (
-          <PuckRenderer data={footerData} />
+          <div className="ql-editor prose max-w-none" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(footerData.content) }} />
         ) : (
           <footer style={{ backgroundColor: 'var(--card-bg)', borderTop: '1px solid var(--border)', padding: '4rem 0 2rem', marginTop: '4rem' }}>
             <div className="container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>

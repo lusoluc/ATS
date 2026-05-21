@@ -255,7 +255,7 @@ export default function AdminJobs() {
 
     return (
       <div style={{ maxWidth: '900px' }}>
-        <button onClick={() => setView('list')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', marginBottom: '1rem', padding: 0, fontSize: '0.9rem' }}>← Zurück zur Liste</button>
+        <button type="button" onClick={(e) => { e.preventDefault(); setView('list'); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', marginBottom: '1rem', padding: 0, fontSize: '0.9rem' }}>← Zurück zur Liste</button>
         <h1 style={{ fontSize: '2rem', color: 'var(--primary)', marginBottom: '0.5rem', fontFamily: 'var(--font-outfit)' }}>
           {view === 'edit' ? 'Job bearbeiten (Modular)' : 'Neues Stellenangebot (Wizard)'}
         </h1>

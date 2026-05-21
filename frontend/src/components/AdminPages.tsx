@@ -155,7 +155,7 @@ export default function AdminPages() {
   // ── EDITOR VIEW ──
   if (view !== 'list') return (
     <div style={{ maxWidth: '860px' }}>
-      <button onClick={() => setView('list')} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--primary)', marginBottom:'1rem', fontSize:'0.9rem', padding:0 }}>← Zurück zur Seitenübersicht</button>
+      <button type="button" onClick={(e) => { e.preventDefault(); setView('list'); }} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--primary)', marginBottom:'1rem', fontSize:'0.9rem', padding:0 }}>← Zurück zur Seitenübersicht</button>
       <h1 style={{ fontSize:'2rem', color:'var(--primary)', marginBottom:'0.25rem' }}>{view==='edit' ? 'Seite bearbeiten' : 'Neue Seite erstellen'}</h1>
       {editing && <p style={{ fontSize:'0.82rem', opacity:0.5, marginBottom:'1.5rem' }}>ID: {editing.id} · Erstellt: {new Date(editing?.slug).toLocaleDateString?.() || '–'}</p>}
 

@@ -112,7 +112,7 @@ export default function AdminJobAlerts() {
   if (isEditing) {
     return (
       <div>
-        <button onClick={() => setIsEditing(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', marginBottom: '1rem', padding: 0 }}>← Zurück zur Übersicht</button>
+        <button type="button" onClick={(e) => { e.preventDefault(); setIsEditing(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', marginBottom: '1rem', padding: 0 }}>← Zurück zur Übersicht</button>
         <h1 style={{ fontSize: '2rem', color: 'var(--primary)', marginBottom: '1.5rem' }}>
           {form.id ? 'Abonnent bearbeiten' : 'Neuen Abonnenten anlegen'}
         </h1>

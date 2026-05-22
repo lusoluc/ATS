@@ -37,7 +37,7 @@ for port in 3000 3001; do
   if lsof -t -i:$port >/dev/null 2>&1; then
     echo "⚠️  Port $port ist blockiert. Beende verwaiste Prozesse..."
     sudo fuser -k ${port}/tcp >/dev/null 2>&1 || true
-    PID_TO_KILL=$(lsof -t -i:$port)
+    PID_TO_KILL=$(lsof -t -i:$port || true)
     if [ -n "$PID_TO_KILL" ]; then
       sudo kill -9 $PID_TO_KILL >/dev/null 2>&1 || true
     fi
@@ -100,7 +100,7 @@ sleep 5
 
 # 7. Automatischer Health-Check & Validierung
 echo "🧪 [7/7] Führe automatischen Health-Check durch..."
-HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}\n" http://localhost:3000)
+HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}\n" http://localhost:3000 || echo "000")
 
 if [ "$HTTP_STATUS" -eq 200 ] || [ "$HTTP_STATUS" -eq 307 ] || [ "$HTTP_STATUS" -eq 308 ]; then
   echo "======================================================================"

@@ -32,6 +32,16 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
+# 0b. Stelle sicher, dass lsof und fuser (psmisc) installiert sind, um Ports zuverlässig freizugeben
+if ! command -v lsof &> /dev/null || ! command -v fuser &> /dev/null; then
+  echo -e "${YELLOW}📦 Hilfswerkzeuge 'lsof' oder 'fuser' fehlen auf dem Host. Installiere...${NC}"
+  if command -v apt-get &> /dev/null; then
+    apt-get update -y && apt-get install -y lsof psmisc
+  else
+    echo -e "${RED}⚠️ apt-get nicht gefunden. Bitte installieren Sie 'lsof' und 'psmisc' manuell!${NC}"
+  fi
+fi
+
 LIVE_DIR="/opt/ATS"
 BUILD_DIR="/opt/ATS_new"
 OLD_DIR="/opt/ATS_old"
@@ -69,6 +79,7 @@ sudo pm2 save --force >/dev/null 2>&1 || true
 
 # Falls alte Docker-Container aus einem vorherigen Live-Ordner laufen, stoppen wir sie gleich beim Swap.
 # Wir befreien hier zusätzlich alle Ports auf dem Host:
+docker rm -f securats-frontend securats-backend >/dev/null 2>&1 || true
 for port in 3000 3001; do
   sudo fuser -k ${port}/tcp >/dev/null 2>&1 || true
   PID_TO_KILL=$(lsof -t -i:$port || true)

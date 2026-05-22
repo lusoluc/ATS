@@ -22,7 +22,7 @@ YELLOW='\033[0;33m'
 BLUE='\033[0;36m'
 NC='\033[0m' # No Color
 
-LOG_FILE="/opt/ATS/deploy_debug.log"
+LOG_FILE="/var/log/securats_deploy.log"
 
 log_dev_diag() {
   local phase="$1"
@@ -48,6 +48,7 @@ log_dev_diag() {
   ps aux | grep -E "node|npm" | grep -v grep 2>&1 >> "$LOG_FILE" || true
   echo "==========================================" >> "$LOG_FILE"
   echo "" >> "$LOG_FILE"
+  chmod 666 "$LOG_FILE" >/dev/null 2>&1 || true
 }
 
 # Initiales Logging starten
@@ -105,8 +106,19 @@ free_ports() {
     fi
   done
 
+  # 1b. Beende PM2-Systemd-Startdienste dynamically
+  echo -e "${YELLOW}🛑 Prüfe und stoppe PM2 systemd-Startdienste...${NC}"
+  if command -v systemctl &> /dev/null; then
+    for service in $(systemctl list-units --type=service --all --no-legend | grep -E "pm2-" | awk '{print $1}' || true); do
+      echo -e "   -> Stoppe und deaktiviere PM2-Systemd-Dienst $service..."
+      sudo systemctl stop "$service" >/dev/null 2>&1 || true
+      sudo systemctl disable "$service" >/dev/null 2>&1 || true
+    done
+  fi
+
   # 2. Beende PM2 Daemon und alle PM2-Prozesse komplett
   echo -e "${YELLOW}🛑 Beende PM2 komplett...${NC}"
+  sudo pm2 stop all >/dev/null 2>&1 || true
   sudo pm2 kill >/dev/null 2>&1 || true
   
   # 3. Beende jegliche verbliebenen Node/npm-Prozesse auf dem Host
@@ -145,7 +157,16 @@ free_ports() {
   if systemctl is-active --quiet docker 2>/dev/null; then
     echo -e "${YELLOW}🛑 Starte Docker-Dienst neu, um blockierte/verwaiste Netzwerk-Sockets (Ghost Ports) zu flushen...${NC}"
     sudo systemctl restart docker >/dev/null 2>&1 || true
-    sleep 4
+    
+    # Warte, bis der Docker-Daemon wieder voll einsatzbereit ist (Maximal 30 Sekunden)
+    echo -e "${YELLOW}⏳ Warte, bis der Docker-Daemon wieder einsatzbereit ist...${NC}"
+    for i in {1..30}; do
+      if docker info >/dev/null 2>&1; then
+        echo -e "${GREEN}✅ Docker-Daemon ist wieder online und bereit!${NC}"
+        break
+      fi
+      sleep 1
+    done
   fi
 
   # 7. Verifizierung der Port-Freiheit

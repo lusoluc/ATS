@@ -7,8 +7,8 @@ Gib NUR ein JSON-Objekt zurück, ohne zusätzlichen Text. Das JSON muss genau di
 Lebenslauf:
 ${cvText || 'Kein Text vorhanden.'}`;
 
-    // Ollama läuft standardmäßig auf Port 11434
-    const response = await fetch('http://localhost:11434/api/generate', {
+    // Ollama läuft standardmäßig auf Port 11434 oder über Umgebungsvariable
+    const response = await fetch(process.env.OLLAMA_URL || 'http://localhost:11434/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

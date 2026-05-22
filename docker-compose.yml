@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # 1. Express Backend Server
+  # ==========================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: securats-backend
+    restart: always
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./shared:/app/shared
+    environment:
+      - PORT=3001
+      - DATABASE_URL=file:/app/shared/dev.db
+      - NODE_ENV=production
+      # Fügen Sie hier bei Bedarf weitere Env-Variablen hinzu (z. B. JWT-Secrets)
+    networks:
+      - securats-network
+
+  # ==========================================
+  # 2. Next.js Frontend Server
+  # ==========================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: securats-frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./shared:/app/shared
+    environment:
+      - PORT=3000
+      - DATABASE_URL=file:/app/shared/dev.db
+      - NODE_ENV=production
+      # Verweist standardmäßig auf Ollama auf Ihrem Host-System (nutzt die System-GPU für maximale Geschwindigkeit)
+      - OLLAMA_URL=http://host.docker.internal:11434/api/generate
+    extra_hosts:
+      # Ermöglicht dem Container den Zugriff auf localhost/ports der Host-Maschine (z.B. Ollama)
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - backend
+    networks:
+      - securats-network
+
+  # =========================================================================================
+  # 3. LOKALES LLM OLLAMA (OPTIONAL - HIER ENTFERNEN SIE DIE AUSKOMMENTIERUNG, WENN GEWÜNSCHT)
+  # =========================================================================================
+  # Wenn Sie Ollama NICHT auf Ihrem PC/Server installiert haben, können Sie diesen Service 
+  # einkommentieren. Der Container läuft dann standardmäßig auf der CPU.
+  # Für GPU-Beschleunigung muss das "NVIDIA Container Toolkit" auf dem Host installiert sein.
+  # -----------------------------------------------------------------------------------------
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: securats-ollama
+  #   restart: always
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #   networks:
+  #     - securats-network
+  #   # GPU-Unterstützung aktivieren (nur nötig, wenn über Docker GPU genutzt werden soll):
+  #   # deploy:
+  #   #   resources:
+  #   #     reservations:
+  #   #       devices:
+  #   #         - driver: nvidia
+  #   #           count: all
+  #   #           capabilities: [gpu]
+
+networks:
+  securats-network:
+    driver: bridge
+
+# Nur aktiv, wenn der optionale Ollama-Service einkommentiert wird
+# volumes:
+#   ollama_data:

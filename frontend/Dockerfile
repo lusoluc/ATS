@@ -30,14 +30,10 @@ WORKDIR /app
 # Copy package info
 COPY package*.json ./
 
-# Install only production dependencies
-RUN npm install --only=production --legacy-peer-deps || npm install --legacy-peer-deps
-
-# Copy build artifacts and generated Prisma Client
+# Copy build artifacts, complete node_modules and Prisma schema from builder
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 
 # Standard environment settings

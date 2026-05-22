@@ -25,13 +25,10 @@ WORKDIR /app
 # Copy package info
 COPY package*.json ./
 
-# Install only production dependencies
-RUN npm install --only=production --legacy-peer-deps || npm install --legacy-peer-deps
-
-# Copy generated Prisma Client and built JS files from builder
+# Copy built JS files and complete node_modules from builder
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules ./node_modules
+
 
 # Environment variables will be loaded from compose or shell
 EXPOSE 3001

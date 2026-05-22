@@ -80,6 +80,16 @@ sudo pm2 save --force >/dev/null 2>&1 || true
 # Falls alte Docker-Container aus einem vorherigen Live-Ordner laufen, stoppen wir sie gleich beim Swap.
 # Wir befreien hier zusätzlich alle Ports auf dem Host:
 docker rm -f securats-frontend securats-backend >/dev/null 2>&1 || true
+
+# Finde und entferne jegliche Container, die die Ports 3000 oder 3001 belegen (unabhängig vom Namen)
+for port in 3000 3001; do
+  CONTAINERS_USING_PORT=$(docker ps -q --filter "publish=$port" || true)
+  if [ -n "$CONTAINERS_USING_PORT" ]; then
+    echo -e "${YELLOW}🛑 Entferne Container, die Port $port blockieren: $CONTAINERS_USING_PORT...${NC}"
+    docker rm -f $CONTAINERS_USING_PORT >/dev/null 2>&1 || true
+  fi
+done
+
 for port in 3000 3001; do
   sudo fuser -k ${port}/tcp >/dev/null 2>&1 || true
   PID_TO_KILL=$(lsof -t -i:$port || true)
@@ -87,6 +97,7 @@ for port in 3000 3001; do
     sudo kill -9 $PID_TO_KILL >/dev/null 2>&1 || true
   fi
 done
+
 
 # 5. Swap & Daten-Erhalt (Die kritische Phase)
 echo -e "${YELLOW}[5/6] Führe Verzeichnistausch und Daten-Migration aus...${NC}"

@@ -94,11 +94,26 @@ mv "$LIVE_DIR" "$OLD_DIR"
 mv "$BUILD_DIR" "$LIVE_DIR"
 
 # Produktions-Daten (SQLite-Datenbank und Env-Variablen) aus dem alten Ordner in den neuen übertragen!
-echo -e "${YELLOW}⚙️  Übertrage Datenbank und Umgebungskonfigurationen...${NC}"
-cp "$OLD_DIR/.env" "$LIVE_DIR/.env" || true
-cp "$OLD_DIR/frontend/.env.local" "$LIVE_DIR/frontend/.env.local" || true
-cp "$OLD_DIR/frontend/.env" "$LIVE_DIR/frontend/.env" || true
-cp "$OLD_DIR/frontend/prisma/dev.db" "$LIVE_DIR/frontend/prisma/dev.db" || true
+echo -e "${YELLOW}⚙️  Suche und übertrage Datenbank und Konfigurationen...${NC}"
+
+# 1. Suche nach .env-Dateien im alten Ordner und kopiere sie an die richtige Stelle
+find "$OLD_DIR" -name ".env*" | while read -r env_file; do
+  REL_PATH=${env_file#"$OLD_DIR/"}
+  echo -e "${GREEN}🎯 Gefundene Konfiguration: $REL_PATH. Kopiere...${NC}"
+  mkdir -p "$(dirname "$LIVE_DIR/$REL_PATH")"
+  cp "$env_file" "$LIVE_DIR/$REL_PATH" || true
+done
+
+# 2. Suche nach der dev.db SQLite-Datenbank
+OLD_DB_PATH=$(find "$OLD_DIR" -name "dev.db" -print -quit || true)
+if [ -n "$OLD_DB_PATH" ]; then
+  REL_PATH=${OLD_DB_PATH#"$OLD_DIR/"}
+  echo -e "${GREEN}🎯 Gefundene Datenbank: $REL_PATH. Kopiere...${NC}"
+  mkdir -p "$(dirname "$LIVE_DIR/$REL_PATH")"
+  cp "$OLD_DB_PATH" "$LIVE_DIR/$REL_PATH" || true
+else
+  echo -e "${YELLOW}⚠️ Keine dev.db im alten Verzeichnis gefunden.${NC}"
+fi
 
 # 6. PM2 Prozesse sauber neu registrieren & starten
 echo -e "${YELLOW}[6/6] Starte PM2-Prozesse neu...${NC}"
@@ -108,8 +123,8 @@ sudo pm2 delete enterprise-frontend >/dev/null 2>&1 || true
 # Backend auf Port 3001 starten
 sudo PORT=3001 pm2 start "$LIVE_DIR/dist/index.js" --name "enterprise-backend" --cwd "$LIVE_DIR"
 
-# Frontend auf Port 3000 starten
-sudo PORT=3000 pm2 start npm --name "enterprise-frontend" --cwd "$LIVE_DIR/frontend" -- run start -- -p 3000
+# Frontend auf Port 3000 starten (Direkt über Next-Binary, um den PM2-npm-Wrapper-Bug zu verhindern!)
+sudo PORT=3000 pm2 start "$LIVE_DIR/frontend/node_modules/next/dist/bin/next" --name "enterprise-frontend" --cwd "$LIVE_DIR/frontend" -- start -p 3000
 
 # PM2 Konfiguration permanent speichern
 sudo pm2 save
@@ -148,7 +163,7 @@ else
   
   # PM2 Prozesse auf Basis des alten, funktionierenden Stands neu starten
   sudo PORT=3001 pm2 start "$LIVE_DIR/dist/index.js" --name "enterprise-backend" --cwd "$LIVE_DIR"
-  sudo PORT=3000 pm2 start npm --name "enterprise-frontend" --cwd "$LIVE_DIR/frontend" -- run start -- -p 3000
+  sudo PORT=3000 pm2 start "$LIVE_DIR/frontend/node_modules/next/dist/bin/next" --name "enterprise-frontend" --cwd "$LIVE_DIR/frontend" -- start -p 3000
   sudo pm2 save
   
   echo -e "${GREEN}⚠️ Rollback abgeschlossen! Die vorherige stabile Version ist wieder aktiv.${NC}"

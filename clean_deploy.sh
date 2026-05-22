@@ -58,7 +58,7 @@ echo -e "${YELLOW}[2/6] Bereinige Git-Status im Build-Verzeichnis...${NC}"
 git reset --hard HEAD
 git clean -fd
 git fetch origin main
-git reset --hard origin/main
+git reset --hard FETCH_HEAD
 
 # 3. Isolierte Docker-Kompilierung im Build-Verzeichnis
 echo -e "${YELLOW}[3/6] Baue Docker-Images isoliert...${NC}"

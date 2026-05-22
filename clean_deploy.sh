@@ -42,6 +42,39 @@ if ! command -v lsof &> /dev/null || ! command -v fuser &> /dev/null; then
   fi
 fi
 
+# ==============================================================================
+# ULTIMATIVE PORT-BEFREIUNG: PM2 beenden, Node killen, blockierende Container löschen
+# ==============================================================================
+free_ports() {
+  echo -e "${YELLOW}🧹 Befreie die Ports 3000 und 3001 von Altlasten (PM2, Docker, Host-Prozesse)...${NC}"
+  
+  # 1. Beende PM2 Daemon und alle PM2-Prozesse komplett
+  sudo pm2 kill >/dev/null 2>&1 || true
+  
+  # 2. Beende jegliche verbliebenen Node/npm-Prozesse auf dem Host
+  sudo pkill -9 -f node >/dev/null 2>&1 || true
+  sudo pkill -9 -f npm >/dev/null 2>&1 || true
+  
+  # 3. Finde und entferne alle Docker-Container, die Port 3000 oder 3001 belegen (auch gestoppte/exited!)
+  for port in 3000 3001; do
+    CONTAINERS_USING_PORT=$(docker ps -a -q --filter "publish=$port" || true)
+    if [ -n "$CONTAINERS_USING_PORT" ]; then
+      echo -e "${YELLOW}🛑 Entferne Container, die Port $port belegen: $CONTAINERS_USING_PORT...${NC}"
+      docker rm -f $CONTAINERS_USING_PORT >/dev/null 2>&1 || true
+    fi
+  done
+  
+  # 4. Erzwinge Freigabe über Standard-Host-Tools (fuser/lsof)
+  for port in 3000 3001; do
+    sudo fuser -k ${port}/tcp >/dev/null 2>&1 || true
+    PID_TO_KILL=$(lsof -t -i:$port || true)
+    if [ -n "$PID_TO_KILL" ]; then
+      sudo kill -9 $PID_TO_KILL >/dev/null 2>&1 || true
+    fi
+  done
+  echo -e "${GREEN}✅ Ports 3000 und 3001 sind nun garantiert frei!${NC}"
+}
+
 LIVE_DIR="/opt/ATS"
 BUILD_DIR="/opt/ATS_new"
 OLD_DIR="/opt/ATS_old"
@@ -72,31 +105,8 @@ fi
 echo -e "${GREEN}✅ Docker-Images erfolgreich isoliert gebaut! Bereite den Austausch vor...${NC}"
 
 # 4. Port-Befreiung & PM2 Bereinigung (Ports für Backend und Frontend freigeben)
-echo -e "${YELLOW}[4/6] Beende veraltete PM2-Prozesse und befreie Ports 3000/3001...${NC}"
-sudo pm2 delete enterprise-backend >/dev/null 2>&1 || true
-sudo pm2 delete enterprise-frontend >/dev/null 2>&1 || true
-sudo pm2 save --force >/dev/null 2>&1 || true
-
-# Falls alte Docker-Container aus einem vorherigen Live-Ordner laufen, stoppen wir sie gleich beim Swap.
-# Wir befreien hier zusätzlich alle Ports auf dem Host:
-docker rm -f securats-frontend securats-backend >/dev/null 2>&1 || true
-
-# Finde und entferne jegliche Container, die die Ports 3000 oder 3001 belegen (unabhängig vom Namen)
-for port in 3000 3001; do
-  CONTAINERS_USING_PORT=$(docker ps -q --filter "publish=$port" || true)
-  if [ -n "$CONTAINERS_USING_PORT" ]; then
-    echo -e "${YELLOW}🛑 Entferne Container, die Port $port blockieren: $CONTAINERS_USING_PORT...${NC}"
-    docker rm -f $CONTAINERS_USING_PORT >/dev/null 2>&1 || true
-  fi
-done
-
-for port in 3000 3001; do
-  sudo fuser -k ${port}/tcp >/dev/null 2>&1 || true
-  PID_TO_KILL=$(lsof -t -i:$port || true)
-  if [ -n "$PID_TO_KILL" ]; then
-    sudo kill -9 $PID_TO_KILL >/dev/null 2>&1 || true
-  fi
-done
+echo -e "${YELLOW}[4/6] Führe ultimative Port-Befreiung für 3000/3001 aus...${NC}"
+free_ports
 
 
 # 5. Swap & Daten-Erhalt (Die kritische Phase)
@@ -196,6 +206,9 @@ else
   mv "$OLD_DIR" "$LIVE_DIR"
   
   cd "$LIVE_DIR"
+  
+  # Vor dem Start der alten Version unbedingt Ports wieder befreien!
+  free_ports
   
   # Rollback starten
   if [ -f "$LIVE_DIR/docker-compose.yml" ]; then

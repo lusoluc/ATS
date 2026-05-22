@@ -48,6 +48,9 @@ fi
 free_ports() {
   echo -e "${YELLOW}🧹 Befreie die Ports 3000 und 3001 von Altlasten (PM2, Docker, Host-Prozesse)...${NC}"
   
+  # 0. Lösche explizit eventuell blockierende Container-Namen
+  docker rm -f securats-frontend securats-backend >/dev/null 2>&1 || true
+  
   # 1. Beende PM2 Daemon und alle PM2-Prozesse komplett
   sudo pm2 kill >/dev/null 2>&1 || true
   

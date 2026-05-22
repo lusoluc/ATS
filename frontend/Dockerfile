@@ -2,6 +2,9 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Install OpenSSL and glibc compatibility library for Prisma
+RUN apk add --no-cache openssl libc6-compat
+
 # Install dependencies
 COPY package*.json ./
 RUN npm install --legacy-peer-deps
@@ -26,6 +29,9 @@ RUN npm run build
 FROM node:20-alpine
 
 WORKDIR /app
+
+# Install OpenSSL and glibc compatibility library for Prisma
+RUN apk add --no-cache openssl libc6-compat
 
 # Copy package info
 COPY package*.json ./

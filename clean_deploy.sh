@@ -229,8 +229,33 @@ if ! docker compose run --rm frontend npx --no-install prisma db push --schema=p
   echo -e "${RED}⚠️ Prisma DB-Push fehlgeschlagen oder keine Änderungen vorhanden. Fahre fort...${NC}"
 fi
 
-if ! docker compose up -d; then
-  echo -e "${RED}❌ START-FEHLER: Docker Compose konnte nicht gestartet werden!${NC}"
+# Ganz wichtig: Pause einlegen, um dem Linux-Kernel und dem Docker-Proxy Zeit zu geben,
+# den durch 'docker compose run' belegten Port 3000 und Netzwerkschnittstellen vollständig freizugeben.
+echo -e "${YELLOW}⏳ Warte 5 Sekunden, damit Docker-Proxy und Kernel-Sockets freigegeben werden...${NC}"
+sleep 5
+
+START_SUCCESS=0
+MAX_RETRIES=3
+RETRY_COUNT=1
+
+while [ $RETRY_COUNT -le $MAX_RETRIES ]; do
+  echo -e "${YELLOW}🚀 Starte Container (Versuch $RETRY_COUNT von $MAX_RETRIES)...${NC}"
+  if docker compose up -d; then
+    START_SUCCESS=1
+    break
+  else
+    echo -e "${RED}⚠️ Versuch $RETRY_COUNT fehlgeschlagen. Eventuell blockiert Docker-Proxy den Port...${NC}"
+    if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+      echo -e "${YELLOW}⏳ Warte 5 Sekunden, befreie die Ports erneut und probiere es nochmal...${NC}"
+      sleep 5
+      free_ports
+    fi
+  fi
+  RETRY_COUNT=$((RETRY_COUNT + 1))
+done
+
+if [ $START_SUCCESS -eq 0 ]; then
+  echo -e "${RED}❌ START-FEHLER: Docker Compose konnte nach $MAX_RETRIES Versuchen nicht gestartet werden!${NC}"
   # Springe direkt zum Rollback
   HTTP_STATUS="500"
 else
@@ -271,7 +296,26 @@ else
   # Rollback starten
   if [ -f "$LIVE_DIR/docker-compose.yml" ]; then
     echo -e "${GREEN}⚠️ Starte vorherige Docker-Container...${NC}"
-    docker compose up -d
+    ROLLBACK_SUCCESS=0
+    RETRY_COUNT=1
+    while [ $RETRY_COUNT -le 3 ]; do
+      echo -e "${YELLOW}🚀 Starte Rollback-Container (Versuch $RETRY_COUNT von 3)...${NC}"
+      if docker compose up -d; then
+        ROLLBACK_SUCCESS=1
+        break
+      else
+        echo -e "${RED}⚠️ Rollback-Start Versuch $RETRY_COUNT desolat. Eventuell blockiert Docker-Proxy den Port...${NC}"
+        if [ $RETRY_COUNT -lt 3 ]; then
+          echo -e "${YELLOW}⏳ Warte 5 Sekunden, befreie die Ports erneut und probiere es nochmal...${NC}"
+          sleep 5
+          free_ports
+        fi
+      fi
+      RETRY_COUNT=$((RETRY_COUNT + 1))
+    done
+    if [ $ROLLBACK_SUCCESS -eq 0 ]; then
+      echo -e "${RED}❌ ROLLBACK-START FEHLGESCHLAGEN! Das System ist eventuell offline!${NC}"
+    fi
   else
     echo -e "${GREEN}⚠️ Starte vorherige PM2-Prozesse (Legacy)...${NC}"
     sudo PORT=3001 pm2 start "$LIVE_DIR/dist/index.js" --name "enterprise-backend" --cwd "$LIVE_DIR"

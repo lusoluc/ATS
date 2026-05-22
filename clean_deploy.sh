@@ -30,22 +30,22 @@ log_dev_diag() {
   echo "=== DEV DIAGNOSTICS: $phase ($(date)) ===" >> "$LOG_FILE"
   echo "--- System Sockets (ss) ---" >> "$LOG_FILE"
   if command -v ss &> /dev/null; then
-    ss -tlnp 2>&1 >> "$LOG_FILE" || true
+    ss -tlnp >> "$LOG_FILE" 2>&1 || true
   else
-    netstat -tlnp 2>&1 >> "$LOG_FILE" || true
+    netstat -tlnp >> "$LOG_FILE" 2>&1 || true
   fi
   echo "--- Network Interfaces ---" >> "$LOG_FILE"
-  ip addr 2>&1 >> "$LOG_FILE" || true
+  ip addr >> "$LOG_FILE" 2>&1 || true
   echo "--- Docker Containers ---" >> "$LOG_FILE"
-  docker ps -a --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}" 2>&1 >> "$LOG_FILE" || true
+  docker ps -a --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}" >> "$LOG_FILE" 2>&1 || true
   echo "--- Docker Networks ---" >> "$LOG_FILE"
-  docker network ls 2>&1 >> "$LOG_FILE" || true
+  docker network ls >> "$LOG_FILE" 2>&1 || true
   echo "--- IPTables NAT Rules ---" >> "$LOG_FILE"
   if command -v iptables &> /dev/null; then
-    iptables -t nat -L DOCKER -n -v 2>&1 >> "$LOG_FILE" || true
+    iptables -t nat -L DOCKER -n -v >> "$LOG_FILE" 2>&1 || true
   fi
   echo "--- Host Node/NPM Processes ---" >> "$LOG_FILE"
-  ps aux | grep -E "node|npm" | grep -v grep 2>&1 >> "$LOG_FILE" || true
+  ps aux | grep -E "node|npm" | grep -v grep >> "$LOG_FILE" 2>&1 || true
   echo "==========================================" >> "$LOG_FILE"
   echo "" >> "$LOG_FILE"
   chmod 666 "$LOG_FILE" >/dev/null 2>&1 || true
@@ -72,6 +72,44 @@ if ! command -v lsof &> /dev/null || ! command -v fuser &> /dev/null; then
   else
     echo -e "${RED}⚠️ apt-get nicht gefunden. Bitte installieren Sie 'lsof' und 'psmisc' manuell!${NC}"
   fi
+fi
+
+# 0c. Stelle sicher, dass der Docker-Daemon läuft und nicht durch systemd-Limits blockiert ist (Selbstheilung)
+if ! docker info &>/dev/null; then
+  echo -e "${YELLOW}📦 Docker-Daemon ist nicht erreichbar oder offline. Versuche Selbstheilung...${NC}"
+  
+  SYSTEMCTL_CMD=""
+  if command -v systemctl &> /dev/null; then
+    SYSTEMCTL_CMD="systemctl"
+  elif [ -x "/bin/systemctl" ]; then
+    SYSTEMCTL_CMD="/bin/systemctl"
+  elif [ -x "/usr/bin/systemctl" ]; then
+    SYSTEMCTL_CMD="/usr/bin/systemctl"
+  fi
+
+  if [ -n "$SYSTEMCTL_CMD" ]; then
+    echo -e "${YELLOW}   -> Setze systemd-Limits zurück und starte Docker-Dienst neu...${NC}"
+    sudo $SYSTEMCTL_CMD reset-failed docker >/dev/null 2>&1 || true
+    sudo $SYSTEMCTL_CMD restart docker >/dev/null 2>&1 || true
+  else
+    if [ -x "/etc/init.d/docker" ]; then
+      echo -e "${YELLOW}   -> Starte Docker-Dienst via init.d neu...${NC}"
+      sudo /etc/init.d/docker restart >/dev/null 2>&1 || true
+    elif command -v service &> /dev/null; then
+      echo -e "${YELLOW}   -> Starte Docker-Dienst via service neu...${NC}"
+      sudo service docker restart >/dev/null 2>&1 || true
+    fi
+  fi
+  
+  # Warte, bis der Docker-Daemon bereit ist (Maximal 30 Sekunden)
+  echo -e "${YELLOW}⏳ Warte, bis der Docker-Daemon einsatzbereit ist...${NC}"
+  for i in {1..30}; do
+    if docker info >/dev/null 2>&1; then
+      echo -e "${GREEN}✅ Docker-Daemon erfolgreich gestartet und bereit!${NC}"
+      break
+    fi
+    sleep 1
+  done
 fi
 
 # ==============================================================================

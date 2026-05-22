@@ -22,6 +22,37 @@ YELLOW='\033[0;33m'
 BLUE='\033[0;36m'
 NC='\033[0m' # No Color
 
+LOG_FILE="/opt/ATS/deploy_debug.log"
+
+log_dev_diag() {
+  local phase="$1"
+  mkdir -p "$(dirname "$LOG_FILE")"
+  echo "=== DEV DIAGNOSTICS: $phase ($(date)) ===" >> "$LOG_FILE"
+  echo "--- System Sockets (ss) ---" >> "$LOG_FILE"
+  if command -v ss &> /dev/null; then
+    ss -tlnp 2>&1 >> "$LOG_FILE" || true
+  else
+    netstat -tlnp 2>&1 >> "$LOG_FILE" || true
+  fi
+  echo "--- Network Interfaces ---" >> "$LOG_FILE"
+  ip addr 2>&1 >> "$LOG_FILE" || true
+  echo "--- Docker Containers ---" >> "$LOG_FILE"
+  docker ps -a --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}" 2>&1 >> "$LOG_FILE" || true
+  echo "--- Docker Networks ---" >> "$LOG_FILE"
+  docker network ls 2>&1 >> "$LOG_FILE" || true
+  echo "--- IPTables NAT Rules ---" >> "$LOG_FILE"
+  if command -v iptables &> /dev/null; then
+    iptables -t nat -L DOCKER -n -v 2>&1 >> "$LOG_FILE" || true
+  fi
+  echo "--- Host Node/NPM Processes ---" >> "$LOG_FILE"
+  ps aux | grep -E "node|npm" | grep -v grep 2>&1 >> "$LOG_FILE" || true
+  echo "==========================================" >> "$LOG_FILE"
+  echo "" >> "$LOG_FILE"
+}
+
+# Initiales Logging starten
+log_dev_diag "START_OF_DEPLOYMENT"
+
 echo -e "${BLUE}======================================================================${NC}"
 echo -e "${BLUE}🚀 [SecurATS] Starte Docker-basiertes Blue-Green Deployment...${NC}"
 echo -e "${BLUE}======================================================================${NC}"
@@ -47,6 +78,7 @@ fi
 # ==============================================================================
 free_ports() {
   echo -e "${YELLOW}🧹 Start der ultimativen Port-Befreiung (Ports 3000 & 3001)...${NC}"
+  log_dev_diag "BEFORE_PORT_CLEANUP"
   
   # 0. Analyse: Wer belegt aktuell die Ports? (Für die Logs)
   for port in 3000 3001; do
@@ -109,6 +141,13 @@ free_ports() {
     fi
   done
 
+  # 6b. Stale Docker-Netzwerkzustand bereinigen (Systemd Docker-Dienst neu starten)
+  if systemctl is-active --quiet docker 2>/dev/null; then
+    echo -e "${YELLOW}🛑 Starte Docker-Dienst neu, um blockierte/verwaiste Netzwerk-Sockets (Ghost Ports) zu flushen...${NC}"
+    sudo systemctl restart docker >/dev/null 2>&1 || true
+    sleep 4
+  fi
+
   # 7. Verifizierung der Port-Freiheit
   echo -e "${YELLOW}🧪 Verifiziere Port-Freigabe...${NC}"
   PORTS_BUSY=0
@@ -131,6 +170,8 @@ free_ports() {
   else
     echo -e "${YELLOW}⚠️ Einige Ports scheinen noch blockiert zu sein. Wir fahren fort, falls Docker-Proxy den Port freigibt...${NC}"
   fi
+  
+  log_dev_diag "AFTER_PORT_CLEANUP"
 }
 
 LIVE_DIR="/opt/ATS"
@@ -222,18 +263,6 @@ fi
 echo -e "${YELLOW}[6/6] Starte Docker Compose...${NC}"
 cd "$LIVE_DIR"
 
-# Führe ggf. Prisma DB-Push aus, um Schemaänderungen auf der SQLite-DB anzuwenden
-# Da Prisma im Container läuft, machen wir das über docker compose run
-echo -e "${YELLOW}🔄 Führe Prisma Database-Schema-Updates aus...${NC}"
-if ! docker compose run --rm frontend npx --no-install prisma db push --schema=prisma/schema.prisma; then
-  echo -e "${RED}⚠️ Prisma DB-Push fehlgeschlagen oder keine Änderungen vorhanden. Fahre fort...${NC}"
-fi
-
-# Ganz wichtig: Pause einlegen, um dem Linux-Kernel und dem Docker-Proxy Zeit zu geben,
-# den durch 'docker compose run' belegten Port 3000 und Netzwerkschnittstellen vollständig freizugeben.
-echo -e "${YELLOW}⏳ Warte 5 Sekunden, damit Docker-Proxy und Kernel-Sockets freigegeben werden...${NC}"
-sleep 5
-
 START_SUCCESS=0
 MAX_RETRIES=3
 RETRY_COUNT=1
@@ -245,6 +274,7 @@ while [ $RETRY_COUNT -le $MAX_RETRIES ]; do
     break
   else
     echo -e "${RED}⚠️ Versuch $RETRY_COUNT fehlgeschlagen. Eventuell blockiert Docker-Proxy den Port...${NC}"
+    log_dev_diag "START_ATTEMPT_FAILED_RETRY_$RETRY_COUNT"
     if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
       echo -e "${YELLOW}⏳ Warte 5 Sekunden, befreie die Ports erneut und probiere es nochmal...${NC}"
       sleep 5
@@ -256,9 +286,24 @@ done
 
 if [ $START_SUCCESS -eq 0 ]; then
   echo -e "${RED}❌ START-FEHLER: Docker Compose konnte nach $MAX_RETRIES Versuchen nicht gestartet werden!${NC}"
+  log_dev_diag "FINAL_START_FAILURE"
   # Springe direkt zum Rollback
   HTTP_STATUS="500"
 else
+  # Führe ggf. Prisma DB-Push aus, um Schemaänderungen auf der SQLite-DB anzuwenden
+  # Wir tun dies über 'docker compose exec', um zu verhindern, dass ein separater Container erstellt wird.
+  echo -e "${YELLOW}🔄 Führe Prisma Database-Schema-Updates aus...${NC}"
+  if ! docker compose exec -T frontend npx --no-install prisma db push --schema=prisma/schema.prisma; then
+    echo -e "${RED}⚠️ Prisma DB-Push fehlgeschlagen. Eventuell keine Änderungen vorhanden oder Verbindungsfehler. Fahre fort...${NC}"
+    log_dev_diag "PRISMA_DB_PUSH_FAILED"
+  else
+    echo -e "${GREEN}✅ Prisma Database-Schema-Updates erfolgreich angewendet!${NC}"
+  fi
+
+  # Schneller Neustart der Services, damit der Prisma-Client im Backend die DB neu lädt
+  echo -e "${YELLOW}🔄 Starte Backend & Frontend kurz neu, um Datenbank-Verbindungen zu aktualisieren...${NC}"
+  docker compose restart backend frontend || true
+
   echo -e "${YELLOW}⏳ Warte 8 Sekunden, bis die Container vollständig gestartet sind...${NC}"
   sleep 8
   # 7. Health-Check
@@ -271,6 +316,7 @@ if [ "$HTTP_STATUS" -eq 200 ] || [ "$HTTP_STATUS" -eq 307 ] || [ "$HTTP_STATUS" 
   echo -e "${GREEN}🎉 SUCCESS! Das neue Docker-Update ist vollkommen fehlerfrei live!${NC}"
   echo -e "${GREEN}   Status-Code: $HTTP_STATUS${NC}"
   echo -e "${GREEN}======================================================================${NC}"
+  log_dev_diag "DEPLOYMENT_SUCCESSFUL"
   rm -rf "$OLD_DIR" # Sicheres Löschen des alten Ordners erst bei Erfolg
   docker compose ps
   exit 0
@@ -279,6 +325,7 @@ else
   echo -e "${RED}❌ HEALTH-CHECK FEHLGESCHLAGEN: Server antwortet mit Status $HTTP_STATUS!${NC}"
   echo -e "${RED}🔄 FÜHRE AUTOMATISCHES ROLLBACK AUF DEN LETZTEN STABILEN STAND AUS...${NC}"
   echo -e "${RED}======================================================================${NC}"
+  log_dev_diag "HEALTH_CHECK_FAILED_INITIATING_ROLLBACK"
   
   # Stoppe die fehlerhaften neuen Container
   cd "$LIVE_DIR"
@@ -305,6 +352,7 @@ else
         break
       else
         echo -e "${RED}⚠️ Rollback-Start Versuch $RETRY_COUNT desolat. Eventuell blockiert Docker-Proxy den Port...${NC}"
+        log_dev_diag "ROLLBACK_ATTEMPT_FAILED_RETRY_$RETRY_COUNT"
         if [ $RETRY_COUNT -lt 3 ]; then
           echo -e "${YELLOW}⏳ Warte 5 Sekunden, befreie die Ports erneut und probiere es nochmal...${NC}"
           sleep 5
@@ -315,12 +363,16 @@ else
     done
     if [ $ROLLBACK_SUCCESS -eq 0 ]; then
       echo -e "${RED}❌ ROLLBACK-START FEHLGESCHLAGEN! Das System ist eventuell offline!${NC}"
+      log_dev_diag "ROLLBACK_FATAL_FAILURE"
+    else
+      log_dev_diag "ROLLBACK_SUCCESSFUL"
     fi
   else
     echo -e "${GREEN}⚠️ Starte vorherige PM2-Prozesse (Legacy)...${NC}"
     sudo PORT=3001 pm2 start "$LIVE_DIR/dist/index.js" --name "enterprise-backend" --cwd "$LIVE_DIR"
     sudo PORT=3000 pm2 start "$LIVE_DIR/frontend/node_modules/next/dist/bin/next" --name "enterprise-frontend" --cwd "$LIVE_DIR/frontend" -- start -p 3000
     sudo pm2 save --force
+    log_dev_diag "ROLLBACK_SUCCESSFUL_LEGACY"
   fi
   
   echo -e "${GREEN}⚠️ Rollback erfolgreich abgeschlossen! Die vorherige Version läuft wieder.${NC}"

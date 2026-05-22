@@ -595,3 +595,71 @@ footer a:hover { color: white; }
 @media (max-width: 480px) {
   .container { padding: 0 1rem; }
 }
+
+/* ============================================================
+   OMR 2026 Innovation Features: Accessibility & Neurodiversity
+   ============================================================ */
+
+/* Comic Sans/Comic Neue as highly readable dyslexia-optimized system fallback */
+.font-dyslexic {
+  font-family: "Comic Sans MS", "Comic Sans", "Chalkboard SE", "Comic Neue", sans-serif !important;
+  word-spacing: 0.16em !important;
+  letter-spacing: 0.12em !important;
+  line-height: 1.8 !important;
+}
+
+/* High Contrast Mode for BFSG */
+body.accessibility-contrast-mode,
+.accessibility-contrast-mode {
+  --background: #000000 !important;
+  --surface: #000000 !important;
+  --surface-2: #111111 !important;
+  --foreground: #ffffff !important;
+  --primary: #ffff00 !important; /* High contrast Yellow */
+  --primary-dark: #ffff00 !important;
+  --primary-light: #ffff00 !important;
+  --green: #00ff00 !important; /* High contrast Green */
+  --green-dark: #00ff00 !important;
+  --green-light: #00ff00 !important;
+  --teal: #00ffff !important;
+  --yellow: #ffff00 !important;
+  --border: #ffffff !important;
+  --shadow-sm: none !important;
+  --shadow: none !important;
+  --shadow-lg: none !important;
+  --glass-bg: #000000 !important;
+  --glass-border: #ffffff !important;
+  color: #ffffff !important;
+  background-color: #000000 !important;
+}
+
+body.accessibility-contrast-mode *,
+.accessibility-contrast-mode * {
+  border-color: #ffffff !important;
+}
+
+body.accessibility-contrast-mode a,
+.accessibility-contrast-mode a {
+  color: #ffff00 !important;
+  text-decoration: underline !important;
+}
+
+body.accessibility-contrast-mode button,
+.accessibility-contrast-mode button {
+  background-color: #000000 !important;
+  color: #ffff00 !important;
+  border: 2px solid #ffff00 !important;
+}
+
+/* ADHD Calm Focus Mode (reizreduziert) */
+body.accessibility-focus-mode .stimulus-heavy,
+.accessibility-focus-mode .stimulus-heavy {
+  opacity: 0.15 !important;
+  filter: blur(4px) !important;
+  transition: opacity 0.5s, filter 0.5s !important;
+}
+body.accessibility-focus-mode .stimulus-heavy:hover,
+.accessibility-focus-mode .stimulus-heavy:hover {
+  opacity: 1.0 !important;
+  filter: none !important;
+}

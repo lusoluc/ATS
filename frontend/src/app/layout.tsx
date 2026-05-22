@@ -3,6 +3,7 @@ import { Inter, Outfit } from 'next/font/google';
 import './globals.css';
 import Link from 'next/link';
 import Navbar from '../components/Navbar';
+import AccessibilitySwitcher from '../components/AccessibilitySwitcher';
 import { PrismaClient } from '@prisma/client';
 import DOMPurify from 'isomorphic-dompurify';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
@@ -94,6 +95,9 @@ export default async function RootLayout({
         <a href="https://securats.de" target="_blank" rel="noopener noreferrer" style={{ position: 'fixed', bottom: '20px', right: '20px', background: 'white', padding: '8px 16px', borderRadius: '30px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 9999, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: '#334155', textDecoration: 'none', border: '1px solid #e2e8f0', outline: 'none' }} className="hover:-translate-y-1 transition-transform">
           <span style={{ opacity: 0.7 }}>Powered by</span> <strong style={{ color: '#2563eb' }}>SecurATS</strong>
         </a>
+        
+        {/* Global Inclusion & Accessibility Switcher */}
+        <AccessibilitySwitcher />
       </body>
     </html>
   );

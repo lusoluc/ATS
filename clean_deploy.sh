@@ -146,7 +146,7 @@ cd "$LIVE_DIR"
 # Führe ggf. Prisma DB-Push aus, um Schemaänderungen auf der SQLite-DB anzuwenden
 # Da Prisma im Container läuft, machen wir das über docker compose run
 echo -e "${YELLOW}🔄 Führe Prisma Database-Schema-Updates aus...${NC}"
-if ! docker compose run --rm frontend npx prisma db push --schema=prisma/schema.prisma; then
+if ! docker compose run --rm frontend npx --no-install prisma db push --schema=prisma/schema.prisma; then
   echo -e "${RED}⚠️ Prisma DB-Push fehlgeschlagen oder keine Änderungen vorhanden. Fahre fort...${NC}"
 fi
 

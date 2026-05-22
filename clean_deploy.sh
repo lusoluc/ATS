@@ -46,36 +46,91 @@ fi
 # ULTIMATIVE PORT-BEFREIUNG: PM2 beenden, Node killen, blockierende Container löschen
 # ==============================================================================
 free_ports() {
-  echo -e "${YELLOW}🧹 Befreie die Ports 3000 und 3001 von Altlasten (PM2, Docker, Host-Prozesse)...${NC}"
+  echo -e "${YELLOW}🧹 Start der ultimativen Port-Befreiung (Ports 3000 & 3001)...${NC}"
   
-  # 0. Lösche explizit eventuell blockierende Container-Namen
-  docker rm -f securats-frontend securats-backend >/dev/null 2>&1 || true
-  
-  # 1. Beende PM2 Daemon und alle PM2-Prozesse komplett
+  # 0. Analyse: Wer belegt aktuell die Ports? (Für die Logs)
+  for port in 3000 3001; do
+    echo -e "${BLUE}🔍 Analyse Port $port...${NC}"
+    if command -v lsof &> /dev/null; then
+      LSOF_OUT=$(lsof -i :$port || true)
+      if [ -n "$LSOF_OUT" ]; then
+        echo -e "${YELLOW}👉 Host-Prozess auf Port $port gefunden:${NC}\n$LSOF_OUT"
+      fi
+    fi
+    CONTAINERS_ON_PORT=$(docker ps -a --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}" | grep -E ":$port\b|:$port->" || true)
+    if [ -n "$CONTAINERS_ON_PORT" ]; then
+      echo -e "${YELLOW}👉 Docker-Container auf Port $port gefunden:${NC}\n$CONTAINERS_ON_PORT"
+    fi
+  done
+
+  # 1. Beende eventuell blockierende systemd-Dienste auf dem Host
+  echo -e "${YELLOW}🛑 Prüfe und stoppe verbliebene systemd-Dienste...${NC}"
+  for service in enterprise-backend enterprise-frontend ats-backend ats-frontend securats securats-frontend securats-backend; do
+    if systemctl is-active --quiet $service 2>/dev/null; then
+      echo -e "   -> Stoppe systemd-Dienst $service..."
+      sudo systemctl stop $service >/dev/null 2>&1 || true
+      sudo systemctl disable $service >/dev/null 2>&1 || true
+    fi
+  done
+
+  # 2. Beende PM2 Daemon und alle PM2-Prozesse komplett
+  echo -e "${YELLOW}🛑 Beende PM2 komplett...${NC}"
   sudo pm2 kill >/dev/null 2>&1 || true
   
-  # 2. Beende jegliche verbliebenen Node/npm-Prozesse auf dem Host
+  # 3. Beende jegliche verbliebenen Node/npm-Prozesse auf dem Host
+  echo -e "${YELLOW}🛑 Beende alle Node/npm-Prozesse auf dem Host...${NC}"
   sudo pkill -9 -f node >/dev/null 2>&1 || true
   sudo pkill -9 -f npm >/dev/null 2>&1 || true
   
-  # 3. Finde und entferne alle Docker-Container, die Port 3000 oder 3001 belegen (auch gestoppte/exited!)
-  for port in 3000 3001; do
-    CONTAINERS_USING_PORT=$(docker ps -a -q --filter "publish=$port" || true)
-    if [ -n "$CONTAINERS_USING_PORT" ]; then
-      echo -e "${YELLOW}🛑 Entferne Container, die Port $port belegen: $CONTAINERS_USING_PORT...${NC}"
-      docker rm -f $CONTAINERS_USING_PORT >/dev/null 2>&1 || true
+  # 4. Lösche explizit bekannte Container-Namen
+  echo -e "${YELLOW}🛑 Lösche bekannte Container-Namen...${NC}"
+  docker rm -f securats-frontend securats-backend ats-frontend ats-backend >/dev/null 2>&1 || true
+  
+  # 5. Dynamische Erkennung & Entfernung JEDES Containers, der Port 3000 oder 3001 belegen
+  echo -e "${YELLOW}🛑 Suche nach weiteren Containern mit Port-Mappings 3000/3001...${NC}"
+  for cid in $(docker ps -a -q); do
+    MAPPED_PORTS=$(docker port $cid 2>/dev/null || true)
+    if echo "$MAPPED_PORTS" | grep -q -E ":3000|:3001"; then
+      CONTAINER_NAME=$(docker inspect --format '{{.Name}}' $cid | sed 's/\///' || echo "Unbekannt")
+      echo -e "${RED}👉 Gefunden blockierender Container: Name='$CONTAINER_NAME' ID='$cid' Ports:${NC}\n$MAPPED_PORTS"
+      echo -e "${YELLOW}   -> Lösche Container $cid...${NC}"
+      docker rm -f $cid >/dev/null 2>&1 || true
     fi
   done
   
-  # 4. Erzwinge Freigabe über Standard-Host-Tools (fuser/lsof)
+  # 6. Erzwinge Freigabe der Host-Ports über fuser/kill
+  echo -e "${YELLOW}🛑 Erzwinge Freigabe der Host-Ports 3000 & 3001 via fuser/kill...${NC}"
   for port in 3000 3001; do
     sudo fuser -k ${port}/tcp >/dev/null 2>&1 || true
     PID_TO_KILL=$(lsof -t -i:$port || true)
     if [ -n "$PID_TO_KILL" ]; then
+      echo -e "   -> Sende SIGKILL an Prozess $PID_TO_KILL auf Port $port..."
       sudo kill -9 $PID_TO_KILL >/dev/null 2>&1 || true
     fi
   done
-  echo -e "${GREEN}✅ Ports 3000 und 3001 sind nun garantiert frei!${NC}"
+
+  # 7. Verifizierung der Port-Freiheit
+  echo -e "${YELLOW}🧪 Verifiziere Port-Freigabe...${NC}"
+  PORTS_BUSY=0
+  for port in 3000 3001; do
+    if command -v lsof &> /dev/null; then
+      if lsof -i :$port >/dev/null 2>&1; then
+        echo -e "${RED}❌ WARNUNG: Port $port ist trotz aller Bemühungen weiterhin belegt!${NC}"
+        PORTS_BUSY=1
+      fi
+    elif command -v nc &> /dev/null; then
+      if nc -z localhost $port >/dev/null 2>&1; then
+        echo -e "${RED}❌ WARNUNG: Port $port ist trotz aller Bemühungen weiterhin belegt!${NC}"
+        PORTS_BUSY=1
+      fi
+    fi
+  done
+
+  if [ $PORTS_BUSY -eq 0 ]; then
+    echo -e "${GREEN}✅ Ports 3000 und 3001 sind nun garantiert frei!${NC}"
+  else
+    echo -e "${YELLOW}⚠️ Einige Ports scheinen noch blockiert zu sein. Wir fahren fort, falls Docker-Proxy den Port freigibt...${NC}"
+  fi
 }
 
 LIVE_DIR="/opt/ATS"

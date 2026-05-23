@@ -1,87 +1,32 @@
 name: securats
 
 services:
-  # ==========================================
-  # 1. Express Backend Server
-  # ==========================================
-  backend:
+  # ============================================================================
+  # 1. Consolidated Unified Django Web Application
+  # ============================================================================
+  web:
     build:
       context: .
-      dockerfile: Dockerfile.backend
-    image: securats-backend:latest
-    container_name: securats-backend
-    restart: always
-    ports:
-      - "3001:3001"
-    volumes:
-      - ./shared:/app/shared
-    environment:
-      - PORT=3001
-      - DATABASE_URL=file:/app/shared/dev.db
-      - NODE_ENV=production
-      # Fügen Sie hier bei Bedarf weitere Env-Variablen hinzu (z. B. JWT-Secrets)
-    networks:
-      - securats-network
-
-  # ==========================================
-  # 2. Next.js Frontend Server
-  # ==========================================
-  frontend:
-    build:
-      context: ./frontend
       dockerfile: Dockerfile
-    image: securats-frontend:latest
-    container_name: securats-frontend
+    image: securats-django:latest
+    container_name: securats-django
     restart: always
     ports:
-      - "3000:3000"
-
+      - "3000:8000"  # Maps career portal externally to port 3000 (previously next.js)
     volumes:
       - ./shared:/app/shared
+      - ./media:/app/media
     environment:
-      - PORT=3000
+      - PORT=8000
       - DATABASE_URL=file:/app/shared/dev.db
-      - NODE_ENV=production
-      # Verweist standardmäßig auf Ollama auf Ihrem Host-System (nutzt die System-GPU für maximale Geschwindigkeit)
-      - OLLAMA_URL=http://host.docker.internal:11434/api/generate
+      - DEBUG=False
+      - DJANGO_SECRET_KEY=enterprise-secret-key-super-secure-change-me
+      - PII_ENCRYPTION_KEY=securats-fallback-super-secure-encryption-key-for-pii-at-rest=
     extra_hosts:
-      # Ermöglicht dem Container den Zugriff auf localhost/ports der Host-Maschine (z.B. Ollama)
       - "host.docker.internal:host-gateway"
-    depends_on:
-      - backend
     networks:
       - securats-network
-
-  # =========================================================================================
-  # 3. LOKALES LLM OLLAMA (OPTIONAL - HIER ENTFERNEN SIE DIE AUSKOMMENTIERUNG, WENN GEWÜNSCHT)
-  # =========================================================================================
-  # Wenn Sie Ollama NICHT auf Ihrem PC/Server installiert haben, können Sie diesen Service 
-  # einkommentieren. Der Container läuft dann standardmäßig auf der CPU.
-  # Für GPU-Beschleunigung muss das "NVIDIA Container Toolkit" auf dem Host installiert sein.
-  # -----------------------------------------------------------------------------------------
-  # ollama:
-  #   image: ollama/ollama:latest
-  #   container_name: securats-ollama
-  #   restart: always
-  #   ports:
-  #     - "11434:11434"
-  #   volumes:
-  #     - ollama_data:/root/.ollama
-  #   networks:
-  #     - securats-network
-  #   # GPU-Unterstützung aktivieren (nur nötig, wenn über Docker GPU genutzt werden soll):
-  #   # deploy:
-  #   #   resources:
-  #   #     reservations:
-  #   #       devices:
-  #   #         - driver: nvidia
-  #   #           count: all
-  #   #           capabilities: [gpu]
 
 networks:
   securats-network:
     driver: bridge
-
-# Nur aktiv, wenn der optionale Ollama-Service einkommentiert wird
-# volumes:
-#   ollama_data:

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SecurATS - Moderne Karriereplattform{% endblock %}</title>
+    
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            /* Colors: Vibrant Violet/Teal & Sleek Dark Palette */
+            --bg-color: #0b0d19;
+            --bg-gradient: linear-gradient(135deg, #0b0d19 0%, #151833 100%);
+            --surface-color: #171b38;
+            --surface-hover: #1e244d;
+            
+            --primary: #8b5cf6;
+            --primary-rgb: 139, 92, 246;
+            --primary-light: #a78bfa;
+            --accent: #14b8a6;
+            --accent-light: #2dd4bf;
+            
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            
+            --glass-bg: rgba(23, 27, 56, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-glow: rgba(139, 92, 246, 0.15);
+            
+            --border-radius-lg: 16px;
+            --border-radius-md: 12px;
+            --border-radius-sm: 8px;
+            
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+
+        /* Ambient background glow points */
+        .ambient-glow-1 {
+            position: fixed;
+            top: -10%;
+            left: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, rgba(0,0,0,0) 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
+        .ambient-glow-2 {
+            position: fixed;
+            bottom: -10%;
+            right: -10%;
+            width: 60vw;
+            height: 60vw;
+            background: radial-gradient(circle, rgba(20, 184, 166, 0.08) 0%, rgba(0,0,0,0) 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Glassmorphic Navigation Bar */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(11, 13, 25, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--glass-border);
+            transition: var(--transition-smooth);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Outfit', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            color: #fff;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #fff 0%, var(--primary-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo i {
+            font-size: 26px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 28px;
+            align-items: center;
+            list-style: none;
+        }
+
+        .nav-item a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 500;
+            transition: var(--transition-smooth);
+            padding: 8px 12px;
+            border-radius: var(--border-radius-sm);
+        }
+
+        .nav-item a:hover, .nav-item.active a {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-cta {
+            background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
+            color: #fff !important;
+            padding: 10px 20px !important;
+            border-radius: 30px !important;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+            font-weight: 600 !important;
+        }
+
+        .btn-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.45);
+        }
+
+        .btn-secondary-cta {
+            border: 1px solid var(--primary);
+            color: #fff !important;
+            padding: 10px 20px !important;
+            border-radius: 30px !important;
+            font-weight: 600 !important;
+            transition: var(--transition-smooth);
+        }
+        
+        .btn-secondary-cta:hover {
+            background: rgba(139, 92, 246, 0.15);
+            transform: translateY(-2px);
+        }
+
+        /* Mobile nav toggle */
+        .mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 22px;
+            cursor: pointer;
+        }
+
+        /* Core container layout */
+        main {
+            flex: 1;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 40px 24px;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Premium glass cards and forms */
+        .glass-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-lg);
+            padding: 30px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transition: var(--transition-smooth);
+        }
+
+        .glass-card:hover {
+            border-color: rgba(139, 92, 246, 0.25);
+            box-shadow: 0 12px 40px rgba(139, 92, 246, 0.1);
+        }
+
+        /* Premium Forms */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .form-input, .form-textarea {
+            width: 100%;
+            background: rgba(11, 13, 25, 0.5);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-sm);
+            padding: 12px 16px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 15px;
+            transition: var(--transition-smooth);
+        }
+
+        .form-input:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+            background: rgba(11, 13, 25, 0.8);
+        }
+
+        /* Footer styling */
+        footer {
+            margin-top: auto;
+            border-top: 1px solid var(--glass-border);
+            background: rgba(7, 8, 16, 0.8);
+            padding: 40px 24px 20px;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .footer-text {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .footer-logo {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 18px;
+            background: linear-gradient(135deg, #fff 0%, var(--primary-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            transition: var(--transition-smooth);
+        }
+
+        .footer-links a:hover {
+            color: #fff;
+        }
+
+        /* Badges & Indicators */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-primary {
+            background: rgba(139, 92, 246, 0.15);
+            color: var(--primary-light);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .badge-accent {
+            background: rgba(20, 184, 166, 0.15);
+            color: var(--accent-light);
+            border: 1px solid rgba(20, 184, 166, 0.3);
+        }
+
+        /* Responsive Media Queries */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+                flex-direction: column;
+                position: absolute;
+                top: 70px;
+                left: 0;
+                width: 100%;
+                background: var(--bg-color);
+                border-bottom: 1px solid var(--glass-border);
+                padding: 24px;
+                gap: 16px;
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .mobile-toggle {
+                display: block;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="ambient-glow-1"></div>
+    <div class="ambient-glow-2"></div>
+
+    <header>
+        <div class="nav-container">
+            <a href="{% url 'ats:home' %}" class="logo">
+                <i class="fa-solid fa-feather-pointed"></i>
+                SecurATS
+            </a>
+            
+            <button class="mobile-toggle" id="menuToggle">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            
+            <ul class="nav-links" id="navLinks">
+                {% if nav_pages %}
+                    {% for p in nav_pages %}
+                        <li class="nav-item {% if slug == p.slug %}active{% endif %}">
+                            <a href="{% if p.slug == 'home' %}{% url 'ats:home' %}{% else %}/pages/{{ p.slug }}/{% endif %}">
+                                {{ p.navLabel|default:p.title }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                {% else %}
+                    <!-- Dynamic fallback links if no seeded pages found yet -->
+                    <li class="nav-item {% if slug == 'home' %}active{% endif %}"><a href="{% url 'ats:home' %}">Startseite</a></li>
+                {% endif %}
+                
+                <li class="nav-item {% if slug == 'jobs' %}active{% endif %}"><a href="{% url 'ats:job_list' %}">Stellenbörse</a></li>
+                <li class="nav-item {% if slug == 'sap-sf' %}active{% endif %}"><a href="{% url 'ats:sap_sf_mapper' %}">SAP Integration</a></li>
+                
+                <!-- Premium Recruiter Board Shortcut -->
+                <li class="nav-item">
+                    <a href="{% url 'ats:dashboard' %}" class="btn-secondary-cta">
+                        <i class="fa-solid fa-lock-open" style="margin-right: 6px; font-size: 13px;"></i>Recruiter ATS
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div>
+                <span class="footer-logo">SecurATS</span>
+                <p class="footer-text" style="margin-top: 6px;">Datensouveräne Recruiting-Technologie der nächsten Generation.</p>
+            </div>
+            <div class="footer-links">
+                <a href="{% url 'ats:home' %}">Startseite</a>
+                <a href="{% url 'ats:job_list' %}">Stellenangebote</a>
+                <a href="{% url 'ats:dashboard' %}">ATS-Dashboard</a>
+            </div>
+            <p class="footer-text">© 2026 SecurATS GmbH. Alle Rechte vorbehalten. | DSGVO & ISO 27001 Konform.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Interactive Mobile Navbar Toggle
+        const menuToggle = document.getElementById('menuToggle');
+        const navLinks = document.getElementById('navLinks');
+        
+        if (menuToggle && navLinks) {
+            menuToggle.addEventListener('click', () => {
+                navLinks.classList.toggle('active');
+                const icon = menuToggle.querySelector('i');
+                if (navLinks.classList.contains('active')) {
+                    icon.classList.replace('fa-bars', 'fa-xmark');
+                } else {
+                    icon.classList.replace('fa-xmark', 'fa-bars');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

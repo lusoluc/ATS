@@ -1,0 +1,317 @@
+{% extends 'base.html' %}
+
+{% block title %}SecurATS - Ihre Karriere bei uns{% endblock %}
+
+{% block content %}
+<style>
+    /* Hero styling with glassmorphism and large headings */
+    .hero-section {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 40px;
+        align-items: center;
+        padding: 60px 0;
+    }
+
+    .hero-content h1 {
+        font-size: 52px;
+        font-weight: 800;
+        line-height: 1.1;
+        margin-bottom: 24px;
+        background: linear-gradient(135deg, #ffffff 0%, var(--primary-light) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .hero-content p {
+        font-size: 18px;
+        color: var(--text-muted);
+        margin-bottom: 32px;
+        max-width: 540px;
+    }
+
+    .hero-actions {
+        display: flex;
+        gap: 16px;
+    }
+
+    .kununu-card {
+        background: rgba(139, 92, 246, 0.1);
+        border: 1px solid rgba(139, 92, 246, 0.2);
+        border-radius: var(--border-radius-lg);
+        padding: 24px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        animation: float 4s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+
+    .kununu-score {
+        font-family: 'Outfit', sans-serif;
+        font-size: 42px;
+        font-weight: 800;
+        color: #fff;
+        margin: 10px 0;
+        background: linear-gradient(135deg, #14b8a6 0%, #2dd4bf 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .kununu-stars {
+        color: #fbbf24;
+        font-size: 18px;
+        margin-bottom: 6px;
+    }
+
+    /* Benefits Grid Section */
+    .section-title {
+        text-align: center;
+        font-size: 36px;
+        margin: 80px 0 40px;
+        position: relative;
+    }
+
+    .section-title::after {
+        content: '';
+        display: block;
+        width: 60px;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+        margin: 12px auto 0;
+        border-radius: 2px;
+    }
+
+    .benefits-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 24px;
+        margin-bottom: 60px;
+    }
+
+    .benefit-card {
+        background: rgba(23, 27, 56, 0.4);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-md);
+        padding: 24px;
+        transition: var(--transition-smooth);
+        text-align: center;
+    }
+
+    .benefit-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(20, 184, 166, 0.4);
+        box-shadow: 0 10px 25px rgba(20, 184, 166, 0.05);
+    }
+
+    .benefit-icon {
+        font-size: 32px;
+        margin-bottom: 16px;
+        display: inline-block;
+    }
+
+    .benefit-card h3 {
+        font-size: 18px;
+        margin-bottom: 10px;
+        color: #fff;
+    }
+
+    .benefit-card p {
+        font-size: 14px;
+        color: var(--text-muted);
+    }
+
+    /* Featured Jobs Section */
+    .featured-jobs-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        margin-bottom: 80px;
+    }
+
+    .job-strip {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-md);
+        padding: 20px 28px;
+        transition: var(--transition-smooth);
+    }
+
+    .job-strip:hover {
+        border-color: rgba(139, 92, 246, 0.3);
+        transform: translateX(5px);
+    }
+
+    .job-strip-details h3 {
+        font-size: 20px;
+        color: #fff;
+        margin-bottom: 6px;
+    }
+
+    .job-meta-pills {
+        display: flex;
+        gap: 12px;
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    .job-meta-pill {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .job-meta-pill i {
+        color: var(--accent);
+    }
+
+    /* CMS Content styling */
+    .cms-container {
+        line-height: 1.8;
+        font-size: 16px;
+        color: #d1d5db;
+        margin: 60px 0;
+    }
+
+    .cms-container h1, .cms-container h2 {
+        color: #fff;
+        margin-bottom: 16px;
+        margin-top: 24px;
+    }
+
+    .cms-container p {
+        margin-bottom: 16px;
+    }
+
+    @media (max-width: 900px) {
+        .hero-section {
+            grid-template-columns: 1fr;
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        .hero-content p {
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero-actions {
+            justify-content: center;
+        }
+
+        .job-strip {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+        }
+    }
+</style>
+
+<!-- 1. Hero Section -->
+<section class="hero-section">
+    <div class="hero-content">
+        <span class="badge badge-accent" style="margin-bottom: 16px;">
+            <i class="fa-solid fa-sparkles"></i> Karrieremöglichkeiten
+        </span>
+        <h1>{{ home_page.title|default:"Gestalten Sie das Recruiting der Zukunft" }}</h1>
+        <p>{{ home_page.content|default:"Werden Sie Teil eines innovativen Teams bei SecurATS. Wir verbinden modernste HR-Technologien mit kompromissloser Datensicherheit und erstklassigem Design." }}</p>
+        
+        <div class="hero-actions">
+            <a href="{% url 'ats:job_list' %}" class="btn-cta">
+                <i class="fa-solid fa-briefcase" style="margin-right: 8px;"></i> Stellenangebote ansehen
+            </a>
+            <a href="#benefits" class="btn-secondary-cta">Unsere Benefits</a>
+        </div>
+    </div>
+    
+    <div>
+        <div class="kununu-card">
+            <img src="https://www.kununu.com/favicon.ico" alt="kununu" style="width: 24px; opacity: 0.8; margin-bottom: 8px;">
+            <div style="font-size: 14px; font-weight: 600; text-transform: uppercase; color: var(--text-muted);">kununu Top Company</div>
+            <div class="kununu-score">4.8 / 5</div>
+            <div class="kununu-stars">
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star-half-stroke"></i>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted);">Bester Arbeitgeber im IT-Sektor 2026</p>
+        </div>
+    </div>
+</section>
+
+<!-- 2. Dynamischer CMS Block -->
+{% if home_page %}
+<section class="cms-container glass-card">
+    <div style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); font-weight: 700; margin-bottom: 8px;">Über Uns</div>
+    <h2>Datensouveränität & Innovation</h2>
+    <div style="margin-top: 16px;">
+        {{ home_page.content|linebreaks }}
+    </div>
+</section>
+{% endif %}
+
+<!-- 3. Benefits Grid -->
+<section id="benefits">
+    <h2 class="section-title">Ihre Vorteile bei SecurATS</h2>
+    <div class="benefits-grid">
+        <div class="benefit-card">
+            <span class="benefit-icon">🏠</span>
+            <h3>Mobiles Arbeiten</h3>
+            <p>Arbeiten Sie flexibel von zu Hause aus oder nutzen Sie unsere top ausgestatteten Offices in Berlin & München.</p>
+        </div>
+        <div class="benefit-card">
+            <span class="benefit-icon">🚇</span>
+            <h3>Mobilitätsticket</h3>
+            <p>Wir übernehmen Ihr ÖPNV-Ticket vollständig, um Ihren Arbeitsweg entspannt und umweltschonend zu gestalten.</p>
+        </div>
+        <div class="benefit-card">
+            <span class="benefit-icon">📚</span>
+            <h3>Weiterbildungsbudget</h3>
+            <p>2.000 € jährliches Budget für Konferenzen, Fachliteratur und Onlinekurse zur fachlichen Weiterentwicklung.</p>
+        </div>
+        <div class="benefit-card">
+            <span class="benefit-icon">💻</span>
+            <h3>Modernste Hardware</h3>
+            <p>Freie Auswahl Ihrer IT-Ausstattung. Ob MacBook Pro oder Lenovo ThinkPad – Sie entscheiden selbst.</p>
+        </div>
+    </div>
+</section>
+
+<!-- 4. Featured Jobs -->
+{% if featured_jobs %}
+<section>
+    <h2 class="section-title">Aktuelle Job-Highlights</h2>
+    <div class="featured-jobs-list">
+        {% for job in featured_jobs %}
+            <div class="job-strip">
+                <div class="job-strip-details">
+                    <h3>{{ job.title }}</h3>
+                    <div class="job-meta-pills">
+                        <span class="job-meta-pill"><i class="fa-solid fa-location-dot"></i> {{ job.location.name }}</span>
+                        {% if job.department %}
+                            <span class="job-meta-pill"><i class="fa-solid fa-users"></i> {{ job.department.name }}</span>
+                        {% endif %}
+                        <span class="job-meta-pill"><i class="fa-solid fa-clock"></i> Vollzeit</span>
+                    </div>
+                </div>
+                <div>
+                    <a href="{% url 'ats:job_detail' job.id %}" class="btn-secondary-cta">Details & Bewerbung</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% endblock %}

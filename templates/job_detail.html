@@ -1,0 +1,315 @@
+{% extends 'base.html' %}
+
+{% block title %}SecurATS - {{ job.title }}{% endblock %}
+
+{% block content %}
+<style>
+    .detail-layout {
+        display: grid;
+        grid-template-columns: 1.4fr 0.6fr;
+        gap: 40px;
+        align-items: start;
+        margin-top: 20px;
+    }
+
+    /* Left Details Section */
+    .detail-main {
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+    }
+
+    .detail-header {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-lg);
+        padding: 40px;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+
+    .detail-title {
+        font-size: 36px;
+        color: #fff;
+        margin-top: 12px;
+        margin-bottom: 20px;
+        line-height: 1.2;
+    }
+
+    .detail-meta-pills {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .detail-block {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-lg);
+        padding: 30px 40px;
+    }
+
+    .detail-block h2 {
+        font-size: 24px;
+        margin-bottom: 20px;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .detail-block h2 i {
+        color: var(--primary-light);
+    }
+
+    .detail-list {
+        list-style: none;
+    }
+
+    .detail-list-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 16px;
+        font-size: 15px;
+        color: #d1d5db;
+    }
+
+    .detail-list-item i {
+        color: var(--accent);
+        margin-top: 4px;
+        font-size: 16px;
+    }
+
+    /* Right Sidebar Section */
+    .detail-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+        position: sticky;
+        top: 100px;
+    }
+
+    .cta-card {
+        background: linear-gradient(135deg, rgba(23, 27, 56, 0.9) 0%, rgba(11, 13, 25, 0.9) 100%);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-lg);
+        padding: 30px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(139, 92, 246, 0.1);
+    }
+
+    .btn-apply-now {
+        width: 100%;
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+        color: #fff;
+        border: none;
+        padding: 16px 28px;
+        border-radius: 30px;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        transition: var(--transition-smooth);
+        box-shadow: 0 4px 15px rgba(20, 184, 166, 0.3);
+        text-decoration: none;
+    }
+
+    .btn-apply-now:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(20, 184, 166, 0.45);
+        background: linear-gradient(135deg, var(--accent-light) 0%, #3fead6 100%);
+    }
+
+    /* Contact Card */
+    .contact-card {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-lg);
+        padding: 30px;
+        text-align: center;
+    }
+
+    .contact-avatar {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin: 0 auto 16px;
+        border: 3px solid var(--primary);
+        box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+    }
+
+    .contact-name {
+        font-size: 20px;
+        color: #fff;
+        margin-bottom: 4px;
+    }
+
+    .contact-title {
+        color: var(--text-muted);
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 16px;
+    }
+
+    .contact-quote {
+        font-style: italic;
+        color: #d1d5db;
+        font-size: 14px;
+        background: rgba(255, 255, 255, 0.03);
+        padding: 12px 16px;
+        border-radius: var(--border-radius-sm);
+        margin-bottom: 20px;
+        position: relative;
+    }
+
+    .contact-info {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        text-align: left;
+        font-size: 14px;
+    }
+
+    .contact-info-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--text-muted);
+    }
+
+    .contact-info-item i {
+        color: var(--accent);
+        width: 16px;
+    }
+
+    @media (max-width: 900px) {
+        .detail-layout {
+            grid-template-columns: 1fr;
+        }
+        
+        .detail-sidebar {
+            position: static;
+        }
+    }
+</style>
+
+<div class="detail-layout">
+    <!-- Main Content Details -->
+    <div class="detail-main">
+        <div class="detail-header">
+            <a href="{% url 'ats:job_list' %}" style="color: var(--text-muted); text-decoration: none; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 20px;">
+                <i class="fa-solid fa-arrow-left"></i> Zurück zur Übersicht
+            </a>
+            <h1 class="detail-title">{{ job.title }}</h1>
+            <div class="detail-meta-pills">
+                <span class="badge badge-primary"><i class="fa-solid fa-location-dot" style="margin-right: 6px;"></i> {{ job.location.name }}</span>
+                {% if job.department %}
+                    <span class="badge badge-accent"><i class="fa-solid fa-users" style="margin-right: 6px;"></i> {{ job.department.name }}</span>
+                {% endif %}
+                <span class="badge badge-primary"><i class="fa-solid fa-clock" style="margin-right: 6px;"></i> Vollzeit</span>
+            </div>
+        </div>
+
+        {% if job.description %}
+        <div class="detail-block">
+            <h2><i class="fa-solid fa-align-left"></i> Stellenbeschreibung</h2>
+            <p style="color: #d1d5db; font-size: 15px; line-height: 1.8;">{{ job.description|linebreaksbr }}</p>
+        </div>
+        {% endif %}
+
+        {% if tasks %}
+        <div class="detail-block">
+            <h2><i class="fa-solid fa-circle-check"></i> Ihre Aufgaben bei uns</h2>
+            <ul class="detail-list">
+                {% for task in tasks %}
+                    <li class="detail-list-item">
+                        <i class="fa-solid fa-angle-right"></i>
+                        <span>{{ task }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if requirements %}
+        <div class="detail-block">
+            <h2><i class="fa-solid fa-graduation-cap"></i> Das bringen Sie mit</h2>
+            <ul class="detail-list">
+                {% for req in requirements %}
+                    <li class="detail-list-item">
+                        <i class="fa-solid fa-angle-right"></i>
+                        <span>{{ req }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if job.benefits.exists %}
+        <div class="detail-block">
+            <h2><i class="fa-solid fa-gift"></i> Freuen Sie sich auf</h2>
+            <ul class="detail-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+                {% for benefit in job.benefits.all %}
+                    <li class="detail-list-item" style="margin-bottom: 0;">
+                        <span style="font-size: 22px; margin-right: 8px;">{{ benefit.icon|default:"🎁" }}</span>
+                        <div>
+                            <strong style="color: #fff; display: block;">{{ benefit.name }}</strong>
+                            <span style="font-size: 13px; color: var(--text-muted);">{{ benefit.description }}</span>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sidebar Sticky Content -->
+    <div class="detail-sidebar">
+        <!-- Application Call to Action -->
+        <div class="cta-card">
+            <h3 style="color: #fff; margin-bottom: 12px; font-size: 20px;">Bewerbung in 2 Minuten</h3>
+            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 24px;">Keine langen Registrierungen. Einfach Lebenslauf hochladen und absenden.</p>
+            <a href="{% url 'ats:bewerben' job.id %}" class="btn-apply-now">
+                <i class="fa-solid fa-bolt"></i> One-Click bewerben
+            </a>
+        </div>
+
+        <!-- Contact Person Card -->
+        {% if job.contactPerson %}
+            <div class="contact-card">
+                <h3 style="color: #fff; margin-bottom: 16px; font-size: 18px;">Ihr Ansprechpartner</h3>
+                {% if job.contactPerson.photoUrl %}
+                    <img src="{{ job.contactPerson.photoUrl }}" alt="{{ job.contactPerson.firstName }}" class="contact-avatar">
+                {% endif %}
+                <h4 class="contact-name">{{ job.contactPerson.firstName }} {{ job.contactPerson.lastName }}</h4>
+                <div class="contact-title">{{ job.contactPerson.globalJobTitle|default:"Recruiter" }}</div>
+                
+                {% if job.contactPerson.quote %}
+                    <div class="contact-quote">
+                        "{{ job.contactPerson.quote }}"
+                    </div>
+                {% endif %}
+
+                <div class="contact-info">
+                    <div class="contact-info-item">
+                        <i class="fa-solid fa-envelope"></i>
+                        <span>{{ job.contactPerson.email }}</span>
+                    </div>
+                    {% if job.contactPerson.phone %}
+                        <div class="contact-info-item">
+                            <i class="fa-solid fa-phone"></i>
+                            <span>{{ job.contactPerson.phone }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

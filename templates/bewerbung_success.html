@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Bewerbung erfolgreich - SecurATS{% endblock %}
+
+{% block content %}
+<style>
+    .success-card {
+        max-width: 600px;
+        margin: 50px auto;
+        text-align: center;
+        padding: 50px 40px;
+    }
+
+    .success-icon-wrapper {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: rgba(20, 184, 166, 0.15);
+        color: var(--accent-light);
+        font-size: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 24px;
+        border: 2px solid var(--accent);
+        box-shadow: 0 0 20px rgba(20, 184, 166, 0.2);
+        animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    @keyframes scaleIn {
+        from { transform: scale(0); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+
+    .success-title {
+        font-size: 28px;
+        color: #fff;
+        margin-bottom: 16px;
+    }
+
+    .success-desc {
+        color: var(--text-muted);
+        font-size: 15px;
+        margin-bottom: 30px;
+        line-height: 1.6;
+    }
+
+    .success-actions {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+    }
+</style>
+
+<div class="success-card glass-card">
+    <div class="success-icon-wrapper">
+        <i class="fa-solid fa-check"></i>
+    </div>
+    
+    <h1 class="success-title">Bewerbung eingegangen!</h1>
+    <p class="success-desc">
+        Vielen Dank für Ihre Bewerbung auf die Position <strong>{{ job.title }}</strong> bei SecurATS. 
+        Ihre Daten wurden sicher verschlüsselt und erfolgreich in unser System übertragen. 
+        Unser Recruiting-Team wird Ihre Unterlagen schnellstmöglich prüfen. Sie erhalten in Kürze eine Bestätigung per E-Mail.
+    </p>
+
+    <div class="success-actions">
+        <a href="{% url 'ats:job_list' %}" class="btn-cta">
+            <i class="fa-solid fa-briefcase"></i> Weitere Jobs ansehen
+        </a>
+        <a href="{% url 'ats:home' %}" class="btn-secondary-cta">Zur Startseite</a>
+    </div>
+</div>
+{% endblock %}

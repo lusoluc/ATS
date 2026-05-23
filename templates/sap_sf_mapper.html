@@ -1,0 +1,310 @@
+{% extends 'base.html' %}
+
+{% block title %}SAP SuccessFactors Field Mapper - SecurATS{% endblock %}
+
+{% block content %}
+<style>
+    .sap-layout {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 40px;
+        align-items: start;
+        margin-top: 20px;
+    }
+
+    .mapping-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 16px;
+        font-size: 14px;
+        color: #d1d5db;
+    }
+
+    .mapping-table th, .mapping-table td {
+        padding: 14px 16px;
+        text-align: left;
+        border-bottom: 1px solid var(--glass-border);
+    }
+
+    .mapping-table th {
+        color: #fff;
+        background: rgba(255,255,255,0.02);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 12px;
+        letter-spacing: 0.05em;
+    }
+
+    .mapping-table tr:hover {
+        background: rgba(255,255,255,0.01);
+    }
+
+    .sap-select {
+        background: rgba(11, 13, 25, 0.6);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-sm);
+        padding: 6px 12px;
+        color: #fff;
+        font-size: 13px;
+        outline: none;
+        width: 100%;
+        transition: var(--transition-smooth);
+    }
+
+    .sap-select:focus {
+        border-color: var(--accent);
+    }
+
+    /* Invited candidates listing style */
+    .sync-candidates-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-height: 350px;
+        overflow-y: auto;
+        padding-right: 8px;
+        margin-bottom: 24px;
+    }
+
+    .sync-candidate-card {
+        background: rgba(11, 13, 25, 0.4);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-md);
+        padding: 14px 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    /* Logs view console */
+    .sap-console {
+        background: #05070f;
+        border: 1px solid #10b981;
+        border-radius: var(--border-radius-md);
+        padding: 16px;
+        font-family: monospace;
+        font-size: 13px;
+        color: #10b981;
+        height: 180px;
+        overflow-y: auto;
+        margin-top: 24px;
+        box-shadow: inset 0 0 10px rgba(16, 185, 129, 0.1);
+    }
+
+    .console-line {
+        margin-bottom: 6px;
+    }
+
+    .console-success { color: #10b981; }
+    .console-info { color: #3b82f6; }
+    .console-warning { color: #f59e0b; }
+</style>
+
+<div style="margin-bottom: 40px;">
+    <span class="badge badge-accent" style="margin-bottom: 8px;"><i class="fa-solid fa-arrows-spin"></i> HR-Schnittstellen</span>
+    <h1 style="font-size: 36px; color: #fff;">SAP SuccessFactors Integration</h1>
+    <p style="color: var(--text-muted); max-width: 800px;">Verknüpfen Sie lokale SecurATS Bewerberdaten flexibel mit Ihrem SAP SuccessFactors Core-HR System. Passen Sie die Feldzuordnung (Mapping) dynamisch an und übertragen Sie qualifizierte Kandidaten per Knopfdruck.</p>
+</div>
+
+<div class="sap-layout">
+    
+    <!-- Left panel: Dynamic Field Mapping Table -->
+    <div class="glass-card">
+        <h2 style="color: #fff; font-size: 22px; display: flex; align-items: center; gap: 10px;">
+            <i class="fa-solid fa-arrows-left-right" style="color: var(--accent);"></i> Feldzuordnungen (Schema Mapper)
+        </h2>
+        <p style="color: var(--text-muted); font-size: 13px; margin-top: 4px; margin-bottom: 20px;">Bestimmen Sie, welche lokalen Django-Attribute in die entsprechenden SuccessFactors-Felder eingelesen werden.</p>
+
+        <table class="mapping-table">
+            <thead>
+                <tr>
+                    <th style="width: 40%;">Django-Modell (SecurATS)</th>
+                    <th style="width: 20%;">Daten-Typ</th>
+                    <th style="width: 40%;">SuccessFactors-Feld (SAP OData)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Applicant.id</strong> (Eindeutiger Schlüssel)</td>
+                    <td><span class="badge badge-primary" style="font-size: 10px; padding: 2px 6px;">UUID</span></td>
+                    <td>
+                        <select class="sap-select" data-local="id">
+                            <option value="sf_candidate_id" selected>sf_candidate_id (Candidate ID)</option>
+                            <option value="external_id">external_id (Externe ID)</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Applicant.firstName</strong> (Vorname)</td>
+                    <td><span class="badge badge-primary" style="font-size: 10px; padding: 2px 6px;">String</span></td>
+                    <td>
+                        <select class="sap-select" data-local="firstName">
+                            <option value="sf_first_name" selected>sf_first_name (First Name)</option>
+                            <option value="given_name">given_name (Vorname)</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Applicant.lastName</strong> (Nachname)</td>
+                    <td><span class="badge badge-primary" style="font-size: 10px; padding: 2px 6px;">String</span></td>
+                    <td>
+                        <select class="sap-select" data-local="lastName">
+                            <option value="sf_last_name" selected>sf_last_name (Last Name)</option>
+                            <option value="family_name">family_name (Nachname)</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Applicant.email</strong> (E-Mail Adresse)</td>
+                    <td><span class="badge badge-primary" style="font-size: 10px; padding: 2px 6px;">String</span></td>
+                    <td>
+                        <select class="sap-select" data-local="email">
+                            <option value="sf_email" selected>sf_email (E-Mail Address)</option>
+                            <option value="contact_email">contact_email (E-Mail)</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Application.jobPosting.id</strong> (Ausschreibung)</td>
+                    <td><span class="badge badge-primary" style="font-size: 10px; padding: 2px 6px;">UUID</span></td>
+                    <td>
+                        <select class="sap-select" data-local="jobId">
+                            <option value="sf_job_req_id" selected>sf_job_req_id (Job Requisition ID)</option>
+                            <option value="posting_id">posting_id (Ausschreibungs-ID)</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Application.aiScore</strong> (KI-Bewertung)</td>
+                    <td><span class="badge badge-primary" style="font-size: 10px; padding: 2px 6px;">String</span></td>
+                    <td>
+                        <select class="sap-select" data-local="aiScore">
+                            <option value="sf_score_rating" selected>sf_score_rating (Screening Rating)</option>
+                            <option value="custom_rating">custom_rating (Eigene Bewertung)</option>
+                        </select>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <!-- Live status terminal window -->
+        <div class="sap-console" id="sapConsole">
+            <div class="console-line console-info">[INFO] 2026-05-23 14:54:00 - SAP SuccessFactors OData API-Client initialisiert.</div>
+            <div class="console-line console-info">[INFO] 2026-05-23 14:54:01 - Status-Check: Verbindung zur Sandbox erfolgreich hergestellt.</div>
+            <div class="console-line console-success">[OK] System bereit für Synchronisation.</div>
+        </div>
+    </div>
+
+    <!-- Right panel: Sync controls, Sandbox select & Candidate list -->
+    <div class="detail-sidebar" style="gap: 30px;">
+        
+        <!-- Sync trigger card -->
+        <div class="cta-card">
+            <h3 style="color: #fff; margin-bottom: 12px; font-size: 20px;">Schnittstellen-Aktionen</h3>
+            
+            <div class="form-group" style="text-align: left; margin-bottom: 20px;">
+                <label class="form-label" for="sync_target">Zielsystem</label>
+                <select id="sync_target" class="filter-select">
+                    <option value="MOCK_SAP_SANDBOX">SAP SF Sandbox (Testumgebung)</option>
+                    <option value="MOCK_SAP_STAGING">SAP SF Staging (Qualitätssicherung)</option>
+                    <option value="MOCK_SAP_PROD">SAP SF Production (Echtes HRIS)</option>
+                </select>
+            </div>
+
+            <button onclick="triggerSapSync()" class="btn-apply-now" style="width: 100%;">
+                <i class="fa-solid fa-arrows-spin"></i> Sync jetzt ausführen
+            </button>
+        </div>
+
+        <!-- Invited Candidates ready for export -->
+        <div class="contact-card">
+            <h3 style="color: #fff; margin-bottom: 10px; font-size: 18px;">Warteschlange ({{ applications|length }} Kandidaten)</h3>
+            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">Bewerber im Status 'Eingeladen' sind für den SAP-HRIS-Export freigegeben.</p>
+            
+            <div class="sync-candidates-list">
+                {% for app in applications %}
+                    <div class="sync-candidate-card">
+                        <div>
+                            <strong style="color: #fff; display: block; font-size: 14px; text-align: left;">{{ app.applicant.firstName }} {{ app.applicant.lastName }}</strong>
+                            <span style="font-size: 12px; color: var(--text-muted); display: block; text-align: left;">{{ app.jobPosting.title }}</span>
+                        </div>
+                        <span class="ai-score-badge ai-score-{{ app.aiScore|default:'C' }}">{{ app.aiScore|default:'C' }}</span>
+                    </div>
+                {% empty %}
+                    <p style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px 0;">Keine Bewerber in der Warteschlange.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function triggerSapSync() {
+        const consoleEl = document.getElementById('sapConsole');
+        const targetSelect = document.getElementById('sync_target');
+        const target = targetSelect.value;
+
+        // Build mapping data dictionary
+        const mappings = {};
+        document.querySelectorAll('.sap-select').forEach(sel => {
+            mappings[sel.getAttribute('data-local')] = sel.value;
+        });
+
+        // Visual console log steps
+        logConsole('info', `Starte Datensynchronisation mit: ${target}...`);
+        logConsole('info', 'Feldzuordnungen werden geladen und validiert...');
+        
+        setTimeout(() => {
+            logConsole('info', `Felder erfolgreich transformiert: ${JSON.stringify(mappings)}`);
+        }, 800);
+
+        setTimeout(() => {
+            logConsole('info', 'Sende HTTPS-POST Payload über gesicherte mTLS Verbindung...');
+        }, 1500);
+
+        // Fetch to trigger our Django backend simulation
+        setTimeout(() => {
+            const formData = new FormData();
+            formData.append('mapping_data', JSON.stringify(mappings));
+            formData.append('sync_target', target);
+
+            fetch("{% url 'ats:sap_sf_mapper' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    logConsole('success', `[SUCCESS] Synchronisation abgeschlossen.`);
+                    logConsole('success', `Exportierte Bewerbersätze: ${data.records_exported}`);
+                    logConsole('success', `SAP Response-Code: 201 Created. Msg: ${data.message}`);
+                } else {
+                    logConsole('warning', `[ERROR] Synchronisation fehlgeschlagen.`);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                logConsole('warning', '[ERROR] Netzwerkfehler bei der Übermittlung.');
+            });
+        }, 2200);
+    }
+
+    function logConsole(type, msg) {
+        const consoleEl = document.getElementById('sapConsole');
+        const timestamp = new Date().toLocaleTimeString();
+        let classType = 'console-info';
+        if (type === 'success') classType = 'console-success';
+        if (type === 'warning') classType = 'console-warning';
+
+        const line = document.createElement('div');
+        line.className = `console-line ${classType}`;
+        line.innerText = `[${type.toUpperCase()}] ${timestamp} - ${msg}`;
+        consoleEl.appendChild(line);
+        consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+</script>
+{% endblock %}

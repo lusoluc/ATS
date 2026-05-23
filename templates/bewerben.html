@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+
+{% block title %}SecurATS - Bewerben für {{ job.title }}{% endblock %}
+
+{% block content %}
+<style>
+    .apply-container {
+        max-width: 700px;
+        margin: 0 auto;
+    }
+
+    .apply-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .apply-header h1 {
+        font-size: 32px;
+        color: #fff;
+        margin-bottom: 8px;
+    }
+
+    .apply-header p {
+        color: var(--text-muted);
+        font-size: 15px;
+    }
+
+    /* CV Upload Area */
+    .file-upload-wrapper {
+        border: 2px dashed var(--glass-border);
+        border-radius: var(--border-radius-md);
+        padding: 30px 20px;
+        text-align: center;
+        background: rgba(11, 13, 25, 0.4);
+        cursor: pointer;
+        transition: var(--transition-smooth);
+        margin-bottom: 24px;
+        position: relative;
+    }
+
+    .file-upload-wrapper:hover, .file-upload-wrapper.dragover {
+        border-color: var(--primary);
+        background: rgba(139, 92, 246, 0.05);
+    }
+
+    .file-upload-input {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .file-upload-icon {
+        font-size: 36px;
+        color: var(--primary-light);
+        margin-bottom: 12px;
+    }
+
+    .file-upload-text {
+        font-weight: 500;
+        font-size: 14px;
+        margin-bottom: 4px;
+    }
+
+    .file-upload-info {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    /* GDPR Box */
+    .checkbox-group {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        margin-bottom: 20px;
+    }
+
+    .checkbox-input {
+        margin-top: 4px;
+        width: 18px;
+        height: 18px;
+        accent-color: var(--accent);
+        cursor: pointer;
+    }
+
+    .checkbox-label {
+        font-size: 13px;
+        color: #d1d5db;
+        line-height: 1.5;
+        cursor: pointer;
+    }
+
+    .checkbox-label a {
+        color: var(--accent-light);
+        text-decoration: none;
+    }
+
+    .checkbox-label a:hover {
+        text-decoration: underline;
+    }
+
+    /* Screening questions block */
+    .screening-block {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-md);
+        padding: 24px;
+        margin-bottom: 24px;
+    }
+
+    .screening-block h3 {
+        font-size: 18px;
+        color: #fff;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .screening-block h3 i {
+        color: var(--accent);
+    }
+
+    .screening-question-item {
+        margin-bottom: 16px;
+    }
+
+    .screening-question-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .screening-question-label {
+        display: block;
+        font-size: 14px;
+        color: #e5e7eb;
+        margin-bottom: 8px;
+        font-weight: 500;
+    }
+
+    .screening-select {
+        width: 100%;
+        background: rgba(11, 13, 25, 0.6);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-sm);
+        padding: 10px 14px;
+        color: #fff;
+        font-size: 14px;
+        outline: none;
+        transition: var(--transition-smooth);
+    }
+
+    .screening-select:focus {
+        border-color: var(--primary);
+    }
+</style>
+
+<div class="apply-container">
+    <div class="apply-header">
+        <span class="badge badge-accent" style="margin-bottom: 12px;"><i class="fa-solid fa-bolt"></i> One-Click Bewerbung</span>
+        <h1>Jetzt bewerben</h1>
+        <p>für die Position: <strong style="color: #fff;">{{ job.title }}</strong></p>
+    </div>
+
+    <form method="POST" action="{% url 'ats:bewerben' job.id %}" enctype="multipart/form-data" class="glass-card">
+        {% csrf_token %}
+
+        <!-- BOT HONEYPOT SPAM PROTECTION (Hidden from real users, bots will fill it) -->
+        <div style="display: none;">
+            <label for="website_url">Lassen Sie dieses Feld leer</label>
+            <input type="text" id="website_url" name="website_url">
+        </div>
+
+        <!-- 1. Lebenslauf Upload -->
+        <div class="form-group">
+            <label class="form-label">Lebenslauf hochladen *</label>
+            <div class="file-upload-wrapper" id="uploadWrapper">
+                <input type="file" id="cv_file" name="cv_file" class="file-upload-input" accept=".pdf" required>
+                <i class="fa-solid fa-cloud-arrow-up file-upload-icon"></i>
+                <div class="file-upload-text" id="uploadText">Klicken oder Lebenslauf hierhin ziehen</div>
+                <div class="file-upload-info">Unterstützte Formate: PDF (Max. 5 MB)</div>
+            </div>
+        </div>
+
+        <!-- 2. Stammdaten -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+                <label class="form-label" for="first_name">Vorname *</label>
+                <input type="text" id="first_name" name="first_name" class="form-input" required placeholder="z. B. Max">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="last_name">Nachname *</label>
+                <input type="text" id="last_name" name="last_name" class="form-input" required placeholder="z. B. Mustermann">
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+                <label class="form-label" for="email">E-Mail Adresse *</label>
+                <input type="email" id="email" name="email" class="form-input" required placeholder="z. B. max.mustermann@web.de">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="phone">Telefonnummer</label>
+                <input type="tel" id="phone" name="phone" class="form-input" placeholder="z. B. +49 170 1234567">
+            </div>
+        </div>
+
+        <!-- 3. Dynamic Screening Questions -->
+        {% if screening_questions %}
+            <div class="screening-block">
+                <h3><i class="fa-solid fa-clipboard-question"></i> Ergänzende K.O.-Fragen</h3>
+                {% for q in screening_questions %}
+                    <div class="screening-question-item">
+                        <label class="screening-question-label" for="question_{{ q.id }}">
+                            {{ q.question }} {% if q.isMandatory %}*{% endif %}
+                        </label>
+                        <select id="question_{{ q.id }}" name="question_{{ q.id }}" class="screening-select" {% if q.isMandatory %}required{% endif %}>
+                            <option value="">Bitte auswählen...</option>
+                            <option value="YES">Ja</option>
+                            <option value="NO">Nein</option>
+                        </select>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- 4. Anschreiben -->
+        <div class="form-group">
+            <label class="form-label" for="cover_letter">Kurzes Anschreiben / Nachricht (Optional)</label>
+            <textarea id="cover_letter" name="cover_letter" rows="4" class="form-textarea" placeholder="Erzählen Sie uns kurz, warum Sie perfekt auf diese Stelle passen..."></textarea>
+        </div>
+
+        <!-- 5. GDPR & Consent Checks -->
+        <div class="checkbox-group">
+            <input type="checkbox" id="consent_privacy" name="consent_privacy" class="checkbox-input" required>
+            <label for="consent_privacy" class="checkbox-label">
+                Ich stimme der Verarbeitung meiner PII-Bewerberdaten zu und bestätige die <a href="/pages/ueber-uns/" target="_blank">Datenschutzerklärung</a> von SecurATS. *
+            </label>
+        </div>
+
+        <div class="checkbox-group" style="margin-bottom: 30px;">
+            <input type="checkbox" id="consent_pool" name="consent_pool" class="checkbox-input">
+            <label for="consent_pool" class="checkbox-label">
+                <strong>Talent Pool:</strong> Ich möchte für zukünftige Stellenangebote berücksichtigt werden. Meine Daten werden für bis zu 12 Monate gespeichert. (Kann jederzeit widerrufen werden)
+            </label>
+        </div>
+
+        <!-- 6. Submit Button -->
+        <button type="submit" class="btn-apply-now" style="width: 100%;">
+            <i class="fa-solid fa-paper-plane"></i> Bewerbung jetzt absenden
+        </button>
+    </form>
+</div>
+
+<script>
+    // Drag & Drop visual state update for file uploads
+    const fileInput = document.getElementById('cv_file');
+    const uploadWrapper = document.getElementById('uploadWrapper');
+    const uploadText = document.getElementById('uploadText');
+
+    if (fileInput && uploadWrapper) {
+        fileInput.addEventListener('change', (e) => {
+            if (fileInput.files.length > 0) {
+                const fileName = fileInput.files[0].name;
+                uploadText.innerHTML = `<i class="fa-solid fa-file-pdf" style="color: #ef4444; margin-right: 8px;"></i> Ausgewählt: <strong>${fileName}</strong>`;
+                uploadWrapper.style.borderColor = 'var(--accent)';
+                uploadWrapper.style.background = 'rgba(20, 184, 166, 0.05)';
+            }
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadWrapper.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                uploadWrapper.classList.add('dragover');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadWrapper.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                uploadWrapper.classList.remove('dragover');
+            }, false);
+        });
+    }
+</script>
+{% endblock %}

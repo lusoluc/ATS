@@ -166,7 +166,7 @@ free_ports() {
   
   # 4. Lösche explizit bekannte Container-Namen
   echo -e "${YELLOW}🛑 Lösche bekannte Container-Namen...${NC}"
-  docker rm -f securats-frontend securats-backend ats-frontend ats-backend >/dev/null 2>&1 || true
+  docker rm -f securats-django securats-frontend securats-backend ats-frontend ats-backend >/dev/null 2>&1 || true
   
   # 5. Dynamische Erkennung & Entfernung JEDES Containers, der Port 3000 oder 3001 belegen
   echo -e "${YELLOW}🛑 Suche nach weiteren Containern mit Port-Mappings 3000/3001...${NC}"
@@ -302,18 +302,16 @@ find "$OLD_DIR" -name ".env*" | while read -r env_file; do
 done
 
 # 2. Suche nach der SQLite-Datenbank und migriere sie in den neuen shared-Ordner
-# Wir suchen im alten Ordner nach dev.db (kann in frontend/prisma/dev.db oder in shared/dev.db liegen)
-OLD_DB_PATH=""
+# Falls es sich um den allerersten Umstieg handelt, existiert die Datenbank unter frontend/prisma/dev.db (Prisma).
+# Falls es ein Folge-Deployment ist, liegt sie bereits unter shared/dev.db (Django).
 if [ -f "$OLD_DIR/shared/dev.db" ]; then
-  OLD_DB_PATH="$OLD_DIR/shared/dev.db"
+  echo -e "${GREEN}🎯 Gefundene Django-Datenbank: $OLD_DIR/shared/dev.db. Kopiere direkt...${NC}"
+  cp "$OLD_DIR/shared/dev.db" "$LIVE_DIR/shared/dev.db"
+  chmod 666 "$LIVE_DIR/shared/dev.db"
 elif [ -f "$OLD_DIR/frontend/prisma/dev.db" ]; then
-  OLD_DB_PATH="$OLD_DIR/frontend/prisma/dev.db"
-fi
-
-if [ -n "$OLD_DB_PATH" ]; then
-  echo -e "${GREEN}🎯 Gefundene Datenbank: $OLD_DB_PATH. Migriere zu $LIVE_DIR/shared/dev.db...${NC}"
-  cp "$OLD_DB_PATH" "$LIVE_DIR/shared/dev.db"
-  chmod 666 "$LIVE_DIR/shared/dev.db" # Sicherstellen, dass der Node-User im Container schreiben darf
+  echo -e "${GREEN}🎯 Gefundene Prisma-Datenbank: $OLD_DIR/frontend/prisma/dev.db. Bereite Migrations-Quelle vor...${NC}"
+  cp "$OLD_DIR/frontend/prisma/dev.db" "$LIVE_DIR/shared/old_prisma_dev.db"
+  chmod 666 "$LIVE_DIR/shared/old_prisma_dev.db"
 else
   echo -e "${YELLOW}⚠️ Keine bestehende dev.db gefunden. Eine neue DB wird beim Start angelegt.${NC}"
 fi
@@ -349,19 +347,31 @@ if [ $START_SUCCESS -eq 0 ]; then
   # Springe direkt zum Rollback
   HTTP_STATUS="500"
 else
-  # Führe ggf. Prisma DB-Push aus, um Schemaänderungen auf der SQLite-DB anzuwenden
+  # Führe ggf. Django Migrationen aus, um Schemaänderungen auf der SQLite-DB anzuwenden
   # Wir tun dies über 'docker compose exec', um zu verhindern, dass ein separater Container erstellt wird.
-  echo -e "${YELLOW}🔄 Führe Prisma Database-Schema-Updates aus...${NC}"
-  if ! docker compose exec -T frontend npx --no-install prisma db push --schema=prisma/schema.prisma; then
-    echo -e "${RED}⚠️ Prisma DB-Push fehlgeschlagen. Eventuell keine Änderungen vorhanden oder Verbindungsfehler. Fahre fort...${NC}"
-    log_dev_diag "PRISMA_DB_PUSH_FAILED"
+  echo -e "${YELLOW}🔄 Führe Django Database-Schema-Updates aus...${NC}"
+  if ! docker compose exec -T web python manage.py migrate --noinput; then
+    echo -e "${RED}⚠️ Django-Migrationen fehlgeschlagen. Eventuell Verbindungsfehler. Fahre fort...${NC}"
+    log_dev_diag "DJANGO_MIGRATION_FAILED"
   else
-    echo -e "${GREEN}✅ Prisma Database-Schema-Updates erfolgreich angewendet!${NC}"
+    echo -e "${GREEN}✅ Django-Migrationen erfolgreich angewendet!${NC}"
   fi
 
-  # Schneller Neustart der Services, damit der Prisma-Client im Backend die DB neu lädt
-  echo -e "${YELLOW}🔄 Starte Backend & Frontend kurz neu, um Datenbank-Verbindungen zu aktualisieren...${NC}"
-  docker compose restart backend frontend || true
+  # Überprüfe, ob eine alte Prisma-Datenbank bereitliegt, die noch importiert werden muss (Erst-Umstieg)
+  if docker compose exec -T web test -f /app/shared/old_prisma_dev.db; then
+    echo -e "${YELLOW}🔄 Erst-Migration erkannt: Migriere Prisma-Datenbestände in das neue Django-Schema...${NC}"
+    if ! docker compose exec -T web python manage.py migrate_prisma_data --source /app/shared/old_prisma_dev.db; then
+      echo -e "${RED}❌ FEHLER: Daten-Migration fehlgeschlagen!${NC}"
+      log_dev_diag "DJANGO_PRISMA_MIGRATION_FAILED"
+    else
+      echo -e "${GREEN}✅ Daten-Migration erfolgreich abgeschlossen! Bereinige temporäre Dateien...${NC}"
+      docker compose exec -T web rm -f /app/shared/old_prisma_dev.db || true
+    fi
+  fi
+
+  # Schneller Neustart der Services, um Datenbank-Verbindungen zu aktualisieren
+  echo -e "${YELLOW}🔄 Starte Web-Container kurz neu, um Datenbank-Verbindungen zu aktualisieren...${NC}"
+  docker compose restart web || true
 
   echo -e "${YELLOW}⏳ Warte 8 Sekunden, bis die Container vollständig gestartet sind...${NC}"
   sleep 8

@@ -1,0 +1,698 @@
+{% extends 'base.html' %}
+
+{% block title %}Recruiter ATS Kanban Board - SecurATS{% endblock %}
+
+{% block content %}
+<style>
+    /* Full dashboard layout */
+    .dashboard-container {
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+    }
+
+    /* Top stats header bar */
+    .stats-bar {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 20px;
+        margin-bottom: 10px;
+    }
+
+    .stat-card {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-md);
+        padding: 20px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+    }
+
+    .stat-card.new::before { background: var(--primary); }
+    .stat-card.review::before { background: #3b82f6; }
+    .stat-card.invited::before { background: var(--accent); }
+    .stat-card.rejected::before { background: #ef4444; }
+
+    .stat-number {
+        font-family: 'Outfit', sans-serif;
+        font-size: 32px;
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+    }
+
+    /* Kanban Board Layout */
+    .kanban-board {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 24px;
+        align-items: start;
+    }
+
+    .kanban-column {
+        background: rgba(23, 27, 56, 0.4);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-lg);
+        padding: 20px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        min-height: 600px;
+        transition: var(--transition-smooth);
+    }
+
+    .kanban-column.drag-over {
+        background: rgba(139, 92, 246, 0.08);
+        border-color: var(--primary);
+    }
+
+    .column-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 8px 10px;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .column-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .column-count {
+        background: rgba(255, 255, 255, 0.08);
+        color: #fff;
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    /* Kanban card item styling */
+    .kanban-cards-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        min-height: 500px;
+    }
+
+    .applicant-card {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-md);
+        padding: 16px;
+        cursor: grab;
+        transition: var(--transition-smooth);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    }
+
+    .applicant-card:active {
+        cursor: grabbing;
+    }
+
+    .applicant-card:hover {
+        transform: translateY(-3px);
+        border-color: rgba(139, 92, 246, 0.25);
+        box-shadow: 0 8px 25px rgba(139, 92, 246, 0.1);
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 10px;
+    }
+
+    .card-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: #fff;
+    }
+
+    .ai-score-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        font-size: 12px;
+        font-weight: 800;
+        border: 1px solid;
+    }
+
+    .ai-score-A { background: rgba(20, 184, 166, 0.15); color: var(--accent-light); border-color: rgba(20, 184, 166, 0.3); }
+    .ai-score-B { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-color: rgba(59, 130, 246, 0.3); }
+    .ai-score-C { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3); }
+    .ai-score-D { background: rgba(239, 68, 68, 0.15); color: #f87171; border-color: rgba(239, 68, 68, 0.3); }
+
+    .card-job {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+    }
+
+    .card-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 11px;
+        color: var(--text-muted);
+        border-top: 1px solid rgba(255, 255, 255, 0.03);
+        padding-top: 8px;
+        margin-top: 8px;
+    }
+
+    /* Modal dialog overrides for sleek glass UI */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1000;
+        background: rgba(11, 13, 25, 0.85);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .modal-content {
+        background: var(--surface-color);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-lg);
+        width: 100%;
+        max-width: 900px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        position: relative;
+    }
+
+    .modal-close {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-size: 20px;
+        cursor: pointer;
+        transition: var(--transition-smooth);
+    }
+
+    .modal-close:hover {
+        color: #fff;
+    }
+
+    .modal-body {
+        padding: 40px;
+    }
+
+    /* Candidate Detail Modal Specifics */
+    .candidate-modal-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+    }
+
+    .ai-score-block {
+        background: rgba(139, 92, 246, 0.08);
+        border: 1px solid rgba(139, 92, 246, 0.2);
+        border-radius: var(--border-radius-md);
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .recruiter-notes-area {
+        background: rgba(11, 13, 25, 0.5);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-md);
+        padding: 16px;
+        max-height: 150px;
+        overflow-y: auto;
+        font-family: monospace;
+        font-size: 13px;
+        color: #e5e7eb;
+        margin-bottom: 12px;
+        white-space: pre-wrap;
+    }
+
+    .cv-preview-box {
+        background: rgba(11, 13, 25, 0.7);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-md);
+        height: 380px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        position: relative;
+    }
+
+    @media (max-width: 992px) {
+        .kanban-board {
+            grid-template-columns: 1fr;
+        }
+        .kanban-column {
+            min-height: auto;
+        }
+        .candidate-modal-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="dashboard-container">
+    <!-- Top Bar with Page Header & SAP shortcut -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+        <div>
+            <span class="badge badge-primary" style="margin-bottom: 8px;">Recruiter-Workspace</span>
+            <h1 style="font-size: 32px; color: #fff;">Bewerber-Management (ATS)</h1>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <button onclick="openInterviewModal()" class="btn-secondary-cta">
+                <i class="fa-solid fa-calendar-days" style="margin-right: 6px;"></i> Termin planen
+            </button>
+            <a href="{% url 'ats:sap_sf_mapper' %}" class="btn-cta" style="text-decoration: none;">
+                <i class="fa-solid fa-cloud-arrow-up" style="margin-right: 6px;"></i> SuccessFactors Sync
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats summary bars -->
+    <div class="stats-bar">
+        <div class="stat-card new">
+            <div class="stat-number" id="stats-new">{{ stats.new }}</div>
+            <div class="stat-label">Neue Bewerber</div>
+        </div>
+        <div class="stat-card review">
+            <div class="stat-number" id="stats-review">{{ stats.in_review }}</div>
+            <div class="stat-label">In Prüfung</div>
+        </div>
+        <div class="stat-card invited">
+            <div class="stat-number" id="stats-invited">{{ stats.invited }}</div>
+            <div class="stat-label">Eingeladen</div>
+        </div>
+        <div class="stat-card rejected">
+            <div class="stat-number" id="stats-rejected">{{ stats.rejected }}</div>
+            <div class="stat-label">Abgelehnt</div>
+        </div>
+    </div>
+
+    <!-- The interactive drag-and-drop Kanban Board -->
+    <div class="kanban-board">
+        <!-- 1. Column: NEW -->
+        <div class="kanban-column" id="col-NEW" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event, 'NEW')">
+            <div class="column-header">
+                <span class="column-title"><i class="fa-solid fa-star-of-life" style="color: var(--primary-light);"></i> Neu</span>
+                <span class="column-count" id="count-NEW">{{ columns.NEW|length }}</span>
+            </div>
+            <div class="kanban-cards-wrapper" id="cards-NEW">
+                {% for app in columns.NEW %}
+                    {% include 'includes/kanban_card.html' with app=app %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 2. Column: IN_REVIEW -->
+        <div class="kanban-column" id="col-IN_REVIEW" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event, 'IN_REVIEW')">
+            <div class="column-header">
+                <span class="column-title"><i class="fa-solid fa-magnifying-glass" style="color: #3b82f6;"></i> In Prüfung</span>
+                <span class="column-count" id="count-IN_REVIEW">{{ columns.IN_REVIEW|length }}</span>
+            </div>
+            <div class="kanban-cards-wrapper" id="cards-IN_REVIEW">
+                {% for app in columns.IN_REVIEW %}
+                    {% include 'includes/kanban_card.html' with app=app %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 3. Column: INVITED -->
+        <div class="kanban-column" id="col-INVITED" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event, 'INVITED')">
+            <div class="column-header">
+                <span class="column-title"><i class="fa-solid fa-calendar-check" style="color: var(--accent);"></i> Eingeladen</span>
+                <span class="column-count" id="count-INVITED">{{ columns.INVITED|length }}</span>
+            </div>
+            <div class="kanban-cards-wrapper" id="cards-INVITED">
+                {% for app in columns.INVITED %}
+                    {% include 'includes/kanban_card.html' with app=app %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 4. Column: REJECTED -->
+        <div class="kanban-column" id="col-REJECTED" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event, 'REJECTED')">
+            <div class="column-header">
+                <span class="column-title"><i class="fa-solid fa-circle-xmark" style="color: #ef4444;"></i> Abgelehnt</span>
+                <span class="column-count" id="count-REJECTED">{{ columns.REJECTED|length }}</span>
+            </div>
+            <div class="kanban-cards-wrapper" id="cards-REJECTED">
+                {% for app in columns.REJECTED %}
+                    {% include 'includes/kanban_card.html' with app=app %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================================
+MODALS & OVERLAYS
+============================================================================ -->
+
+<!-- Modal 1: Candidate Details View -->
+<div class="modal" id="candidateModal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeCandidateModal()"><i class="fa-solid fa-xmark"></i></button>
+        <div class="modal-body">
+            <div class="candidate-modal-grid">
+                
+                <!-- Left half: Personal details, CV PDF mock, dynamic screening, and cover letter -->
+                <div>
+                    <h2 id="modal-name" style="color: #fff; font-size: 26px; margin-bottom: 6px;">Name</h2>
+                    <p id="modal-job" style="color: var(--accent-light); font-size: 14px; font-weight: 600; text-transform: uppercase; margin-bottom: 24px;">Job Title</p>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; font-size: 14px;">
+                        <div style="display: flex; gap: 8px; align-items: center; color: var(--text-muted);">
+                            <i class="fa-solid fa-envelope" style="width: 16px;"></i> <span id="modal-email" style="color: #fff;"></span>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center; color: var(--text-muted);">
+                            <i class="fa-solid fa-phone" style="width: 16px;"></i> <span id="modal-phone" style="color: #fff;"></span>
+                        </div>
+                    </div>
+
+                    <h3 style="color: #fff; font-size: 16px; margin-bottom: 12px;"><i class="fa-solid fa-file-invoice"></i> Anschreiben</h3>
+                    <p id="modal-coverletter" style="font-size: 14px; color: #d1d5db; background: rgba(0, 0, 0, 0.2); padding: 16px; border-radius: var(--border-radius-sm); max-height: 180px; overflow-y: auto; margin-bottom: 24px; white-space: pre-line; border: 1px solid var(--glass-border);"></p>
+                    
+                    <h3 style="color: #fff; font-size: 16px; margin-bottom: 12px;"><i class="fa-solid fa-clipboard-question"></i> Screening-Ergebnisse</h3>
+                    <div id="modal-screening" style="font-size: 13px; color: #d1d5db; background: rgba(0,0,0,0.15); border: 1px solid var(--glass-border); padding: 16px; border-radius: var(--border-radius-sm);"></div>
+                </div>
+
+                <!-- Right half: AI Rating, CV Document preview mock, Recruiter Notes, and trigger scheduler -->
+                <div>
+                    <!-- AI rating glowing container -->
+                    <div class="ai-score-block">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h3 style="color: #fff; font-size: 16px; display: flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-robot"></i> KI-Voranalyse
+                            </h3>
+                            <span class="ai-score-badge" id="modal-ai-score" style="transform: scale(1.2);">A</span>
+                        </div>
+                        <p id="modal-ai-rationale" style="font-size: 13px; color: #e5e7eb; line-height: 1.5;"></p>
+                    </div>
+
+                    <!-- CV Document Previewer Frame Mock -->
+                    <h3 style="color: #fff; font-size: 16px; margin-bottom: 10px;"><i class="fa-solid fa-file-pdf"></i> Lebenslauf-Vorschau</h3>
+                    <div class="cv-preview-box" id="modal-cv-preview">
+                        <i class="fa-solid fa-file-pdf" style="font-size: 52px; color: #ef4444; margin-bottom: 12px;"></i>
+                        <span>Kein Dokument hochgeladen</span>
+                    </div>
+
+                    <!-- Internal Notes & input -->
+                    <h3 style="color: #fff; font-size: 16px; margin-top: 24px; margin-bottom: 10px;"><i class="fa-solid fa-comment-medical"></i> Interne Notizen</h3>
+                    <div class="recruiter-notes-area" id="modal-notes">
+                        Keine Notizen vorhanden.
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="note-input" class="form-input" placeholder="Neue Notiz hinzufügen..." style="height: 38px; font-size: 13px; flex-grow: 1;">
+                        <button onclick="submitRecruiterNote()" class="btn-search" style="height: 38px; padding: 0 16px; font-size: 13px;">Speichern</button>
+                    </div>
+                    
+                    <div style="margin-top: 24px; display: flex; gap: 10px;">
+                        <button id="modal-btn-schedule" class="btn-cta" style="width: 100%; height: 42px; display: flex; align-items: center; justify-content: center; font-size: 14px;">
+                            <i class="fa-solid fa-calendar-plus" style="margin-right: 6px;"></i> Interview planen
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 2: Interview Appointment Scheduler -->
+<div class="modal" id="interviewModal">
+    <div class="modal-content" style="max-width: 500px;">
+        <button class="modal-close" onclick="closeInterviewModal()"><i class="fa-solid fa-xmark"></i></button>
+        <div class="modal-body">
+            <h2 style="color: #fff; font-size: 24px; margin-bottom: 8px;"><i class="fa-solid fa-calendar-plus" style="color: var(--accent);"></i> Fachinterview planen</h2>
+            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;">Wählen Sie einen freien Slot aus oder weisen Sie ein Direktinterview zu.</p>
+            
+            <form method="POST" action="{% url 'ats:schedule_interview' %}">
+                {% csrf_token %}
+                <input type="hidden" id="schedule-app-id" name="application_id">
+                
+                <div class="form-group">
+                    <label class="form-label" for="slot_id">Verfügbare Timeslots *</label>
+                    <select id="slot_id" name="slot_id" class="filter-select" required>
+                        <option value="">Timeslot wählen...</option>
+                        {% for slot in interview_slots %}
+                            <option value="{{ slot.id }}">{{ slot.jobPosting.title }} - {{ slot.startTime|date:"d.m.Y H:i" }} Uhr</option>
+                        {% empty %}
+                            <option value="">(Keine vordefinierten Slots frei - manueller Direkt-Slot wird erstellt)</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="location_type">Ort / Typ *</label>
+                    <select id="location_type" name="location_type" class="filter-select">
+                        <option value="REMOTE">Google Meet / Video-Call (Remote)</option>
+                        <option value="IN_PERSON">Vor Ort im Office (In Person)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="meeting_link">Meeting Link / Konferenzraum</label>
+                    <input type="text" id="meeting_link" name="meeting_link" class="form-input" placeholder="z. B. https://meet.google.com/xyz" value="https://meet.google.com/securats-video-call">
+                </div>
+
+                <button type="submit" class="btn-apply-now" style="width: 100%; margin-top: 16px; height: 46px;">
+                    <i class="fa-solid fa-circle-check"></i> Termin verbindlich buchen
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    let activeApplicationId = null;
+
+    // Drag-and-Drop implementation
+    function allowDrop(ev) {
+        ev.preventDefault();
+        const col = ev.currentTarget;
+        col.classList.add('drag-over');
+    }
+
+    function dragLeave(ev) {
+        const col = ev.currentTarget;
+        col.classList.remove('drag-over');
+    }
+
+    function dragCard(ev, appId) {
+        ev.dataTransfer.setData("application_id", appId);
+    }
+
+    function handleDrop(ev, newStatus) {
+        ev.preventDefault();
+        const col = ev.currentTarget;
+        col.classList.remove('drag-over');
+        
+        const appId = ev.dataTransfer.getData("application_id");
+        if (!appId) return;
+
+        // Move card visually
+        const card = document.getElementById(`card-${appId}`);
+        const destination = document.getElementById(`cards-${newStatus}`);
+        if (card && destination) {
+            destination.appendChild(card);
+            
+            // Trigger database status update via AJAX POST
+            const formData = new FormData();
+            formData.append('status', newStatus);
+            
+            fetch(`/recruiter/applications/${appId}/update-status/`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // Update counters in real-time
+                    updateStatsCounters();
+                } else {
+                    console.error("Status-Update schlug fehl.");
+                }
+            })
+            .catch(err => console.error("Error updating status:", err));
+        }
+    }
+
+    // Helper to recount column lengths and update stats bar counters in real-time
+    function updateStatsCounters() {
+        const columns = ['NEW', 'IN_REVIEW', 'INVITED', 'REJECTED'];
+        let totals = 0;
+        
+        columns.forEach(col => {
+            const count = document.getElementById(`cards-${col}`).children.length;
+            document.getElementById(`count-${col}`).innerText = count;
+            
+            // Map keys to DOM IDs for stats bar
+            let statId = '';
+            if (col === 'NEW') statId = 'stats-new';
+            if (col === 'IN_REVIEW') statId = 'stats-review';
+            if (col === 'INVITED') statId = 'stats-invited';
+            if (col === 'REJECTED') statId = 'stats-rejected';
+            
+            if (statId) {
+                document.getElementById(statId).innerText = count;
+            }
+            totals += count;
+        });
+    }
+
+    // Modal Controls for details
+    function openCandidateModal(appId, name, job, email, phone, coverLetter, aiScore, aiRationale, cvStorageId, internalNotes, screeningJson) {
+        activeApplicationId = appId;
+        
+        document.getElementById('modal-name').innerText = name;
+        document.getElementById('modal-job').innerText = job;
+        document.getElementById('modal-email').innerText = email;
+        document.getElementById('modal-phone').innerText = phone || '(Keine Angabe)';
+        document.getElementById('modal-coverletter').innerText = coverLetter || '(Kein Anschreiben übermittelt)';
+        
+        // AI score
+        const scoreBadge = document.getElementById('modal-ai-score');
+        scoreBadge.innerText = aiScore || 'C';
+        scoreBadge.className = `ai-score-badge ai-score-${aiScore || 'C'}`;
+        document.getElementById('modal-ai-rationale').innerText = aiRationale || 'Keine Bewertung vorhanden.';
+        
+        // CV doc mock
+        const cvBox = document.getElementById('modal-cv-preview');
+        if (cvStorageId && cvStorageId !== 'None' && cvStorageId !== '') {
+            cvBox.innerHTML = `
+                <div style="text-align: center;">
+                    <i class="fa-solid fa-file-pdf" style="font-size: 52px; color: #ef4444; margin-bottom: 12px;"></i>
+                    <p style="font-size: 14px; font-weight: 600; color: #fff;">Lebenslauf.pdf</p>
+                    <a href="/media/${cvStorageId}" target="_blank" class="btn-secondary-cta" style="margin-top: 14px; display: inline-flex; height: 32px; font-size: 12px; align-items: center; padding: 0 16px;">Vollbild-Vorschau</a>
+                </div>`;
+        } else {
+            cvBox.innerHTML = `
+                <div style="text-align: center;">
+                    <i class="fa-solid fa-file-circle-question" style="font-size: 52px; color: var(--text-muted); margin-bottom: 12px;"></i>
+                    <p>Kein Lebenslauf hochgeladen</p>
+                </div>`;
+        }
+        
+        // Notes
+        const notesBox = document.getElementById('modal-notes');
+        notesBox.innerText = internalNotes || 'Keine internen Notizen vorhanden.';
+        
+        // Screening questions details
+        const screeningBox = document.getElementById('modal-screening');
+        if (screeningJson && screeningJson !== '{}') {
+            try {
+                const questions = JSON.parse(screeningJson);
+                let html = '<ul style="list-style: none; display: flex; flex-direction: column; gap: 8px;">';
+                for (const [q, a] of Object.entries(questions)) {
+                    const icon = a === 'YES' ? '<i class="fa-solid fa-circle-check" style="color: var(--accent);"></i>' : '<i class="fa-solid fa-circle-xmark" style="color: #ef4444;"></i>';
+                    html += `<li style="display: flex; justify-content: space-between; gap: 10px;">
+                        <span>${q}</span>
+                        <strong style="display: inline-flex; align-items: center; gap: 4px;">${icon} ${a === 'YES' ? 'Ja' : 'Nein'}</strong>
+                    </li>`;
+                }
+                html += '</ul>';
+                screeningBox.innerHTML = html;
+            } catch (e) {
+                screeningBox.innerHTML = 'Fehler beim Parsen der Screening-Antworten.';
+            }
+        } else {
+            screeningBox.innerHTML = 'Keine Screening-Fragen für diesen Job definiert.';
+        }
+
+        // Setup schedule action button in modal
+        document.getElementById('modal-btn-schedule').onclick = function() {
+            closeCandidateModal();
+            openInterviewModal(appId);
+        };
+        
+        document.getElementById('candidateModal').style.display = 'flex';
+    }
+
+    function closeCandidateModal() {
+        document.getElementById('candidateModal').style.display = 'none';
+        activeApplicationId = null;
+    }
+
+    function submitRecruiterNote() {
+        if (!activeApplicationId) return;
+        const input = document.getElementById('note-input');
+        const noteText = input.value.trim();
+        if (!noteText) return;
+
+        const formData = new FormData();
+        formData.append('note', noteText);
+
+        fetch(`/recruiter/applications/${activeApplicationId}/add-note/`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('modal-notes').innerText = data.notes;
+                input.value = '';
+                
+                // Update notes in DOM on the original card
+                const originalCard = document.getElementById(`card-${activeApplicationId}`);
+                if (originalCard) {
+                    // Update dataset attribute to hold new notes
+                    originalCard.setAttribute('data-notes', data.notes);
+                }
+            }
+        })
+        .catch(err => console.error("Error adding note:", err));
+    }
+
+    // Modal controls for scheduler
+    function openInterviewModal(appId) {
+        if (appId) {
+            document.getElementById('schedule-app-id').value = appId;
+        } else if (activeApplicationId) {
+            document.getElementById('schedule-app-id').value = activeApplicationId;
+        }
+        document.getElementById('interviewModal').style.display = 'flex';
+    }
+
+    function closeInterviewModal() {
+        document.getElementById('interviewModal').style.display = 'none';
+    }
+</script>
+{% endblock %}

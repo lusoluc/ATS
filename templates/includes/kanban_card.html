@@ -1,0 +1,59 @@
+<div class="applicant-card" 
+     id="card-{{ app.id }}" 
+     draggable="true" 
+     ondragstart="dragCard(event, '{{ app.id }}')"
+     data-id="{{ app.id }}"
+     data-name="{{ app.applicant.firstName }} {{ app.applicant.lastName }}"
+     data-job="{{ app.jobPosting.title }}"
+     data-email="{{ app.applicant.email }}"
+     data-phone="{{ app.app_phone|default:app.applicant.phone|default:'' }}"
+     data-coverletter="{{ app.coverLetterTxt|default:'' }}"
+     data-ai-score="{{ app.aiScore|default:'C' }}"
+     data-ai-rationale="{{ app.aiRationale|default:'' }}"
+     data-cv-storage-id="{{ app.cvStorageId|default:'' }}"
+     data-notes="{{ app.internalNotes|default:'' }}"
+     data-screening="{{ app.screeningAnswersJson|default:'{}' }}"
+     onclick="openCandidateCard(this)"
+>
+    <div class="card-header">
+        <span class="card-name">{{ app.applicant.firstName }} {{ app.applicant.lastName }}</span>
+        <span class="ai-score-badge ai-score-{{ app.aiScore|default:'C' }}">{{ app.aiScore|default:'C' }}</span>
+    </div>
+    
+    <div class="card-job">{{ app.jobPosting.title }}</div>
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+        <span class="badge badge-primary" style="font-size: 10px; padding: 3px 8px;">
+            <i class="fa-solid fa-location-dot" style="font-size: 9px; margin-right: 4px;"></i>{{ app.jobPosting.location.city }}
+        </span>
+    </div>
+
+    <div class="card-meta">
+        <span><i class="fa-solid fa-calendar-days"></i> {{ app.createdAt|date:"d.m.Y" }}</span>
+        <span style="color: var(--primary-light); font-weight: 600; font-size: 11px;">Details <i class="fa-solid fa-angle-right"></i></span>
+    </div>
+</div>
+
+<script>
+    // Self-contained bridge to transfer data from HTML5 data attributes to the dashboard modal controller
+    if (typeof openCandidateCard !== 'function') {
+        window.openCandidateCard = function(element) {
+            const id = element.getAttribute('data-id');
+            const name = element.getAttribute('data-name');
+            const job = element.getAttribute('data-job');
+            const email = element.getAttribute('data-email');
+            const phone = element.getAttribute('data-phone');
+            const coverLetter = element.getAttribute('data-coverletter');
+            const aiScore = element.getAttribute('data-ai-score');
+            const aiRationale = element.getAttribute('data-ai-rationale');
+            const cvStorageId = element.getAttribute('data-cv-storage-id');
+            const notes = element.getAttribute('data-notes');
+            const screening = element.getAttribute('data-screening');
+            
+            // Invoke dashboard modal opener
+            if (typeof openCandidateModal === 'function') {
+                openCandidateModal(id, name, job, email, phone, coverLetter, aiScore, aiRationale, cvStorageId, notes, screening);
+            }
+        };
+    }
+</script>

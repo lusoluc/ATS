@@ -112,9 +112,24 @@ if ! docker info &>/dev/null; then
   done
 fi
 
-# ==============================================================================
-# ULTIMATIVE PORT-BEFREIUNG: PM2 beenden, Node killen, blockierende Container löschen
-# ==============================================================================
+cleanup_containers() {
+  # Lösche explizit bekannte Container-Namen
+  echo -e "${YELLOW}🛑 Lösche bekannte Container-Namen...${NC}"
+  docker rm -f securats-django securats-frontend securats-backend ats-frontend ats-backend >/dev/null 2>&1 || true
+  
+  # Dynamische Erkennung & Entfernung JEDES Containers, der Port 3000 oder 3001 belegt
+  echo -e "${YELLOW}🛑 Suche nach weiteren Containern mit Port-Mappings 3000/3001...${NC}"
+  for cid in $(docker ps -a -q 2>/dev/null || true); do
+    MAPPED_PORTS=$(docker port $cid 2>/dev/null || true)
+    if echo "$MAPPED_PORTS" | grep -q -E ":3000|:3001"; then
+      CONTAINER_NAME=$(docker inspect --format '{{.Name}}' $cid 2>/dev/null | sed 's/\///' || echo "Unbekannt")
+      echo -e "${RED}👉 Gefunden blockierender Container: Name='$CONTAINER_NAME' ID='$cid' Ports:${NC}\n$MAPPED_PORTS"
+      echo -e "${YELLOW}   -> Lösche Container $cid...${NC}"
+      docker rm -f $cid >/dev/null 2>&1 || true
+    fi
+  done
+}
+
 free_ports() {
   echo -e "${YELLOW}🧹 Start der ultimativen Port-Befreiung (Ports 3000 & 3001)...${NC}"
   log_dev_diag "BEFORE_PORT_CLEANUP"
@@ -123,7 +138,7 @@ free_ports() {
   for port in 3000 3001; do
     echo -e "${BLUE}🔍 Analyse Port $port...${NC}"
     if command -v lsof &> /dev/null; then
-      LSOF_OUT=$(lsof -i :$port || true)
+      LSOF_OUT=$(sudo lsof -i :$port || true)
       if [ -n "$LSOF_OUT" ]; then
         echo -e "${YELLOW}👉 Host-Prozess auf Port $port gefunden:${NC}\n$LSOF_OUT"
       fi
@@ -164,34 +179,21 @@ free_ports() {
   sudo pkill -9 -f node >/dev/null 2>&1 || true
   sudo pkill -9 -f npm >/dev/null 2>&1 || true
   
-  # 4. Lösche explizit bekannte Container-Namen
-  echo -e "${YELLOW}🛑 Lösche bekannte Container-Namen...${NC}"
-  docker rm -f securats-django securats-frontend securats-backend ats-frontend ats-backend >/dev/null 2>&1 || true
+  # 4. Erste Container-Bereinigung vor dem Docker-Restart
+  cleanup_containers
   
-  # 5. Dynamische Erkennung & Entfernung JEDES Containers, der Port 3000 oder 3001 belegen
-  echo -e "${YELLOW}🛑 Suche nach weiteren Containern mit Port-Mappings 3000/3001...${NC}"
-  for cid in $(docker ps -a -q); do
-    MAPPED_PORTS=$(docker port $cid 2>/dev/null || true)
-    if echo "$MAPPED_PORTS" | grep -q -E ":3000|:3001"; then
-      CONTAINER_NAME=$(docker inspect --format '{{.Name}}' $cid | sed 's/\///' || echo "Unbekannt")
-      echo -e "${RED}👉 Gefunden blockierender Container: Name='$CONTAINER_NAME' ID='$cid' Ports:${NC}\n$MAPPED_PORTS"
-      echo -e "${YELLOW}   -> Lösche Container $cid...${NC}"
-      docker rm -f $cid >/dev/null 2>&1 || true
-    fi
-  done
-  
-  # 6. Erzwinge Freigabe der Host-Ports über fuser/kill
+  # 5. Erzwinge Freigabe der Host-Ports über fuser/kill
   echo -e "${YELLOW}🛑 Erzwinge Freigabe der Host-Ports 3000 & 3001 via fuser/kill...${NC}"
   for port in 3000 3001; do
     sudo fuser -k ${port}/tcp >/dev/null 2>&1 || true
-    PID_TO_KILL=$(lsof -t -i:$port || true)
+    PID_TO_KILL=$(sudo lsof -t -i:$port || true)
     if [ -n "$PID_TO_KILL" ]; then
       echo -e "   -> Sende SIGKILL an Prozess $PID_TO_KILL auf Port $port..."
       sudo kill -9 $PID_TO_KILL >/dev/null 2>&1 || true
     fi
   done
 
-  # 6b. Stale Docker-Netzwerkzustand bereinigen (Systemd Docker-Dienst neu starten)
+  # 6. Stale Docker-Netzwerkzustand bereinigen (Systemd Docker-Dienst neu starten)
   if systemctl is-active --quiet docker 2>/dev/null; then
     echo -e "${YELLOW}🛑 Starte Docker-Dienst neu, um blockierte/verwaiste Netzwerk-Sockets (Ghost Ports) zu flushen...${NC}"
     sudo systemctl restart docker >/dev/null 2>&1 || true
@@ -205,6 +207,10 @@ free_ports() {
       fi
       sleep 1
     done
+    
+    # ZWEITER Container-Cleanup (Double-Tap) unmittelbar nach dem Docker-Restart!
+    # Dies stellt sicher, dass eventuelle "restart: always" Container, die durch den Docker-Start wiederbelebt wurden, sofort getötet werden!
+    cleanup_containers
   fi
 
   # 7. Verifizierung der Port-Freiheit
@@ -212,7 +218,7 @@ free_ports() {
   PORTS_BUSY=0
   for port in 3000 3001; do
     if command -v lsof &> /dev/null; then
-      if lsof -i :$port >/dev/null 2>&1; then
+      if sudo lsof -i :$port >/dev/null 2>&1; then
         echo -e "${RED}❌ WARNUNG: Port $port ist trotz aller Bemühungen weiterhin belegt!${NC}"
         PORTS_BUSY=1
       fi

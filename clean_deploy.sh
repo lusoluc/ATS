@@ -178,6 +178,7 @@ free_ports() {
   echo -e "${YELLOW}🛑 Beende alle Node/npm-Prozesse auf dem Host...${NC}"
   sudo pkill -9 -f node >/dev/null 2>&1 || true
   sudo pkill -9 -f npm >/dev/null 2>&1 || true
+  sudo pkill -9 -f docker-proxy >/dev/null 2>&1 || true
   
   # 4. Erste Container-Bereinigung vor dem Docker-Restart
   cleanup_containers

@@ -117,17 +117,78 @@ cleanup_containers() {
   echo -e "${YELLOW}🛑 Lösche bekannte Container-Namen...${NC}"
   docker rm -f securats-django securats-frontend securats-backend ats-frontend ats-backend >/dev/null 2>&1 || true
   
-  # Dynamische Erkennung & Entfernung JEDES Containers, der Port 3000 oder 3001 belegt
-  echo -e "${YELLOW}🛑 Suche nach weiteren Containern mit Port-Mappings 3000/3001...${NC}"
+  # Dynamische Erkennung & Entfernung JEDES Containers (laufend oder gestoppt!), der Port 3000 oder 3001 belegt
+  echo -e "${YELLOW}🛑 Suche nach weiteren blockierenden Containern (Laufend & Gestoppt)...${NC}"
   for cid in $(docker ps -a -q 2>/dev/null || true); do
-    MAPPED_PORTS=$(docker port $cid 2>/dev/null || true)
-    if echo "$MAPPED_PORTS" | grep -q -E ":3000|:3001"; then
+    # Prüfe die Port-Bindings in der HostConfig (funktioniert auch bei gestoppten Containern!)
+    PORTS=$(docker inspect --format '{{range $p, $conf := .HostConfig.PortBindings}}{{range $conf}}{{.HostPort}} {{end}}{{end}}' $cid 2>/dev/null || true)
+    if echo "$PORTS" | grep -q -E "\b3000\b|\b3001\b"; then
       CONTAINER_NAME=$(docker inspect --format '{{.Name}}' $cid 2>/dev/null | sed 's/\///' || echo "Unbekannt")
-      echo -e "${RED}👉 Gefunden blockierender Container: Name='$CONTAINER_NAME' ID='$cid' Ports:${NC}\n$MAPPED_PORTS"
+      echo -e "${RED}👉 Blockierender Container gefunden: Name='$CONTAINER_NAME' ID='$cid' Ports: $PORTS${NC}"
       echo -e "${YELLOW}   -> Lösche Container $cid...${NC}"
       docker rm -f $cid >/dev/null 2>&1 || true
     fi
   done
+}
+
+kill_process_on_port() {
+  local port=$1
+  echo -e "${YELLOW}🔍 Suche Prozess auf Port $port...${NC}"
+  
+  # 1. Versuche PID via 'ss' zu finden
+  if command -v ss &> /dev/null; then
+    local pid
+    pid=$(sudo ss -tlnp 2>/dev/null | grep -E ":${port}\b" | grep -o -E "pid=[0-9]+" | head -n 1 | cut -d= -f2 || true)
+    if [ -n "$pid" ]; then
+      echo -e "${RED}👉 Prozess via 'ss' gefunden: PID $pid auf Port $port. Sende SIGKILL...${NC}"
+      sudo kill -9 "$pid" >/dev/null 2>&1 || true
+      return 0
+    fi
+  fi
+  
+  # 2. Versuche PID via 'netstat' zu finden
+  if command -v netstat &> /dev/null; then
+    local pid
+    pid=$(sudo netstat -tlnp 2>/dev/null | grep -E ":${port}\b" | awk '{print $7}' | cut -d/ -f1 | head -n 1 || true)
+    if [ -n "$pid" ] && [ "$pid" != "-" ]; then
+      echo -e "${RED}👉 Prozess via 'netstat' gefunden: PID $pid auf Port $port. Sende SIGKILL...${NC}"
+      sudo kill -9 "$pid" >/dev/null 2>&1 || true
+      return 0
+    fi
+  fi
+
+  # 3. Versuche PID via 'lsof' zu finden
+  if command -v lsof &> /dev/null; then
+    local pid
+    pid=$(sudo lsof -t -i:$port | head -n 1 || true)
+    if [ -n "$pid" ]; then
+      echo -e "${RED}👉 Prozess via 'lsof' gefunden: PID $pid auf Port $port. Sende SIGKILL...${NC}"
+      sudo kill -9 "$pid" >/dev/null 2>&1 || true
+      return 0
+    fi
+  fi
+}
+
+is_port_in_use() {
+  local port=$1
+  local hex_port
+  hex_port=$(printf "%04X" "$port")
+  
+  # Check IPv4
+  if [ -f /proc/net/tcp ] && grep -q -E "^\s*[0-9]+:\s+[0-9A-Fa-f]+:${hex_port}\s+[0-9A-Fa-f]+\s+0A\b" /proc/net/tcp; then
+    return 0
+  fi
+  # Check IPv6
+  if [ -f /proc/net/tcp6 ] && grep -q -E "^\s*[0-9]+:\s+[0-9A-Fa-f]+:${hex_port}\s+[0-9A-Fa-f]+\s+0A\b" /proc/net/tcp6; then
+    return 0
+  fi
+  
+  # Fallback to bash socket test
+  if (timeout 1 bash -c "cat < /dev/null > /dev/tcp/127.0.0.1/$port" 2>/dev/null); then
+    return 0
+  fi
+  
+  return 1
 }
 
 free_ports() {
@@ -183,15 +244,11 @@ free_ports() {
   # 4. Erste Container-Bereinigung vor dem Docker-Restart
   cleanup_containers
   
-  # 5. Erzwinge Freigabe der Host-Ports über fuser/kill
-  echo -e "${YELLOW}🛑 Erzwinge Freigabe der Host-Ports 3000 & 3001 via fuser/kill...${NC}"
+  # 5. Erzwinge Freigabe der Host-Ports über PIDs (ss/netstat/lsof) & fuser
+  echo -e "${YELLOW}🛑 Erzwinge Freigabe der Host-Ports 3000 & 3001...${NC}"
   for port in 3000 3001; do
     sudo fuser -k ${port}/tcp >/dev/null 2>&1 || true
-    PID_TO_KILL=$(sudo lsof -t -i:$port || true)
-    if [ -n "$PID_TO_KILL" ]; then
-      echo -e "   -> Sende SIGKILL an Prozess $PID_TO_KILL auf Port $port..."
-      sudo kill -9 $PID_TO_KILL >/dev/null 2>&1 || true
-    fi
+    kill_process_on_port "$port"
   done
 
   # 6. Stale Docker-Netzwerkzustand bereinigen (Systemd Docker-Dienst neu starten)
@@ -210,24 +267,18 @@ free_ports() {
     done
     
     # ZWEITER Container-Cleanup (Double-Tap) unmittelbar nach dem Docker-Restart!
-    # Dies stellt sicher, dass eventuelle "restart: always" Container, die durch den Docker-Start wiederbelebt wurden, sofort getötet werden!
     cleanup_containers
   fi
 
-  # 7. Verifizierung der Port-Freiheit
+  # 7. Verifizierung der Port-Freiheit über Pure Bash Sockets
   echo -e "${YELLOW}🧪 Verifiziere Port-Freigabe...${NC}"
   PORTS_BUSY=0
   for port in 3000 3001; do
-    if command -v lsof &> /dev/null; then
-      if sudo lsof -i :$port >/dev/null 2>&1; then
-        echo -e "${RED}❌ WARNUNG: Port $port ist trotz aller Bemühungen weiterhin belegt!${NC}"
-        PORTS_BUSY=1
-      fi
-    elif command -v nc &> /dev/null; then
-      if nc -z localhost $port >/dev/null 2>&1; then
-        echo -e "${RED}❌ WARNUNG: Port $port ist trotz aller Bemühungen weiterhin belegt!${NC}"
-        PORTS_BUSY=1
-      fi
+    if is_port_in_use "$port"; then
+      echo -e "${RED}❌ WARNUNG: Port $port ist trotz aller Bemühungen weiterhin belegt!${NC}"
+      PORTS_BUSY=1
+      # Letzte Notbremse: Versuche den Port nochmals schärfer freizugeben
+      kill_process_on_port "$port"
     fi
   done
 

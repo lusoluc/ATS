@@ -355,6 +355,211 @@
                 text-align: center;
             }
         }
+
+        /* =====================================================================
+           WCAG 2.1 BFSG INKLUSIONS-BARRIEREFREIHEITS-PANEL STYLES
+           ===================================================================== */
+        
+        /* Dyslexia Font Override */
+        body.dyslexic-font, body.dyslexic-font * {
+            font-family: 'Comic Sans MS', 'Dyslexic', 'Inter', sans-serif !important;
+            letter-spacing: 0.12em !important;
+            word-spacing: 0.25em !important;
+            line-height: 1.8 !important;
+        }
+        
+        /* High Contrast Override */
+        body.high-contrast {
+            --bg-color: #000000 !important;
+            --bg-gradient: none !important;
+            --surface-color: #000000 !important;
+            --surface-hover: #111111 !important;
+            --primary: #ffff00 !important;
+            --primary-light: #ffffaa !important;
+            --accent: #00ff00 !important;
+            --accent-light: #aaffaa !important;
+            --text-main: #ffffff !important;
+            --text-muted: #dddddd !important;
+            --glass-bg: #000000 !important;
+            --glass-border: #ffffff !important;
+        }
+        body.high-contrast * {
+            text-shadow: none !important;
+            box-shadow: none !important;
+            border-color: #ffffff !important;
+        }
+        body.high-contrast a, body.high-contrast button {
+            color: #ffff00 !important;
+            text-decoration: underline !important;
+        }
+        
+        /* ADHD Focus Mode / Reizreduktion */
+        body.adhs-focus .ambient-glow-1, 
+        body.adhs-focus .ambient-glow-2,
+        body.adhs-focus i.fa-spin,
+        body.adhs-focus .ambient-glow {
+            display: none !important;
+            animation: none !important;
+        }
+        body.adhs-focus * {
+            animation: none !important;
+            transition: none !important;
+            box-shadow: none !important;
+            text-shadow: none !important;
+        }
+        body.adhs-focus img {
+            opacity: 0.2 !important;
+            filter: grayscale(100%) !important;
+        }
+        body.adhs-focus img:hover {
+            opacity: 1.0 !important;
+            filter: none !important;
+        }
+        
+        /* Horizontal Reading Ruler Line */
+        #inclusion-ruler {
+            display: none;
+            position: fixed;
+            left: 0;
+            width: 100%;
+            height: 28px;
+            background: rgba(20, 184, 166, 0.2);
+            border-top: 2px solid var(--accent);
+            border-bottom: 2px solid var(--accent);
+            pointer-events: none;
+            z-index: 9999;
+            transform: translateY(-50%);
+            box-shadow: 0 0 15px rgba(20, 184, 166, 0.4);
+        }
+        
+        /* Floating Accessibility Widget Button */
+        .inclusion-widget-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent) 0%, #0d9488 100%);
+            border: 2px solid rgba(255,255,255,0.2);
+            color: #fff;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(20, 184, 166, 0.4);
+            z-index: 9998;
+            transition: var(--transition-smooth);
+        }
+        .inclusion-widget-btn:hover {
+            transform: scale(1.1) rotate(15deg);
+            box-shadow: 0 6px 25px rgba(20, 184, 166, 0.6);
+        }
+        
+        /* Sliding Inclusion Panel Overlay */
+        .inclusion-panel {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 320px;
+            background: rgba(11, 13, 25, 0.95);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-lg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            z-index: 9997;
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+            animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .inclusion-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            padding-bottom: 10px;
+            margin-bottom: 4px;
+        }
+        .inclusion-panel-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .inclusion-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+        }
+        .inclusion-option-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            max-width: 75%;
+        }
+        .inclusion-option-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+        }
+        .inclusion-option-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        
+        /* Toggle Switch styling */
+        .inclusion-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+        .inclusion-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .inclusion-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(255,255,255,0.1);
+            transition: .3s;
+            border-radius: 34px;
+            border: 1px solid var(--glass-border);
+        }
+        .inclusion-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #fff;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        input:checked + .inclusion-slider {
+            background-color: var(--accent);
+        }
+        input:checked + .inclusion-slider:before {
+            transform: translateX(20px);
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -435,6 +640,161 @@
                 }
             });
         }
+    </script>
+
+    <!-- =====================================================================
+         WCAG 2.1 / BFSG INKLUSIONS-BARRIEREFREIHEITS-WIDGETS
+         ===================================================================== -->
+    <div id="inclusion-ruler"></div>
+    
+    <button class="inclusion-widget-btn" onclick="toggleInclusionPanel()" aria-label="Barrierefreiheit-Einstellungen öffnen">
+        <i class="fa-solid fa-universal-access"></i>
+    </button>
+    
+    <div class="inclusion-panel" id="inclusionPanel">
+        <div class="inclusion-panel-header">
+            <span class="inclusion-panel-title">
+                <i class="fa-solid fa-sliders"></i> Barrierefreiheit (BFSG)
+            </span>
+            <button onclick="toggleInclusionPanel()" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        
+        <!-- Dyslexia Font Toggle -->
+        <div class="inclusion-option">
+            <div class="inclusion-option-info">
+                <span class="inclusion-option-label">Legasthenie-Schrift</span>
+                <span class="inclusion-option-desc">Optimierte Schriftart zur leichteren Lesbarkeit.</span>
+            </div>
+            <label class="inclusion-switch">
+                <input type="checkbox" id="toggleDyslexia" onchange="toggleDyslexiaMode()">
+                <span class="inclusion-slider"></span>
+            </label>
+        </div>
+        
+        <!-- Contrast Mode Toggle -->
+        <div class="inclusion-option">
+            <div class="inclusion-option-info">
+                <span class="inclusion-option-label">Kontrast-Modus</span>
+                <span class="inclusion-option-desc">Aktiviert maximalen Kontrast für Sehbehinderte.</span>
+            </div>
+            <label class="inclusion-switch">
+                <input type="checkbox" id="toggleContrast" onchange="toggleContrastMode()">
+                <span class="inclusion-slider"></span>
+            </label>
+        </div>
+        
+        <!-- ADHD Focus Mode Toggle -->
+        <div class="inclusion-option">
+            <div class="inclusion-option-info">
+                <span class="inclusion-option-label">ADHS-Fokusmodus</span>
+                <span class="inclusion-option-desc">Reizreduktion: Blendet alle ablenkenden Elemente aus.</span>
+            </div>
+            <label class="inclusion-switch">
+                <input type="checkbox" id="toggleAdhd" onchange="toggleAdhdMode()">
+                <span class="inclusion-slider"></span>
+            </label>
+        </div>
+        
+        <!-- Reading Ruler Toggle -->
+        <div class="inclusion-option">
+            <div class="inclusion-option-info">
+                <span class="inclusion-option-label">Lese-Lineal</span>
+                <span class="inclusion-option-desc">Eine geführte Lesehilfe, die Ihrem Mauszeiger folgt.</span>
+            </div>
+            <label class="inclusion-switch">
+                <input type="checkbox" id="toggleRuler" onchange="toggleReadingRuler()">
+                <span class="inclusion-slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <script>
+        // Inclusions Accessibility Features Logic
+        const toggleDyslexia = document.getElementById('toggleDyslexia');
+        const toggleContrast = document.getElementById('toggleContrast');
+        const toggleAdhd = document.getElementById('toggleAdhd');
+        const toggleRuler = document.getElementById('toggleRuler');
+        const rulerEl = document.getElementById('inclusion-ruler');
+        const panelEl = document.getElementById('inclusionPanel');
+        
+        // Load persisted states
+        window.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('dyslexic-font') === 'enabled') {
+                document.body.classList.add('dyslexic-font');
+                if (toggleDyslexia) toggleDyslexia.checked = true;
+            }
+            if (localStorage.getItem('high-contrast') === 'enabled') {
+                document.body.classList.add('high-contrast');
+                if (toggleContrast) toggleContrast.checked = true;
+            }
+            if (localStorage.getItem('adhs-focus') === 'enabled') {
+                document.body.classList.add('adhs-focus');
+                if (toggleAdhd) toggleAdhd.checked = true;
+            }
+            if (localStorage.getItem('reading-ruler') === 'enabled') {
+                if (rulerEl) rulerEl.style.display = 'block';
+                if (toggleRuler) toggleRuler.checked = true;
+            }
+        });
+        
+        function toggleInclusionPanel() {
+            if (panelEl) {
+                if (panelEl.style.display === 'flex') {
+                    panelEl.style.display = 'none';
+                } else {
+                    panelEl.style.display = 'flex';
+                }
+            }
+        }
+        
+        function toggleDyslexiaMode() {
+            if (toggleDyslexia.checked) {
+                document.body.classList.add('dyslexic-font');
+                localStorage.setItem('dyslexic-font', 'enabled');
+            } else {
+                document.body.classList.remove('dyslexic-font');
+                localStorage.setItem('dyslexic-font', 'disabled');
+            }
+        }
+        
+        function toggleContrastMode() {
+            if (toggleContrast.checked) {
+                document.body.classList.add('high-contrast');
+                localStorage.setItem('high-contrast', 'enabled');
+            } else {
+                document.body.classList.remove('high-contrast');
+                localStorage.setItem('high-contrast', 'disabled');
+            }
+        }
+        
+        function toggleAdhdMode() {
+            if (toggleAdhd.checked) {
+                document.body.classList.add('adhs-focus');
+                localStorage.setItem('adhs-focus', 'enabled');
+            } else {
+                document.body.classList.remove('adhs-focus');
+                localStorage.setItem('adhs-focus', 'disabled');
+            }
+        }
+        
+        function toggleReadingRuler() {
+            if (toggleRuler.checked) {
+                rulerEl.style.display = 'block';
+                localStorage.setItem('reading-ruler', 'enabled');
+            } else {
+                rulerEl.style.display = 'none';
+                localStorage.setItem('reading-ruler', 'disabled');
+            }
+        }
+        
+        // Reading ruler cursor mouse tracker
+        window.addEventListener('mousemove', (e) => {
+            if (rulerEl && rulerEl.style.display === 'block') {
+                rulerEl.style.top = e.clientY + 'px';
+            }
+        });
     </script>
 </body>
 </html>

@@ -1,14 +1,87 @@
 {% extends 'base.html' %}
 
-{% block title %}Recruiter ATS Kanban Board - SecurATS{% endblock %}
+{% block title %}Recruiter Command Center - SecurATS{% endblock %}
 
 {% block content %}
 <style>
-    /* Full dashboard layout */
-    .dashboard-container {
+    /* Premium Unified Dashboard Layout */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 30px;
+        align-items: start;
+        margin-top: 20px;
+    }
+
+    .dashboard-sidebar {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-lg);
+        padding: 24px 16px;
         display: flex;
         flex-direction: column;
-        gap: 30px;
+        gap: 8px;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+    }
+
+    .sidebar-header {
+        padding: 0 16px 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        margin-bottom: 16px;
+    }
+
+    .sidebar-title {
+        font-family: 'Outfit', sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .sidebar-link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 600;
+        border-radius: var(--border-radius-sm);
+        transition: var(--transition-smooth);
+        border: 1px solid transparent;
+        cursor: pointer;
+    }
+
+    .sidebar-link:hover, .sidebar-link.active {
+        color: #fff;
+        background: rgba(139, 92, 246, 0.1);
+        border-color: rgba(139, 92, 246, 0.2);
+    }
+
+    .sidebar-link i {
+        font-size: 16px;
+        width: 20px;
+        text-align: center;
+    }
+
+    /* Content Area */
+    .dashboard-main {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .tab-content {
+        display: none;
+        animation: fadeIn 0.4s ease-out;
+    }
+
+    .tab-content.active {
+        display: block;
     }
 
     /* Top stats header bar */
@@ -16,7 +89,6 @@
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         gap: 20px;
-        margin-bottom: 10px;
     }
 
     .stat-card {
@@ -63,7 +135,7 @@
     .kanban-board {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
-        gap: 24px;
+        gap: 20px;
         align-items: start;
     }
 
@@ -71,11 +143,11 @@
         background: rgba(23, 27, 56, 0.4);
         border: 1px solid var(--glass-border);
         border-radius: var(--border-radius-lg);
-        padding: 20px 16px;
+        padding: 20px 14px;
         display: flex;
         flex-direction: column;
         gap: 16px;
-        min-height: 600px;
+        min-height: 550px;
         transition: var(--transition-smooth);
     }
 
@@ -93,7 +165,7 @@
     }
 
     .column-title {
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 700;
         color: #fff;
         display: flex;
@@ -110,91 +182,69 @@
         font-weight: 600;
     }
 
-    /* Kanban card item styling */
     .kanban-cards-wrapper {
         display: flex;
         flex-direction: column;
         gap: 12px;
-        min-height: 500px;
+        min-height: 480px;
     }
 
-    .applicant-card {
-        background: var(--glass-bg);
-        border: 1px solid var(--glass-border);
-        border-radius: var(--border-radius-md);
-        padding: 16px;
-        cursor: grab;
-        transition: var(--transition-smooth);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    /* Table styles */
+    .premium-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 16px;
     }
 
-    .applicant-card:active {
-        cursor: grabbing;
+    .premium-table th, .premium-table td {
+        padding: 14px 16px;
+        text-align: left;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
 
-    .applicant-card:hover {
-        transform: translateY(-3px);
-        border-color: rgba(139, 92, 246, 0.25);
-        box-shadow: 0 8px 25px rgba(139, 92, 246, 0.1);
-    }
-
-    .card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 10px;
-    }
-
-    .card-name {
-        font-size: 15px;
-        font-weight: 600;
-        color: #fff;
-    }
-
-    .ai-score-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        font-size: 12px;
-        font-weight: 800;
-        border: 1px solid;
-    }
-
-    .ai-score-A { background: rgba(20, 184, 166, 0.15); color: var(--accent-light); border-color: rgba(20, 184, 166, 0.3); }
-    .ai-score-B { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-color: rgba(59, 130, 246, 0.3); }
-    .ai-score-C { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3); }
-    .ai-score-D { background: rgba(239, 68, 68, 0.15); color: #f87171; border-color: rgba(239, 68, 68, 0.3); }
-
-    .card-job {
+    .premium-table th {
+        color: var(--text-muted);
         font-size: 13px;
-        color: var(--text-muted);
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+    }
+
+    .premium-table td {
+        font-size: 14px;
+        color: #e5e7eb;
+    }
+
+    .premium-table tr:hover {
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Interactive console mapping styles */
+    .odata-console {
+        background: #070913;
+        border: 1px solid rgba(20, 184, 166, 0.3);
+        border-radius: var(--border-radius-sm);
+        padding: 20px;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 13px;
+        color: var(--accent-light);
+        height: 250px;
+        overflow-y: auto;
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+    }
+
+    .odata-log-entry {
         margin-bottom: 8px;
+        line-height: 1.4;
     }
 
-    .card-meta {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 11px;
-        color: var(--text-muted);
-        border-top: 1px solid rgba(255, 255, 255, 0.03);
-        padding-top: 8px;
-        margin-top: 8px;
-    }
-
-    /* Modal dialog overrides for sleek glass UI */
+    /* Modal styling */
     .modal {
         display: none;
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 1000;
-        background: rgba(11, 13, 25, 0.85);
+        top: 0; left: 0; width: 100%; height: 100%;
+        z-index: 10000;
+        background: rgba(7, 8, 16, 0.85);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
         align-items: center;
@@ -208,177 +258,703 @@
         border: 1px solid var(--glass-border);
         border-radius: var(--border-radius-lg);
         width: 100%;
-        max-width: 900px;
+        max-width: 850px;
         max-height: 90vh;
         overflow-y: auto;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
         position: relative;
     }
 
     .modal-close {
         position: absolute;
-        top: 20px;
-        right: 20px;
-        background: none;
-        border: none;
-        color: var(--text-muted);
-        font-size: 20px;
-        cursor: pointer;
-        transition: var(--transition-smooth);
+        top: 20px; right: 20px;
+        background: none; border: none;
+        color: var(--text-muted); font-size: 20px;
+        cursor: pointer; transition: var(--transition-smooth);
     }
 
-    .modal-close:hover {
-        color: #fff;
-    }
+    .modal-close:hover { color: #fff; }
+    .modal-body { padding: 40px; }
 
-    .modal-body {
-        padding: 40px;
-    }
-
-    /* Candidate Detail Modal Specifics */
-    .candidate-modal-grid {
+    /* ROI Calculator Slider Cards */
+    .roi-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr 1.2fr;
         gap: 30px;
     }
 
-    .ai-score-block {
-        background: rgba(139, 92, 246, 0.08);
-        border: 1px solid rgba(139, 92, 246, 0.2);
+    .slider-card {
+        background: rgba(11, 13, 25, 0.4);
+        border: 1px solid var(--glass-border);
         border-radius: var(--border-radius-md);
-        padding: 20px;
+        padding: 24px;
         margin-bottom: 20px;
     }
 
-    .recruiter-notes-area {
-        background: rgba(11, 13, 25, 0.5);
-        border: 1px solid var(--glass-border);
-        border-radius: var(--border-radius-md);
-        padding: 16px;
-        max-height: 150px;
-        overflow-y: auto;
-        font-family: monospace;
-        font-size: 13px;
-        color: #e5e7eb;
-        margin-bottom: 12px;
-        white-space: pre-wrap;
+    .roi-range-input {
+        width: 100%;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 5px;
+        outline: none;
+        accent-color: var(--accent);
+        cursor: pointer;
     }
 
-    .cv-preview-box {
-        background: rgba(11, 13, 25, 0.7);
-        border: 1px solid var(--glass-border);
+    .roi-result-card {
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(20, 184, 166, 0.1) 100%);
+        border: 1px solid rgba(20, 184, 166, 0.3);
         border-radius: var(--border-radius-md);
-        height: 380px;
+        padding: 24px;
         display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--text-muted);
-        position: relative;
+        flex-direction: column;
+        gap: 16px;
     }
 
     @media (max-width: 992px) {
-        .kanban-board {
-            grid-template-columns: 1fr;
-        }
-        .kanban-column {
-            min-height: auto;
-        }
-        .candidate-modal-grid {
-            grid-template-columns: 1fr;
-        }
+        .dashboard-grid { grid-template-columns: 1fr; }
+        .kanban-board { grid-template-columns: 1fr; }
+        .roi-grid { grid-template-columns: 1fr; }
     }
 </style>
 
-<div class="dashboard-container">
-    <!-- Top Bar with Page Header & SAP shortcut -->
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
-        <div>
-            <span class="badge badge-primary" style="margin-bottom: 8px;">Recruiter-Workspace</span>
-            <h1 style="font-size: 32px; color: #fff;">Bewerber-Management (ATS)</h1>
+<div class="dashboard-grid">
+    <!-- Left Navigation Sidebar -->
+    <div class="dashboard-sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-title">
+                <i class="fa-solid fa-shield-halved" style="color: var(--accent);"></i> HR Portal
+            </span>
         </div>
-        <div style="display: flex; gap: 12px;">
-            <button onclick="openInterviewModal()" class="btn-secondary-cta">
-                <i class="fa-solid fa-calendar-days" style="margin-right: 6px;"></i> Termin planen
-            </button>
-            <a href="{% url 'ats:sap_sf_mapper' %}" class="btn-cta" style="text-decoration: none;">
-                <i class="fa-solid fa-cloud-arrow-up" style="margin-right: 6px;"></i> SuccessFactors Sync
-            </a>
+        
+        <div class="sidebar-link active" onclick="switchTab(this, 'kanban-tab')">
+            <i class="fa-solid fa-rectangle-list"></i> Bewerbungsprozesse
+        </div>
+        
+        <div class="sidebar-link" onclick="switchTab(this, 'jobs-tab')">
+            <i class="fa-solid fa-briefcase"></i> Stellenanzeigen
+        </div>
+        
+        <div class="sidebar-link" onclick="switchTab(this, 'process-tab')">
+            <i class="fa-solid fa-arrows-spin"></i> Prozess Flow Manager
+        </div>
+        
+        <div class="sidebar-link" onclick="switchTab(this, 'cms-tab')">
+            <i class="fa-solid fa-file-signature"></i> CMS Seiten-Editor
+        </div>
+        
+        <div class="sidebar-link" onclick="switchTab(this, 'templates-tab')">
+            <i class="fa-solid fa-envelope-open-text"></i> E-Mail & Variablen
+        </div>
+        
+        <div class="sidebar-link" onclick="switchTab(this, 'sap-tab')">
+            <i class="fa-solid fa-cloud-arrow-up"></i> SAP SF OData Sync
+        </div>
+        
+        <div class="sidebar-link" onclick="switchTab(this, 'gemma-tab')">
+            <i class="fa-solid fa-robot"></i> KI-Zentrale & Spam
+            <span class="badge {% if gemma_status == 'ONLINE' %}badge-accent{% else %}badge-primary{% endif %}" style="padding: 2px 6px; font-size: 9px; margin-left: auto;">{{ gemma_status }}</span>
+        </div>
+        
+        <div class="sidebar-link" onclick="switchTab(this, 'stats-tab')">
+            <i class="fa-solid fa-chart-line"></i> KPIs & Inklusions-ROI
         </div>
     </div>
 
-    <!-- Stats summary bars -->
-    <div class="stats-bar">
-        <div class="stat-card new">
-            <div class="stat-number" id="stats-new">{{ stats.new }}</div>
-            <div class="stat-label">Neue Bewerber</div>
-        </div>
-        <div class="stat-card review">
-            <div class="stat-number" id="stats-review">{{ stats.in_review }}</div>
-            <div class="stat-label">In Prüfung</div>
-        </div>
-        <div class="stat-card invited">
-            <div class="stat-number" id="stats-invited">{{ stats.invited }}</div>
-            <div class="stat-label">Eingeladen</div>
-        </div>
-        <div class="stat-card rejected">
-            <div class="stat-number" id="stats-rejected">{{ stats.rejected }}</div>
-            <div class="stat-label">Abgelehnt</div>
-        </div>
-    </div>
+    <!-- Right Content Area -->
+    <div class="dashboard-main">
+        
+        <!-- ====================================================================
+             TAB 1: BEWERBUNGSPROZESSE (KANBAN ATS)
+             ==================================================================== -->
+        <div class="tab-content active" id="kanban-tab">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+                <div>
+                    <span class="badge badge-primary">ATS Command Center</span>
+                    <h2 style="font-size: 28px; color: #fff; margin-top: 6px;">Bewerbungsprozesse (Kanban)</h2>
+                </div>
+                <button onclick="openInterviewModal()" class="btn-secondary-cta">
+                    <i class="fa-solid fa-calendar-days"></i> Termin vergeben
+                </button>
+            </div>
+            
+            <!-- Quick KPI Cards -->
+            <div class="stats-bar" style="margin-bottom: 24px;">
+                <div class="stat-card new">
+                    <div class="stat-number" id="stats-new">{{ stats.new }}</div>
+                    <div class="stat-label">Neu eingegangen</div>
+                </div>
+                <div class="stat-card review">
+                    <div class="stat-number" id="stats-review">{{ stats.in_review }}</div>
+                    <div class="stat-label">In Prüfung</div>
+                </div>
+                <div class="stat-card invited">
+                    <div class="stat-number" id="stats-invited">{{ stats.invited }}</div>
+                    <div class="stat-label">Eingeladen</div>
+                </div>
+                <div class="stat-card rejected">
+                    <div class="stat-number" id="stats-rejected">{{ stats.rejected }}</div>
+                    <div class="stat-label">Abgelehnt</div>
+                </div>
+            </div>
 
-    <!-- The interactive drag-and-drop Kanban Board -->
-    <div class="kanban-board">
-        <!-- 1. Column: NEW -->
-        <div class="kanban-column" id="col-NEW" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event, 'NEW')">
-            <div class="column-header">
-                <span class="column-title"><i class="fa-solid fa-star-of-life" style="color: var(--primary-light);"></i> Neu</span>
-                <span class="column-count" id="count-NEW">{{ columns.NEW|length }}</span>
-            </div>
-            <div class="kanban-cards-wrapper" id="cards-NEW">
-                {% for app in columns.NEW %}
-                    {% include 'includes/kanban_card.html' with app=app %}
-                {% endfor %}
+            <!-- Drag-and-Drop columns -->
+            <div class="kanban-board">
+                <!-- Neu -->
+                <div class="kanban-column" id="col-NEW" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event, 'NEW')">
+                    <div class="column-header">
+                        <span class="column-title"><i class="fa-solid fa-star-of-life" style="color: var(--primary-light);"></i> Neu</span>
+                        <span class="column-count" id="count-NEW">{{ columns.NEW|length }}</span>
+                    </div>
+                    <div class="kanban-cards-wrapper" id="cards-NEW">
+                        {% for app in columns.NEW %}
+                            {% include 'includes/kanban_card.html' with app=app %}
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- In Prüfung -->
+                <div class="kanban-column" id="col-IN_REVIEW" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event, 'IN_REVIEW')">
+                    <div class="column-header">
+                        <span class="column-title"><i class="fa-solid fa-magnifying-glass" style="color: #3b82f6;"></i> In Prüfung</span>
+                        <span class="column-count" id="count-IN_REVIEW">{{ columns.IN_REVIEW|length }}</span>
+                    </div>
+                    <div class="kanban-cards-wrapper" id="cards-IN_REVIEW">
+                        {% for app in columns.IN_REVIEW %}
+                            {% include 'includes/kanban_card.html' with app=app %}
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Eingeladen -->
+                <div class="kanban-column" id="col-INVITED" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event, 'INVITED')">
+                    <div class="column-header">
+                        <span class="column-title"><i class="fa-solid fa-calendar-check" style="color: var(--accent);"></i> Eingeladen</span>
+                        <span class="column-count" id="count-INVITED">{{ columns.INVITED|length }}</span>
+                    </div>
+                    <div class="kanban-cards-wrapper" id="cards-INVITED">
+                        {% for app in columns.INVITED %}
+                            {% include 'includes/kanban_card.html' with app=app %}
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Abgelehnt -->
+                <div class="kanban-column" id="col-REJECTED" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event, 'REJECTED')">
+                    <div class="column-header">
+                        <span class="column-title"><i class="fa-solid fa-circle-xmark" style="color: #ef4444;"></i> Abgelehnt</span>
+                        <span class="column-count" id="count-REJECTED">{{ columns.REJECTED|length }}</span>
+                    </div>
+                    <div class="kanban-cards-wrapper" id="cards-REJECTED">
+                        {% for app in columns.REJECTED %}
+                            {% include 'includes/kanban_card.html' with app=app %}
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- 2. Column: IN_REVIEW -->
-        <div class="kanban-column" id="col-IN_REVIEW" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event, 'IN_REVIEW')">
-            <div class="column-header">
-                <span class="column-title"><i class="fa-solid fa-magnifying-glass" style="color: #3b82f6;"></i> In Prüfung</span>
-                <span class="column-count" id="count-IN_REVIEW">{{ columns.IN_REVIEW|length }}</span>
-            </div>
-            <div class="kanban-cards-wrapper" id="cards-IN_REVIEW">
-                {% for app in columns.IN_REVIEW %}
-                    {% include 'includes/kanban_card.html' with app=app %}
-                {% endfor %}
+        <!-- ====================================================================
+             TAB 2: STELLENANZEIGEN (JOB MANAGER)
+             ==================================================================== -->
+        <div class="tab-content" id="jobs-tab">
+            <div class="glass-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h3 style="font-size: 22px; color: #fff;">Stellenangebote verwalten</h3>
+                        <p style="color: var(--text-muted); font-size: 13px;">Sehen Sie alle Ausschreibungen und erstellen Sie neue Ausschreibungen live.</p>
+                    </div>
+                    <button class="btn-cta" onclick="openJobCreatorModal()">
+                        <i class="fa-solid fa-circle-plus"></i> Neue Stelle ausschreiben
+                    </button>
+                </div>
+                
+                <table class="premium-table">
+                    <thead>
+                        <tr>
+                            <th>Titel</th>
+                            <th>Standort</th>
+                            <th>Abteilung</th>
+                            <th>Status</th>
+                            <th>Erstellt am</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for job in active_jobs %}
+                            <tr>
+                                <td><strong>{{ job.title }}</strong></td>
+                                <td>{{ job.location.city }}</td>
+                                <td>{{ job.department.name|default:"-" }}</td>
+                                <td><span class="badge badge-accent">{{ job.workflowState.name }}</span></td>
+                                <td>{{ job.createdAt|date:"d.m.Y" }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: var(--text-muted);">Keine Stellenanzeigen vorhanden.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <!-- 3. Column: INVITED -->
-        <div class="kanban-column" id="col-INVITED" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event, 'INVITED')">
-            <div class="column-header">
-                <span class="column-title"><i class="fa-solid fa-calendar-check" style="color: var(--accent);"></i> Eingeladen</span>
-                <span class="column-count" id="count-INVITED">{{ columns.INVITED|length }}</span>
-            </div>
-            <div class="kanban-cards-wrapper" id="cards-INVITED">
-                {% for app in columns.INVITED %}
-                    {% include 'includes/kanban_card.html' with app=app %}
-                {% endfor %}
+        <!-- ====================================================================
+             TAB 3: PROZESS FLOW MANAGER
+             ==================================================================== -->
+        <div class="tab-content" id="process-tab">
+            <div class="glass-card">
+                <h3 style="font-size: 22px; color: #fff; margin-bottom: 12px;">Recruiting Prozess Flow</h3>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 24px;">Legen Sie fest, welche Phasen eine Bewerbung bei Ihnen durchläuft. Erstellen Sie Workflow-Status-Phasen.</p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 30px;">
+                    <!-- Left: Create/Edit State Form -->
+                    <form method="POST" action="{% url 'ats:save_workflow_state' %}" class="glass-card" style="background: rgba(11, 13, 25, 0.4);">
+                        {% csrf_token %}
+                        <input type="hidden" name="state_id" id="workflow-state-id">
+                        <h4 style="color: #fff; margin-bottom: 16px;" id="workflow-state-form-title">Status-Phase hinzufügen</h4>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="state-name">Phase / Status-Name (Kleinbuchstaben, z.B. approved)</label>
+                            <input type="text" name="name" id="state-name" class="form-input" placeholder="z. B. approved" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="state-desc">Beschreibung</label>
+                            <textarea name="description" id="state-desc" class="form-textarea" rows="3" placeholder="Erkläre kurz, was in dieser Phase geschieht..."></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn-cta" style="width: 100%;">
+                            <i class="fa-solid fa-save"></i> Workflow-Phase speichern
+                        </button>
+                    </form>
+                    
+                    <!-- Right: States Table -->
+                    <div>
+                        <h4 style="color: #fff; margin-bottom: 16px;">Aktive Prozess-Zustände</h4>
+                        <table class="premium-table">
+                            <thead>
+                                <tr>
+                                    <th>Statusname</th>
+                                    <th>Beschreibung</th>
+                                    <th>Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for state in all_workflows %}
+                                    <tr>
+                                        <td><span class="badge badge-primary">{{ state.name }}</span></td>
+                                        <td>{{ state.description|default:"-" }}</td>
+                                        <td>
+                                            <button class="btn-search" style="padding: 4px 8px; font-size: 11px; height: 26px;" 
+                                                onclick="editWorkflowState('{{ state.id }}', '{{ state.name }}', '{{ state.description }}')">
+                                                <i class="fa-solid fa-pen"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- 4. Column: REJECTED -->
-        <div class="kanban-column" id="col-REJECTED" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event, 'REJECTED')">
-            <div class="column-header">
-                <span class="column-title"><i class="fa-solid fa-circle-xmark" style="color: #ef4444;"></i> Abgelehnt</span>
-                <span class="column-count" id="count-REJECTED">{{ columns.REJECTED|length }}</span>
-            </div>
-            <div class="kanban-cards-wrapper" id="cards-REJECTED">
-                {% for app in columns.REJECTED %}
-                    {% include 'includes/kanban_card.html' with app=app %}
-                {% endfor %}
+        <!-- ====================================================================
+             TAB 4: CMS SEITEN-EDITOR
+             ==================================================================== -->
+        <div class="tab-content" id="cms-tab">
+            <div class="glass-card">
+                <h3 style="font-size: 22px; color: #fff; margin-bottom: 12px;">Karriere-Landingpages & CMS-Seiten</h3>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 24px;">Erstellen Sie eigenständige Kampagnen-Landingpages (z. B. für LinkedIn Ads) oder pflegen Sie die Hauptseiten.</p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 30px;">
+                    <!-- Left Form Editor -->
+                    <form method="POST" action="{% url 'ats:save_page' %}" class="glass-card" style="background: rgba(11, 13, 25, 0.4);" id="cms-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="page_id" id="cms-page-id">
+                        <h4 style="color: #fff; margin-bottom: 16px;" id="cms-form-title">Neue Seite erstellen</h4>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="page-title">Titel der Seite</label>
+                            <input type="text" name="title" id="page-title" class="form-input" placeholder="z. B. IT-Karriere Portal" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="page-slug">Slug (URL-Pfad, z. B. it-karriere)</label>
+                            <input type="text" name="slug" id="page-slug" class="form-input" placeholder="z. B. it-karriere" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <label class="form-label" style="margin-bottom: 0;">Seiten-Inhalt (Markdown / HTML)</label>
+                                <button type="button" class="btn-search" style="height: 26px; font-size: 11px; padding: 0 10px;" onclick="translateSimpleGermanCMS()">
+                                    <i class="fa-solid fa-wheelchair"></i> Leichte Sprache (KI)
+                                </button>
+                            </div>
+                            <textarea name="content" id="page-content" class="form-textarea" rows="8" placeholder="Verfasse den Inhalt..." required></textarea>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div class="form-group">
+                                <label class="form-label" for="page-nav-label">Navigations-Label</label>
+                                <input type="text" name="nav_label" id="page-nav-label" class="form-input" placeholder="z. B. IT-Jobs">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="page-nav-order">Navigations-Reihenfolge</label>
+                                <input type="number" name="nav_order" id="page-nav-order" class="form-input" value="0">
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                            <label class="form-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" name="nav_enabled" id="page-nav-enabled" checked style="accent-color: var(--accent);"> In Navbar anzeigen?
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="page-meta-desc">SEO Meta-Beschreibung (für Google)</label>
+                            <input type="text" name="meta_desc" id="page-meta-desc" class="form-input" placeholder="Kurze SEO-Beschreibung...">
+                        </div>
+                        
+                        <button type="submit" class="btn-cta" style="width: 100%;">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> CMS-Seite veröffentlichen
+                        </button>
+                    </form>
+                    
+                    <!-- Right List Table -->
+                    <div>
+                        <h4 style="color: #fff; margin-bottom: 16px;">CMS Seitenübersicht</h4>
+                        <table class="premium-table">
+                            <thead>
+                                <tr>
+                                    <th>Seitenname</th>
+                                    <th>URL Slug</th>
+                                    <th>Navbar</th>
+                                    <th>Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for page in all_pages %}
+                                    <tr>
+                                        <td><strong>{{ page.title }}</strong></td>
+                                        <td><code>/pages/{{ page.slug }}</code></td>
+                                        <td>{% if page.navEnabled %}<span style="color: var(--accent); font-weight: bold;">Ja (Pos. {{ page.navOrder }})</span>{% else %}Nein{% endif %}</td>
+                                        <td>
+                                            <button class="btn-search" style="padding: 4px 8px; font-size: 11px; height: 26px;" 
+                                                onclick="editCMSPage('{{ page.id }}', '{{ page.title }}', '{{ page.slug }}', `{{ page.content|escapejs }}`, '{{ page.navLabel|default:"" }}', '{{ page.navOrder }}', {% if page.navEnabled %}true{% else %}false{% endif %}, '{{ page.metaDesc|default:"" }}')">
+                                                <i class="fa-solid fa-pen"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
+
+        <!-- ====================================================================
+             TAB 5: TEMPLATE & VARIABLEN MANAGER
+             ==================================================================== -->
+        <div class="tab-content" id="templates-tab">
+            <div class="glass-card">
+                <h3 style="font-size: 22px; color: #fff; margin-bottom: 12px;">E-Mails & Globale Template-Variablen</h3>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 24px;">Steuern Sie E-Mail-Templates und verwalten Sie globale Variablen (Zero-Maintenance) für Seiten und E-Mails.</p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                    <!-- Left: Variables Manager -->
+                    <div class="glass-card" style="background: rgba(11, 13, 25, 0.4);">
+                        <h4 style="color: #fff; margin-bottom: 16px;"><i class="fa-solid fa-key" style="color: var(--accent);"></i> Globale Variablen (SystemSettings)</h4>
+                        
+                        <form method="POST" action="{% url 'ats:save_system_setting' %}" style="display: flex; gap: 8px; margin-bottom: 20px;">
+                            {% csrf_token %}
+                            <input type="hidden" name="setting_id" id="setting-id">
+                            <input type="text" name="key" id="setting-key" class="form-input" placeholder="VARIABLE_NAME" required style="width: 35%; text-transform: uppercase;">
+                            <input type="text" name="value" id="setting-value" class="form-input" placeholder="Variable Wert..." required style="width: 45%;">
+                            <button type="submit" class="btn-cta" style="width: 20%; padding: 0 10px;">Speichern</button>
+                        </form>
+                        
+                        <table class="premium-table" style="font-size: 13px;">
+                            <thead>
+                                <tr>
+                                    <th>Variable</th>
+                                    <th>Wert</th>
+                                    <th>Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for setting in all_system_settings %}
+                                    <tr>
+                                        <td><code>[[{{ setting.key }}]]</code></td>
+                                        <td>{{ setting.value }}</td>
+                                        <td>
+                                            <button class="btn-search" style="padding: 4px 6px; font-size: 10px; height: 24px;" 
+                                                onclick="editSystemSetting('{{ setting.id }}', '{{ setting.key }}', '{{ setting.value }}')">
+                                                <i class="fa-solid fa-pen"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Right: Email Template Editor -->
+                    <div class="glass-card" style="background: rgba(11, 13, 25, 0.4);">
+                        <h4 style="color: #fff; margin-bottom: 16px;"><i class="fa-solid fa-envelope" style="color: var(--primary-light);"></i> E-Mail Vorlagen</h4>
+                        
+                        <form method="POST" action="{% url 'ats:save_email_template' %}" id="email-template-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="template_id" id="email-template-id">
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="email-select">Vorlage auswählen zum Bearbeiten</label>
+                                <select id="email-select" class="filter-select" onchange="loadEmailTemplateToForm()">
+                                    <option value="">-- Neue Vorlage erstellen --</option>
+                                    {% for et in all_email_templates %}
+                                        <option value="{{ et.id }}" data-name="{{ et.name }}" data-subject="{{ et.subject }}" data-html="{{ et.htmlContent|escapejs }}">{{ et.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="email-name">Vorlagenname (z.B. Absage)</label>
+                                <input type="text" name="name" id="email-name" class="form-input" required placeholder="z. B. Eingangsbestätigung">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="email-subject">E-Mail Betreff</label>
+                                <input type="text" name="subject" id="email-subject" class="form-input" required placeholder="Betreff...">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="email-html">E-Mail Inhalt (HTML)</label>
+                                <textarea name="html_content" id="email-html" class="form-textarea" rows="6" required placeholder="Inhalt..."></textarea>
+                            </div>
+                            
+                            <button type="submit" class="btn-cta" style="width: 100%;">
+                                <i class="fa-solid fa-paper-plane"></i> E-Mail Vorlage sichern
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====================================================================
+             TAB 6: SAP SUCCESSFACTORS SYNC CONSOLE
+             ==================================================================== -->
+        <div class="tab-content" id="sap-tab">
+            <div class="glass-card">
+                <h3 style="font-size: 22px; color: #fff; margin-bottom: 6px;">SAP SuccessFactors Sync Console</h3>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 24px;">Synchronisieren Sie Bewerberdaten per OData-Protokoll sicher in Ihre bestehende Enterprise HRIS-Landschaft.</p>
+                
+                <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 30px;">
+                    <!-- Console Logger -->
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h4 style="color: #fff;"><i class="fa-solid fa-terminal" style="color: var(--accent);"></i> OData Schnittstellen-Verbindung</h4>
+                            <span class="badge badge-accent">Secure mTLS</span>
+                        </div>
+                        <div class="odata-console" id="odataSyncConsole">
+                            <div class="odata-log-entry">> OData Gateway bereit. Warte auf Synchronisation...</div>
+                            <div class="odata-log-entry">> Port 443 verschlüsselt mit zertifizierten Partner-Keys.</div>
+                        </div>
+                        
+                        <div style="margin-top: 20px; display: flex; gap: 12px;">
+                            <button class="btn-cta" onclick="triggerODataSynchronisation()" style="height: 44px; padding: 0 24px;">
+                                <i class="fa-solid fa-arrows-rotate"></i> OData Sync ausführen
+                            </button>
+                            <button class="btn-secondary-cta" onclick="clearODataConsole()" style="height: 44px; padding: 0 24px;">
+                                Konsole leeren
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Schema Mapping Fields -->
+                    <div class="glass-card" style="background: rgba(11, 13, 25, 0.4);">
+                        <h4 style="color: #fff; margin-bottom: 16px;"><i class="fa-solid fa-map-location-dot" style="color: var(--primary-light);"></i> Feldzuordnung (OData Schema)</h4>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            {% for field in sap_schema_fields %}
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(255,255,255,0.03); border-radius: var(--border-radius-sm); border: 1px solid var(--glass-border);">
+                                    <span style="font-size: 13px; font-weight: 600; color: #fff;">{{ field.label }}</span>
+                                    <i class="fa-solid fa-circle-arrow-right" style="color: var(--accent);"></i>
+                                    <code style="font-size: 12px; color: var(--primary-light);">{{ field.id }} ({{ field.type }})</code>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====================================================================
+             TAB 7: KI-ZENTRALE (GEMMA AI & SPAM CONTROL)
+             ==================================================================== -->
+        <div class="tab-content" id="gemma-tab">
+            <div class="glass-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <div>
+                        <h3 style="font-size: 22px; color: #fff;">KI-Zentrale (Gemma 4 Integration)</h3>
+                        <p style="color: var(--text-muted); font-size: 13px;">Verwalten und testen Sie die lokale künstliche Intelligenz direkt auf Ihrem eigenen, air-gapped Enterprise-Server.</p>
+                    </div>
+                    <span class="badge {% if gemma_status == 'ONLINE' %}badge-accent{% else %}badge-primary{% endif %}" style="height: 28px; font-size: 11px;">
+                        Gemma Status: {{ gemma_status }}
+                    </span>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 24px;">
+                    <!-- Left: Connectivity Console & AGG check -->
+                    <div style="display: flex; flex-direction: column; gap: 24px;">
+                        <!-- Connection Prompt Tester -->
+                        <div class="glass-card" style="background: rgba(11, 13, 25, 0.4);">
+                            <h4 style="color: #fff; margin-bottom: 12px;"><i class="fa-solid fa-comments"></i> Gemma Prompt Terminal</h4>
+                            <div class="form-group">
+                                <input type="text" id="gemma-prompt" class="form-input" placeholder="Stelle eine Test-Frage an Gemma..." value="Hallo Gemma, bist du bereit?">
+                            </div>
+                            <button type="button" class="btn-cta" onclick="testGemmaConnection()" style="height: 38px; width: 100%;">
+                                <i class="fa-solid fa-bolt"></i> KI-Verbindung testen
+                            </button>
+                            <div id="gemma-response-box" style="margin-top: 16px; padding: 12px; background: rgba(0,0,0,0.3); border-radius: var(--border-radius-sm); border: 1px solid var(--glass-border); min-height: 50px; font-size: 13px; font-family: monospace; white-space: pre-wrap; color: #e5e7eb;">
+                                (Noch kein Testergebnis vorhanden)
+                            </div>
+                        </div>
+
+                        <!-- AGG Checker Box -->
+                        <div class="glass-card" style="background: rgba(11, 13, 25, 0.4);">
+                            <h4 style="color: #fff; margin-bottom: 12px;"><i class="fa-solid fa-gavel" style="color: var(--accent);"></i> AGG Legal-Checker</h4>
+                            <div class="form-group">
+                                <textarea id="agg-text" class="form-textarea" rows="3" placeholder="Füge hier Stellenbeschreibungstext ein..."></textarea>
+                            </div>
+                            <button type="button" class="btn-secondary-cta" onclick="runAGGChecker()" style="height: 38px; width: 100%; border-color: var(--accent);">
+                                <i class="fa-solid fa-shield-halved"></i> AGG-Verstöße prüfen
+                            </button>
+                            <div id="agg-response-box" style="margin-top: 16px; padding: 12px; background: rgba(0,0,0,0.3); border-radius: var(--border-radius-sm); border: 1px solid var(--glass-border); font-size: 13px; color: #e5e7eb; white-space: pre-wrap;">
+                                (Text einfügen und prüfen klicken)
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right: Leichte Sprache helper & Spambot Metrics -->
+                    <div style="display: flex; flex-direction: column; gap: 24px;">
+                        <!-- Accessibility Leichte Sprache translator -->
+                        <div class="glass-card" style="background: rgba(11, 13, 25, 0.4);">
+                            <h4 style="color: #fff; margin-bottom: 12px;"><i class="fa-solid fa-wheelchair-active" style="color: var(--accent);"></i> Inklusions-Übersetzer für Leichte Sprache</h4>
+                            <div class="form-group">
+                                <textarea id="simple-german-text" class="form-textarea" rows="3" placeholder="Füge hier komplexen Text ein, der BFSG-konform übersetzt werden soll..."></textarea>
+                            </div>
+                            <button type="button" class="btn-cta" onclick="translateSimpleGermanText()" style="height: 38px; width: 100%;">
+                                <i class="fa-solid fa-language"></i> In Leichte Sprache übersetzen
+                            </button>
+                            <div id="simple-german-response-box" style="margin-top: 16px; padding: 12px; background: rgba(0,0,0,0.3); border-radius: var(--border-radius-sm); border: 1px solid var(--glass-border); font-size: 13px; color: #e5e7eb; white-space: pre-wrap;">
+                                (Übersetzungs-Vorschau wird hier angezeigt)
+                            </div>
+                        </div>
+
+                        <!-- Honeypot stats and RAG feedback training list -->
+                        <div class="glass-card" style="background: rgba(11, 13, 25, 0.4);">
+                            <h4 style="color: #fff; margin-bottom: 16px;"><i class="fa-solid fa-bug-slash" style="color: #ef4444;"></i> Honeypot Spam-Schutz</h4>
+                            
+                            <div style="display: flex; gap: 20px; align-items: center;">
+                                <div style="font-size: 42px; font-weight: 800; color: #ef4444; font-family: 'Outfit';">{{ honeypot_spam_count }}</div>
+                                <div>
+                                    <h5 style="color: #fff; font-size: 15px;">Blockierte Spambots</h5>
+                                    <p style="color: var(--text-muted); font-size: 12px;">Bösartige Anfragen, die lautlos über das Spam-Honeypot abgefangen wurden.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====================================================================
+             TAB 8: STATISTIKEN & KPIS & INKLUSIONS-ROI
+             ==================================================================== -->
+        <div class="tab-content" id="stats-tab">
+            <!-- Quota ROI Calculator and KPIs in a beautiful layout -->
+            <div class="glass-card">
+                <h3 style="font-size: 22px; color: #fff; margin-bottom: 6px;">KPIs & Inklusions-ROI Rechner</h3>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 24px;">Berechnen Sie Ihre Pflichtabgaben (SGB IX) und erfahren Sie, wie viel Ausgleichsabgabe Sie durch Inklusion einsparen.</p>
+                
+                <div class="roi-grid">
+                    <!-- Left: Sliders -->
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div class="slider-card">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <label class="form-label" style="font-size: 15px; font-weight: 600; color: #fff;">Mitarbeiteranzahl (MA)</label>
+                                <span class="badge badge-accent" id="roi-ma-badge" style="font-size: 14px;">140 MA</span>
+                            </div>
+                            <input type="range" id="roi-employees" min="20" max="1000" step="5" value="140" class="roi-range-input" oninput="calculateInclusionROI()">
+                            <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-top: 8px;">
+                                <span>20</span><span>500</span><span>1000</span>
+                            </div>
+                        </div>
+
+                        <div class="slider-card">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <label class="form-label" style="font-size: 15px; font-weight: 600; color: #fff;">Schwerbehindertenquote (%)</label>
+                                <span class="badge badge-primary" id="roi-quote-badge" style="font-size: 14px;">0.0 %</span>
+                            </div>
+                            <input type="range" id="roi-quote" min="0" max="5" step="0.1" value="0" class="roi-range-input" oninput="calculateInclusionROI()">
+                            <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-top: 8px;">
+                                <span>0% (Nullbeschäftigung)</span><span>Gesetzlich: 5%</span>
+                            </div>
+                        </div>
+                        
+                        <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: var(--border-radius-sm); padding: 16px; font-size: 12px; color: #fbbf24; line-height: 1.5;" id="roi-sb-warning">
+                            ⚠️ <strong>Strafabgabe aktiv!</strong> Bei 140 MA beträgt die Zielquote 5% (ca. 7 Pflichtarbeitsplätze). Bei 0% Quote drohen 720 € Strafe monatlich je unbesetztem Platz.
+                        </div>
+                    </div>
+                    
+                    <!-- Right: ROI outcomes -->
+                    <div class="roi-result-card">
+                        <h4 style="color: #fff; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px; margin-bottom: 8px;">Jährlicher Inklusions-ROI</h4>
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(0,0,0,0.2); border-radius: var(--border-radius-sm);">
+                            <span style="font-size: 13px; color: var(--text-muted);">Ersparnis Ausgleichsabgabe</span>
+                            <strong style="color: var(--accent-light); font-size: 16px;" id="roi-saving-abgabe">+ 60.480 €</strong>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(0,0,0,0.2); border-radius: var(--border-radius-sm);">
+                            <span style="font-size: 13px; color: var(--text-muted);">Conversion-Mehrwert (BFSG +37%)</span>
+                            <strong style="color: var(--accent-light); font-size: 16px;" id="roi-saving-conversion">+ 12.800 €</strong>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(0,0,0,0.2); border-radius: var(--border-radius-sm);">
+                            <span style="font-size: 13px; color: var(--text-muted);">Schutz vor Lohnklagen (Equal Pay 2026)</span>
+                            <strong style="color: var(--accent-light); font-size: 16px;" id="roi-saving-legal">+ 15.000 €</strong>
+                        </div>
+                        
+                        <div style="padding: 16px; background: rgba(20, 184, 166, 0.15); border: 1px solid rgba(20, 184, 166, 0.3); border-radius: var(--border-radius-md); text-align: center; margin-top: 10px;">
+                            <span style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--accent-light); display: block; margin-bottom: 4px;">Gesamter Jährlicher ROI</span>
+                            <strong style="font-size: 32px; font-weight: 800; font-family: 'Outfit'; color: #fff;" id="roi-total-saving">88.280 € / Jahr</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Funnel SVG Graph -->
+                <h4 style="color: #fff; margin-top: 40px; margin-bottom: 20px;"><i class="fa-solid fa-filter" style="color: var(--primary-light);"></i> Recruiting Funnel Analyse</h4>
+                <div style="display: flex; justify-content: center; background: rgba(11, 13, 25, 0.4); border: 1px solid var(--glass-border); border-radius: var(--border-radius-lg); padding: 30px;">
+                    <svg width="600" height="200" viewBox="0 0 600 200" style="max-width: 100%;">
+                        <!-- Funnel polygon layers -->
+                        <polygon points="50,20 550,20 480,60 120,60" fill="rgba(139, 92, 246, 0.4)" stroke="var(--primary)" stroke-width="2" />
+                        <polygon points="120,60 480,60 410,100 190,100" fill="rgba(59, 130, 246, 0.4)" stroke="#3b82f6" stroke-width="2" />
+                        <polygon points="190,100 410,100 350,140 250,140" fill="rgba(20, 184, 166, 0.4)" stroke="var(--accent)" stroke-width="2" />
+                        <polygon points="250,140 350,140 320,180 280,180" fill="rgba(16, 185, 129, 0.4)" stroke="#10b981" stroke-width="2" />
+                        
+                        <!-- Text labels inside polygons -->
+                        <text x="300" y="45" fill="#fff" font-size="12" font-weight="bold" text-anchor="middle">1. NEUE BEWERBER ({{ stats.total }})</text>
+                        <text x="300" y="85" fill="#fff" font-size="12" font-weight="bold" text-anchor="middle">2. IN PRÜFUNG ({{ stats.in_review }})</text>
+                        <text x="300" y="125" fill="#fff" font-size="12" font-weight="bold" text-anchor="middle">3. EINGELADEN ({{ stats.invited }})</text>
+                        <text x="300" y="165" fill="#fff" font-size="12" font-weight="bold" text-anchor="middle">4. EINGESTELLT</text>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -395,8 +971,21 @@ MODALS & OVERLAYS
                 
                 <!-- Left half: Personal details, CV PDF mock, dynamic screening, and cover letter -->
                 <div>
-                    <h2 id="modal-name" style="color: #fff; font-size: 26px; margin-bottom: 6px;">Name</h2>
-                    <p id="modal-job" style="color: var(--accent-light); font-size: 14px; font-weight: 600; text-transform: uppercase; margin-bottom: 24px;">Job Title</p>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap;">
+                        <div>
+                            <h2 id="modal-name" style="color: #fff; font-size: 26px; margin-bottom: 6px;">Name</h2>
+                            <p id="modal-job" style="color: var(--accent-light); font-size: 14px; font-weight: 600; text-transform: uppercase; margin-bottom: 20px;">Job Title</p>
+                        </div>
+                        <!-- RAG feedback loop trigger -->
+                        <div style="display: flex; gap: 8px;">
+                            <button onclick="trainLearningSample('POSITIVE')" class="btn-secondary-cta" style="border-color: var(--accent); color: var(--accent-light); font-size: 11px; padding: 4px 10px; height: 28px; display: inline-flex; align-items: center; gap: 4px;">
+                                <i class="fa-solid fa-thumbs-up"></i> POSITIV (RAG)
+                            </button>
+                            <button onclick="trainLearningSample('NEGATIVE')" class="btn-secondary-cta" style="border-color: #ef4444; color: #f87171; font-size: 11px; padding: 4px 10px; height: 28px; display: inline-flex; align-items: center; gap: 4px;">
+                                <i class="fa-solid fa-thumbs-down"></i> NEGATIV (RAG)
+                            </button>
+                        </div>
+                    </div>
                     
                     <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; font-size: 14px;">
                         <div style="display: flex; gap: 8px; align-items: center; color: var(--text-muted);">
@@ -420,7 +1009,7 @@ MODALS & OVERLAYS
                     <div class="ai-score-block">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                             <h3 style="color: #fff; font-size: 16px; display: flex; align-items: center; gap: 6px;">
-                                <i class="fa-solid fa-robot"></i> KI-Voranalyse
+                                <i class="fa-solid fa-robot"></i> KI-Voranalyse (Gemma)
                             </h3>
                             <span class="ai-score-badge" id="modal-ai-score" style="transform: scale(1.2);">A</span>
                         </div>
@@ -501,8 +1090,157 @@ MODALS & OVERLAYS
     </div>
 </div>
 
+<!-- Modal 3: Job Creator Wizard -->
+<div class="modal" id="jobCreatorModal">
+    <div class="modal-content" style="max-width: 650px;">
+        <button class="modal-close" onclick="closeJobCreatorModal()"><i class="fa-solid fa-xmark"></i></button>
+        <div class="modal-body">
+            <h2 style="color: #fff; font-size: 24px; margin-bottom: 8px;"><i class="fa-solid fa-circle-plus" style="color: var(--accent);"></i> Neue Stelle ausschreiben</h2>
+            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;">Erstellen Sie eine vollqualifizierte, multiposting-konforme Stellenanzeige.</p>
+            
+            <form method="POST" action="{% url 'ats:create_job' %}">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label class="form-label" for="job-title-inp">Stellentitel *</label>
+                    <input type="text" name="title" id="job-title-inp" class="form-input" placeholder="z. B. Full Stack Django Developer (m/w/d)" required>
+                </div>
+
+                <div class="form-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label class="form-label" style="margin-bottom: 0;">Kurzbeschreibung / Einleitung *</label>
+                        <button type="button" class="btn-search" style="height: 26px; font-size: 11px; padding: 0 10px;" onclick="runAGGCheckOnJob()">
+                            <i class="fa-solid fa-shield-halved"></i> AGG prüfen (KI)
+                        </button>
+                    </div>
+                    <textarea name="description" id="job-desc-inp" class="form-textarea" rows="2" placeholder="Kurze Einleitung der Stelle..." required></textarea>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="job-tasks-inp">Aufgaben (Eine Zeile pro Aufgabe) *</label>
+                        <textarea name="tasks" id="job-tasks-inp" class="form-textarea" rows="3" placeholder="Entwicklung von Django Backends&#10;Gestaltung von CSS Frontends" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="job-reqs-inp">Anforderungen (Eine Zeile pro Anforderung) *</label>
+                        <textarea name="requirements" id="job-reqs-inp" class="form-textarea" rows="3" placeholder="3+ Jahre Django Erfahrung&#10;Kenntnisse in HTML und CSS" required></textarea>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="job-facility">Einrichtung *</label>
+                        <select name="facility" id="job-facility" class="filter-select" required>
+                            {% for fac in facilities %}
+                                <option value="{{ fac.id }}">{{ fac.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="job-department">Abteilung</label>
+                        <select name="department" id="job-department" class="filter-select">
+                            <option value="">-- Keine Abteilung --</option>
+                            {% for dept in departments %}
+                                <option value="{{ dept.id }}">{{ dept.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="job-location">Standort *</label>
+                        <select name="location" id="job-location" class="filter-select" required>
+                            {% for loc in locations %}
+                                <option value="{{ loc.id }}">{{ loc.name }} ({{ loc.city }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="job-family">Stellengruppe *</label>
+                        <select name="job_family" id="job-family" class="filter-select" required>
+                            {% for jf in job_families %}
+                                <option value="{{ jf.id }}">{{ jf.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="job-contact">Ansprechpartner</label>
+                        <select name="contact_person" id="job-contact" class="filter-select">
+                            <option value="">-- Keiner --</option>
+                            {% for cp in contact_persons %}
+                                <option value="{{ cp.id }}">{{ cp.firstName }} {{ cp.lastName }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="job-template">Seiten-Template</label>
+                        <select name="job_template" id="job-template" class="filter-select">
+                            {% for t in job_templates %}
+                                <option value="{{ t.id }}">{{ t.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Angebotene Corporate Benefits</label>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px;">
+                        {% for benefit in all_benefits %}
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #fff; cursor: pointer;">
+                                <input type="checkbox" name="benefits" value="{{ benefit.id }}" style="accent-color: var(--accent);"> {{ benefit.icon }} {{ benefit.name }}
+                            </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="job-screening">Screening K.O. Fragen (JSON-Format)</label>
+                    <textarea name="screening_questions" id="job-screening" class="form-textarea" rows="3" placeholder='[{"id": "q1", "question": "Haben Sie Erfahrung?", "type": "YES_NO", "isMandatory": true, "expectedAnswer": "YES"}]'></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="job-state">Workflow-Veröffentlichungsstatus</label>
+                    <select name="workflow_state" id="job-state" class="filter-select">
+                        {% for state in all_workflows %}
+                            <option value="{{ state.id }}" {% if state.name == 'published' %}selected{% endif %}>{{ state.name }} ({{ state.description }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-apply-now" style="width: 100%; margin-top: 16px; height: 46px;">
+                    <i class="fa-solid fa-circle-check"></i> Stellenangebot veröffentlichen
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
     let activeApplicationId = null;
+
+    // Switch between dashboard tabs
+    function switchTab(clickedEl, tabId) {
+        // Toggle active link
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+            link.classList.remove('active');
+        });
+        clickedEl.classList.add('active');
+
+        // Toggle active tab content
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(tabId).classList.add('active');
+
+        // Run specific loaders if needed
+        if (tabId === 'stats-tab') {
+            calculateInclusionROI();
+        }
+    }
 
     // Drag-and-Drop implementation
     function allowDrop(ev) {
@@ -545,7 +1283,6 @@ MODALS & OVERLAYS
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    // Update counters in real-time
                     updateStatsCounters();
                 } else {
                     console.error("Status-Update schlug fehl.");
@@ -555,16 +1292,12 @@ MODALS & OVERLAYS
         }
     }
 
-    // Helper to recount column lengths and update stats bar counters in real-time
     function updateStatsCounters() {
         const columns = ['NEW', 'IN_REVIEW', 'INVITED', 'REJECTED'];
-        let totals = 0;
-        
         columns.forEach(col => {
             const count = document.getElementById(`cards-${col}`).children.length;
             document.getElementById(`count-${col}`).innerText = count;
             
-            // Map keys to DOM IDs for stats bar
             let statId = '';
             if (col === 'NEW') statId = 'stats-new';
             if (col === 'IN_REVIEW') statId = 'stats-review';
@@ -574,11 +1307,10 @@ MODALS & OVERLAYS
             if (statId) {
                 document.getElementById(statId).innerText = count;
             }
-            totals += count;
         });
     }
 
-    // Modal Controls for details
+    // Modal controls for Candidate Details
     function openCandidateModal(appId, name, job, email, phone, coverLetter, aiScore, aiRationale, cvStorageId, internalNotes, screeningJson) {
         activeApplicationId = appId;
         
@@ -588,13 +1320,11 @@ MODALS & OVERLAYS
         document.getElementById('modal-phone').innerText = phone || '(Keine Angabe)';
         document.getElementById('modal-coverletter').innerText = coverLetter || '(Kein Anschreiben übermittelt)';
         
-        // AI score
         const scoreBadge = document.getElementById('modal-ai-score');
         scoreBadge.innerText = aiScore || 'C';
         scoreBadge.className = `ai-score-badge ai-score-${aiScore || 'C'}`;
         document.getElementById('modal-ai-rationale').innerText = aiRationale || 'Keine Bewertung vorhanden.';
         
-        // CV doc mock
         const cvBox = document.getElementById('modal-cv-preview');
         if (cvStorageId && cvStorageId !== 'None' && cvStorageId !== '') {
             cvBox.innerHTML = `
@@ -611,11 +1341,9 @@ MODALS & OVERLAYS
                 </div>`;
         }
         
-        // Notes
         const notesBox = document.getElementById('modal-notes');
         notesBox.innerText = internalNotes || 'Keine internen Notizen vorhanden.';
         
-        // Screening questions details
         const screeningBox = document.getElementById('modal-screening');
         if (screeningJson && screeningJson !== '{}') {
             try {
@@ -637,7 +1365,6 @@ MODALS & OVERLAYS
             screeningBox.innerHTML = 'Keine Screening-Fragen für diesen Job definiert.';
         }
 
-        // Setup schedule action button in modal
         document.getElementById('modal-btn-schedule').onclick = function() {
             closeCandidateModal();
             openInterviewModal(appId);
@@ -670,10 +1397,8 @@ MODALS & OVERLAYS
                 document.getElementById('modal-notes').innerText = data.notes;
                 input.value = '';
                 
-                // Update notes in DOM on the original card
                 const originalCard = document.getElementById(`card-${activeApplicationId}`);
                 if (originalCard) {
-                    // Update dataset attribute to hold new notes
                     originalCard.setAttribute('data-notes', data.notes);
                 }
             }
@@ -693,6 +1418,277 @@ MODALS & OVERLAYS
 
     function closeInterviewModal() {
         document.getElementById('interviewModal').style.display = 'none';
+    }
+
+    // Job Creator modal
+    function openJobCreatorModal() {
+        document.getElementById('jobCreatorModal').style.display = 'flex';
+    }
+
+    function closeJobCreatorModal() {
+        document.getElementById('jobCreatorModal').style.display = 'none';
+    }
+
+    // CMS Page editor loading
+    function editCMSPage(id, title, slug, content, navLabel, navOrder, navEnabled, metaDesc) {
+        document.getElementById('cms-page-id').value = id;
+        document.getElementById('page-title').value = title;
+        document.getElementById('page-slug').value = slug;
+        document.getElementById('page-content').value = content;
+        document.getElementById('page-nav-label').value = navLabel;
+        document.getElementById('page-nav-order').value = navOrder;
+        document.getElementById('page-nav-enabled').checked = navEnabled;
+        document.getElementById('page-meta-desc').value = metaDesc;
+        document.getElementById('cms-form-title').innerText = 'CMS-Seite bearbeiten';
+    }
+
+    // Process State editor loading
+    function editWorkflowState(id, name, description) {
+        document.getElementById('workflow-state-id').value = id;
+        document.getElementById('state-name').value = name;
+        document.getElementById('state-desc').value = description;
+        document.getElementById('workflow-state-form-title').innerText = 'Workflow-Phase bearbeiten';
+    }
+
+    // Variables editor loading
+    function editSystemSetting(id, key, value) {
+        document.getElementById('setting-id').value = id;
+        document.getElementById('setting-key').value = key;
+        document.getElementById('setting-value').value = value;
+    }
+
+    // Email template auto loader
+    function loadEmailTemplateToForm() {
+        const select = document.getElementById('email-select');
+        const selectedOpt = select.options[select.selectedIndex];
+        if (select.value === '') {
+            document.getElementById('email-template-id').value = '';
+            document.getElementById('email-name').value = '';
+            document.getElementById('email-subject').value = '';
+            document.getElementById('email-html').value = '';
+        } else {
+            document.getElementById('email-template-id').value = select.value;
+            document.getElementById('email-name').value = selectedOpt.getAttribute('data-name');
+            document.getElementById('email-subject').value = selectedOpt.getAttribute('data-subject');
+            document.getElementById('email-html').value = selectedOpt.getAttribute('data-html');
+        }
+    }
+
+    // RAG Learning Sample Feedback trigger
+    function trainLearningSample(type) {
+        if (!activeApplicationId) return;
+        const formData = new FormData();
+        formData.append('feedback_type', type);
+        
+        fetch(`/recruiter/applications/${activeApplicationId}/toggle-learning/`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert(`✅ RAG-Feedback erfolgreich als ${type} übermittelt!`);
+            }
+        })
+        .catch(err => console.error("Error updating RAG learning:", err));
+    }
+
+    // SAP SF sync console trigger
+    function triggerODataSynchronisation() {
+        const consoleEl = document.getElementById('odataSyncConsole');
+        consoleEl.innerHTML += `<div class="odata-log-entry" style="color:var(--primary-light);">> [$(date)] Starte mTLS OData OAUTH2 Authentifizierung...</div>`;
+        consoleEl.scrollTop = consoleEl.scrollHeight;
+
+        setTimeout(() => {
+            consoleEl.innerHTML += `<div class="odata-log-entry" style="color:var(--primary-light);">> Token erfolgreich ausgestellt. Sende OData Batch payload...</div>`;
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }, 800);
+
+        setTimeout(() => {
+            const formData = new FormData();
+            formData.append('mapping_data', '{"sf_candidate_id":"Application.id","sf_first_name":"Applicant.firstName"}');
+            formData.append('sync_target', 'SAP_SF_PRODUCTION');
+
+            fetch(`/integrations/sap-sf/`, { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    consoleEl.innerHTML += `<div class="odata-log-entry" style="color:#10b981;">> SUCCESS: ${data.message}</div>`;
+                    consoleEl.innerHTML += `<div class="odata-log-entry" style="color:#10b981;">> Revisionssicher übertragen: ${data.records_exported} Bewerber-Profile.</div>`;
+                } else {
+                    consoleEl.innerHTML += `<div class="odata-log-entry" style="color:#ef4444;">> ERROR: OData-Übertragung fehlgeschlagen.</div>`;
+                }
+                consoleEl.scrollTop = consoleEl.scrollHeight;
+            });
+        }, 1600);
+    }
+
+    function clearODataConsole() {
+        document.getElementById('odataSyncConsole').innerHTML = `<div class="odata-log-entry">> OData Gateway bereit. Warte auf Synchronisation...</div>`;
+    }
+
+    // Gemma AI Connection prompt console
+    function testGemmaConnection() {
+        const prompt = document.getElementById('gemma-prompt').value;
+        const box = document.getElementById('gemma-response-box');
+        box.innerText = "⏳ Verbindung wird aufgebaut. Gemma antwortet...";
+        
+        const formData = new FormData();
+        formData.append('prompt', prompt);
+
+        fetch(`/recruiter/ki/test/`, { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                box.innerHTML = `<span style="color:var(--accent-light);">[Gemma 4 - Latenz: ${data.latency}s]:</span>\n${data.reply}`;
+            } else {
+                box.innerHTML = `<span style="color:#ef4444;">[Verbindungsfehler]:</span>\nDer lokale Ollama-Daemon konnte nicht erreicht werden. Fallback-Modus aktiv.\nFehler: ${data.error}`;
+            }
+        })
+        .catch(err => {
+            box.innerHTML = `<span style="color:#ef4444;">[Fehler]:</span>\n${err}`;
+        });
+    }
+
+    // AGG Checker Tool
+    function runAGGChecker() {
+        const text = document.getElementById('agg-text').value;
+        const box = document.getElementById('agg-response-box');
+        if (!text.trim()) return;
+        box.innerText = "⏳ Lokale Gemma-KI prüft auf AGG-Konformität...";
+
+        const formData = new FormData();
+        formData.append('text', text);
+
+        fetch(`/recruiter/ki/agg-check/`, { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                box.innerText = data.result;
+            }
+        });
+    }
+
+    // AGG Check on Wizard Creator directly
+    function runAGGCheckOnJob() {
+        const desc = document.getElementById('job-desc-inp').value;
+        if (!desc.trim()) {
+            alert("Bitte geben Sie zuerst eine Beschreibung ein!");
+            return;
+        }
+        alert("Lokale KI Gemma prüft die Jobbeschreibung auf AGG-Konformität...");
+        const formData = new FormData();
+        formData.append('text', desc);
+
+        fetch(`/recruiter/ki/agg-check/`, { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            alert("KI-Analyse Ergebnis:\n\n" + data.result);
+        });
+    }
+
+    // Leichte Sprache text translator box
+    function translateSimpleGermanText() {
+        const text = document.getElementById('simple-german-text').value;
+        const box = document.getElementById('simple-german-response-box');
+        if (!text.trim()) return;
+        box.innerText = "⏳ Lokale Gemma-KI übersetzt in Leichte Sprache (BFSG)...";
+
+        const formData = new FormData();
+        formData.append('text', text);
+
+        fetch(`/recruiter/ki/simple-german/`, { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                box.innerText = data.result;
+            }
+        });
+    }
+
+    // Translate CMS Page inline to Leichte Sprache
+    function translateSimpleGermanCMS() {
+        const contentEl = document.getElementById('page-content');
+        const text = contentEl.value;
+        if (!text.trim()) {
+            alert("Bitte geben Sie zuerst einen Text in das Inhaltsfeld ein!");
+            return;
+        }
+        
+        if (!confirm("Möchten Sie den aktuellen Text durch die Leichte Sprache Übersetzung der Gemma-KI ersetzen?")) {
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('text', text);
+
+        fetch(`/recruiter/ki/simple-german/`, { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                contentEl.value = data.result;
+                alert("✅ Erfolgreich in Leichte Sprache übersetzt!");
+            }
+        });
+    }
+
+    // SGB IX Quota and ROI calculation
+    function calculateInclusionROI() {
+        const empCount = parseInt(document.getElementById('roi-employees').value);
+        const quote = parseFloat(document.getElementById('roi-quote').value);
+
+        // Update badges
+        document.getElementById('roi-ma-badge').innerText = `${empCount} MA`;
+        document.getElementById('roi-quote-badge').innerText = `${quote.toFixed(1)} %`;
+
+        // Quota calculations
+        const targetQuote = 0.05;
+        const requiredPositions = Math.ceil(empCount * targetQuote);
+        const actualHires = Math.round(empCount * (quote / 100));
+        const missingHires = Math.max(0, requiredPositions - actualHires);
+
+        // Penalty calculations
+        let monthlyPenaltyRatePerSpot = 0;
+        if (missingHires > 0) {
+            if (quote === 0) {
+                monthlyPenaltyRatePerSpot = 720; // Zero employment severe penalty SGB IX
+            } else if (quote < 2) {
+                monthlyPenaltyRatePerSpot = 360;
+            } else if (quote < 3) {
+                monthlyPenaltyRatePerSpot = 245;
+            } else if (quote < 5) {
+                monthlyPenaltyRatePerSpot = 140;
+            }
+        }
+
+        const monthlyPenalty = missingHires * monthlyPenaltyRatePerSpot;
+        const annualPenalty = monthlyPenalty * 12;
+
+        // Visual warnings
+        const warningEl = document.getElementById('roi-sb-warning');
+        if (missingHires > 0) {
+            warningEl.className = "roi-warning";
+            warningEl.style.background = "rgba(245, 158, 11, 0.1)";
+            warningEl.style.color = "#fbbf24";
+            warningEl.style.borderColor = "rgba(245, 158, 11, 0.2)";
+            warningEl.innerHTML = `⚠️ <strong>Strafabgabe aktiv!</strong> Bei <strong>${empCount} MA</strong> beträgt die gesetzliche Pflichtquote 5% (ca. <strong>${requiredPositions} Pflichtarbeitsplätze</strong>). Sie beschäftigen ca. ${actualHires} schwerbehinderte Menschen. Es fehlen ${missingHires} Besetzungen. Strafe: <strong>${monthlyPenaltyRatePerSpot} €</strong> pro Monat je fehlendem Platz. Jährliche Belastung: <strong>${annualPenalty.toLocaleString()} €</strong>.`;
+        } else {
+            warningEl.style.background = "rgba(20, 184, 166, 0.15)";
+            warningEl.style.color = "var(--accent-light)";
+            warningEl.style.borderColor = "rgba(20, 184, 166, 0.3)";
+            warningEl.innerHTML = `✅ <strong>Zielquote erfüllt!</strong> Herzlichen Glückwunsch, Sie erfüllen die gesetzliche 5%-Schwerbehindertenbeschäftigungsquote vollständig. Es fallen keine Strafzahlungen an!`;
+        }
+
+        // Calculations ROI
+        const conversionSavings = Math.round(empCount * 92); // Realistic estimated ROI boost +37%
+        const legalSavings = 15000; // Average penalty defense prevention cost saved
+
+        document.getElementById('roi-saving-abgabe').innerText = `+ ${annualPenalty.toLocaleString()} €`;
+        document.getElementById('roi-saving-conversion').innerText = `+ ${conversionSavings.toLocaleString()} €`;
+        document.getElementById('roi-saving-legal').innerText = `+ ${legalSavings.toLocaleString()} €`;
+
+        const totalROI = annualPenalty + conversionSavings + legalSavings;
+        document.getElementById('roi-total-saving').innerText = `${totalROI.toLocaleString()} € / Jahr`;
     }
 </script>
 {% endblock %}

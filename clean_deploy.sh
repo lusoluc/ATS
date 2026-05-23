@@ -24,6 +24,10 @@ NC='\033[0m' # No Color
 
 LOG_FILE="/var/log/securats_deploy.log"
 
+LIVE_DIR="/opt/ATS"
+BUILD_DIR="/opt/ATS_new"
+OLD_DIR="/opt/ATS_old"
+
 log_dev_diag() {
   local phase="$1"
   mkdir -p "$(dirname "$LOG_FILE")"
@@ -194,6 +198,23 @@ is_port_in_use() {
 free_ports() {
   echo -e "${YELLOW}🧹 Start der ultimativen Port-Befreiung (Ports 3000 & 3001)...${NC}"
   log_dev_diag "BEFORE_PORT_CLEANUP"
+
+  # A. Stop existing docker compose containers cleanly in LIVE_DIR BEFORE docker daemon restart
+  # This prevents them from being automatically restarted by the docker daemon!
+  if [ -f "$LIVE_DIR/docker-compose.yml" ]; then
+    echo -e "${YELLOW}🛑 Stoppe bestehende Docker-Container der alten Version in $LIVE_DIR...${NC}"
+    (cd "$LIVE_DIR" && docker compose down) || true
+  fi
+
+  # B. Deactivate auto-restart policies for all containers to ensure they don't reclaim ports when daemon restarts
+  echo -e "${YELLOW}🛑 Deaktiviere vorübergehend automatischen Container-Neustart auf dem Host...${NC}"
+  if command -v docker &> /dev/null && docker info &> /dev/null; then
+    ACTIVE_CONTAINERS=$(docker ps -a -q 2>/dev/null || true)
+    if [ -n "$ACTIVE_CONTAINERS" ]; then
+      docker update --restart=no $ACTIVE_CONTAINERS >/dev/null 2>&1 || true
+    fi
+  fi
+
   
   # 0. Analyse: Wer belegt aktuell die Ports? (Für die Logs)
   for port in 3000 3001; do
@@ -290,10 +311,6 @@ free_ports() {
   
   log_dev_diag "AFTER_PORT_CLEANUP"
 }
-
-LIVE_DIR="/opt/ATS"
-BUILD_DIR="/opt/ATS_new"
-OLD_DIR="/opt/ATS_old"
 
 # 1. Build-Verzeichnis vorbereiten
 echo -e "${YELLOW}[1/6] Bereite isolierte Build-Umgebung vor...${NC}"
@@ -438,7 +455,7 @@ else
   HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}\n" http://localhost:3000 || echo "000")
 fi
 
-if [ "$HTTP_STATUS" -eq 200 ] || [ "$HTTP_STATUS" -eq 307 ] || [ "$HTTP_STATUS" -eq 308 ]; then
+if [ "$HTTP_STATUS" -eq 200 ] || [ "$HTTP_STATUS" -eq 301 ] || [ "$HTTP_STATUS" -eq 302 ] || [ "$HTTP_STATUS" -eq 307 ] || [ "$HTTP_STATUS" -eq 308 ]; then
   echo -e "${GREEN}======================================================================${NC}"
   echo -e "${GREEN}🎉 SUCCESS! Das neue Docker-Update ist vollkommen fehlerfrei live!${NC}"
   echo -e "${GREEN}   Status-Code: $HTTP_STATUS${NC}"

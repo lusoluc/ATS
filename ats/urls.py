@@ -29,4 +29,6 @@ urlpatterns = [
     path('recruiter/ki/agg-check/', views.gemma_agg_check, name='gemma_agg_check'),
     path('recruiter/ki/simple-german/', views.gemma_translate_simple_german, name='gemma_translate_simple_german'),
     path('recruiter/applications/<uuid:app_id>/toggle-learning/', views.toggle_learning_sample, name='toggle_learning_sample'),
+    path('recruiter/sap-sf/', views.sap_sf_mapper, name='sap_sf_mapper'),
 ]
+

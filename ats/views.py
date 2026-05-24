@@ -584,15 +584,17 @@ def dashboard(request):
     if honeypot_spam_count == 0:
         honeypot_spam_count = 14  # High-fidelity metrics fallback
         
-    # Check if local Gemma AI is reachable via socket check on 11434
+    # Check if local Gemma AI is reachable via socket check on 11434 (testing both host.docker.internal and 127.0.0.1)
     gemma_status = 'OFFLINE'
     import socket
-    try:
-        s = socket.create_connection(("127.0.0.1", 11434), timeout=0.1)
-        s.close()
-        gemma_status = 'ONLINE'
-    except Exception:
-        pass
+    for host in ["host.docker.internal", "127.0.0.1"]:
+        try:
+            s = socket.create_connection((host, 11434), timeout=0.1)
+            s.close()
+            gemma_status = 'ONLINE'
+            break
+        except Exception:
+            pass
 
     # Predefined SuccessFactors schema mapping for direct mapper tab integration
     sap_schema_fields = [
@@ -941,6 +943,30 @@ def sap_sf_mapper(request):
 # LOCAL GEMMA 4 AI WORKFLOWS & HELPER FUNCTIONS
 # ============================================================================
 
+def get_ollama_url(endpoint="api/generate"):
+    """
+    Dynamically determines the Ollama service URL.
+    Checks host.docker.internal first (to reach the host from inside the Docker container),
+    then falls back to 127.0.0.1 (local execution).
+    """
+    import socket
+    import os
+    
+    # Allow override via environment variable
+    env_host = os.environ.get("OLLAMA_HOST")
+    if env_host:
+        return f"http://{env_host}:11434/{endpoint}"
+        
+    for host in ["host.docker.internal", "127.0.0.1"]:
+        try:
+            s = socket.create_connection((host, 11434), timeout=0.1)
+            s.close()
+            return f"http://{host}:11434/{endpoint}"
+        except Exception:
+            pass
+    return f"http://127.0.0.1:11434/{endpoint}"
+
+
 def evaluate_with_local_gemma(cover_letter, requirements_list):
     """
     Evaluates the applicant's cover letter against the job requirements using local Gemma AI.
@@ -973,7 +999,7 @@ def evaluate_with_local_gemma(cover_letter, requirements_list):
     }
     
     try:
-        response = requests.post("http://127.0.0.1:11434/api/generate", json=payload, timeout=8.0)
+        response = requests.post(get_ollama_url(), json=payload, timeout=8.0)
         if response.status_code == 200:
             res_data = response.json()
             response_text = res_data.get("response", "").strip()
@@ -1030,7 +1056,7 @@ def test_gemma(request):
         
         start_time = time.time()
         try:
-            response = requests.post("http://127.0.0.1:11434/api/generate", json=payload, timeout=5.0)
+            response = requests.post(get_ollama_url(), json=payload, timeout=5.0)
             latency = round(time.time() - start_time, 2)
             if response.status_code == 200:
                 res_data = response.json()
@@ -1076,7 +1102,7 @@ def gemma_agg_check(request):
         }
         
         try:
-            response = requests.post("http://127.0.0.1:11434/api/generate", json=payload, timeout=8.0)
+            response = requests.post(get_ollama_url(), json=payload, timeout=8.0)
             if response.status_code == 200:
                 res_data = response.json()
                 reply = res_data.get("response", "").strip()
@@ -1170,7 +1196,7 @@ def gemma_translate_simple_german(request):
         }
         
         try:
-            response = requests.post("http://127.0.0.1:11434/api/generate", json=payload, timeout=8.0)
+            response = requests.post(get_ollama_url(), json=payload, timeout=8.0)
             if response.status_code == 200:
                 res_data = response.json()
                 reply = res_data.get("response", "").strip()

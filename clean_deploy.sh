@@ -251,10 +251,13 @@ free_ports() {
     done
   fi
 
-  # 2. Beende PM2 Daemon und alle PM2-Prozesse komplett
+  # 2. Beende PM2 Daemon und alle PM2-Prozesse komplett (inkl. aller Systembenutzer)
   echo -e "${YELLOW}🛑 Beende PM2 komplett...${NC}"
   sudo pm2 stop all >/dev/null 2>&1 || true
   sudo pm2 kill >/dev/null 2>&1 || true
+  sudo pkill -9 -f pm2 >/dev/null 2>&1 || true
+  sudo pkill -9 -f "PM2" >/dev/null 2>&1 || true
+
   
   # 3. Beende jegliche verbliebenen Node/npm-Prozesse auf dem Host
   echo -e "${YELLOW}🛑 Beende alle Node/npm-Prozesse auf dem Host...${NC}"
@@ -457,8 +460,14 @@ else
   echo -e "${YELLOW}⏳ Warte 8 Sekunden, bis die Container vollständig gestartet sind...${NC}"
   sleep 8
   # 7. Health-Check
-  echo -e "${YELLOW}🧪 Führe Health-Check auf der Live-Plattform durch...${NC}"
-  HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}\n" http://localhost:3000 || echo "000")
+  echo -e "${YELLOW}🧪 Verifiziere, ob der neue Container läuft...${NC}"
+  if ! docker ps --format '{{.Names}}' | grep -q "^securats-django$"; then
+    echo -e "${RED}❌ FEHLER: Container securats-django ist nicht online!${NC}"
+    HTTP_STATUS="000"
+  else
+    echo -e "${YELLOW}🧪 Führe HTTP-Health-Check auf der Live-Plattform durch...${NC}"
+    HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}\n" http://localhost:3000 || echo "000")
+  fi
 fi
 
 if [ "$HTTP_STATUS" -eq 200 ] || [ "$HTTP_STATUS" -eq 301 ] || [ "$HTTP_STATUS" -eq 302 ] || [ "$HTTP_STATUS" -eq 307 ] || [ "$HTTP_STATUS" -eq 308 ]; then

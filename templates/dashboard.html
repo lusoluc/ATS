@@ -464,7 +464,7 @@
                         <h3 style="font-size: 22px; color: #fff;">Stellenangebote verwalten</h3>
                         <p style="color: var(--text-muted); font-size: 13px;">Sehen Sie alle Ausschreibungen und erstellen Sie neue Ausschreibungen live.</p>
                     </div>
-                    <button class="btn-cta" onclick="openJobCreatorModal()">
+                    <button class="btn-cta" onclick="openNewJobCreatorModal()">
                         <i class="fa-solid fa-circle-plus"></i> Neue Stelle ausschreiben
                     </button>
                 </div>
@@ -477,6 +477,7 @@
                             <th>Abteilung</th>
                             <th>Status</th>
                             <th>Erstellt am</th>
+                            <th>Aktionen</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -487,10 +488,15 @@
                                 <td>{{ job.department.name|default:"-" }}</td>
                                 <td><span class="badge badge-accent">{{ job.workflowState.name }}</span></td>
                                 <td>{{ job.createdAt|date:"d.m.Y" }}</td>
+                                <td>
+                                    <button class="btn-search" style="padding: 4px 10px; height: auto; font-size: 11px; margin: 0; border-radius: var(--border-radius-sm);" onclick="editJobPosting('{{ job.id|escapejs }}', '{{ job.title|escapejs }}', '{{ job.description|escapejs }}', '{{ job.tasksJson|escapejs }}', '{{ job.requirementsJson|escapejs }}', '{{ job.screeningQuestionsJson|escapejs }}', '{{ job.facility.id|escapejs }}', '{{ job.department.id|default:''|escapejs }}', '{{ job.location.id|escapejs }}', '{{ job.jobFamily.id|escapejs }}', '{{ job.contactPerson.id|default:''|escapejs }}', '{{ job.jobTemplate.id|default:''|escapejs }}', '{{ job.workflowState.id|escapejs }}', '{% for b in job.benefits.all %}{{ b.id }},{% endfor %}')">
+                                        <i class="fa-solid fa-pen-to-square"></i> Bearbeiten
+                                    </button>
+                                </td>
                             </tr>
                         {% empty %}
                             <tr>
-                                <td colspan="5" style="text-align: center; color: var(--text-muted);">Keine Stellenanzeigen vorhanden.</td>
+                                <td colspan="6" style="text-align: center; color: var(--text-muted);">Keine Stellenanzeigen vorhanden.</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -1100,6 +1106,7 @@ MODALS & OVERLAYS
             
             <form method="POST" action="{% url 'ats:create_job' %}">
                 {% csrf_token %}
+                <input type="hidden" name="job_id" id="job-id-inp">
                 
                 <div class="form-group">
                     <label class="form-label" for="job-title-inp">Stellentitel *</label>
@@ -1427,6 +1434,102 @@ MODALS & OVERLAYS
 
     function closeJobCreatorModal() {
         document.getElementById('jobCreatorModal').style.display = 'none';
+    }
+
+    function openNewJobCreatorModal() {
+        // Reset hidden job_id
+        document.getElementById('job-id-inp').value = '';
+        
+        // Reset text fields
+        document.getElementById('job-title-inp').value = '';
+        document.getElementById('job-desc-inp').value = '';
+        document.getElementById('job-tasks-inp').value = '';
+        document.getElementById('job-reqs-inp').value = '';
+        document.getElementById('job-screening').value = '';
+        
+        // Reset selections to first option
+        document.getElementById('job-facility').selectedIndex = 0;
+        document.getElementById('job-department').value = '';
+        document.getElementById('job-location').selectedIndex = 0;
+        document.getElementById('job-family').selectedIndex = 0;
+        document.getElementById('job-contact').value = '';
+        document.getElementById('job-template').selectedIndex = 0;
+        document.getElementById('job-state').value = document.querySelector('#job-state option[selected]') ? document.querySelector('#job-state option[selected]').value : document.getElementById('job-state').options[0].value;
+        
+        // Reset benefits checkboxes
+        const benefitsForm = document.getElementById('jobCreatorModal');
+        const checkboxes = benefitsForm.querySelectorAll('input[name="benefits"]');
+        checkboxes.forEach(cb => {
+            cb.checked = false;
+        });
+
+        // Set titles back
+        document.querySelector('#jobCreatorModal h2').innerHTML = '<i class="fa-solid fa-circle-plus" style="color: var(--accent);"></i> Neue Stelle ausschreiben';
+        document.querySelector('#jobCreatorModal button[type="submit"]').innerHTML = '<i class="fa-solid fa-circle-check"></i> Stellenangebot veröffentlichen';
+        
+        openJobCreatorModal();
+    }
+
+    function editJobPosting(id, title, description, tasksJson, requirementsJson, screeningQuestionsJson, facilityId, departmentId, locationId, jobFamilyId, contactPersonId, jobTemplateId, workflowStateId, benefitsSelectedCsv) {
+        // Set hidden input
+        document.getElementById('job-id-inp').value = id;
+        
+        // Pre-fill texts
+        document.getElementById('job-title-inp').value = title;
+        document.getElementById('job-desc-inp').value = description;
+        
+        // Pre-fill tasks and requirements from JSON
+        let tasksList = [];
+        try {
+            tasksList = JSON.parse(tasksJson);
+        } catch(e) {
+            tasksList = [];
+        }
+        document.getElementById('job-tasks-inp').value = Array.isArray(tasksList) ? tasksList.join('\n') : '';
+
+        let reqsList = [];
+        try {
+            reqsList = JSON.parse(requirementsJson);
+        } catch(e) {
+            reqsList = [];
+        }
+        document.getElementById('job-reqs-inp').value = Array.isArray(reqsList) ? reqsList.join('\n') : '';
+
+        // Selects
+        document.getElementById('job-facility').value = facilityId;
+        document.getElementById('job-department').value = departmentId || '';
+        document.getElementById('job-location').value = locationId;
+        document.getElementById('job-family').value = jobFamilyId;
+        document.getElementById('job-contact').value = contactPersonId || '';
+        document.getElementById('job-template').value = jobTemplateId || '';
+        document.getElementById('job-state').value = workflowStateId;
+
+        // Benefits (Checkboxes)
+        // Reset all benefits checkboxes first
+        const benefitsForm = document.getElementById('jobCreatorModal');
+        const checkboxes = benefitsForm.querySelectorAll('input[name="benefits"]');
+        checkboxes.forEach(cb => {
+            cb.checked = false;
+        });
+
+        // Check the ones selected
+        if (benefitsSelectedCsv) {
+            const selectedIds = benefitsSelectedCsv.split(',').filter(x => x.trim());
+            checkboxes.forEach(cb => {
+                if (selectedIds.includes(cb.value)) {
+                    cb.checked = true;
+                }
+            });
+        }
+
+        // Screening questions
+        document.getElementById('job-screening').value = screeningQuestionsJson;
+
+        // Change modal title and button text
+        document.querySelector('#jobCreatorModal h2').innerHTML = '<i class="fa-solid fa-pen-to-square" style="color: var(--accent);"></i> Stellenangebot bearbeiten';
+        document.querySelector('#jobCreatorModal button[type="submit"]').innerHTML = '<i class="fa-solid fa-circle-check"></i> Änderungen speichern';
+
+        openJobCreatorModal();
     }
 
     // CMS Page editor loading

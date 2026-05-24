@@ -548,7 +548,7 @@ def dashboard(request):
         columns[status].append(app)
         
     # Extra data for interactive modals
-    active_jobs = JobPosting.objects.filter(workflowState__name="published")
+    active_jobs = JobPosting.objects.all().select_related('location', 'facility', 'department', 'workflowState', 'contactPerson', 'jobTemplate').order_by('-createdAt')
     interview_slots = InterviewSlot.objects.filter(isBooked=False)
     
     # Calculate some fast stats
@@ -1034,8 +1034,9 @@ def gemma_translate_simple_german(request):
 
 @csrf_exempt
 def create_job(request):
-    """Saves a new JobPosting submitted via the Job Creator wizard."""
+    """Saves or updates a JobPosting submitted via the Job Creator wizard."""
     if request.method == 'POST':
+        job_id = request.POST.get('job_id')
         title = request.POST.get('title', '').strip()
         description = request.POST.get('description', '').strip()
         
@@ -1072,33 +1073,54 @@ def create_job(request):
                 if not workflow_state:
                     workflow_state = WorkflowState.objects.create(name="published", description="Veröffentlicht")
             
-            job = JobPosting.objects.create(
-                title=title,
-                description=description,
-                tasksJson=json.dumps(tasks),
-                requirementsJson=json.dumps(requirements),
-                screeningQuestionsJson=screening_raw,
-                organization=org,
-                facility=facility,
-                location=location,
-                jobFamily=job_family,
-                workflowState=workflow_state,
-                department_id=dept_id if dept_id else None,
-                contactPerson_id=contact_id if contact_id else None,
-                jobTemplate_id=template_id if template_id else None
-            )
+            if job_id:
+                job = get_object_or_404(JobPosting, id=job_id)
+                job.title = title
+                job.description = description
+                job.tasksJson = json.dumps(tasks)
+                job.requirementsJson = json.dumps(requirements)
+                job.screeningQuestionsJson = screening_raw
+                job.facility = facility
+                job.location = location
+                job.jobFamily = job_family
+                job.workflowState = workflow_state
+                job.department_id = dept_id if dept_id else None
+                job.contactPerson_id = contact_id if contact_id else None
+                job.jobTemplate_id = template_id if template_id else None
+                job.save()
+                action = "UPDATE_JOB"
+            else:
+                job = JobPosting.objects.create(
+                    title=title,
+                    description=description,
+                    tasksJson=json.dumps(tasks),
+                    requirementsJson=json.dumps(requirements),
+                    screeningQuestionsJson=screening_raw,
+                    organization=org,
+                    facility=facility,
+                    location=location,
+                    jobFamily=job_family,
+                    workflowState=workflow_state,
+                    department_id=dept_id if dept_id else None,
+                    contactPerson_id=contact_id if contact_id else None,
+                    jobTemplate_id=template_id if template_id else None
+                )
+                action = "CREATE_JOB"
             
+            # Update benefits relation
+            job.benefits.clear()
             if benefits_selected:
                 job.benefits.set(Benefit.objects.filter(id__in=benefits_selected))
                 
             AuditLog.objects.create(
-                action="CREATE_JOB",
+                action=action,
                 metadataJson=json.dumps({"jobId": str(job.id), "title": job.title})
             )
             
         return redirect('ats:dashboard')
         
     return redirect('ats:dashboard')
+
 
 
 @csrf_exempt

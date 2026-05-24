@@ -28,4 +28,4 @@ RUN mkdir -p media static staticfiles shared
 EXPOSE 8000
 
 # Run migrations, compile static files, and launch high-performance Gunicorn production server
-CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn securats.wsgi:application --bind 0.0.0.0:8000 --workers 3"]
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn securats.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120"]

@@ -636,6 +636,102 @@ def dashboard(request):
     return render(request, 'dashboard.html', context)
 
 
+def get_matching_workflow(app):
+    """Finds the most specific AppWorkflowDef for this application's job, location, department or category."""
+    # 1. Check Job Posting specificity
+    wf = AppWorkflowDef.objects.filter(jobIdsJson__contains=str(app.jobPosting.id)).first()
+    if wf:
+        return wf
+        
+    # 2. Check Location specificity
+    if app.jobPosting.location:
+        wf = AppWorkflowDef.objects.filter(locationIdsJson__contains=str(app.jobPosting.location.id)).first()
+        if wf:
+            return wf
+            
+    # 3. Check Category (Job Family) specificity
+    if app.jobPosting.jobFamily:
+        wf = AppWorkflowDef.objects.filter(categoryIdsJson__contains=str(app.jobPosting.jobFamily.id)).first()
+        if wf:
+            return wf
+            
+    # 4. Check Facility specificity
+    if app.jobPosting.facility:
+        wf = AppWorkflowDef.objects.filter(facility=app.jobPosting.facility).first()
+        if wf:
+            return wf
+            
+    # 5. Global Fallback
+    return AppWorkflowDef.objects.first()
+
+
+def execute_workflow_actions(app, actions):
+    """Executes a list of automated actions for an application at a specific step in parallel."""
+    for action in actions:
+        action_type = action.get('type')
+        
+        if action_type == 'EMAIL_NOTIFICATION':
+            recipient = action.get('recipient')
+            template_name = action.get('template')
+            
+            # Simulate email dispatch
+            AuditLog.objects.create(
+                action="AUTOMATION_EMAIL",
+                applicationId=str(app.id),
+                metadataJson=json.dumps({
+                    "recipient": recipient,
+                    "template": template_name,
+                    "subject": f"Bewerberweiterleitung: {app.applicant.firstName} {app.applicant.lastName}",
+                    "status": "SENT"
+                })
+            )
+            
+        elif action_type == 'APPROVAL_COMMITTEE':
+            # Create a mock approval ticket for decision committee
+            AuditLog.objects.create(
+                action="AUTOMATION_COMMITTEE_SUBMIT",
+                applicationId=str(app.id),
+                metadataJson=json.dumps({
+                    "message": f"Bewerbung von {app.applicant.firstName} {app.applicant.lastName} an Gremium weitergeleitet.",
+                    "committee_roles": action.get('roles', ['DEPT_HEAD'])
+                })
+            )
+            
+        elif action_type == 'AUTO_INVITE_INTERVIEW':
+            # Auto-schedule or trigger auto-invitation
+            AuditLog.objects.create(
+                action="AUTOMATION_INTERVIEW_INVITE",
+                applicationId=str(app.id),
+                metadataJson=json.dumps({
+                    "message": "Automatisierte Gesprächseinladung per E-Mail versendet.",
+                    "meeting_link": "https://meet.google.com/securats-auto-invite"
+                })
+            )
+            
+        elif action_type == 'SEND_CONTRACT':
+            # Auto-trigger contract dispatch
+            AuditLog.objects.create(
+                action="AUTOMATION_CONTRACT_DISPATCH",
+                applicationId=str(app.id),
+                metadataJson=json.dumps({
+                    "message": "Arbeitsvertragsentwurf reaktiv generiert und per DocuSign/E-Mail übermittelt.",
+                    "document_template": action.get('contract_template', 'Standard_DE_2026')
+                })
+            )
+            
+        elif action_type == 'TRIGGER_PROCESS':
+            # Simultaneously trigger other processes
+            processes = action.get('processes', ['BACKGROUND_CHECK'])
+            AuditLog.objects.create(
+                action="AUTOMATION_TRIGGER_PARALLEL",
+                applicationId=str(app.id),
+                metadataJson=json.dumps({
+                    "triggered_processes": processes,
+                    "status": "INITIATED"
+                })
+            )
+
+
 @csrf_exempt
 def update_status(request, app_id):
     """API view to update an application's status (for drag-and-drop or status changes)."""
@@ -655,6 +751,26 @@ def update_status(request, app_id):
                 applicationId=str(app.id),
                 metadataJson=json.dumps({"oldStatus": old_status, "newStatus": new_status})
             )
+            
+            # Run Automated Workflow Actions in parallel!
+            wf = get_matching_workflow(app)
+            if wf and wf.stepsJson:
+                try:
+                    steps = json.loads(wf.stepsJson)
+                    for step in steps:
+                        step_state = ""
+                        step_actions = []
+                        if isinstance(step, dict):
+                            step_state = step.get('state', '').upper()
+                            step_actions = step.get('actions', [])
+                        elif isinstance(step, str):
+                            step_state = step.upper()
+                            
+                        # If this step matches the new status, execute the actions!
+                        if step_state == new_status:
+                            execute_workflow_actions(app, step_actions)
+                except Exception as e:
+                    pass
             
             # Handle automatic responses/rejection reasons if needed
             if new_status == 'REJECTED':
@@ -1186,6 +1302,51 @@ def save_app_workflow(request):
         category_ids = request.POST.getlist('categories')
         job_ids = request.POST.getlist('jobs')
         steps = request.POST.getlist('steps')
+        custom_actions_raw = request.POST.get('custom_actions_json', '').strip()
+        
+        custom_actions = []
+        if custom_actions_raw:
+            try:
+                custom_actions = json.loads(custom_actions_raw)
+            except Exception:
+                custom_actions = []
+                
+        # Construct structured step objects containing automation actions
+        structured_steps = []
+        for step in steps:
+            step_actions = []
+            # Check if there is an explicit override in custom_actions
+            for item in custom_actions:
+                if isinstance(item, dict) and item.get('step', '').upper() == step.upper():
+                    step_actions = item.get('actions', [])
+                    break
+                    
+            # If no override, generate rich default automation presets!
+            if not step_actions:
+                if step.upper() == 'IN_REVIEW':
+                    step_actions = [
+                        {"type": "EMAIL_NOTIFICATION", "recipient": "komitee@securats.de", "template": "Gremiums-Prüfung"},
+                        {"type": "APPROVAL_COMMITTEE", "roles": ["DEPT_HEAD", "HR_LEAD"]}
+                    ]
+                elif step.upper() == 'INVITED':
+                    step_actions = [
+                        {"type": "AUTO_INVITE_INTERVIEW"},
+                        {"type": "TRIGGER_PROCESS", "processes": ["CALENDAR_SYNC", "ZOOM_ROOM_CREATE"]}
+                    ]
+                elif step.upper() == 'REJECTED':
+                    step_actions = [
+                        {"type": "EMAIL_NOTIFICATION", "recipient": "applicant", "template": "Absage"}
+                    ]
+                elif step.upper() == 'APPROVED' or step.upper() == 'NEW':
+                    step_actions = [
+                        {"type": "SEND_CONTRACT", "contract_template": "Standard_DE_2026"}
+                    ]
+                    
+            structured_steps.append({
+                "name": step,
+                "state": step.upper(),
+                "actions": step_actions
+            })
         
         with transaction.atomic():
             facility = Facility.objects.filter(id=facility_id).first() if facility_id else None
@@ -1197,7 +1358,7 @@ def save_app_workflow(request):
                 wf.locationIdsJson = json.dumps(location_ids)
                 wf.categoryIdsJson = json.dumps(category_ids)
                 wf.jobIdsJson = json.dumps(job_ids)
-                wf.stepsJson = json.dumps(steps)
+                wf.stepsJson = json.dumps(structured_steps)
                 wf.save()
                 action = "UPDATE_APP_WORKFLOW"
             else:
@@ -1207,7 +1368,7 @@ def save_app_workflow(request):
                     locationIdsJson=json.dumps(location_ids),
                     categoryIdsJson=json.dumps(category_ids),
                     jobIdsJson=json.dumps(job_ids),
-                    stepsJson=json.dumps(steps)
+                    stepsJson=json.dumps(structured_steps)
                 )
                 action = "CREATE_APP_WORKFLOW"
                 

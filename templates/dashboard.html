@@ -633,6 +633,14 @@
                                 {% endfor %}
                             </div>
                         </div>
+
+                        <div class="form-group" style="margin-top: 16px;">
+                            <label class="form-label" for="app-workflow-custom-json">
+                                <i class="fa-solid fa-code" style="color: var(--accent);"></i> Erweiterte Automatisierungs-Regeln (JSON-Format, Optional)
+                            </label>
+                            <textarea name="custom_actions_json" id="app-workflow-custom-json" class="form-textarea" rows="3" placeholder='[{"step": "IN_REVIEW", "actions": [{"type": "EMAIL_NOTIFICATION", "recipient": "gremium@securats.de", "template": "komitee"}]}]' style="font-family: monospace; font-size: 11px;"></textarea>
+                            <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Tipp: Wenn Sie dies leer lassen, befüllt SecurATS diese Pipeline automatisch mit ausgereiften Standard-Automatisierungen (z. B. Komitee-Prüfungen, E-Mail-Weiterleitungen, Gesprächs-Einladungen und Vertragsentwürfe)!</div>
+                        </div>
                         
                         <button type="submit" class="btn-cta" style="width: 100%;">
                             <i class="fa-solid fa-save"></i> Custom Pipeline speichern
@@ -1724,6 +1732,9 @@ MODALS & OVERLAYS
                 });
             }
         } catch(e) {}
+
+        // Set custom actions JSON value
+        document.getElementById('app-workflow-custom-json').value = stepsJson;
 
         // Set title
         document.getElementById('app-workflow-form-title').innerText = 'Custom Pipeline bearbeiten';

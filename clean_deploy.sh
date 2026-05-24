@@ -328,6 +328,12 @@ git reset --hard FETCH_HEAD
 
 # 3. Isolierte Docker-Kompilierung im Build-Verzeichnis
 echo -e "${YELLOW}[3/6] Baue Docker-Images isoliert...${NC}"
+
+# Reclaim Host Disk Space by pruning unused docker build cache, stopped containers and dangling images
+echo -e "${YELLOW}🧹 Befreie Host-Speicherplatz (Docker System & Builder Prune)...${NC}"
+docker system prune -f || true
+docker builder prune -f || true
+
 if ! docker compose build; then
   echo -e "${RED}❌ BUILD-FEHLER: Der Docker-Build ist fehlgeschlagen!${NC}"
   echo -e "${YELLOW}🔄 Bereinige Build-Verzeichnis. Die Live-Plattform läuft unverändert weiter!${NC}"

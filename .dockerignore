@@ -1,0 +1,41 @@
+# Ignore Git metadata
+.git
+.gitignore
+
+# Ignore Virtual Environments (massive)
+.venv
+venv
+ENV
+env
+
+# Ignore Node.js / Frontend dependencies (extremely massive)
+node_modules
+**/node_modules
+frontend
+src
+dist
+package-lock.json
+
+# Ignore local SQLite databases and configurations (they are mounted via volumes)
+*.db
+*.sqlite3
+.env
+.env.*
+
+# Ignore media and generated static files (they are managed or mounted)
+media
+staticfiles
+static_root
+
+# Ignore IDE, cache and temporary files
+.idea
+.vscode
+.gemini
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+*.zip
+*.bat
+*.png

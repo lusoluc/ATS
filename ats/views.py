@@ -967,13 +967,41 @@ def get_ollama_url(endpoint="api/generate"):
     return f"http://127.0.0.1:11434/{endpoint}"
 
 
+def make_ollama_request(url, payload, timeout=8.0):
+    """
+    Makes a POST request to Ollama using python's built-in urllib.
+    Completely eliminates third-party dependencies like 'requests'.
+    """
+    import urllib.request
+    import urllib.error
+    import json
+    
+    data = json.dumps(payload).encode('utf-8')
+    req = urllib.request.Request(
+        url,
+        data=data,
+        headers={'Content-Type': 'application/json'},
+        method='POST'
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            if response.status == 200:
+                res_data = json.loads(response.read().decode('utf-8'))
+                return True, res_data
+            else:
+                return False, f"Status Code: {response.status}"
+    except urllib.error.URLError as e:
+        return False, str(e.reason)
+    except Exception as e:
+        return False, str(e)
+
+
 def evaluate_with_local_gemma(cover_letter, requirements_list):
     """
     Evaluates the applicant's cover letter against the job requirements using local Gemma AI.
     If the local Gemma service (Ollama on port 11434) is offline, it falls back to high-fidelity rule matching.
     """
     import json
-    import requests
     
     prompt = f"""
     Du bist die SecurATS Recruiting-KI (basierend auf Gemma).
@@ -999,9 +1027,8 @@ def evaluate_with_local_gemma(cover_letter, requirements_list):
     }
     
     try:
-        response = requests.post(get_ollama_url(), json=payload, timeout=8.0)
-        if response.status_code == 200:
-            res_data = response.json()
+        success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=8.0)
+        if success:
             response_text = res_data.get("response", "").strip()
             clean_text = response_text
             if "```" in response_text:
@@ -1045,7 +1072,6 @@ def test_gemma(request):
     """Tests the local Gemma AI connection by querying a short test prompt."""
     if request.method == 'POST':
         prompt = request.POST.get('prompt', 'Hallo Gemma, bist du bereit?').strip()
-        import requests
         import time
         
         payload = {
@@ -1056,14 +1082,13 @@ def test_gemma(request):
         
         start_time = time.time()
         try:
-            response = requests.post(get_ollama_url(), json=payload, timeout=5.0)
+            success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=5.0)
             latency = round(time.time() - start_time, 2)
-            if response.status_code == 200:
-                res_data = response.json()
+            if success:
                 reply = res_data.get("response", "").strip()
                 return JsonResponse({'success': True, 'reply': reply, 'latency': latency})
             else:
-                return JsonResponse({'success': False, 'error': f'Status Code: {response.status_code}'})
+                return JsonResponse({'success': False, 'error': str(res_data)})
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
             
@@ -1078,7 +1103,6 @@ def gemma_agg_check(request):
         if not text:
             return JsonResponse({'success': False, 'error': 'Kein Text übermittelt.'})
             
-        import requests
         prompt = f"""
         Du bist der SecurATS AGG-Konformitätsprüfer (basierend auf Gemma).
         Analysiere den folgenden Stellenbeschreibungstext auf mögliche Diskriminierungen (AGG-Verstöße) bezüglich Alter, Geschlecht, Religion, Rasse oder Behinderung.
@@ -1102,9 +1126,8 @@ def gemma_agg_check(request):
         }
         
         try:
-            response = requests.post(get_ollama_url(), json=payload, timeout=8.0)
-            if response.status_code == 200:
-                res_data = response.json()
+            success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=8.0)
+            if success:
                 reply = res_data.get("response", "").strip()
                 
                 violations = []
@@ -1177,7 +1200,6 @@ def gemma_translate_simple_german(request):
         if not text:
             return JsonResponse({'success': False, 'error': 'Kein Text übermittelt.'})
             
-        import requests
         prompt = f"""
         Du bist der SecurATS Übersetzer für Leichte Sprache (basierend auf Gemma).
         Übersetze den folgenden Text in Leichte Sprache (barrierefrei, WCAG/BFSG compliant).
@@ -1196,9 +1218,8 @@ def gemma_translate_simple_german(request):
         }
         
         try:
-            response = requests.post(get_ollama_url(), json=payload, timeout=8.0)
-            if response.status_code == 200:
-                res_data = response.json()
+            success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=8.0)
+            if success:
                 reply = res_data.get("response", "").strip()
                 return JsonResponse({'success': True, 'result': reply})
         except Exception:

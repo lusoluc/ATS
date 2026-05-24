@@ -1262,6 +1262,49 @@ MODALS & OVERLAYS
                         </button>
                     </div>
                     <textarea name="description" id="job-desc-inp" class="form-textarea" rows="2" placeholder="Kurze Einleitung der Stelle..." required></textarea>
+                    
+                    <!-- New Interactive Premium Suggestions Panel -->
+                    <div id="agg-suggestions-box" class="glass-card" style="display: none; margin-top: 12px; padding: 16px; border: 1px solid rgba(139, 92, 246, 0.4); background: rgba(15, 12, 30, 0.85); box-shadow: 0 8px 32px 0 rgba(139, 92, 246, 0.2); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 8px; transition: all 0.3s ease;">
+                        <div id="agg-suggestions-loading" style="display: none; align-items: center; gap: 10px; color: var(--accent);">
+                            <i class="fa-solid fa-spinner fa-spin" style="font-size: 16px;"></i>
+                            <span style="font-size: 13px; font-weight: 500;">Lokale Gemma-KI analysiert den Text auf AGG-Konformität...</span>
+                        </div>
+                        <div id="agg-suggestions-content" style="display: none;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                                <h4 style="margin: 0; font-size: 14px; color: #fff; display: flex; align-items: center; gap: 6px;">
+                                    <i class="fa-solid fa-scale-balanced" style="color: var(--accent);"></i> KI AGG-Check Ergebnis
+                                </h4>
+                                <span id="agg-badge" class="badge" style="font-size: 10px; padding: 2px 6px; border-radius: 20px; font-weight: 600;"></span>
+                            </div>
+                            
+                            <!-- Warnings List -->
+                            <div id="agg-warnings-container" style="margin-bottom: 12px; display: none;">
+                                <div style="font-size: 11px; font-weight: 600; color: #ef4444; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Identifizierte Risiken:</div>
+                                <ul id="agg-warnings-list" style="margin: 0; padding-left: 16px; font-size: 12px; color: #fca5a5; display: flex; flex-direction: column; gap: 4px;"></ul>
+                            </div>
+                            
+                            <!-- Safe Text Indicator -->
+                            <div id="agg-safe-message" style="margin-bottom: 12px; display: none; color: #10b981; font-size: 13px; font-weight: 500;">
+                                <i class="fa-solid fa-circle-check"></i> Hervorragend! Keine offensichtlichen AGG-Verstöße gefunden.
+                            </div>
+                            
+                            <!-- Optimized Text Box -->
+                            <div id="agg-optimized-container" style="margin-top: 10px;">
+                                <div style="font-size: 11px; font-weight: 600; color: var(--accent); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Optimierter Text-Vorschlag:</div>
+                                <div id="agg-optimized-text" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; font-size: 13px; color: #e5e7eb; white-space: pre-wrap; font-family: sans-serif; line-height: 1.4;"></div>
+                            </div>
+                            
+                            <!-- Actions -->
+                            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px;">
+                                <button type="button" class="btn-search" style="height: 28px; font-size: 11px; padding: 0 12px; background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2);" onclick="dismissAGGSuggestions()">
+                                    Verwerfen
+                                </button>
+                                <button type="button" id="btn-apply-agg" class="btn-cta" style="height: 28px; font-size: 11px; padding: 0 12px; display: none;" onclick="applyAGGSuggestions()">
+                                    <i class="fa-solid fa-check"></i> Vorschlag übernehmen
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
@@ -1571,6 +1614,7 @@ MODALS & OVERLAYS
     // Job Creator modal
     function openJobCreatorModal() {
         document.getElementById('jobCreatorModal').style.display = 'flex';
+        document.getElementById('agg-suggestions-box').style.display = 'none';
     }
 
     function closeJobCreatorModal() {
@@ -1880,22 +1924,139 @@ MODALS & OVERLAYS
         });
     }
 
-    // AGG Check on Wizard Creator directly
+    // AGG Check on Wizard Creator directly with premium inline interactive panel
+    let currentOptimizedText = "";
+
     function runAGGCheckOnJob() {
         const desc = document.getElementById('job-desc-inp').value;
         if (!desc.trim()) {
             alert("Bitte geben Sie zuerst eine Beschreibung ein!");
             return;
         }
-        alert("Lokale KI Gemma prüft die Jobbeschreibung auf AGG-Konformität...");
+
+        const box = document.getElementById('agg-suggestions-box');
+        const loading = document.getElementById('agg-suggestions-loading');
+        const content = document.getElementById('agg-suggestions-content');
+        
+        // Open box and show loading state
+        box.style.display = 'block';
+        box.style.opacity = '1';
+        loading.style.display = 'flex';
+        content.style.display = 'none';
+
         const formData = new FormData();
         formData.append('text', desc);
 
         fetch(`/recruiter/ki/agg-check/`, { method: 'POST', body: formData })
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) throw new Error("Netzwerkantwort war nicht ok");
+            return res.json();
+        })
         .then(data => {
-            alert("KI-Analyse Ergebnis:\n\n" + data.result);
+            loading.style.display = 'none';
+            content.style.display = 'block';
+            
+            const badge = document.getElementById('agg-badge');
+            const warningsContainer = document.getElementById('agg-warnings-container');
+            const warningsList = document.getElementById('agg-warnings-list');
+            const safeMessage = document.getElementById('agg-safe-message');
+            const optimizedContainer = document.getElementById('agg-optimized-container');
+            const optimizedBox = document.getElementById('agg-optimized-text');
+            const applyBtn = document.getElementById('btn-apply-agg');
+            
+            warningsList.innerHTML = '';
+            
+            if (data.success) {
+                if (data.violations && data.violations.length > 0) {
+                    badge.innerText = data.fallback_mode ? "⚠️ Warnung (Fallback)" : "⚠️ Warnung";
+                    badge.style.background = "rgba(239, 68, 68, 0.2)";
+                    badge.style.color = "#ef4444";
+                    badge.style.border = "1px solid #ef4444";
+                    
+                    warningsContainer.style.display = 'block';
+                    safeMessage.style.display = 'none';
+                    
+                    data.violations.forEach(v => {
+                        const li = document.createElement('li');
+                        li.innerText = v;
+                        warningsList.appendChild(li);
+                    });
+                    
+                    currentOptimizedText = data.optimized_text || data.original_text;
+                    optimizedBox.innerText = currentOptimizedText;
+                    optimizedContainer.style.display = 'block';
+                    applyBtn.style.display = 'block';
+                } else {
+                    badge.innerText = data.fallback_mode ? "✅ Konform (Fallback)" : "✅ Konform";
+                    badge.style.background = "rgba(16, 185, 129, 0.2)";
+                    badge.style.color = "#10b981";
+                    badge.style.border = "1px solid #10b981";
+                    
+                    warningsContainer.style.display = 'none';
+                    safeMessage.style.display = 'block';
+                    
+                    currentOptimizedText = data.optimized_text || data.original_text;
+                    optimizedBox.innerText = currentOptimizedText;
+                    optimizedContainer.style.display = 'block';
+                    applyBtn.style.display = 'none'; // No need to apply if it's already compliant
+                }
+            } else {
+                showAGGError("Fehler bei der Analyse: " + (data.error || "Unbekannter Fehler"));
+            }
+        })
+        .catch(err => {
+            loading.style.display = 'none';
+            showAGGError("Verbindung zum KI-Dienst fehlgeschlagen: " + err.message);
         });
+    }
+
+    function showAGGError(msg) {
+        const content = document.getElementById('agg-suggestions-content');
+        const badge = document.getElementById('agg-badge');
+        const warningsContainer = document.getElementById('agg-warnings-container');
+        const warningsList = document.getElementById('agg-warnings-list');
+        const safeMessage = document.getElementById('agg-safe-message');
+        const optimizedContainer = document.getElementById('agg-optimized-container');
+        const applyBtn = document.getElementById('btn-apply-agg');
+        
+        content.style.display = 'block';
+        badge.innerText = "❌ Fehler";
+        badge.style.background = "rgba(239, 68, 68, 0.2)";
+        badge.style.color = "#ef4444";
+        badge.style.border = "1px solid #ef4444";
+        
+        warningsContainer.style.display = 'block';
+        warningsList.innerHTML = `<li>${msg}</li>`;
+        safeMessage.style.display = 'none';
+        optimizedContainer.style.display = 'none';
+        applyBtn.style.display = 'none';
+    }
+
+    function dismissAGGSuggestions() {
+        const box = document.getElementById('agg-suggestions-box');
+        box.style.opacity = '0';
+        setTimeout(() => {
+            box.style.display = 'none';
+            box.style.opacity = '1';
+        }, 300);
+    }
+
+    function applyAGGSuggestions() {
+        if (currentOptimizedText) {
+            document.getElementById('job-desc-inp').value = currentOptimizedText;
+            
+            // Subtle flash effect on textarea to indicate update
+            const descArea = document.getElementById('job-desc-inp');
+            const originalBorder = descArea.style.borderColor;
+            descArea.style.borderColor = 'var(--accent)';
+            descArea.style.boxShadow = '0 0 10px rgba(139, 92, 246, 0.5)';
+            setTimeout(() => {
+                descArea.style.borderColor = originalBorder;
+                descArea.style.boxShadow = '';
+            }, 800);
+            
+            dismissAGGSuggestions();
+        }
     }
 
     // Leichte Sprache text translator box

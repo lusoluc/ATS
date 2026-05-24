@@ -1060,8 +1060,13 @@ def gemma_agg_check(request):
         Ausschreibungstext:
         {text}
         
-        Antworte auf Deutsch. Zeige eventuelle problematische Wörter auf und schlage rechtskonforme, geschlechtsneutrale und unvoreingenommene Alternativen vor.
-        Falls alles AGG-konform ist, bestätige dies kurz.
+        Bitte antworte genau im folgenden Format, damit das System deine Antwort parsen kann. Verwende exakt die Trenner:
+        
+        === VERSTÖSSE ===
+        - (Liste hier alle gefundenen Verstöße und problematischen Formulierungen stichpunktartig auf. Wenn keine vorhanden sind, schreibe "Keine Verstöße gefunden".)
+        
+        === OPTIMIERTER TEXT ===
+        (Gib hier den vollständigen, korrigierten, AGG-konformen Ausschreibungstext aus. Keine weiteren Kommentare vor oder nach diesem Block.)
         """
         
         payload = {
@@ -1075,26 +1080,65 @@ def gemma_agg_check(request):
             if response.status_code == 200:
                 res_data = response.json()
                 reply = res_data.get("response", "").strip()
-                return JsonResponse({'success': True, 'result': reply})
+                
+                violations = []
+                optimized_text = text
+                if "=== OPTIMIERTER TEXT ===" in reply:
+                    parts = reply.split("=== OPTIMIERTER TEXT ===")
+                    opt_part = parts[1].strip()
+                    violation_part = parts[0].replace("=== VERSTÖSSE ===", "").strip()
+                    
+                    violations = [v.strip().lstrip("-*• ") for v in violation_part.split("\n") if v.strip()]
+                    optimized_text = opt_part
+                else:
+                    violations = [reply]
+                    optimized_text = text
+                
+                # Filter out system or empty notes
+                violations = [v for v in violations if v and "keine verstöße" not in v.lower() and "keine offensichtlichen" not in v.lower()]
+                
+                return JsonResponse({
+                    'success': True,
+                    'violations': violations,
+                    'optimized_text': optimized_text,
+                    'original_text': text,
+                    'fallback_mode': False
+                })
         except Exception:
             pass
             
-        # Fallback analysis
+        # Fallback analysis using high-quality regex rules
         violations = []
+        optimized_text = text
         text_lower = text.lower()
+        import re
+        
         if "jung" in text_lower or "junge" in text_lower:
-            violations.append("- 'jung' / 'junge': Mögliche Altersdiskriminierung. Besser: 'dynamische Talente (m/w/d)'.")
-        if "arzt" in text_lower and "ärztin" not in text_lower:
-            violations.append("- 'Arzt': Fehlende Geschlechtsneutralität. Besser: 'Arzt/Ärztin (m/w/d)'.")
-        if "gesund" in text_lower or "belastbar" in text_lower:
-            violations.append("- 'belastbar' / 'gesund': Kann als Diskriminierung von chronisch Kranken gewertet werden. Besser präzise Anforderungen nennen.")
+            violations.append("Mögliche Altersdiskriminierung durch das Wort 'jung/junge'. Empfohlen: 'dynamische/engagierte Talente (m/w/d)'.")
+            optimized_text = re.sub(r'\bjunges\b', 'dynamisches', optimized_text, flags=re.IGNORECASE)
+            optimized_text = re.sub(r'\bjunge\b', 'dynamische', optimized_text, flags=re.IGNORECASE)
+            optimized_text = re.sub(r'\bjung\b', 'dynamisch', optimized_text, flags=re.IGNORECASE)
+            optimized_text = re.sub(r'\bjungen\b', 'dynamischen', optimized_text, flags=re.IGNORECASE)
             
-        if violations:
-            reply = "⚠️ Mögliche AGG-Risiken identifiziert (Fallback-Modus):\n\n" + "\n".join(violations)
-        else:
-            reply = "✅ Keine offensichtlichen AGG-Verstöße im Text gefunden (Fallback-Modus)."
+        if "arzt" in text_lower and "ärztin" not in text_lower and "m/w/d" not in text_lower:
+            violations.append("Geschlechtsspezifische Formulierung 'Arzt'. Empfohlen: 'Arzt/Ärztin (m/w/d)'.")
+            optimized_text = re.sub(r'\barzt\b', 'Arzt/Ärztin (m/w/d)', optimized_text, flags=re.IGNORECASE)
             
-        return JsonResponse({'success': True, 'result': reply})
+        if "gesund" in text_lower:
+            violations.append("Formulierung 'gesund' diskriminiert potenziell Bewerber mit chronischen Erkrankungen oder körperlichen Einschränkungen.")
+            optimized_text = re.sub(r'\bgesund\b', 'qualifiziert', optimized_text, flags=re.IGNORECASE)
+            
+        if "belastbar" in text_lower:
+            violations.append("Formulierung 'belastbar' kann chronisch kranke oder behinderte Menschen abschrecken. Empfohlen: 'zuverlässig' oder 'engagiert'.")
+            optimized_text = re.sub(r'\bbelastbar\b', 'engagiert', optimized_text, flags=re.IGNORECASE)
+            
+        return JsonResponse({
+            'success': True,
+            'violations': violations,
+            'optimized_text': optimized_text,
+            'original_text': text,
+            'fallback_mode': True
+        })
         
     return JsonResponse({'success': False, 'error': 'Invalid request method.'})
 

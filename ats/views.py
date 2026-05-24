@@ -15,7 +15,7 @@ from .models import (
     Organization, Facility, FacilityProfile, Department, Location,
     JobFamily, ContactPerson, WorkflowState, JobTemplate, Benefit,
     JobPosting, Applicant, Application, Interview, InterviewSlot,
-    Message, Page, AuditLog, AILearningSample, SystemSetting
+    Message, Page, AuditLog, AILearningSample, SystemSetting, AppWorkflowDef
 )
 
 # ============================================================================
@@ -563,6 +563,7 @@ def dashboard(request):
     # CMS Pages, Workflows, Email Templates and global SystemSettings/Variables
     all_pages = Page.objects.all().order_by('navOrder')
     all_workflows = WorkflowState.objects.all().order_by('name')
+    app_workflows = AppWorkflowDef.objects.all().select_related('facility').order_by('name')
     
     from .models import EmailTemplate
     all_email_templates = EmailTemplate.objects.all().order_by('name')
@@ -614,6 +615,7 @@ def dashboard(request):
         # New Context Variables for Command Center
         'all_pages': all_pages,
         'all_workflows': all_workflows,
+        'app_workflows': app_workflows,
         'all_email_templates': all_email_templates,
         'all_system_settings': all_system_settings,
         'facilities': facilities,
@@ -1166,6 +1168,52 @@ def save_page(request):
             AuditLog.objects.create(
                 action=action,
                 metadataJson=json.dumps({"pageId": str(page.id), "slug": page.slug})
+            )
+            
+        return redirect('ats:dashboard')
+    return redirect('ats:dashboard')
+
+
+@csrf_exempt
+def save_app_workflow(request):
+    """Creates or updates an AppWorkflowDef (specialized recruiting pipeline)."""
+    if request.method == 'POST':
+        workflow_id = request.POST.get('workflow_id')
+        name = request.POST.get('name', '').strip()
+        facility_id = request.POST.get('facility')
+        
+        location_ids = request.POST.getlist('locations')
+        category_ids = request.POST.getlist('categories')
+        job_ids = request.POST.getlist('jobs')
+        steps = request.POST.getlist('steps')
+        
+        with transaction.atomic():
+            facility = Facility.objects.filter(id=facility_id).first() if facility_id else None
+            
+            if workflow_id:
+                wf = get_object_or_404(AppWorkflowDef, id=workflow_id)
+                wf.name = name
+                wf.facility = facility
+                wf.locationIdsJson = json.dumps(location_ids)
+                wf.categoryIdsJson = json.dumps(category_ids)
+                wf.jobIdsJson = json.dumps(job_ids)
+                wf.stepsJson = json.dumps(steps)
+                wf.save()
+                action = "UPDATE_APP_WORKFLOW"
+            else:
+                wf = AppWorkflowDef.objects.create(
+                    name=name,
+                    facility=facility,
+                    locationIdsJson=json.dumps(location_ids),
+                    categoryIdsJson=json.dumps(category_ids),
+                    jobIdsJson=json.dumps(job_ids),
+                    stepsJson=json.dumps(steps)
+                )
+                action = "CREATE_APP_WORKFLOW"
+                
+            AuditLog.objects.create(
+                action=action,
+                metadataJson=json.dumps({"workflowId": str(wf.id), "name": wf.name})
             )
             
         return redirect('ats:dashboard')

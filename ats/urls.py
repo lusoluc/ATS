@@ -23,6 +23,7 @@ urlpatterns = [
     path('recruiter/jobs/create/', views.create_job, name='create_job'),
     path('recruiter/pages/save/', views.save_page, name='save_page'),
     path('recruiter/workflows/save/', views.save_workflow_state, name='save_workflow_state'),
+    path('recruiter/workflows/definition/save/', views.save_app_workflow, name='save_app_workflow'),
     path('recruiter/templates/email/save/', views.save_email_template, name='save_email_template'),
     path('recruiter/settings/save/', views.save_system_setting, name='save_system_setting'),
     path('recruiter/ki/test/', views.test_gemma, name='test_gemma'),

@@ -1004,16 +1004,156 @@
                         <div class="glass-card" style="background: rgba(11, 13, 25, 0.4);">
                             <h4 style="color: #fff; margin-bottom: 16px;"><i class="fa-solid fa-bug-slash" style="color: #ef4444;"></i> Honeypot Spam-Schutz</h4>
                             
-                            <div style="display: flex; gap: 20px; align-items: center;">
-                                <div style="font-size: 42px; font-weight: 800; color: #ef4444; font-family: 'Outfit';">{{ honeypot_spam_count }}</div>
-                                <div>
-                                    <h5 style="color: #fff; font-size: 15px;">Blockierte Spambots</h5>
-                                    <p style="color: var(--text-muted); font-size: 12px;">Bösartige Anfragen, die lautlos über das Spam-Honeypot abgefangen wurden.</p>
-                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- KI-STEUERUNGSZENTRUM FORM -->
+                <form method="POST" action="{% url 'ats:save_ai_settings' %}" id="ai-settings-form" style="margin-top: 30px;">
+                    {% csrf_token %}
+                    <div class="glass-card" style="background: rgba(18, 22, 41, 0.4); border-color: rgba(139, 92, 246, 0.3); padding: 24px;">
+                        <div style="margin-bottom: 24px;">
+                            <h3 style="font-size: 20px; color: #fff; display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-sliders" style="color: var(--accent);"></i> KI-Steuerungszentrum
+                            </h3>
+                            <p style="color: var(--text-muted); font-size: 13px;">Verwalte die Verhaltensweisen, Tonalität und das Wissen der künstlichen Intelligenz (LLM) im System.</p>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 30px;">
+                            <!-- 1. Kommunikationsstil & Tonalität -->
+                            <div style="border-left: 4px solid #8b5cf6; padding-left: 20px;">
+                                <h4 style="color: #fff; margin-bottom: 16px; font-size: 16px;">1. Kommunikationsstil & Tonalität</h4>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                    <div class="form-group">
+                                        <label class="form-label" style="font-weight: 600; color: #e5e7eb;">Tonalität (System Prompt)</label>
+                                        <select name="AI_TONE" class="form-input" style="background: rgba(0,0,0,0.3); color: #fff; border-color: var(--glass-border);">
+                                            <option value="FORMAL" {% if ai_settings.AI_TONE == 'FORMAL' %}selected{% endif %}>Formell & Professionell (Konservativ)</option>
+                                            <option value="EMPATHETIC" {% if ai_settings.AI_TONE == 'EMPATHETIC' %}selected{% endif %}>Empopathisch, Wertschätzend & Nahbar (Standard Pflege)</option>
+                                            <option value="CASUAL" {% if ai_settings.AI_TONE == 'CASUAL' %}selected{% endif %}>Locker, Startup-Style & Direkt</option>
+                                        </select>
+                                        <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">Dies beeinflusst, wie die KI E-Mails formuliert und im Chat mit Bewerbern interagiert.</span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" style="font-weight: 600; color: #e5e7eb;">Ansprache</label>
+                                        <select name="AI_LANGUAGE" class="form-input" style="background: rgba(0,0,0,0.3); color: #fff; border-color: var(--glass-border);">
+                                            <option value="DE_SIE" {% if ai_settings.AI_LANGUAGE == 'DE_SIE' %}selected{% endif %}>Deutsch (Siezen)</option>
+                                            <option value="DE_DU" {% if ai_settings.AI_LANGUAGE == 'DE_DU' %}selected{% endif %}>Deutsch (Duzen - Modern)</option>
+                                            <option value="EN" {% if ai_settings.AI_LANGUAGE == 'EN' %}selected{% endif %}>Englisch (International)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 2. Automatisierung & KI-Scoring -->
+                            <div style="border-left: 4px solid #3b82f6; padding-left: 20px;">
+                                <h4 style="color: #fff; margin-bottom: 16px; font-size: 16px;">2. Automatisierung & KI-Scoring</h4>
+                                <div style="display: flex; flex-direction: column; gap: 20px;">
+                                    <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 0;">
+                                        <input type="checkbox" name="AI_AUTO_REJECT_ENABLED" id="ai-auto-reject-check" style="width: 18px; height: 18px; cursor: pointer;" {% if ai_settings.AI_AUTO_REJECT_ENABLED == 'true' %}checked{% endif %}>
+                                        <label for="ai-auto-reject-check" style="font-weight: 600; color: #fff; cursor: pointer; margin-bottom: 0;">Auto-Absage durch KI aktivieren</label>
+                                    </div>
+                                    <p style="font-size: 12px; color: var(--text-muted); margin-top: -10px; margin-left: 28px; margin-bottom: 0;">Die KI darf Bewerber automatisch absagen, wenn deren Skill-Matching unter dem definierten Schwellenwert liegt.</p>
+                                    
+                                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-left: 28px; margin-top: 10px;">
+                                        <div class="form-group">
+                                            <label class="form-label" style="color: #ef4444; font-weight: 600;">Kategorie D (< X%) <span style="font-size: 11px; opacity: 0.8; display: block; font-weight: normal;">(Auto-Absage)</span></label>
+                                            <input type="number" name="AI_THRESHOLD_D_REJECT" class="form-input" style="background: rgba(0,0,0,0.3); color: #fff; border-color: var(--glass-border);" value="{{ ai_settings.AI_THRESHOLD_D_REJECT }}">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label" style="color: #f59e0b; font-weight: 600;">Kategorie C (< X%) <span style="font-size: 11px; opacity: 0.8; display: block; font-weight: normal;">(Waitlist / Manuell)</span></label>
+                                            <input type="number" name="AI_THRESHOLD_C_WAITLIST" class="form-input" style="background: rgba(0,0,0,0.3); color: #fff; border-color: var(--glass-border);" value="{{ ai_settings.AI_THRESHOLD_C_WAITLIST }}">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label" style="color: #10b981; font-weight: 600;">Kategorie A (> X%) <span style="font-size: 11px; opacity: 0.8; display: block; font-weight: normal;">(Auto-Einladung)</span></label>
+                                            <input type="number" name="AI_THRESHOLD_A_INVITE" class="form-input" style="background: rgba(0,0,0,0.3); color: #fff; border-color: var(--glass-border);" value="{{ ai_settings.AI_THRESHOLD_A_INVITE }}">
+                                        </div>
+                                    </div>
+                                    <p style="font-size: 12px; color: var(--text-muted); margin-left: 28px; font-style: italic; margin-top: -10px;">
+                                        Hinweis: Bewerber, die zwischen C und A liegen, werden automatisch in Kategorie B (Standard HR-Sichtung) eingestuft.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- 3. Wissensdatenbank (Fine-Tuning) -->
+                            <div style="border-left: 4px solid #10b981; padding-left: 20px;">
+                                <h4 style="color: #fff; margin-bottom: 16px; font-size: 16px;">3. Wissensdatenbank (Fine-Tuning)</h4>
+                                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+                                    Die KI vergleicht Bewerber mit historischen "Best-Performern" deines Unternehmens. Lade hier anonymisierte Lebensläufe deiner besten Mitarbeiter hoch, um das semantische Verständnis der KI auf eure Unternehmenskultur auszurichten.
+                                </p>
+
+                                <div id="cv-drop-zone" style="border: 2px dashed rgba(16, 185, 129, 0.4); padding: 30px; border-radius: 8px; text-align: center; background: rgba(0,0,0,0.2); cursor: pointer; transition: all 0.3s; margin-bottom: 20px;">
+                                    <i class="fa-solid fa-file-pdf" style="font-size: 32px; color: #10b981; margin-bottom: 12px;"></i>
+                                    <h5 style="color: #fff; font-size: 15px; margin-bottom: 4px;">Lebensläufe hochladen (PDF, anonymisiert)</h5>
+                                    <p style="color: var(--text-muted); font-size: 12px; margin-bottom: 12px;">Drag & Drop oder klicken zum Auswählen</p>
+                                    <input type="file" id="cv-file-input" style="display: none;" multiple accept=".pdf" onchange="handleCVFileSelection(event)">
+                                    
+                                    <div id="selected-cvs-list" style="margin-top: 15px; text-align: left; max-height: 120px; overflow-y: auto; display: none; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 6px;"></div>
+
+                                    <button type="button" id="btn-ingest-cvs" class="btn-secondary-cta" style="margin: 12px auto 0 auto; display: block; border-color: #10b981; color: #10b981; padding: 0 20px; height: 36px; line-height: 36px;" onclick="simulateCVIngestion(event)">
+                                        <i class="fa-solid fa-database"></i> Dateien einspeisen
+                                    </button>
+
+                                    <!-- Ingestion progress simulator -->
+                                    <div id="ingestion-progress-container" style="display: none; margin-top: 15px; width: 100%;">
+                                        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #10b981; margin-bottom: 6px;">
+                                            <span id="ingestion-status-text">Verarbeite & trainiere Modell...</span>
+                                            <span id="ingestion-pct-text">0%</span>
+                                        </div>
+                                        <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                                            <div id="ingestion-progress-bar" style="width: 0%; height: 100%; background: #10b981; transition: width 0.1s;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 0;">
+                                    <input type="checkbox" name="AI_CV_LEARNING_MODE" id="ai-cv-learning-check" style="width: 18px; height: 18px; cursor: pointer;" {% if ai_settings.AI_CV_LEARNING_MODE == 'true' %}checked{% endif %}>
+                                    <label for="ai-cv-learning-check" style="font-weight: 600; color: #fff; cursor: pointer; margin-bottom: 0;">Kontinuierliches Lernen aktivieren</label>
+                                </div>
+                                <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px; margin-left: 28px; margin-bottom: 0;">Wenn aktiviert, lernt die KI automatisch aus Bewerbungen, die von HR in die Spalte "Vertragsangebot" verschoben werden.</p>
+                            </div>
+
+                            <!-- 4. Text-Assistenz & Compliance -->
+                            <div style="border-left: 4px solid #f59e0b; padding-left: 20px;">
+                                <h4 style="color: #fff; margin-bottom: 16px; font-size: 16px;">4. Text-Assistenz & Compliance</h4>
+                                <div style="display: flex; flex-direction: column; gap: 24px;">
+                                    <div>
+                                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                            <input type="checkbox" name="AI_AGG_CHECK_ENABLED" id="ai-agg-check-enabled" style="width: 18px; height: 18px; cursor: pointer;" {% if ai_settings.AI_AGG_CHECK_ENABLED == 'true' %}checked{% endif %} onchange="togglePromptTextarea('ai-agg-check-enabled', 'ai-agg-prompt-container')">
+                                            <label for="ai-agg-check-enabled" style="font-weight: 600; color: #fff; cursor: pointer; margin-bottom: 0;">AGG-Check in Stellenangeboten aktivieren</label>
+                                        </div>
+                                        <p style="font-size: 12px; color: var(--text-muted); margin-left: 28px; margin-bottom: 0;">Schaltet im Job-Editor einen Button frei, mit dem Recruiter den Jobtext manuell von der KI auf Diskriminierung prüfen lassen können.</p>
+                                        
+                                        <div id="ai-agg-prompt-container" style="margin-left: 28px; margin-top: 12px; {% if ai_settings.AI_AGG_CHECK_ENABLED != 'true' %}display: none;{% endif %}">
+                                            <label class="form-label" style="font-size: 12px; font-weight: 600; color: #e5e7eb; margin-bottom: 6px;">AGG-Prüfungs-Regelwerk (Prompt):</label>
+                                            <textarea name="AI_AGG_PROMPT" class="form-textarea" rows="3" style="background: rgba(0,0,0,0.3); color: #fff; border-color: var(--glass-border);">{{ ai_settings.AI_AGG_PROMPT }}</textarea>
+                                        </div>
+                                    </div>
+
+                                    <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+                                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                            <input type="checkbox" name="AI_TRANSLATE_EASY_LANGUAGE" id="ai-translate-easy-enabled" style="width: 18px; height: 18px; cursor: pointer;" {% if ai_settings.AI_TRANSLATE_EASY_LANGUAGE == 'true' %}checked{% endif %} onchange="togglePromptTextarea('ai-translate-easy-enabled', 'ai-easy-prompt-container')">
+                                            <label for="ai-translate-easy-enabled" style="font-weight: 600; color: #fff; cursor: pointer; margin-bottom: 0;">"Leichte Sprache" Übersetzer aktivieren</label>
+                                        </div>
+                                        <p style="font-size: 12px; color: var(--text-muted); margin-left: 28px; margin-bottom: 0;">Schaltet einen Button im Job-Editor frei, mit dem Texte auf Knopfdruck in barrierefreie Sprache übersetzt werden.</p>
+                                        
+                                        <div id="ai-easy-prompt-container" style="margin-left: 28px; margin-top: 12px; {% if ai_settings.AI_TRANSLATE_EASY_LANGUAGE != 'true' %}display: none;{% endif %}">
+                                            <label class="form-label" style="font-size: 12px; font-weight: 600; color: #e5e7eb; margin-bottom: 6px;">Übersetzungs-Regelwerk (Prompt):</label>
+                                            <textarea name="AI_EASY_LANGUAGE_PROMPT" class="form-textarea" rows="3" style="background: rgba(0,0,0,0.3); color: #fff; border-color: var(--glass-border);">{{ ai_settings.AI_EASY_LANGUAGE_PROMPT }}</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Save Button -->
+                            <div style="margin-top: 10px;">
+                                <button type="submit" class="btn-cta" style="width: 100%; height: 48px; font-size: 16px; font-weight: 700; background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                    <i class="fa-solid fa-floppy-disk"></i> Alle KI-Einstellungen speichern
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
             </div>
         </div>
 
@@ -1426,6 +1566,9 @@ MODALS & OVERLAYS
             content.classList.remove('active');
         });
         document.getElementById(tabId).classList.add('active');
+
+        // Save active tab for reloads
+        localStorage.setItem('activeTab', tabId);
 
         // Run specific loaders if needed
         if (tabId === 'stats-tab') {
@@ -2223,5 +2366,133 @@ MODALS & OVERLAYS
         const totalROI = annualPenalty + conversionSavings + legalSavings;
         document.getElementById('roi-total-saving').innerText = `${totalROI.toLocaleString()} € / Jahr`;
     }
+
+    // Toggle prompt textareas in KI-Steuerungszentrum
+    function togglePromptTextarea(checkId, containerId) {
+        const check = document.getElementById(checkId);
+        const container = document.getElementById(containerId);
+        if (check.checked) {
+            container.style.display = 'block';
+        } else {
+            container.style.display = 'none';
+        }
+    }
+
+    // Global selected files list for PDF simulation
+    let selectedCVFiles = [];
+
+    function handleCVFileSelection(event) {
+        const files = event.target.files;
+        const listEl = document.getElementById('selected-cvs-list');
+        listEl.innerHTML = '';
+        selectedCVFiles = [];
+
+        if (files.length > 0) {
+            listEl.style.display = 'block';
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                selectedCVFiles.push(file);
+                listEl.innerHTML += `<div style="font-size:12px; color:#10b981; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-file-pdf"></i> ${file.name} (${Math.round(file.size / 1024)} KB)
+                </div>`;
+            }
+        } else {
+            listEl.style.display = 'none';
+        }
+    }
+
+    function simulateCVIngestion(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        if (selectedCVFiles.length === 0) {
+            alert("Bitte wählen Sie zuerst eine oder mehrere PDF-Dateien aus!");
+            return;
+        }
+
+        const btn = document.getElementById('btn-ingest-cvs');
+        const progressContainer = document.getElementById('ingestion-progress-container');
+        const progressBar = document.getElementById('ingestion-progress-bar');
+        const pctText = document.getElementById('ingestion-pct-text');
+        const statusText = document.getElementById('ingestion-status-text');
+
+        btn.disabled = true;
+        progressContainer.style.display = 'block';
+        
+        let pct = 0;
+        const interval = setInterval(() => {
+            pct += 5;
+            progressBar.style.width = pct + '%';
+            pctText.innerText = pct + '%';
+            
+            if (pct >= 20 && pct < 50) {
+                statusText.innerText = "Lese PDF-Metadaten & Anonymisiere...";
+            } else if (pct >= 50 && pct < 80) {
+                statusText.innerText = "Generiere Vektor-Embeddings...";
+            } else if (pct >= 80 && pct < 100) {
+                statusText.innerText = "Speichere in Wissensdatenbank...";
+            }
+
+            if (pct >= 100) {
+                clearInterval(interval);
+                setTimeout(() => {
+                    alert(`${selectedCVFiles.length} anonymisierte Lebensläufe erfolgreich in die Vektordatenbank eingespeist. Die lokale Gemma-KI wurde auf Ihre Unternehmenskultur ausgerichtet!`);
+                    btn.disabled = false;
+                    progressContainer.style.display = 'none';
+                    progressBar.style.width = '0%';
+                    pctText.innerText = '0%';
+                    statusText.innerText = 'Verarbeite & trainiere Modell...';
+                    document.getElementById('selected-cvs-list').innerHTML = '';
+                    document.getElementById('selected-cvs-list').style.display = 'none';
+                    selectedCVFiles = [];
+                }, 500);
+            }
+        }, 100);
+    }
+
+    // DOMContentLoaded setup for tab preservation & drag-drop
+    window.addEventListener('DOMContentLoaded', () => {
+        // Tab preservation
+        const storedTab = localStorage.getItem('activeTab');
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlTab = urlParams.get('tab');
+        const targetTabId = urlTab || storedTab || 'kanban-tab';
+        
+        // Find sidebar link corresponding to targetTabId
+        const sidebarLink = Array.from(document.querySelectorAll('.sidebar-link'))
+            .find(link => link.getAttribute('onclick')?.includes(targetTabId));
+            
+        if (sidebarLink) {
+            switchTab(sidebarLink, targetTabId);
+        }
+
+        // Setup drag & drop for CV zone
+        const dropZone = document.getElementById('cv-drop-zone');
+        if (dropZone) {
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#10b981';
+                dropZone.style.background = 'rgba(16, 185, 129, 0.1)';
+            });
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+                dropZone.style.background = 'rgba(0,0,0,0.2)';
+            });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+                dropZone.style.background = 'rgba(0,0,0,0.2)';
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const fileInput = document.getElementById('cv-file-input');
+                    fileInput.files = files;
+                    const event = { target: { files: files } };
+                    handleCVFileSelection(event);
+                }
+            });
+        }
+    });
 </script>
 {% endblock %}

@@ -24,6 +24,27 @@ from .models import (
 
 def seed_data_if_empty():
     """Seeds the SQLite database with fully functional mock data if it is empty."""
+    # Ensure all AI global settings exist (even if organization exists)
+    ai_defaults = {
+        "COMPANY_NAME": "SecurATS GmbH",
+        "PRIMARY_COLOR": "#8b5cf6",
+        "SUPPORT_EMAIL": "support@securats.de",
+        "FOOTER_TEXT": "© 2026 SecurATS. Datensouveränes Recruiting.",
+        "AI_TONE": "EMPATHETIC",
+        "AI_LANGUAGE": "DE_DU",
+        "AI_AUTO_REJECT_ENABLED": "false",
+        "AI_THRESHOLD_D_REJECT": "15",
+        "AI_THRESHOLD_C_WAITLIST": "50",
+        "AI_THRESHOLD_A_INVITE": "80",
+        "AI_CV_LEARNING_MODE": "true",
+        "AI_AGG_CHECK_ENABLED": "true",
+        "AI_AGG_PROMPT": "Prüfe den folgenden Text auf Diskriminierung (Alter, Geschlecht, Herkunft, Religion) nach dem deutschen AGG. Zeige kritische Stellen auf und mache neutrale Formulierungsvorschläge.",
+        "AI_TRANSLATE_EASY_LANGUAGE": "true",
+        "AI_EASY_LANGUAGE_PROMPT": "Übersetze den folgenden Text in leichte Sprache (A2/B1 Niveau). Nutze kurze Sätze, vermeide Fachwörter und verwende aktive Verben."
+    }
+    for k, v in ai_defaults.items():
+        SystemSetting.objects.get_or_create(key=k, defaults={"value": v})
+
     if Organization.objects.exists():
         return  # Already seeded
 
@@ -568,6 +589,7 @@ def dashboard(request):
     from .models import EmailTemplate
     all_email_templates = EmailTemplate.objects.all().order_by('name')
     all_system_settings = SystemSetting.objects.all().order_by('key')
+    ai_settings = {s.key: s.value for s in all_system_settings}
     
     # Selections for Job Postings creator
     facilities = Facility.objects.all()
@@ -620,6 +642,7 @@ def dashboard(request):
         'app_workflows': app_workflows,
         'all_email_templates': all_email_templates,
         'all_system_settings': all_system_settings,
+        'ai_settings': ai_settings,
         'facilities': facilities,
         'departments': departments,
         'locations': locations,
@@ -1606,3 +1629,50 @@ def toggle_learning_sample(request, app_id):
             
         return JsonResponse({'success': True, 'feedback_type': feedback_type})
     return JsonResponse({'success': False, 'error': 'Invalid request method.'})
+
+
+@csrf_exempt
+def save_ai_settings(request):
+    """Saves all consolidated AI settings from the KI-Steuerungszentrum form."""
+    if request.method == 'POST':
+        tone = request.POST.get('AI_TONE', 'EMPATHETIC').strip()
+        lang = request.POST.get('AI_LANGUAGE', 'DE_DU').strip()
+        auto_reject = 'true' if request.POST.get('AI_AUTO_REJECT_ENABLED') == 'on' or request.POST.get('AI_AUTO_REJECT_ENABLED') == 'true' else 'false'
+        th_d = request.POST.get('AI_THRESHOLD_D_REJECT', '15').strip()
+        th_c = request.POST.get('AI_THRESHOLD_C_WAITLIST', '50').strip()
+        th_a = request.POST.get('AI_THRESHOLD_A_INVITE', '80').strip()
+        cv_learning = 'true' if request.POST.get('AI_CV_LEARNING_MODE') == 'on' or request.POST.get('AI_CV_LEARNING_MODE') == 'true' else 'false'
+        agg_check = 'true' if request.POST.get('AI_AGG_CHECK_ENABLED') == 'on' or request.POST.get('AI_AGG_CHECK_ENABLED') == 'true' else 'false'
+        agg_prompt = request.POST.get('AI_AGG_PROMPT', '').strip()
+        translate_easy = 'true' if request.POST.get('AI_TRANSLATE_EASY_LANGUAGE') == 'on' or request.POST.get('AI_TRANSLATE_EASY_LANGUAGE') == 'true' else 'false'
+        easy_prompt = request.POST.get('AI_EASY_LANGUAGE_PROMPT', '').strip()
+
+        settings_dict = {
+            'AI_TONE': tone,
+            'AI_LANGUAGE': lang,
+            'AI_AUTO_REJECT_ENABLED': auto_reject,
+            'AI_THRESHOLD_D_REJECT': th_d,
+            'AI_THRESHOLD_C_WAITLIST': th_c,
+            'AI_THRESHOLD_A_INVITE': th_a,
+            'AI_CV_LEARNING_MODE': cv_learning,
+            'AI_AGG_CHECK_ENABLED': agg_check,
+            'AI_AGG_PROMPT': agg_prompt,
+            'AI_TRANSLATE_EASY_LANGUAGE': translate_easy,
+            'AI_EASY_LANGUAGE_PROMPT': easy_prompt,
+        }
+
+        with transaction.atomic():
+            for key, value in settings_dict.items():
+                setting, created = SystemSetting.objects.get_or_create(key=key, defaults={'value': value})
+                if not created:
+                    setting.value = value
+                    setting.save()
+
+            AuditLog.objects.create(
+                action="UPDATE_AI_SETTINGS",
+                metadataJson=json.dumps({"keys": list(settings_dict.keys())})
+            )
+
+        return redirect('ats:dashboard')
+    return redirect('ats:dashboard')
+

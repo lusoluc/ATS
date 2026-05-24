@@ -973,7 +973,7 @@ def evaluate_with_local_gemma(cover_letter, requirements_list):
     }
     
     try:
-        response = requests.post("http://127.0.0.1:11434/api/generate", json=payload, timeout=2.0)
+        response = requests.post("http://127.0.0.1:11434/api/generate", json=payload, timeout=8.0)
         if response.status_code == 200:
             res_data = response.json()
             response_text = res_data.get("response", "").strip()

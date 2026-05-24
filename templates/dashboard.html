@@ -734,7 +734,7 @@
                         <div class="form-group">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                                 <label class="form-label" style="margin-bottom: 0;">Seiten-Inhalt (Markdown / HTML)</label>
-                                <button type="button" class="btn-search" style="height: 26px; font-size: 11px; padding: 0 10px;" onclick="translateSimpleGermanCMS()">
+                                <button type="button" id="btn-translate-cms" class="btn-search" style="height: 26px; font-size: 11px; padding: 0 10px;" onclick="translateSimpleGermanCMS()">
                                     <i class="fa-solid fa-wheelchair"></i> Leichte Sprache (KI)
                                 </button>
                             </div>
@@ -1892,7 +1892,10 @@ MODALS & OVERLAYS
         formData.append('prompt', prompt);
 
         fetch(`/recruiter/ki/test/`, { method: 'POST', body: formData })
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) throw new Error("HTTP-Fehler " + res.status);
+            return res.json();
+        })
         .then(data => {
             if (data.success) {
                 box.innerHTML = `<span style="color:var(--accent-light);">[Gemma 4 - Latenz: ${data.latency}s]:</span>\n${data.reply}`;
@@ -1901,11 +1904,11 @@ MODALS & OVERLAYS
             }
         })
         .catch(err => {
-            box.innerHTML = `<span style="color:#ef4444;">[Fehler]:</span>\n${err}`;
+            box.innerHTML = `<span style="color:#ef4444;">[Fehler]:</span>\n${err.message || err}`;
         });
     }
 
-    // AGG Checker Tool
+    // AGG Checker Tool inside Tab 7 (KI-Zentrale)
     function runAGGChecker() {
         const text = document.getElementById('agg-text').value;
         const box = document.getElementById('agg-response-box');
@@ -1916,11 +1919,38 @@ MODALS & OVERLAYS
         formData.append('text', text);
 
         fetch(`/recruiter/ki/agg-check/`, { method: 'POST', body: formData })
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) throw new Error("Fehler bei der Netzwerkantwort");
+            return res.json();
+        })
         .then(data => {
             if (data.success) {
-                box.innerText = data.result;
+                let html = "";
+                const isFallback = data.fallback_mode;
+                
+                if (data.violations && data.violations.length > 0) {
+                    html += `<div style="color: #ef4444; font-weight: bold; margin-bottom: 8px;">⚠️ AGG-Risiken gefunden (${isFallback ? 'Fallback-Modus' : 'KI-Analyse'}):</div>`;
+                    html += `<ul style="margin: 0; padding-left: 20px; color: #fca5a5; display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px;">`;
+                    data.violations.forEach(v => {
+                        html += `<li>${v}</li>`;
+                    });
+                    html += `</ul>`;
+                    
+                    html += `<div style="color: var(--accent); font-weight: bold; margin-bottom: 4px;">Optimierter Formulierungsvorschlag:</div>`;
+                    html += `<div style="padding: 10px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #e5e7eb; white-space: pre-wrap; font-family: sans-serif; line-height: 1.4;">${data.optimized_text}</div>`;
+                } else {
+                    html += `<div style="color: #10b981; font-weight: bold; display: flex; align-items: center; gap: 6px;">`;
+                    html += `<i class="fa-solid fa-circle-check"></i> Keine offensichtlichen AGG-Verstöße gefunden (${isFallback ? 'Fallback-Modus' : 'KI-Analyse'}).`;
+                    html += `</div>`;
+                }
+                
+                box.innerHTML = html;
+            } else {
+                box.innerHTML = `<span style="color:#ef4444;">[Fehler]:</span> ${data.error || "Unerwarteter Fehler"}`;
             }
+        })
+        .catch(err => {
+            box.innerHTML = `<span style="color:#ef4444;">[Verbindungsfehler]:</span> ${err.message}`;
         });
     }
 
@@ -2070,11 +2100,19 @@ MODALS & OVERLAYS
         formData.append('text', text);
 
         fetch(`/recruiter/ki/simple-german/`, { method: 'POST', body: formData })
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) throw new Error("Fehler bei der Serverantwort.");
+            return res.json();
+        })
         .then(data => {
             if (data.success) {
                 box.innerText = data.result;
+            } else {
+                box.innerHTML = `<span style="color:#ef4444;">[Fehler]:</span> ${data.error || "Unerwarteter Fehler"}`;
             }
+        })
+        .catch(err => {
+            box.innerHTML = `<span style="color:#ef4444;">[Verbindungsfehler]:</span> ${err.message}`;
         });
     }
 
@@ -2091,16 +2129,39 @@ MODALS & OVERLAYS
             return;
         }
 
+        const btn = document.getElementById('btn-translate-cms');
+        const origHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Übersetze...`;
+
         const formData = new FormData();
         formData.append('text', text);
 
         fetch(`/recruiter/ki/simple-german/`, { method: 'POST', body: formData })
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) throw new Error("Serverfehler bei der Übersetzung.");
+            return res.json();
+        })
         .then(data => {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
             if (data.success) {
                 contentEl.value = data.result;
-                alert("✅ Erfolgreich in Leichte Sprache übersetzt!");
+                // Highlight text area green briefly
+                contentEl.style.borderColor = '#10b981';
+                contentEl.style.boxShadow = '0 0 8px rgba(16, 185, 129, 0.4)';
+                setTimeout(() => { 
+                    contentEl.style.borderColor = ''; 
+                    contentEl.style.boxShadow = '';
+                }, 1000);
+            } else {
+                alert("Fehler: " + (data.error || "Unbekannter Fehler"));
             }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+            alert("Fehler bei der Verbindung zum KI-Dienst: " + err.message);
         });
     }
 

@@ -1050,7 +1050,7 @@ def evaluate_with_local_gemma(cover_letter, requirements_list):
     }
     
     try:
-        success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=8.0)
+        success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=30.0)
         if success:
             response_text = res_data.get("response", "").strip()
             clean_text = response_text
@@ -1105,7 +1105,7 @@ def test_gemma(request):
         
         start_time = time.time()
         try:
-            success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=5.0)
+            success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=30.0)
             latency = round(time.time() - start_time, 2)
             if success:
                 reply = res_data.get("response", "").strip()
@@ -1149,7 +1149,7 @@ def gemma_agg_check(request):
         }
         
         try:
-            success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=8.0)
+            success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=30.0)
             if success:
                 reply = res_data.get("response", "").strip()
                 
@@ -1241,7 +1241,7 @@ def gemma_translate_simple_german(request):
         }
         
         try:
-            success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=8.0)
+            success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=30.0)
             if success:
                 reply = res_data.get("response", "").strip()
                 return JsonResponse({'success': True, 'result': reply})

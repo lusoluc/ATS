@@ -1070,7 +1070,7 @@ def evaluate_with_local_gemma(cover_letter, requirements_list):
     }
     
     try:
-        success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=25.0)
+        success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=28.0)
         if success:
             response_text = res_data.get("response", "").strip()
             clean_text = response_text
@@ -1244,7 +1244,7 @@ Bitte antworte genau im folgenden Format, damit das System deine Antwort parsen 
         try:
             import time
             start_time = time.time()
-            success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=25.0)
+            success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=28.0)
             latency = round(time.time() - start_time, 2)
             if success:
                 reply = res_data.get("response", "").strip()
@@ -1387,7 +1387,7 @@ def gemma_translate_simple_german(request):
         import time
         start_time = time.time()
         try:
-            success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=25.0)
+            success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=28.0)
             latency = round(time.time() - start_time, 2)
             if success:
                 reply = res_data.get("response", "").strip()
@@ -1453,7 +1453,7 @@ def validate_ai_prompt(request):
         if not custom_prompt:
             return JsonResponse({'success': False, 'error': 'Kein Prompt übermittelt.'})
             
-        test_text = "Wir suchen ab sofort einen belastbaren Junior-Softwareentwickler (m/w/d) zur Verstärkung des Teams."
+        test_text = "Wir suchen einen Junior-Arzt."
         
         if prompt_type == 'AGG':
             prompt = f"{custom_prompt}\n\nAusschreibungstext zum Prüfen:\n{test_text}"
@@ -1466,7 +1466,7 @@ def validate_ai_prompt(request):
             "stream": False,
             "options": {
                 "temperature": 0.1,
-                "num_predict": 300,
+                "num_predict": 120,
                 "top_k": 20,
                 "top_p": 0.5
             }
@@ -1475,8 +1475,8 @@ def validate_ai_prompt(request):
         import time
         start_time = time.time()
         try:
-            # Increased timeout to 25.0 seconds for robust cold-starts and CPU inference stability
-            success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=25.0)
+            # Increased timeout to 28.0 seconds for robust cold-starts and CPU inference stability
+            success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=28.0)
             latency = round(time.time() - start_time, 2)
             if success:
                 reply = res_data.get("response", "").strip()

@@ -2102,7 +2102,7 @@ MODALS & OVERLAYS
             <span style="color: #fbbf24;">Prüfe mit lokaler KI...</span>
         `;
         detailsEl.style.display = 'block';
-        detailsEl.innerHTML = `<div style="color: #9ca3af;">⏳ Analysiere Antwort-Struktur der lokalen Gemma-KI (dies kann bis zu 5 Sekunden dauern)...</div>`;
+        detailsEl.innerHTML = `<div style="color: #fbbf24;">⏳ Die lokale KI analysiert den Prompt...<br><span style="color: #9ca3af; font-size: 11px; display: block; margin-top: 4px;">• Da es sich um ein lokales CPU-System handelt, kann die Erstberechnung eines langen, komplexen Prompts bis zu 25 Sekunden dauern. Bitte habe kurz Geduld!</span></div>`;
         
         const formData = new FormData();
         formData.append('type', type);

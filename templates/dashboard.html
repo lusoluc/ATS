@@ -2101,9 +2101,10 @@ MODALS & OVERLAYS
     let currentOptimizedText = "";
 
     function runAGGCheckOnJob() {
+        const title = document.getElementById('job-title-inp').value;
         const desc = document.getElementById('job-desc-inp').value;
-        if (!desc.trim()) {
-            alert("Bitte geben Sie zuerst eine Beschreibung ein!");
+        if (!desc.trim() && !title.trim()) {
+            alert("Bitte geben Sie zuerst einen Stellentitel oder eine Beschreibung ein!");
             return;
         }
 
@@ -2117,8 +2118,11 @@ MODALS & OVERLAYS
         loading.style.display = 'flex';
         content.style.display = 'none';
 
+        // Combine title and description so both are fully analyzed by the AI & fallback regex
+        const combinedText = `Stellentitel: ${title}\nBeschreibung: ${desc}`;
+
         const formData = new FormData();
-        formData.append('text', desc);
+        formData.append('text', combinedText);
 
         fetch(`/recruiter/ki/agg-check/`, { method: 'POST', body: formData })
         .then(res => {
@@ -2216,7 +2220,37 @@ MODALS & OVERLAYS
 
     function applyAGGSuggestions() {
         if (currentOptimizedText) {
-            document.getElementById('job-desc-inp').value = currentOptimizedText;
+            let optimizedDesc = currentOptimizedText;
+            let optimizedTitle = "";
+
+            // Parse title if returned with prefix
+            if (currentOptimizedText.includes("Stellentitel:")) {
+                const parts = currentOptimizedText.split("Beschreibung:");
+                const titlePart = parts[0].replace("Stellentitel:", "").trim();
+                if (titlePart) {
+                    optimizedTitle = titlePart;
+                }
+                if (parts[1]) {
+                    optimizedDesc = parts[1].trim();
+                }
+            } else if (currentOptimizedText.includes("Ausschreibungstext:")) {
+                const parts = currentOptimizedText.split("Ausschreibungstext:");
+                optimizedDesc = parts[1].trim();
+            }
+
+            // Apply title update if found
+            if (optimizedTitle) {
+                document.getElementById('job-title-inp').value = optimizedTitle;
+                
+                // Flash effect on title input
+                const titleArea = document.getElementById('job-title-inp');
+                const origBorder = titleArea.style.borderColor;
+                titleArea.style.borderColor = 'var(--accent)';
+                setTimeout(() => { titleArea.style.borderColor = origBorder; }, 800);
+            }
+
+            // Apply description update
+            document.getElementById('job-desc-inp').value = optimizedDesc;
             
             // Subtle flash effect on textarea to indicate update
             const descArea = document.getElementById('job-desc-inp');

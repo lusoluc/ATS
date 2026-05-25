@@ -1148,7 +1148,8 @@ def gemma_agg_check(request):
             
         prompt = f"""
         Du bist der SecurATS AGG-Konformitätsprüfer (basierend auf Gemma).
-        Analysiere den folgenden Stellenbeschreibungstext auf mögliche Diskriminierungen (AGG-Verstöße) bezüglich Alter, Geschlecht, Religion, Rasse oder Behinderung.
+        Analysiere den folgenden Stellentext (Stellentitel und Beschreibung) auf mögliche Diskriminierungen (AGG-Verstöße) bezüglich Alter (z. B. 'Junior', 'Senior', 'jung'), Geschlecht (z. B. fehlendes m/w/d), Religion, Rasse oder Behinderung.
+        Halte gezielt nach 'Junior' oder 'Senior' Ausschau, da dies im deutschen Arbeitsrecht als verdeckte Alterskriterien ausgelegt werden kann! Empfiehl stattdessen neutrale Bezeichnungen mit Angabe der benötigten Berufserfahrung in Jahren.
         
         Ausschreibungstext:
         {text}
@@ -1211,6 +1212,16 @@ def gemma_agg_check(request):
             optimized_text = re.sub(r'\bjunge\b', 'dynamische', optimized_text, flags=re.IGNORECASE)
             optimized_text = re.sub(r'\bjung\b', 'dynamisch', optimized_text, flags=re.IGNORECASE)
             optimized_text = re.sub(r'\bjungen\b', 'dynamischen', optimized_text, flags=re.IGNORECASE)
+            
+        if "junior" in text_lower:
+            violations.append("Formulierung 'Junior' im Stellentitel oder Text kann als Altersdiskriminierung (Bevorzugung jüngerer Bewerber) ausgelegt werden. Empfehlung: Angabe konkreter Berufserfahrung (z. B. 'mit erste Praxiserfahrung / Berufseinsteiger') statt Altersbegriffen.")
+            optimized_text = re.sub(r'\bJunior\b', '', optimized_text)
+            optimized_text = re.sub(r'\bjunior\b', 'mit erster Praxiserfahrung', optimized_text, flags=re.IGNORECASE)
+
+        if "senior" in text_lower:
+            violations.append("Formulierung 'Senior' im Stellentitel oder Text kann als Altersdiskriminierung (Benachteiligung jüngerer Bewerber) ausgelegt werden. Empfehlung: Angabe konkreter Berufserfahrung (z. B. 'mit mehrjähriger Berufserfahrung') statt Altersbegriffen.")
+            optimized_text = re.sub(r'\bSenior\b', '', optimized_text)
+            optimized_text = re.sub(r'\bsenior\b', 'mit mehrjähriger Berufserfahrung', optimized_text, flags=re.IGNORECASE)
             
         if "arzt" in text_lower and "ärztin" not in text_lower and "m/w/d" not in text_lower:
             violations.append("Geschlechtsspezifische Formulierung 'Arzt'. Empfohlen: 'Arzt/Ärztin (m/w/d)'.")

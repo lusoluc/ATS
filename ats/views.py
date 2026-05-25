@@ -611,7 +611,7 @@ def dashboard(request):
     import socket
     for host in ["host.docker.internal", "127.0.0.1"]:
         try:
-            s = socket.create_connection((host, 11434), timeout=0.1)
+            s = socket.create_connection((host, 11434), timeout=2.0)
             s.close()
             gemma_status = 'ONLINE'
             break
@@ -982,11 +982,18 @@ def get_ollama_url(endpoint="api/generate"):
         
     for host in ["host.docker.internal", "127.0.0.1"]:
         try:
-            s = socket.create_connection((host, 11434), timeout=0.1)
+            s = socket.create_connection((host, 11434), timeout=2.0)
             s.close()
             return f"http://{host}:11434/{endpoint}"
         except Exception:
             pass
+            
+    # Intelligent default fallback: inside a container, host.docker.internal is the host
+    try:
+        socket.gethostbyname("host.docker.internal")
+        return f"http://host.docker.internal:11434/{endpoint}"
+    except Exception:
+        pass
     return f"http://127.0.0.1:11434/{endpoint}"
 
 

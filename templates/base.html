@@ -560,6 +560,62 @@
         input:checked + .inclusion-slider:before {
             transform: translateX(20px);
         }
+
+        /* Custom Premium Dark Scrollbars */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(11, 13, 25, 0.4);
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(139, 92, 246, 0.3);
+            border: 2px solid rgba(11, 13, 25, 0.4);
+            border-radius: 8px;
+            transition: var(--transition-smooth);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(139, 92, 246, 0.55);
+        }
+        
+        /* Standard Scrollbar compliance (Firefox) */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(139, 92, 246, 0.3) rgba(11, 13, 25, 0.4);
+        }
+
+        /* Custom Premium Select / Dropdowns */
+        select, .filter-select, select.form-input {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='24'%20height='24'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%239ca3af'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpolyline%20points='6%209%2012%2015%2018%209'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            background-size: 16px;
+            padding-right: 40px !important;
+            background-color: rgba(11, 13, 25, 0.8) !important;
+            color: #fff !important;
+            border: 1px solid var(--glass-border) !important;
+            border-radius: var(--border-radius-sm) !important;
+            transition: var(--transition-smooth) !important;
+            cursor: pointer;
+        }
+        
+        select:focus, .filter-select:focus, select.form-input:focus {
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.25) !important;
+            outline: none;
+        }
+
+        /* Customize select option styling */
+        select option {
+            background-color: #171b38;
+            color: #fff;
+            padding: 10px;
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>

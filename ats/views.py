@@ -1196,7 +1196,7 @@ def get_ai_execution_logs(request):
 
 @csrf_exempt
 def gemma_agg_check(request):
-    """Checks job text for AGG violations (discrimination) using local Gemma."""
+    """Checks job text for AGG violations (discrimination) using local Gemma asynchronously."""
     if request.method == 'POST':
         text = request.POST.get('text', '').strip()
         if not text:
@@ -1228,135 +1228,188 @@ Bitte antworte genau im folgenden Format, damit das System deine Antwort parsen 
 
 === OPTIMIERTER TEXT ===
 (Gib hier den vollständigen, korrigierten, AGG-konformen Ausschreibungstext aus. Keine weiteren Kommentare vor oder nach diesem Block.)"""
+
+        import uuid
+        import json
+        from .models import AuditLog
         
-        payload = {
-            "model": get_ai_model(),
-            "prompt": prompt,
-            "stream": False,
-            "options": {
-                "temperature": 0.1,
-                "num_predict": 300,
-                "top_k": 20,
-                "top_p": 0.5
+        task_id = uuid.uuid4()
+        
+        # Save a pending task status
+        AuditLog.objects.create(
+            action="AI_TASK_PENDING",
+            userId=str(task_id),
+            metadataJson=json.dumps({"status": "pending", "type": "AGG_CHECK"})
+        )
+        
+        import threading
+        
+        def run_async_agg_check_worker():
+            payload = {
+                "model": get_ai_model(),
+                "prompt": prompt,
+                "stream": False,
+                "options": {
+                    "temperature": 0.1,
+                    "num_predict": 300,
+                    "top_k": 20,
+                    "top_p": 0.5
+                }
             }
-        }
-        
-        try:
+            
             import time
             start_time = time.time()
-            success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=28.0)
-            latency = round(time.time() - start_time, 2)
-            if success:
-                reply = res_data.get("response", "").strip()
+            try:
+                # Asynchronous worker timeout of 80 seconds
+                success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=80.0)
+                latency = round(time.time() - start_time, 2)
+                if success:
+                    reply = res_data.get("response", "").strip()
+                    
+                    violations = []
+                    optimized_text = text
+                    
+                    # Smart format-agnostic parser supporting both custom prompts and standard headers
+                    reply_lower = reply.lower()
+                    import re
+                    
+                    opt_headers = [
+                        "=== optimierter text ===", 
+                        "optimierter text-vorschlag:", 
+                        "optimierter text:", 
+                        "optimierter text vorschlag:"
+                    ]
+                    opt_header_found = None
+                    for h in opt_headers:
+                        if h in reply_lower:
+                            opt_header_found = h
+                            break
+                            
+                    if opt_header_found:
+                        idx = reply_lower.find(opt_header_found)
+                        opt_part = reply[idx + len(opt_header_found):].strip()
+                        violation_part = reply[:idx].strip()
+                        
+                        # Strip common section headers from violation text
+                        for h_val in ["=== verstösse ===", "=== verstoesse ===", "=== verstöße ===", "identifizierte risiken:", "ki agg-check ergebnis:"]:
+                            violation_part = re.sub(h_val, "", violation_part, flags=re.IGNORECASE)
+                            
+                        violations = [v.strip().lstrip("-*•# ") for v in violation_part.split("\n") if v.strip()]
+                        optimized_text = opt_part
+                    elif "=== OPTIMIERTER TEXT ===" in reply:
+                        parts = reply.split("=== OPTIMIERTER TEXT ===")
+                        opt_part = parts[1].strip()
+                        violation_part = parts[0].replace("=== VERSTÖSSE ===", "").strip()
+                        violations = [v.strip().lstrip("-*• ") for v in violation_part.split("\n") if v.strip()]
+                        optimized_text = opt_part
+                    else:
+                        violations = [reply]
+                        optimized_text = text
+                    
+                    violations = [v for v in violations if v and "keine verstöße" not in v.lower() and "keine offensichtlichen" not in v.lower() and "keine risiken" not in v.lower()]
+                    
+                    log_ai_execution("AGG-Check", get_ai_model(), latency, True, False, "", bool(custom_prompt), prompt)
+                    
+                    AuditLog.objects.create(
+                        action="AI_TASK_COMPLETED",
+                        userId=str(task_id),
+                        metadataJson=json.dumps({
+                            "status": "completed",
+                            "success": True,
+                            "violations": violations,
+                            "optimized_text": optimized_text,
+                            "original_text": text,
+                            "fallback_mode": False,
+                            "latency": latency
+                        })
+                    )
+                else:
+                    log_ai_execution("AGG-Check", get_ai_model(), latency, False, True, f"Ollama-Fehler: {res_data}", bool(custom_prompt), prompt)
+                    raise Exception(str(res_data))
+            except Exception as e:
+                # Log execution as failure, and trigger regex fallback
+                latency = round(time.time() - start_time, 2)
+                log_ai_execution("AGG-Check", get_ai_model(), latency, False, True, str(e), bool(custom_prompt), prompt)
                 
                 violations = []
                 optimized_text = text
-                
-                # Smart format-agnostic parser supporting both custom prompts and standard headers
-                reply_lower = reply.lower()
+                text_lower = text.lower()
                 import re
                 
-                opt_headers = [
-                    "=== optimierter text ===", 
-                    "optimierter text-vorschlag:", 
-                    "optimierter text:", 
-                    "optimierter text vorschlag:"
-                ]
-                opt_header_found = None
-                for h in opt_headers:
-                    if h in reply_lower:
-                        opt_header_found = h
-                        break
-                        
-                if opt_header_found:
-                    idx = reply_lower.find(opt_header_found)
-                    opt_part = reply[idx + len(opt_header_found):].strip()
-                    violation_part = reply[:idx].strip()
+                custom_lower = custom_prompt.lower()
+                junior_whitelisted = "junior" in custom_lower and ("ok" in custom_lower or "erlaubt" in custom_lower or "bag" in custom_lower or "keine änderung" in custom_lower or "keine aenderung" in custom_lower or "nicht das alter" in custom_lower)
+                senior_whitelisted = "senior" in custom_lower and ("ok" in custom_lower or "erlaubt" in custom_lower or "bag" in custom_lower or "keine änderung" in custom_lower or "keine aenderung" in custom_lower or "nicht das alter" in custom_lower)
+
+                if "jung" in text_lower or "junge" in text_lower:
+                    violations.append("Mögliche Altersdiskriminierung durch das Wort 'jung/junge'. Empfohlen: 'dynamische/engagierte Talente (m/w/d)'.")
+                    optimized_text = re.sub(r'\bjunges\b', 'dynamisches', optimized_text, flags=re.IGNORECASE)
+                    optimized_text = re.sub(r'\bjunge\b', 'dynamische', optimized_text, flags=re.IGNORECASE)
+                    optimized_text = re.sub(r'\bjung\b', 'dynamisch', optimized_text, flags=re.IGNORECASE)
+                    optimized_text = re.sub(r'\bjungen\b', 'dynamischen', optimized_text, flags=re.IGNORECASE)
                     
-                    # Strip common section headers from violation text
-                    for h_val in ["=== verstösse ===", "=== verstoesse ===", "=== verstöße ===", "identifizierte risiken:", "ki agg-check ergebnis:"]:
-                        violation_part = re.sub(h_val, "", violation_part, flags=re.IGNORECASE)
-                        
-                    violations = [v.strip().lstrip("-*•# ") for v in violation_part.split("\n") if v.strip()]
-                    optimized_text = opt_part
-                elif "=== OPTIMIERTER TEXT ===" in reply:
-                    parts = reply.split("=== OPTIMIERTER TEXT ===")
-                    opt_part = parts[1].strip()
-                    violation_part = parts[0].replace("=== VERSTÖSSE ===", "").strip()
-                    violations = [v.strip().lstrip("-*• ") for v in violation_part.split("\n") if v.strip()]
-                    optimized_text = opt_part
-                else:
-                    # If format is totally custom, try to extract lines and let the user read it
-                    violations = [reply]
-                    optimized_text = text
-                
-                # Filter out system or empty notes
-                violations = [v for v in violations if v and "keine verstöße" not in v.lower() and "keine offensichtlichen" not in v.lower() and "keine risiken" not in v.lower()]
-                
-                log_ai_execution("AGG-Check", get_ai_model(), latency, True, False, "", bool(custom_prompt), prompt)
-                
-                return JsonResponse({
-                    'success': True,
-                    'violations': violations,
-                    'optimized_text': optimized_text,
-                    'original_text': text,
-                    'fallback_mode': False
-                })
-            else:
-                log_ai_execution("AGG-Check", get_ai_model(), latency, False, True, f"Ollama-Fehler: {res_data}", bool(custom_prompt), prompt)
-        except Exception as e:
-            latency = round(time.time() - start_time, 2)
-            log_ai_execution("AGG-Check", get_ai_model(), latency, False, True, str(e), bool(custom_prompt), prompt)
-            
-        # Fallback analysis using high-quality regex rules
-        violations = []
-        optimized_text = text
-        text_lower = text.lower()
-        import re
+                if "junior" in text_lower and not junior_whitelisted:
+                    violations.append("Formulierung 'Junior' im Stellentitel oder Text kann als Altersdiskriminierung (Bevorzugung jüngerer Bewerber) ausgelegt werden. Empfehlung: Angabe konkreter Berufserfahrung (z. B. 'mit erste Praxiserfahrung / Berufseinsteiger') statt Altersbegriffen.")
+                    optimized_text = re.sub(r'\bJunior\b', '', optimized_text)
+                    optimized_text = re.sub(r'\bjunior\b', 'mit erster Praxiserfahrung', optimized_text, flags=re.IGNORECASE)
+
+                if "senior" in text_lower and not senior_whitelisted:
+                    violations.append("Formulierung 'Senior' im Stellentitel oder Text kann als Altersdiskriminierung (Benachteiligung jüngerer Bewerber) ausgelegt werden. Empfehlung: Angabe konkreter Berufserfahrung (z. B. 'mit mehrjähriger Berufserfahrung') statt Altersbegriffen.")
+                    optimized_text = re.sub(r'\bSenior\b', '', optimized_text)
+                    optimized_text = re.sub(r'\bsenior\b', 'mit mehrjähriger Berufserfahrung', optimized_text, flags=re.IGNORECASE)
+                    
+                if "arzt" in text_lower and "ärztin" not in text_lower and "m/w/d" not in text_lower:
+                    violations.append("Geschlechtsspezifische Formulierung 'Arzt'. Empfohlen: 'Arzt/Ärztin (m/w/d)'.")
+                    optimized_text = re.sub(r'\barzt\b', 'Arzt/Ärztin (m/w/d)', optimized_text, flags=re.IGNORECASE)
+                    
+                if "gesund" in text_lower:
+                    violations.append("Formulierung 'gesund' diskriminiert potenziell Bewerber mit chronischen Erkrankungen oder körperlichen Einschränkungen.")
+                    optimized_text = re.sub(r'\bgesund\b', 'qualifiziert', optimized_text, flags=re.IGNORECASE)
+                    
+                if "belastbar" in text_lower:
+                    violations.append("Formulierung 'belastbar' kann chronisch kranke oder behinderte Menschen abschrecken. Empfohlen: 'zuverlässig' oder 'engagiert'.")
+                    optimized_text = re.sub(r'\bbelastbar\b', 'engagiert', optimized_text, flags=re.IGNORECASE)
+                    
+                AuditLog.objects.create(
+                    action="AI_TASK_COMPLETED",
+                    userId=str(task_id),
+                    metadataJson=json.dumps({
+                        "status": "completed",
+                        "success": True,
+                        "violations": violations,
+                        "optimized_text": optimized_text,
+                        "original_text": text,
+                        "fallback_mode": True,
+                        "error_msg": classify_ai_error(e, get_ai_model()),
+                        "latency": latency
+                    })
+                )
+
+        threading.Thread(target=run_async_agg_check_worker).start()
         
-        # Check if the custom prompt explicitly whitelists/allows 'junior' or 'senior'
-        custom_lower = custom_prompt.lower()
-        junior_whitelisted = "junior" in custom_lower and ("ok" in custom_lower or "erlaubt" in custom_lower or "bag" in custom_lower or "keine änderung" in custom_lower or "keine aenderung" in custom_lower or "nicht das alter" in custom_lower)
-        senior_whitelisted = "senior" in custom_lower and ("ok" in custom_lower or "erlaubt" in custom_lower or "bag" in custom_lower or "keine änderung" in custom_lower or "keine aenderung" in custom_lower or "nicht das alter" in custom_lower)
-
-        if "jung" in text_lower or "junge" in text_lower:
-            violations.append("Mögliche Altersdiskriminierung durch das Wort 'jung/junge'. Empfohlen: 'dynamische/engagierte Talente (m/w/d)'.")
-            optimized_text = re.sub(r'\bjunges\b', 'dynamisches', optimized_text, flags=re.IGNORECASE)
-            optimized_text = re.sub(r'\bjunge\b', 'dynamische', optimized_text, flags=re.IGNORECASE)
-            optimized_text = re.sub(r'\bjung\b', 'dynamisch', optimized_text, flags=re.IGNORECASE)
-            optimized_text = re.sub(r'\bjungen\b', 'dynamischen', optimized_text, flags=re.IGNORECASE)
-            
-        if "junior" in text_lower and not junior_whitelisted:
-            violations.append("Formulierung 'Junior' im Stellentitel oder Text kann als Altersdiskriminierung (Bevorzugung jüngerer Bewerber) ausgelegt werden. Empfehlung: Angabe konkreter Berufserfahrung (z. B. 'mit erste Praxiserfahrung / Berufseinsteiger') statt Altersbegriffen.")
-            optimized_text = re.sub(r'\bJunior\b', '', optimized_text)
-            optimized_text = re.sub(r'\bjunior\b', 'mit erster Praxiserfahrung', optimized_text, flags=re.IGNORECASE)
-
-        if "senior" in text_lower and not senior_whitelisted:
-            violations.append("Formulierung 'Senior' im Stellentitel oder Text kann als Altersdiskriminierung (Benachteiligung jüngerer Bewerber) ausgelegt werden. Empfehlung: Angabe konkreter Berufserfahrung (z. B. 'mit mehrjähriger Berufserfahrung') statt Altersbegriffen.")
-            optimized_text = re.sub(r'\bSenior\b', '', optimized_text)
-            optimized_text = re.sub(r'\bsenior\b', 'mit mehrjähriger Berufserfahrung', optimized_text, flags=re.IGNORECASE)
-            
-        if "arzt" in text_lower and "ärztin" not in text_lower and "m/w/d" not in text_lower:
-            violations.append("Geschlechtsspezifische Formulierung 'Arzt'. Empfohlen: 'Arzt/Ärztin (m/w/d)'.")
-            optimized_text = re.sub(r'\barzt\b', 'Arzt/Ärztin (m/w/d)', optimized_text, flags=re.IGNORECASE)
-            
-        if "gesund" in text_lower:
-            violations.append("Formulierung 'gesund' diskriminiert potenziell Bewerber mit chronischen Erkrankungen oder körperlichen Einschränkungen.")
-            optimized_text = re.sub(r'\bgesund\b', 'qualifiziert', optimized_text, flags=re.IGNORECASE)
-            
-        if "belastbar" in text_lower:
-            violations.append("Formulierung 'belastbar' kann chronisch kranke oder behinderte Menschen abschrecken. Empfohlen: 'zuverlässig' oder 'engagiert'.")
-            optimized_text = re.sub(r'\bbelastbar\b', 'engagiert', optimized_text, flags=re.IGNORECASE)
-            
-        return JsonResponse({
-            'success': True,
-            'violations': violations,
-            'optimized_text': optimized_text,
-            'original_text': text,
-            'fallback_mode': True
-        })
+        return JsonResponse({'success': True, 'async': True, 'task_id': str(task_id)})
         
     return JsonResponse({'success': False, 'error': 'Invalid request method.'})
+
+
+@csrf_exempt
+def gemma_agg_check_status(request, task_id):
+    """Checks the status of an asynchronous AGG checker background task."""
+    import json
+    from .models import AuditLog
+    
+    try:
+        task = AuditLog.objects.filter(action="AI_TASK_COMPLETED", userId=str(task_id)).first()
+        if task:
+            res_data = json.loads(task.metadataJson)
+            return JsonResponse({'success': True, 'status': 'completed', **res_data})
+            
+        pending = AuditLog.objects.filter(action="AI_TASK_PENDING", userId=str(task_id)).first()
+        if pending:
+            return JsonResponse({'success': True, 'status': 'pending'})
+            
+        return JsonResponse({'success': False, 'error': 'Task nicht gefunden.'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
 
 
 @csrf_exempt
@@ -1445,7 +1498,7 @@ def classify_ai_error(error_str, model_name):
 
 @csrf_exempt
 def validate_ai_prompt(request):
-    """Validates the current custom AGG or Leichte Sprache prompt by running it on a test input and analyzing the format of the response."""
+    """Validates the current custom AGG or Leichte Sprache prompt by running it on a test input asynchronously."""
     if request.method == 'POST':
         prompt_type = request.POST.get('type', 'AGG').strip()
         custom_prompt = request.POST.get('prompt', '').strip()
@@ -1453,108 +1506,159 @@ def validate_ai_prompt(request):
         if not custom_prompt:
             return JsonResponse({'success': False, 'error': 'Kein Prompt übermittelt.'})
             
-        test_text = "Wir suchen einen Junior-Arzt."
+        # Realistic, non-faked test text matching user expectations
+        test_text = "Wir suchen ab sofort einen belastbaren Junior-Softwareentwickler (m/w/d) zur Verstärkung des Teams."
         
         if prompt_type == 'AGG':
             prompt = f"{custom_prompt}\n\nAusschreibungstext zum Prüfen:\n{test_text}"
         else:
             prompt = f"{custom_prompt}\n\nText zum Übersetzen:\n{test_text}"
             
-        payload = {
-            "model": get_ai_model(),
-            "prompt": prompt,
-            "stream": False,
-            "options": {
-                "temperature": 0.1,
-                "num_predict": 120,
-                "top_k": 20,
-                "top_p": 0.5
-            }
-        }
+        import uuid
+        import json
+        from .models import AuditLog
         
-        import time
-        start_time = time.time()
-        try:
-            # Increased timeout to 28.0 seconds for robust cold-starts and CPU inference stability
-            success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=28.0)
-            latency = round(time.time() - start_time, 2)
-            if success:
-                reply = res_data.get("response", "").strip()
-                
-                # Check formatting
-                reply_lower = reply.lower()
-                
-                # For AGG, check if we find delimiters
-                if prompt_type == 'AGG':
-                    opt_headers = [
-                        "=== optimierter text ===", 
-                        "optimierter text-vorschlag:", 
-                        "optimierter text:", 
-                        "optimierter text vorschlag:"
-                    ]
-                    opt_header_found = None
-                    for h in opt_headers:
-                        if h in reply_lower:
-                            opt_header_found = h
-                            break
-                    
-                    has_delimiters = opt_header_found is not None or "=== OPTIMIERTER TEXT ===" in reply
-                    
-                    if has_delimiters:
-                        log_ai_execution("Prompt-Validierung (AGG)", get_ai_model(), latency, True, False, "", True, prompt)
-                        return JsonResponse({
-                            'success': True,
-                            'valid': True,
-                            'latency': latency,
-                            'reply_preview': reply[:250] + "...",
-                            'message': 'Der Prompt wurde erfolgreich von der lokalen KI angewendet und das Antwortformat ist korrekt strukturiert.'
-                        })
-                    else:
-                        log_ai_execution("Prompt-Validierung (AGG)", get_ai_model(), latency, True, True, "Warnung: Keine standardmäßigen Antwort-Trenner gefunden.", True, prompt)
-                        return JsonResponse({
-                            'success': True,
-                            'valid': False,
-                            'latency': latency,
-                            'reply_preview': reply[:300] + "...",
-                            'message': 'Die KI hat geantwortet, aber es wurden keine standardmäßigen Trenner wie "=== OPTIMIERTER TEXT ===" oder "=== VERSTÖSSE ===" im Antworttext gefunden. Das System wird versuchen, die Antwort als Freitext anzuzeigen, dies kann jedoch zu ungenauen Darstellungen führen.'
-                        })
-                else:
-                    # Easy language translation validation - just check if it's not empty and different from original
-                    if reply and reply != test_text:
-                        log_ai_execution("Prompt-Validierung (Easy)", get_ai_model(), latency, True, False, "", True, prompt)
-                        return JsonResponse({
-                            'success': True,
-                            'valid': True,
-                            'latency': latency,
-                            'reply_preview': reply[:250] + "...",
-                            'message': 'Der Prompt für Leichte Sprache wurde erfolgreich validiert.'
-                        })
-                    else:
-                        log_ai_execution("Prompt-Validierung (Easy)", get_ai_model(), latency, True, True, "Fehler bei der Übersetzung.", True, prompt)
-                        return JsonResponse({
-                            'success': True,
-                            'valid': False,
-                            'latency': latency,
-                            'reply_preview': reply[:200] + "...",
-                            'message': 'Der Antworttext der KI ist leer oder identisch mit dem Ausgangstext.'
-                        })
-            else:
-                log_ai_execution("Prompt-Validierung", get_ai_model(), latency, False, True, f"Ollama-Fehler: {res_data}", True, prompt)
-                detailed_error = classify_ai_error(res_data, get_ai_model())
-                return JsonResponse({
-                    'success': False,
-                    'error': detailed_error
-                })
-        except Exception as e:
-            latency = round(time.time() - start_time, 2)
-            log_ai_execution("Prompt-Validierung", get_ai_model(), latency, False, True, str(e), True, prompt)
-            detailed_error = classify_ai_error(e, get_ai_model())
-            return JsonResponse({
-                'success': False,
-                'error': detailed_error
-            })
+        task_id = uuid.uuid4()
+        
+        # Save a pending task status
+        AuditLog.objects.create(
+            action="AI_TASK_PENDING",
+            userId=str(task_id),
+            metadataJson=json.dumps({"status": "pending", "type": f"VALIDATE_{prompt_type}"})
+        )
+        
+        import threading
+        
+        def run_async_validate_worker():
+            payload = {
+                "model": get_ai_model(),
+                "prompt": prompt,
+                "stream": False,
+                "options": {
+                    "temperature": 0.1,
+                    "num_predict": 300,
+                    "top_k": 20,
+                    "top_p": 0.5
+                }
+            }
             
+            import time
+            start_time = time.time()
+            try:
+                # Asynchronous worker timeout of 85 seconds
+                success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=85.0)
+                latency = round(time.time() - start_time, 2)
+                if success:
+                    reply = res_data.get("response", "").strip()
+                    reply_lower = reply.lower()
+                    
+                    if prompt_type == 'AGG':
+                        opt_headers = [
+                            "=== optimierter text ===", 
+                            "optimierter text-vorschlag:", 
+                            "optimierter text:", 
+                            "optimierter text vorschlag:"
+                        ]
+                        opt_header_found = None
+                        for h in opt_headers:
+                            if h in reply_lower:
+                                opt_header_found = h
+                                break
+                        
+                        has_delimiters = opt_header_found is not None or "=== OPTIMIERTER TEXT ===" in reply
+                        
+                        if has_delimiters:
+                            log_ai_execution("Prompt-Validierung (AGG)", get_ai_model(), latency, True, False, "", True, prompt)
+                            result = {
+                                'valid': True,
+                                'reply_preview': reply[:250] + "...",
+                                'message': 'Der Prompt wurde erfolgreich von der lokalen KI angewendet und das Antwortformat ist korrekt strukturiert.'
+                            }
+                        else:
+                            log_ai_execution("Prompt-Validierung (AGG)", get_ai_model(), latency, True, True, "Warnung: Keine standardmäßigen Antwort-Trenner gefunden.", True, prompt)
+                            result = {
+                                'valid': False,
+                                'reply_preview': reply[:300] + "...",
+                                'message': 'Die KI hat geantwortet, aber es wurden keine standardmäßigen Trenner wie "=== OPTIMIERTER TEXT ===" oder "=== VERSTÖSSE ===" im Antworttext gefunden. Das System wird versuchen, die Antwort als Freitext anzuzeigen, dies kann jedoch zu ungenauen Darstellungen führen.'
+                            }
+                    else:
+                        if reply and reply != test_text:
+                            log_ai_execution("Prompt-Validierung (Easy)", get_ai_model(), latency, True, False, "", True, prompt)
+                            result = {
+                                'valid': True,
+                                'reply_preview': reply[:250] + "...",
+                                'message': 'Der Prompt für Leichte Sprache wurde erfolgreich validiert.'
+                            }
+                        else:
+                            log_ai_execution("Prompt-Validierung (Easy)", get_ai_model(), latency, True, True, "Fehler bei der Übersetzung.", True, prompt)
+                            result = {
+                                'valid': False,
+                                'reply_preview': reply[:200] + "...",
+                                'message': 'Der Antworttext der KI ist leer oder identisch mit dem Ausgangstext.'
+                            }
+                    
+                    AuditLog.objects.create(
+                        action="AI_TASK_COMPLETED",
+                        userId=str(task_id),
+                        metadataJson=json.dumps({
+                            "status": "completed",
+                            "success": True,
+                            "latency": latency,
+                            **result
+                        })
+                    )
+                else:
+                    log_ai_execution("Prompt-Validierung", get_ai_model(), latency, False, True, f"Ollama-Fehler: {res_data}", True, prompt)
+                    detailed_error = classify_ai_error(res_data, get_ai_model())
+                    AuditLog.objects.create(
+                        action="AI_TASK_COMPLETED",
+                        userId=str(task_id),
+                        metadataJson=json.dumps({
+                            "status": "completed",
+                            "success": False,
+                            "error": detailed_error
+                        })
+                    )
+            except Exception as e:
+                latency = round(time.time() - start_time, 2)
+                log_ai_execution("Prompt-Validierung", get_ai_model(), latency, False, True, str(e), True, prompt)
+                detailed_error = classify_ai_error(e, get_ai_model())
+                AuditLog.objects.create(
+                    action="AI_TASK_COMPLETED",
+                    userId=str(task_id),
+                    metadataJson=json.dumps({
+                        "status": "completed",
+                        "success": False,
+                        "error": detailed_error
+                    })
+                )
+
+        threading.Thread(target=run_async_validate_worker).start()
+        
+        return JsonResponse({'success': True, 'async': True, 'task_id': str(task_id)})
+        
     return JsonResponse({'success': False, 'error': 'Invalid request method.'})
+
+
+@csrf_exempt
+def validate_ai_prompt_status(request, task_id):
+    """Checks the status of an asynchronous custom prompt validation background task."""
+    import json
+    from .models import AuditLog
+    
+    try:
+        task = AuditLog.objects.filter(action="AI_TASK_COMPLETED", userId=str(task_id)).first()
+        if task:
+            res_data = json.loads(task.metadataJson)
+            return JsonResponse({'success': True, 'status': 'completed', **res_data})
+            
+        pending = AuditLog.objects.filter(action="AI_TASK_PENDING", userId=str(task_id)).first()
+        if pending:
+            return JsonResponse({'success': True, 'status': 'pending'})
+            
+        return JsonResponse({'success': False, 'error': 'Task nicht gefunden.'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
 
 
 # ============================================================================

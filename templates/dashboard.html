@@ -2090,6 +2090,49 @@ MODALS & OVERLAYS
         });
     }
 
+    function pollAITask(taskId, type, onComplete, onError, onProgress) {
+        const url = type === 'AGG' || type === 'AGG_CHECK' 
+            ? `/recruiter/ki/agg-check/status/${taskId}/` 
+            : `/recruiter/ki/validate-prompt/status/${taskId}/`;
+            
+        let attempts = 0;
+        const maxAttempts = 60; // up to 120 seconds
+        
+        const interval = setInterval(() => {
+            attempts++;
+            if (attempts > maxAttempts) {
+                clearInterval(interval);
+                onError(new Error("Zeitüberschreitung: Der Server hat nicht rechtzeitig geantwortet."));
+                return;
+            }
+            
+            if (onProgress) onProgress(attempts * 2);
+            
+            fetch(url)
+            .then(res => {
+                if (!res.ok) throw new Error("HTTP-Fehler " + res.status);
+                return res.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    if (data.status === 'completed') {
+                        clearInterval(interval);
+                        onComplete(data);
+                    } else {
+                        // still pending
+                    }
+                } else {
+                    clearInterval(interval);
+                    onError(new Error(data.error || "Unbekannter Fehler bei der Task-Ausführung."));
+                }
+            })
+            .catch(err => {
+                clearInterval(interval);
+                onError(err);
+            });
+        }, 2000);
+    }
+
     function validateCustomPrompt(type) {
         const promptInput = type === 'AGG' ? document.getElementById('ai-agg-prompt-input') : document.getElementById('ai-easy-prompt-input');
         const statusEl = type === 'AGG' ? document.getElementById('agg-validation-status') : document.getElementById('easy-validation-status');
@@ -2098,11 +2141,17 @@ MODALS & OVERLAYS
         if (!promptInput) return;
         
         statusEl.innerHTML = `
-            <span class="pulse-indicator" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #fbbf24;"></span>
+            <span class="pulse-indicator" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #fbbf24; box-shadow: 0 0 8px #fbbf24;"></span>
             <span style="color: #fbbf24;">Prüfe mit lokaler KI...</span>
         `;
         detailsEl.style.display = 'block';
-        detailsEl.innerHTML = `<div style="color: #fbbf24;">⏳ Die lokale KI analysiert den Prompt...<br><span style="color: #9ca3af; font-size: 11px; display: block; margin-top: 4px;">• Da es sich um ein lokales CPU-System handelt, kann die Erstberechnung eines langen, komplexen Prompts bis zu 25 Sekunden dauern. Bitte habe kurz Geduld!</span></div>`;
+        detailsEl.innerHTML = `
+            <div style="color: #fbbf24;">
+                ⏳ Die lokale KI analysiert den Prompt (im Hintergrund)...<br>
+                <span style="color: #9ca3af; font-size: 11px; display: block; margin-top: 4px;">• Da es sich um ein lokales CPU-System handelt, kann die Erstberechnung eines langen, komplexen Prompts bis zu 45 Sekunden dauern. Bitte habe kurz Geduld!</span>
+                <span id="validation-progress-text" style="color: var(--accent); font-weight: bold; display: block; margin-top: 6px;">Status: Wird gestartet...</span>
+            </div>
+        `;
         
         const formData = new FormData();
         formData.append('type', type);
@@ -2117,45 +2166,68 @@ MODALS & OVERLAYS
             return res.json();
         })
         .then(data => {
-            if (data.success) {
-                if (data.valid) {
+            if (data.success && data.async) {
+                // Start async polling
+                pollAITask(data.task_id, 'VALIDATE', (completedData) => {
+                    if (completedData.success) {
+                        if (completedData.valid) {
+                            statusEl.innerHTML = `
+                                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;"></span>
+                                <span style="color: #34d399; font-weight: 600;">Erfolgreich Aktiv</span>
+                            `;
+                            detailsEl.innerHTML = `
+                                <div style="color: #34d399; font-weight: 600; margin-bottom: 4px;"><i class="fa-solid fa-circle-check"></i> ${completedData.message}</div>
+                                <div style="color: #9ca3af; margin-bottom: 6px;">Latenz: <strong>${completedData.latency}s</strong> | Modell: <strong>gemma:2b</strong></div>
+                                <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); overflow: hidden; max-height: 80px; text-overflow: ellipsis; white-space: nowrap;">
+                                    <span style="color: #6b7280; font-family: monospace;">Antwort-Vorschau:</span> <span style="font-family: monospace;">${completedData.reply_preview}</span>
+                                </div>
+                            `;
+                        } else {
+                            statusEl.innerHTML = `
+                                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; box-shadow: 0 0 8px #f59e0b;"></span>
+                                <span style="color: #fbbf24; font-weight: 600;">Format-Warnung</span>
+                            `;
+                            detailsEl.innerHTML = `
+                                <div style="color: #fbbf24; font-weight: 600; margin-bottom: 4px;"><i class="fa-solid fa-triangle-exclamation"></i> Warnung: Format inkompatibel</div>
+                                <div style="color: #e5e7eb; margin-bottom: 8px; line-height: 1.4;">${completedData.message}</div>
+                                <div style="color: #9ca3af; margin-bottom: 6px;">Latenz: <strong>${completedData.latency}s</strong></div>
+                                <div style="background: rgba(245, 158, 11, 0.08); padding: 10px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.2); max-height: 100px; overflow-y: auto;">
+                                    <span style="color: #fbbf24; font-weight: bold;">Gemma Antwort:</span><br>
+                                    <pre style="margin: 4px 0 0 0; font-size: 11px; white-space: pre-wrap;">${completedData.reply_preview}</pre>
+                                </div>
+                            `;
+                        }
+                    } else {
+                        // Task failed
+                        statusEl.innerHTML = `
+                            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 8px #ef4444;"></span>
+                            <span style="color: #f87171; font-weight: 600;">Fehlgeschlagen</span>
+                        `;
+                        detailsEl.innerHTML = `
+                            <div style="color: #f87171; font-weight: 600; margin-bottom: 4px;"><i class="fa-solid fa-circle-xmark"></i> Validierungsfehler</div>
+                            <div style="color: #e5e7eb; white-space: pre-wrap; font-family: sans-serif; line-height: 1.4;">${completedData.error}</div>
+                        `;
+                    }
+                    refreshAILogs();
+                }, (error) => {
                     statusEl.innerHTML = `
-                        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;"></span>
-                        <span style="color: #34d399; font-weight: 600;">Erfolgreich Aktiv</span>
+                        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 8px #ef4444;"></span>
+                        <span style="color: #f87171; font-weight: 600;">Fehlgeschlagen</span>
                     `;
                     detailsEl.innerHTML = `
-                        <div style="color: #34d399; font-weight: 600; margin-bottom: 4px;"><i class="fa-solid fa-circle-check"></i> ${data.message}</div>
-                        <div style="color: #9ca3af; margin-bottom: 6px;">Latenz: <strong>${data.latency}s</strong> | Modell: <strong>gemma:2b</strong></div>
-                        <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); overflow: hidden; max-height: 80px; text-overflow: ellipsis; white-space: nowrap;">
-                            <span style="color: #6b7280; font-family: monospace;">Antwort-Vorschau:</span> <span style="font-family: monospace;">${data.reply_preview}</span>
-                        </div>
+                        <div style="color: #f87171; font-weight: 600; margin-bottom: 4px;"><i class="fa-solid fa-circle-xmark"></i> Validierungsfehler</div>
+                        <div style="color: #e5e7eb; white-space: pre-wrap; font-family: sans-serif; line-height: 1.4;">${error.message}</div>
                     `;
-                } else {
-                    statusEl.innerHTML = `
-                        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; box-shadow: 0 0 8px #f59e0b;"></span>
-                        <span style="color: #fbbf24; font-weight: 600;">Format-Warnung</span>
-                    `;
-                    detailsEl.innerHTML = `
-                        <div style="color: #fbbf24; font-weight: 600; margin-bottom: 4px;"><i class="fa-solid fa-triangle-exclamation"></i> Warnung: Format inkompatibel</div>
-                        <div style="color: #e5e7eb; margin-bottom: 8px; line-height: 1.4;">${data.message}</div>
-                        <div style="color: #9ca3af; margin-bottom: 6px;">Latenz: <strong>${data.latency}s</strong></div>
-                        <div style="background: rgba(245, 158, 11, 0.08); padding: 10px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.2); max-height: 100px; overflow-y: auto;">
-                            <span style="color: #fbbf24; font-weight: bold;">Gemma Antwort:</span><br>
-                            <pre style="margin: 4px 0 0 0; font-size: 11px; white-space: pre-wrap;">${data.reply_preview}</pre>
-                        </div>
-                    `;
-                }
+                    refreshAILogs();
+                }, (seconds) => {
+                    const progText = document.getElementById('validation-progress-text');
+                    if (progText) {
+                        progText.innerText = `Status: Berechne... (Laufzeit: ${seconds}s)`;
+                    }
+                });
             } else {
-                statusEl.innerHTML = `
-                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 8px #ef4444;"></span>
-                    <span style="color: #f87171; font-weight: 600;">Fehlgeschlagen</span>
-                `;
-                detailsEl.innerHTML = `
-                    <div style="color: #f87171; font-weight: 600; margin-bottom: 4px;"><i class="fa-solid fa-circle-xmark"></i> Validierungsfehler</div>
-                    <div style="color: #e5e7eb; line-height: 1.4;">${data.error}</div>
-                `;
+                throw new Error("Fehler beim Starten der Asynchronen Prüfung.");
             }
-            refreshAILogs();
         })
         .catch(err => {
             statusEl.innerHTML = `
@@ -2226,7 +2298,7 @@ MODALS & OVERLAYS
         const text = document.getElementById('agg-text').value;
         const box = document.getElementById('agg-response-box');
         if (!text.trim()) return;
-        box.innerText = "⏳ Lokale Gemma-KI prüft auf AGG-Konformität...";
+        box.innerText = "⏳ Lokale Gemma-KI prüft auf AGG-Konformität (im Hintergrund)...";
 
         const formData = new FormData();
         formData.append('text', text);
@@ -2237,29 +2309,39 @@ MODALS & OVERLAYS
             return res.json();
         })
         .then(data => {
-            if (data.success) {
-                let html = "";
-                const isFallback = data.fallback_mode;
-                
-                if (data.violations && data.violations.length > 0) {
-                    html += `<div style="color: #ef4444; font-weight: bold; margin-bottom: 8px;">⚠️ AGG-Risiken gefunden (${isFallback ? 'Fallback-Modus' : 'KI-Analyse'}):</div>`;
-                    html += `<ul style="margin: 0; padding-left: 20px; color: #fca5a5; display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px;">`;
-                    data.violations.forEach(v => {
-                        html += `<li>${v}</li>`;
-                    });
-                    html += `</ul>`;
+            if (data.success && data.async) {
+                pollAITask(data.task_id, 'AGG', (completedData) => {
+                    let html = "";
+                    const isFallback = completedData.fallback_mode;
                     
-                    html += `<div style="color: var(--accent); font-weight: bold; margin-bottom: 4px;">Optimierter Formulierungsvorschlag:</div>`;
-                    html += `<div style="padding: 10px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #e5e7eb; white-space: pre-wrap; font-family: sans-serif; line-height: 1.4;">${data.optimized_text}</div>`;
-                } else {
-                    html += `<div style="color: #10b981; font-weight: bold; display: flex; align-items: center; gap: 6px;">`;
-                    html += `<i class="fa-solid fa-circle-check"></i> Keine offensichtlichen AGG-Verstöße gefunden (${isFallback ? 'Fallback-Modus' : 'KI-Analyse'}).`;
-                    html += `</div>`;
-                }
-                
-                box.innerHTML = html;
+                    if (completedData.violations && completedData.violations.length > 0) {
+                        html += `<div style="color: #ef4444; font-weight: bold; margin-bottom: 8px;">⚠️ AGG-Risiken gefunden (${isFallback ? 'Fallback-Modus' : 'KI-Analyse'}):</div>`;
+                        html += `<ul style="margin: 0; padding-left: 20px; color: #fca5a5; display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px;">`;
+                        completedData.violations.forEach(v => {
+                            html += `<li>${v}</li>`;
+                        });
+                        html += `</ul>`;
+                        
+                        html += `<div style="color: var(--accent); font-weight: bold; margin-bottom: 4px;">Optimierter Formulierungsvorschlag:</div>`;
+                        html += `<div style="padding: 10px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #e5e7eb; white-space: pre-wrap; font-family: sans-serif; line-height: 1.4;">${completedData.optimized_text}</div>`;
+                        if (completedData.error_msg) {
+                            html += `<div style="color: #f59e0b; font-size: 11px; margin-top: 8px; font-style: italic;">Diagnose-Hinweis: ${completedData.error_msg}</div>`;
+                        }
+                    } else {
+                        html += `<div style="color: #10b981; font-weight: bold; display: flex; align-items: center; gap: 6px;">`;
+                        html += `<i class="fa-solid fa-circle-check"></i> Keine offensichtlichen AGG-Verstöße gefunden (${isFallback ? 'Fallback-Modus' : 'KI-Analyse'}).`;
+                        html += `</div>`;
+                    }
+                    box.innerHTML = html;
+                    refreshAILogs();
+                }, (error) => {
+                    box.innerHTML = `<span style="color:#ef4444;">[Fehler bei der Asynchronen Prüfung]:</span> ${error.message}`;
+                    refreshAILogs();
+                }, (seconds) => {
+                    box.innerText = `⏳ Lokale Gemma-KI prüft auf AGG-Konformität... (Laufzeit: ${seconds}s)`;
+                });
             } else {
-                box.innerHTML = `<span style="color:#ef4444;">[Fehler]:</span> ${data.error || "Unerwarteter Fehler"}`;
+                box.innerHTML = `<span style="color:#ef4444;">[Fehler]:</span> ${data.error || "Unerwarteter Fehler bei der Übermittlung."}`;
             }
         })
         .catch(err => {
@@ -2294,61 +2376,86 @@ MODALS & OVERLAYS
         const formData = new FormData();
         formData.append('text', combinedText);
 
+        const progressText = loading.querySelector('span') || loading;
+
         fetch(`/recruiter/ki/agg-check/`, { method: 'POST', body: formData })
         .then(res => {
             if (!res.ok) throw new Error("Netzwerkantwort war nicht ok");
             return res.json();
         })
         .then(data => {
-            loading.style.display = 'none';
-            content.style.display = 'block';
-            
-            const badge = document.getElementById('agg-badge');
-            const warningsContainer = document.getElementById('agg-warnings-container');
-            const warningsList = document.getElementById('agg-warnings-list');
-            const safeMessage = document.getElementById('agg-safe-message');
-            const optimizedContainer = document.getElementById('agg-optimized-container');
-            const optimizedBox = document.getElementById('agg-optimized-text');
-            const applyBtn = document.getElementById('btn-apply-agg');
-            
-            warningsList.innerHTML = '';
-            
-            if (data.success) {
-                if (data.violations && data.violations.length > 0) {
-                    badge.innerText = data.fallback_mode ? "⚠️ Warnung (Fallback)" : "⚠️ Warnung";
-                    badge.style.background = "rgba(239, 68, 68, 0.2)";
-                    badge.style.color = "#ef4444";
-                    badge.style.border = "1px solid #ef4444";
+            if (data.success && data.async) {
+                pollAITask(data.task_id, 'AGG_CHECK', (completedData) => {
+                    loading.style.display = 'none';
+                    content.style.display = 'block';
                     
-                    warningsContainer.style.display = 'block';
-                    safeMessage.style.display = 'none';
+                    const badge = document.getElementById('agg-badge');
+                    const warningsContainer = document.getElementById('agg-warnings-container');
+                    const warningsList = document.getElementById('agg-warnings-list');
+                    const safeMessage = document.getElementById('agg-safe-message');
+                    const optimizedContainer = document.getElementById('agg-optimized-container');
+                    const optimizedBox = document.getElementById('agg-optimized-text');
+                    const applyBtn = document.getElementById('btn-apply-agg');
                     
-                    data.violations.forEach(v => {
+                    warningsList.innerHTML = '';
+                    
+                    if (completedData.violations && completedData.violations.length > 0) {
+                        badge.innerText = completedData.fallback_mode ? "⚠️ Warnung (Fallback)" : "⚠️ Warnung";
+                        badge.style.background = "rgba(239, 68, 68, 0.2)";
+                        badge.style.color = "#ef4444";
+                        badge.style.border = "1px solid #ef4444";
+                        
+                        warningsContainer.style.display = 'block';
+                        safeMessage.style.display = 'none';
+                        
+                        completedData.violations.forEach(v => {
+                            const li = document.createElement('li');
+                            li.innerText = v;
+                            warningsList.appendChild(li);
+                        });
+                        
+                        currentOptimizedText = completedData.optimized_text || completedData.original_text;
+                        optimizedBox.innerText = currentOptimizedText;
+                        optimizedContainer.style.display = 'block';
+                        applyBtn.style.display = 'block';
+                    } else {
+                        badge.innerText = completedData.fallback_mode ? "✅ Konform (Fallback)" : "✅ Konform";
+                        badge.style.background = "rgba(16, 185, 129, 0.2)";
+                        badge.style.color = "#10b981";
+                        badge.style.border = "1px solid #10b981";
+                        
+                        warningsContainer.style.display = 'none';
+                        safeMessage.style.display = 'block';
+                        
+                        currentOptimizedText = completedData.optimized_text || completedData.original_text;
+                        optimizedBox.innerText = currentOptimizedText;
+                        optimizedContainer.style.display = 'block';
+                        applyBtn.style.display = 'none';
+                    }
+                    
+                    if (completedData.error_msg) {
                         const li = document.createElement('li');
-                        li.innerText = v;
+                        li.style.color = "#fbbf24";
+                        li.style.fontSize = "11px";
+                        li.style.listStyle = "none";
+                        li.style.marginTop = "8px";
+                        li.innerHTML = `<strong>Diagnose-Hinweis:</strong> Die KI hat das Fallback-Regelwerk ausgelöst.<br><span style="opacity:0.8">${completedData.error_msg}</span>`;
                         warningsList.appendChild(li);
-                    });
+                        warningsContainer.style.display = 'block';
+                    }
                     
-                    currentOptimizedText = data.optimized_text || data.original_text;
-                    optimizedBox.innerText = currentOptimizedText;
-                    optimizedContainer.style.display = 'block';
-                    applyBtn.style.display = 'block';
-                } else {
-                    badge.innerText = data.fallback_mode ? "✅ Konform (Fallback)" : "✅ Konform";
-                    badge.style.background = "rgba(16, 185, 129, 0.2)";
-                    badge.style.color = "#10b981";
-                    badge.style.border = "1px solid #10b981";
-                    
-                    warningsContainer.style.display = 'none';
-                    safeMessage.style.display = 'block';
-                    
-                    currentOptimizedText = data.optimized_text || data.original_text;
-                    optimizedBox.innerText = currentOptimizedText;
-                    optimizedContainer.style.display = 'block';
-                    applyBtn.style.display = 'none'; // No need to apply if it's already compliant
-                }
+                    refreshAILogs();
+                }, (error) => {
+                    loading.style.display = 'none';
+                    showAGGError("Fehler bei der Asynchronen Analyse: " + error.message);
+                    refreshAILogs();
+                }, (seconds) => {
+                    if (progressText) {
+                        progressText.innerText = `Prüfe auf AGG-Konformität... (${seconds}s)`;
+                    }
+                });
             } else {
-                showAGGError("Fehler bei der Analyse: " + (data.error || "Unbekannter Fehler"));
+                throw new Error("Fehler beim Starten der Asynchronen Analyse.");
             }
         })
         .catch(err => {

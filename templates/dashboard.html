@@ -1000,10 +1000,19 @@
                             </div>
                         </div>
 
-                        <!-- Honeypot stats and RAG feedback training list -->
-                        <div class="glass-card" style="background: rgba(11, 13, 25, 0.4);">
-                            <h4 style="color: #fff; margin-bottom: 16px;"><i class="fa-solid fa-bug-slash" style="color: #ef4444;"></i> Honeypot Spam-Schutz</h4>
+                        <!-- KI-Diagnose-Terminal (LLM Tracker) -->
+                        <div class="glass-card" style="background: rgba(11, 13, 25, 0.4); border-color: rgba(139, 92, 246, 0.2);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <h4 style="color: #fff; margin: 0; display: flex; align-items: center; gap: 8px;">
+                                    <i class="fa-solid fa-terminal" style="color: var(--accent-light);"></i> KI-Diagnose-Terminal (LLM Tracker)
+                                </h4>
+                                <button type="button" class="btn-secondary-cta" onclick="refreshAILogs()" style="height: 26px; line-height: 24px; font-size: 11px; padding: 0 10px; margin: 0; border-color: rgba(255,255,255,0.15); color: #fff;">
+                                    <i class="fa-solid fa-rotate-right"></i> Aktualisieren
+                                </button>
+                            </div>
                             
+                            <div id="ai-log-terminal" style="background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--border-radius-sm); height: 260px; overflow-y: auto; font-family: monospace; font-size: 11px; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+                                <div style="color: #6b7280; font-style: italic;">Lade Diagnoseprotokolle...</div>
                             </div>
                         </div>
                     </div>
@@ -1126,7 +1135,20 @@
                                         
                                         <div id="ai-agg-prompt-container" style="margin-left: 28px; margin-top: 12px; {% if ai_settings.AI_AGG_CHECK_ENABLED != 'true' %}display: none;{% endif %}">
                                             <label class="form-label" style="font-size: 12px; font-weight: 600; color: #e5e7eb; margin-bottom: 6px;">AGG-Prüfungs-Regelwerk (Prompt):</label>
-                                            <textarea name="AI_AGG_PROMPT" class="form-textarea" rows="3" style="background: rgba(0,0,0,0.3); color: #fff; border-color: var(--glass-border);">{{ ai_settings.AI_AGG_PROMPT }}</textarea>
+                                            <textarea id="ai-agg-prompt-input" name="AI_AGG_PROMPT" class="form-textarea" rows="3" style="background: rgba(0,0,0,0.3); color: #fff; border-color: var(--glass-border);">{{ ai_settings.AI_AGG_PROMPT }}</textarea>
+                                            
+                                            <!-- Dynamic Validation Panel -->
+                                            <div style="margin-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                                                <button type="button" class="btn-secondary-cta" onclick="validateCustomPrompt('AGG')" style="height: 30px; line-height: 28px; font-size: 12px; padding: 0 14px; margin: 0; border-color: #8b5cf6; color: #a78bfa; background: rgba(139, 92, 246, 0.1);">
+                                                    <i class="fa-solid fa-vial-circle-check"></i> Prompt live testen & validieren
+                                                </button>
+                                                <div id="agg-validation-status" style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                                                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #9ca3af;"></span>
+                                                    <span>Noch nicht validiert</span>
+                                                </div>
+                                            </div>
+                                            <div id="agg-validation-details" style="display: none; margin-top: 12px; padding: 12px; background: rgba(11, 13, 25, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--border-radius-sm); font-size: 12px; color: #e5e7eb; white-space: pre-wrap; font-family: monospace;">
+                                            </div>
                                         </div>
                                     </div>
 
@@ -1139,7 +1161,20 @@
                                         
                                         <div id="ai-easy-prompt-container" style="margin-left: 28px; margin-top: 12px; {% if ai_settings.AI_TRANSLATE_EASY_LANGUAGE != 'true' %}display: none;{% endif %}">
                                             <label class="form-label" style="font-size: 12px; font-weight: 600; color: #e5e7eb; margin-bottom: 6px;">Übersetzungs-Regelwerk (Prompt):</label>
-                                            <textarea name="AI_EASY_LANGUAGE_PROMPT" class="form-textarea" rows="3" style="background: rgba(0,0,0,0.3); color: #fff; border-color: var(--glass-border);">{{ ai_settings.AI_EASY_LANGUAGE_PROMPT }}</textarea>
+                                            <textarea id="ai-easy-prompt-input" name="AI_EASY_LANGUAGE_PROMPT" class="form-textarea" rows="3" style="background: rgba(0,0,0,0.3); color: #fff; border-color: var(--glass-border);">{{ ai_settings.AI_EASY_LANGUAGE_PROMPT }}</textarea>
+                                            
+                                            <!-- Dynamic Validation Panel -->
+                                            <div style="margin-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                                                <button type="button" class="btn-secondary-cta" onclick="validateCustomPrompt('EASY')" style="height: 30px; line-height: 28px; font-size: 12px; padding: 0 14px; margin: 0; border-color: #8b5cf6; color: #a78bfa; background: rgba(139, 92, 246, 0.1);">
+                                                    <i class="fa-solid fa-vial-circle-check"></i> Prompt live testen & validieren
+                                                </button>
+                                                <div id="easy-validation-status" style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                                                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #9ca3af;"></span>
+                                                    <span>Noch nicht validiert</span>
+                                                </div>
+                                            </div>
+                                            <div id="easy-validation-details" style="display: none; margin-top: 12px; padding: 12px; background: rgba(11, 13, 25, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--border-radius-sm); font-size: 12px; color: #e5e7eb; white-space: pre-wrap; font-family: monospace;">
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1573,6 +1608,8 @@ MODALS & OVERLAYS
         // Run specific loaders if needed
         if (tabId === 'stats-tab') {
             calculateInclusionROI();
+        } else if (tabId === 'gemma-tab') {
+            refreshAILogs();
         }
     }
 
@@ -2045,9 +2082,142 @@ MODALS & OVERLAYS
             } else {
                 box.innerHTML = `<span style="color:#ef4444;">[Verbindungsfehler]:</span>\nDer lokale Ollama-Daemon konnte nicht erreicht werden. Fallback-Modus aktiv.\nFehler: ${data.error}`;
             }
+            refreshAILogs();
         })
         .catch(err => {
             box.innerHTML = `<span style="color:#ef4444;">[Fehler]:</span>\n${err.message || err}`;
+            refreshAILogs();
+        });
+    }
+
+    function validateCustomPrompt(type) {
+        const promptInput = type === 'AGG' ? document.getElementById('ai-agg-prompt-input') : document.getElementById('ai-easy-prompt-input');
+        const statusEl = type === 'AGG' ? document.getElementById('agg-validation-status') : document.getElementById('easy-validation-status');
+        const detailsEl = type === 'AGG' ? document.getElementById('agg-validation-details') : document.getElementById('easy-validation-details');
+        
+        if (!promptInput) return;
+        
+        statusEl.innerHTML = `
+            <span class="pulse-indicator" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #fbbf24;"></span>
+            <span style="color: #fbbf24;">Prüfe mit lokaler KI...</span>
+        `;
+        detailsEl.style.display = 'block';
+        detailsEl.innerHTML = `<div style="color: #9ca3af;">⏳ Analysiere Antwort-Struktur der lokalen Gemma-KI (dies kann bis zu 5 Sekunden dauern)...</div>`;
+        
+        const formData = new FormData();
+        formData.append('type', type);
+        formData.append('prompt', promptInput.value);
+        
+        fetch('/recruiter/ki/validate-prompt/', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("Netzwerkfehler: HTTP " + res.status);
+            return res.json();
+        })
+        .then(data => {
+            if (data.success) {
+                if (data.valid) {
+                    statusEl.innerHTML = `
+                        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;"></span>
+                        <span style="color: #34d399; font-weight: 600;">Erfolgreich Aktiv</span>
+                    `;
+                    detailsEl.innerHTML = `
+                        <div style="color: #34d399; font-weight: 600; margin-bottom: 4px;"><i class="fa-solid fa-circle-check"></i> ${data.message}</div>
+                        <div style="color: #9ca3af; margin-bottom: 6px;">Latenz: <strong>${data.latency}s</strong> | Modell: <strong>gemma:2b</strong></div>
+                        <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); overflow: hidden; max-height: 80px; text-overflow: ellipsis; white-space: nowrap;">
+                            <span style="color: #6b7280; font-family: monospace;">Antwort-Vorschau:</span> <span style="font-family: monospace;">${data.reply_preview}</span>
+                        </div>
+                    `;
+                } else {
+                    statusEl.innerHTML = `
+                        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; box-shadow: 0 0 8px #f59e0b;"></span>
+                        <span style="color: #fbbf24; font-weight: 600;">Format-Warnung</span>
+                    `;
+                    detailsEl.innerHTML = `
+                        <div style="color: #fbbf24; font-weight: 600; margin-bottom: 4px;"><i class="fa-solid fa-triangle-exclamation"></i> Warnung: Format inkompatibel</div>
+                        <div style="color: #e5e7eb; margin-bottom: 8px; line-height: 1.4;">${data.message}</div>
+                        <div style="color: #9ca3af; margin-bottom: 6px;">Latenz: <strong>${data.latency}s</strong></div>
+                        <div style="background: rgba(245, 158, 11, 0.08); padding: 10px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.2); max-height: 100px; overflow-y: auto;">
+                            <span style="color: #fbbf24; font-weight: bold;">Gemma Antwort:</span><br>
+                            <pre style="margin: 4px 0 0 0; font-size: 11px; white-space: pre-wrap;">${data.reply_preview}</pre>
+                        </div>
+                    `;
+                }
+            } else {
+                statusEl.innerHTML = `
+                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 8px #ef4444;"></span>
+                    <span style="color: #f87171; font-weight: 600;">Fehlgeschlagen</span>
+                `;
+                detailsEl.innerHTML = `
+                    <div style="color: #f87171; font-weight: 600; margin-bottom: 4px;"><i class="fa-solid fa-circle-xmark"></i> Validierungsfehler</div>
+                    <div style="color: #e5e7eb; line-height: 1.4;">${data.error}</div>
+                `;
+            }
+            refreshAILogs();
+        })
+        .catch(err => {
+            statusEl.innerHTML = `
+                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ef4444;"></span>
+                <span style="color: #f87171; font-weight: 600;">Fehlgeschlagen</span>
+            `;
+            detailsEl.innerHTML = `
+                <div style="color: #f87171; font-weight: 600; margin-bottom: 4px;"><i class="fa-solid fa-circle-xmark"></i> Verbindungsfehler</div>
+                <div style="color: #e5e7eb;">Netzwerk- oder Serververbindung fehlgeschlagen: ${err.message}</div>
+            `;
+            refreshAILogs();
+        });
+    }
+
+    function refreshAILogs() {
+        const terminal = document.getElementById('ai-log-terminal');
+        if (!terminal) return;
+        
+        fetch('/recruiter/ki/logs/')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.logs && data.logs.length > 0) {
+                let html = "";
+                data.logs.forEach(log => {
+                    let statusBadge = "";
+                    if (log.success && !log.fallback_mode) {
+                        statusBadge = `<span style="background: rgba(16, 185, 129, 0.12); color: #34d399; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 9px; font-weight: bold; text-shadow: 0 0 6px rgba(52, 211, 153, 0.2);">KI ERFOLG</span>`;
+                    } else if (log.success && log.fallback_mode) {
+                        statusBadge = `<span style="background: rgba(245, 158, 11, 0.12); color: #fbbf24; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.25); font-size: 9px; font-weight: bold; text-shadow: 0 0 6px rgba(251, 191, 36, 0.2);">WARNUNG</span>`;
+                    } else {
+                        statusBadge = `<span style="background: rgba(239, 68, 68, 0.12); color: #f87171; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(239, 68, 68, 0.25); font-size: 9px; font-weight: bold; text-shadow: 0 0 6px rgba(248, 113, 113, 0.2);">FEHLER</span>`;
+                    }
+                    
+                    const customBadge = log.custom_prompt_active ? `<span style="color: #a78bfa; border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 4px; border-radius: 3px; font-size: 8px;">CUSTOM</span>` : '';
+                    
+                    html += `
+                        <div style="border-bottom: 1px solid rgba(255,255,255,0.04); padding-bottom: 8px; margin-bottom: 4px; display: flex; flex-direction: column; gap: 4px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+                                <div style="display: flex; align-items: center; gap: 6px; font-weight: bold; color: #fff;">
+                                    <span style="color: #6d28d9;">></span>
+                                    <span>${log.action_name}</span>
+                                    ${customBadge}
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="color: #6b7280;">${log.createdAt}</span>
+                                    ${statusBadge}
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #9ca3af; padding-left: 12px; flex-wrap: wrap;">
+                                <div>Modell: <strong style="color: #e5e7eb;">${log.model}</strong> | Latenz: <strong style="color: #e5e7eb;">${log.latency}s</strong></div>
+                                ${log.error_msg ? `<span style="color: #f87171; max-width: 250px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">Err: ${log.error_msg}</span>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                terminal.innerHTML = html;
+            } else {
+                terminal.innerHTML = `<div style="color: #6b7280; font-style: italic;">Keine Diagnoseprotokolle vorhanden.</div>`;
+            }
+        })
+        .catch(err => {
+            terminal.innerHTML = `<div style="color: #ef4444; font-style: italic;">Fehler beim Laden der Protokolle: ${err.message}</div>`;
         });
     }
 

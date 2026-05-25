@@ -1110,6 +1110,28 @@ def evaluate_with_local_gemma(cover_letter, requirements_list):
         return 'D', "Geringe Übereinstimmung mit dem Anforderungsprofil (Fallback). Keine der gesuchten Schlüsselqualifikationen im Anschreiben identifiziert."
 
 
+def log_ai_execution(action_name, model_used, latency, success, fallback_mode, error_msg, custom_prompt_active, prompt_used=""):
+    import json
+    try:
+        from .models import AuditLog
+        metadata = {
+            'model': model_used,
+            'latency': latency,
+            'success': success,
+            'fallback_mode': fallback_mode,
+            'error_msg': str(error_msg) if error_msg else "",
+            'custom_prompt_active': custom_prompt_active,
+            'prompt_snippet': prompt_used[:150] + "..." if prompt_used else ""
+        }
+        AuditLog.objects.create(
+            action="AI_EXECUTION",
+            userId=action_name,
+            metadataJson=json.dumps(metadata)
+        )
+    except Exception:
+        pass
+
+
 @csrf_exempt
 def test_gemma(request):
     """Tests the local Gemma AI connection by querying a short test prompt."""
@@ -1129,13 +1151,47 @@ def test_gemma(request):
             latency = round(time.time() - start_time, 2)
             if success:
                 reply = res_data.get("response", "").strip()
+                log_ai_execution("Verbindungstest", get_ai_model(), latency, True, False, "", False, prompt)
                 return JsonResponse({'success': True, 'reply': reply, 'latency': latency})
             else:
+                log_ai_execution("Verbindungstest", get_ai_model(), latency, False, False, str(res_data), False, prompt)
                 return JsonResponse({'success': False, 'error': str(res_data)})
         except Exception as e:
+            latency = round(time.time() - start_time, 2)
+            log_ai_execution("Verbindungstest", get_ai_model(), latency, False, False, str(e), False, prompt)
             return JsonResponse({'success': False, 'error': str(e)})
             
     return JsonResponse({'success': False, 'error': 'Invalid request method.'})
+
+
+@csrf_exempt
+def get_ai_execution_logs(request):
+    """Returns the latest 10 AI execution logs for developer/admin diagnostics."""
+    import json
+    try:
+        from .models import AuditLog
+        logs = AuditLog.objects.filter(action="AI_EXECUTION").order_by('-createdAt')[:10]
+        data = []
+        for l in logs:
+            try:
+                meta = json.loads(l.metadataJson)
+            except Exception:
+                meta = {}
+            data.append({
+                'id': str(l.id),
+                'action_name': l.userId or "KI-Aktion",
+                'createdAt': l.createdAt.strftime('%Y-%m-%d %H:%M:%S'),
+                'model': meta.get('model', 'gemma:2b'),
+                'latency': meta.get('latency', 0),
+                'success': meta.get('success', False),
+                'fallback_mode': meta.get('fallback_mode', False),
+                'error_msg': meta.get('error_msg', ''),
+                'custom_prompt_active': meta.get('custom_prompt_active', False),
+                'prompt_snippet': meta.get('prompt_snippet', '')
+            })
+        return JsonResponse({'success': True, 'logs': data})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
 
 
 @csrf_exempt
@@ -1186,7 +1242,10 @@ Bitte antworte genau im folgenden Format, damit das System deine Antwort parsen 
         }
         
         try:
+            import time
+            start_time = time.time()
             success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=12.0)
+            latency = round(time.time() - start_time, 2)
             if success:
                 reply = res_data.get("response", "").strip()
                 
@@ -1234,6 +1293,8 @@ Bitte antworte genau im folgenden Format, damit das System deine Antwort parsen 
                 # Filter out system or empty notes
                 violations = [v for v in violations if v and "keine verstöße" not in v.lower() and "keine offensichtlichen" not in v.lower() and "keine risiken" not in v.lower()]
                 
+                log_ai_execution("AGG-Check", get_ai_model(), latency, True, False, "", bool(custom_prompt), prompt)
+                
                 return JsonResponse({
                     'success': True,
                     'violations': violations,
@@ -1241,8 +1302,11 @@ Bitte antworte genau im folgenden Format, damit das System deine Antwort parsen 
                     'original_text': text,
                     'fallback_mode': False
                 })
-        except Exception:
-            pass
+            else:
+                log_ai_execution("AGG-Check", get_ai_model(), latency, False, True, f"Ollama-Fehler: {res_data}", bool(custom_prompt), prompt)
+        except Exception as e:
+            latency = round(time.time() - start_time, 2)
+            log_ai_execution("AGG-Check", get_ai_model(), latency, False, True, str(e), bool(custom_prompt), prompt)
             
         # Fallback analysis using high-quality regex rules
         violations = []
@@ -1320,13 +1384,20 @@ def gemma_translate_simple_german(request):
             "stream": False
         }
         
+        import time
+        start_time = time.time()
         try:
             success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=12.0)
+            latency = round(time.time() - start_time, 2)
             if success:
                 reply = res_data.get("response", "").strip()
+                log_ai_execution("Leichte Sprache", get_ai_model(), latency, True, False, "", False, prompt)
                 return JsonResponse({'success': True, 'result': reply})
-        except Exception:
-            pass
+            else:
+                log_ai_execution("Leichte Sprache", get_ai_model(), latency, False, True, f"Ollama-Fehler: {res_data}", False, prompt)
+        except Exception as e:
+            latency = round(time.time() - start_time, 2)
+            log_ai_execution("Leichte Sprache", get_ai_model(), latency, False, True, str(e), False, prompt)
             
         # Fallback
         sentences = text.split(".")
@@ -1337,6 +1408,117 @@ def gemma_translate_simple_german(request):
         reply = "📖 Leichte Sprache Übersetzung (Fallback-Modus):\n\n" + " ".join(short_sentences)
         return JsonResponse({'success': True, 'result': reply})
         
+    return JsonResponse({'success': False, 'error': 'Invalid request method.'})
+
+
+@csrf_exempt
+def validate_ai_prompt(request):
+    """Validates the current custom AGG or Leichte Sprache prompt by running it on a test input and analyzing the format of the response."""
+    if request.method == 'POST':
+        prompt_type = request.POST.get('type', 'AGG').strip()
+        custom_prompt = request.POST.get('prompt', '').strip()
+        
+        if not custom_prompt:
+            return JsonResponse({'success': False, 'error': 'Kein Prompt übermittelt.'})
+            
+        test_text = "Wir suchen ab sofort einen belastbaren Junior-Softwareentwickler (m/w/d) zur Verstärkung des Teams."
+        
+        if prompt_type == 'AGG':
+            prompt = f"{custom_prompt}\n\nAusschreibungstext zum Prüfen:\n{test_text}"
+        else:
+            prompt = f"{custom_prompt}\n\nText zum Übersetzen:\n{test_text}"
+            
+        payload = {
+            "model": get_ai_model(),
+            "prompt": prompt,
+            "stream": False,
+            "options": {
+                "temperature": 0.1,
+                "num_predict": 300,
+                "top_k": 20,
+                "top_p": 0.5
+            }
+        }
+        
+        import time
+        start_time = time.time()
+        try:
+            success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=12.0)
+            latency = round(time.time() - start_time, 2)
+            if success:
+                reply = res_data.get("response", "").strip()
+                
+                # Check formatting
+                reply_lower = reply.lower()
+                
+                # For AGG, check if we find delimiters
+                if prompt_type == 'AGG':
+                    opt_headers = [
+                        "=== optimierter text ===", 
+                        "optimierter text-vorschlag:", 
+                        "optimierter text:", 
+                        "optimierter text vorschlag:"
+                    ]
+                    opt_header_found = None
+                    for h in opt_headers:
+                        if h in reply_lower:
+                            opt_header_found = h
+                            break
+                    
+                    has_delimiters = opt_header_found is not None or "=== OPTIMIERTER TEXT ===" in reply
+                    
+                    if has_delimiters:
+                        log_ai_execution("Prompt-Validierung (AGG)", get_ai_model(), latency, True, False, "", True, prompt)
+                        return JsonResponse({
+                            'success': True,
+                            'valid': True,
+                            'latency': latency,
+                            'reply_preview': reply[:250] + "...",
+                            'message': 'Der Prompt wurde erfolgreich von der lokalen KI angewendet und das Antwortformat ist korrekt strukturiert.'
+                        })
+                    else:
+                        log_ai_execution("Prompt-Validierung (AGG)", get_ai_model(), latency, True, True, "Warnung: Keine standardmäßigen Antwort-Trenner gefunden.", True, prompt)
+                        return JsonResponse({
+                            'success': True,
+                            'valid': False,
+                            'latency': latency,
+                            'reply_preview': reply[:300] + "...",
+                            'message': 'Die KI hat geantwortet, aber es wurden keine standardmäßigen Trenner wie "=== OPTIMIERTER TEXT ===" oder "=== VERSTÖSSE ===" im Antworttext gefunden. Das System wird versuchen, die Antwort als Freitext anzuzeigen, dies kann jedoch zu ungenauen Darstellungen führen.'
+                        })
+                else:
+                    # Easy language translation validation - just check if it's not empty and different from original
+                    if reply and reply != test_text:
+                        log_ai_execution("Prompt-Validierung (Easy)", get_ai_model(), latency, True, False, "", True, prompt)
+                        return JsonResponse({
+                            'success': True,
+                            'valid': True,
+                            'latency': latency,
+                            'reply_preview': reply[:250] + "...",
+                            'message': 'Der Prompt für Leichte Sprache wurde erfolgreich validiert.'
+                        })
+                    else:
+                        log_ai_execution("Prompt-Validierung (Easy)", get_ai_model(), latency, True, True, "Fehler bei der Übersetzung.", True, prompt)
+                        return JsonResponse({
+                            'success': True,
+                            'valid': False,
+                            'latency': latency,
+                            'reply_preview': reply[:200] + "...",
+                            'message': 'Der Antworttext der KI ist leer oder identisch mit dem Ausgangstext.'
+                        })
+            else:
+                log_ai_execution("Prompt-Validierung", get_ai_model(), latency, False, True, f"Ollama-Fehler: {res_data}", True, prompt)
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Der lokale LLM-Dienst (Ollama) meldet einen Fehler: {res_data}. Das System nutzt das automatische Regex-Fallback-Regelwerk.'
+                })
+        except Exception as e:
+            latency = round(time.time() - start_time, 2)
+            log_ai_execution("Prompt-Validierung", get_ai_model(), latency, False, True, str(e), True, prompt)
+            return JsonResponse({
+                'success': False,
+                'error': f'Verbindung zur lokalen KI fehlgeschlagen. Ist Ollama aktiv und läuft das Modell? Details: {str(e)}'
+            })
+            
     return JsonResponse({'success': False, 'error': 'Invalid request method.'})
 
 

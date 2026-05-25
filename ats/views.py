@@ -1070,7 +1070,7 @@ def evaluate_with_local_gemma(cover_letter, requirements_list):
     }
     
     try:
-        success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=12.0)
+        success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=25.0)
         if success:
             response_text = res_data.get("response", "").strip()
             clean_text = response_text
@@ -1244,7 +1244,7 @@ Bitte antworte genau im folgenden Format, damit das System deine Antwort parsen 
         try:
             import time
             start_time = time.time()
-            success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=12.0)
+            success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=25.0)
             latency = round(time.time() - start_time, 2)
             if success:
                 reply = res_data.get("response", "").strip()
@@ -1387,7 +1387,7 @@ def gemma_translate_simple_german(request):
         import time
         start_time = time.time()
         try:
-            success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=12.0)
+            success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=25.0)
             latency = round(time.time() - start_time, 2)
             if success:
                 reply = res_data.get("response", "").strip()
@@ -1409,6 +1409,38 @@ def gemma_translate_simple_german(request):
         return JsonResponse({'success': True, 'result': reply})
         
     return JsonResponse({'success': False, 'error': 'Invalid request method.'})
+
+
+def classify_ai_error(error_str, model_name):
+    """Classifies AI/Ollama connection issues and returns a highly detailed diagnostic message in German."""
+    err_lower = str(error_str).lower()
+    
+    if "timed out" in err_lower or "timeout" in err_lower:
+        return (
+            "⏳ Zeitüberschreitung bei der KI-Antwort (Timeout)\n\n"
+            "Die lokale KI (Ollama) hat nicht innerhalb des Timeout-Fensters von 25 Sekunden geantwortet.\n\n"
+            "• Mögliche Ursache: Dies tritt fast immer beim ERSTEN Start auf (Cold Start), da Ollama das schwere Sprachmodell erst von der Festplatte in den Hauptspeicher (RAM) laden muss, oder wenn der Prozessor des Servers stark ausgelastet ist.\n"
+            "• Empfehlung: Bitte warte ca. 10 bis 15 Sekunden (damit Ollama den Ladevorgang im Hintergrund abschließen kann) und klicke dann erneut auf 'Validieren'. Sobald das Modell im Speicher liegt, antwortet es in unter 5 Sekunden!"
+        )
+    elif "connection refused" in err_lower or "unreachable" in err_lower or "refused" in err_lower:
+        return (
+            "🔌 Verbindung zum KI-Dienst fehlgeschlagen\n\n"
+            "Der lokale Ollama-Daemon unter http://host.docker.internal:11434 konnte nicht kontaktiert werden.\n\n"
+            "• Mögliche Ursache: Der Ollama-Service läuft auf dem Server nicht, oder die Docker-Container-Netzwerkbrücke blockiert den Port.\n"
+            "• Empfehlung: Bitte melde dich in der Server-Konsole an und prüfe den Dienststatus (z. B. mit 'sudo systemctl status ollama' oder 'docker ps')."
+        )
+    elif "404" in err_lower or "not found" in err_lower:
+        return (
+            f"❌ Modell nicht gefunden (404 Not Found)\n\n"
+            f"Das ausgewählte KI-Modell '{model_name}' ist auf dem Ollama-Server nicht vorhanden.\n\n"
+            f"• Empfehlung: Bitte melde dich in der Server-Konsole an und lade das Modell manuell mit dem Befehl 'ollama pull {model_name}' herunter."
+        )
+    else:
+        return (
+            f"⚠️ Allgemeiner Fehler der lokalen KI-Verbindung\n\n"
+            f"Details: {error_str}\n\n"
+            "• Empfehlung: Überprüfe die Auslastung und die Systemprotokolle deines Ollama-Dienstes auf dem VM-Server."
+        )
 
 
 @csrf_exempt
@@ -1443,7 +1475,8 @@ def validate_ai_prompt(request):
         import time
         start_time = time.time()
         try:
-            success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=12.0)
+            # Increased timeout to 25.0 seconds for robust cold-starts and CPU inference stability
+            success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=25.0)
             latency = round(time.time() - start_time, 2)
             if success:
                 reply = res_data.get("response", "").strip()
@@ -1507,16 +1540,18 @@ def validate_ai_prompt(request):
                         })
             else:
                 log_ai_execution("Prompt-Validierung", get_ai_model(), latency, False, True, f"Ollama-Fehler: {res_data}", True, prompt)
+                detailed_error = classify_ai_error(res_data, get_ai_model())
                 return JsonResponse({
                     'success': False,
-                    'error': f'Der lokale LLM-Dienst (Ollama) meldet einen Fehler: {res_data}. Das System nutzt das automatische Regex-Fallback-Regelwerk.'
+                    'error': detailed_error
                 })
         except Exception as e:
             latency = round(time.time() - start_time, 2)
             log_ai_execution("Prompt-Validierung", get_ai_model(), latency, False, True, str(e), True, prompt)
+            detailed_error = classify_ai_error(e, get_ai_model())
             return JsonResponse({
                 'success': False,
-                'error': f'Verbindung zur lokalen KI fehlgeschlagen. Ist Ollama aktiv und läuft das Modell? Details: {str(e)}'
+                'error': detailed_error
             })
             
     return JsonResponse({'success': False, 'error': 'Invalid request method.'})

@@ -40,7 +40,8 @@ def seed_data_if_empty():
         "AI_AGG_CHECK_ENABLED": "true",
         "AI_AGG_PROMPT": "Prüfe den folgenden Text auf Diskriminierung (Alter, Geschlecht, Herkunft, Religion) nach dem deutschen AGG. Zeige kritische Stellen auf und mache neutrale Formulierungsvorschläge.",
         "AI_TRANSLATE_EASY_LANGUAGE": "true",
-        "AI_EASY_LANGUAGE_PROMPT": "Übersetze den folgenden Text in leichte Sprache (A2/B1 Niveau). Nutze kurze Sätze, vermeide Fachwörter und verwende aktive Verben."
+        "AI_EASY_LANGUAGE_PROMPT": "Übersetze den folgenden Text in leichte Sprache (A2/B1 Niveau). Nutze kurze Sätze, vermeide Fachwörter und verwende aktive Verben.",
+        "AI_MODEL": "gemma:2b"
     }
     for k, v in ai_defaults.items():
         SystemSetting.objects.get_or_create(key=k, defaults={"value": v})
@@ -997,6 +998,18 @@ def get_ollama_url(endpoint="api/generate"):
     return f"http://127.0.0.1:11434/{endpoint}"
 
 
+def get_ai_model():
+    """Dynamically retrieves the configured AI model, defaulting to gemma:2b."""
+    try:
+        setting = SystemSetting.objects.filter(key="AI_MODEL").first()
+        if setting and setting.value.strip():
+            return setting.value.strip()
+    except Exception:
+        pass
+    return "gemma:2b"
+
+
+
 def make_ollama_request(url, payload, timeout=8.0):
     """
     Makes a POST request to Ollama using python's built-in urllib.
@@ -1051,7 +1064,7 @@ def evaluate_with_local_gemma(cover_letter, requirements_list):
     """
     
     payload = {
-        "model": "gemma",
+        "model": get_ai_model(),
         "prompt": prompt,
         "stream": False
     }
@@ -1105,7 +1118,7 @@ def test_gemma(request):
         import time
         
         payload = {
-            "model": "gemma",
+            "model": get_ai_model(),
             "prompt": prompt,
             "stream": False
         }
@@ -1150,7 +1163,7 @@ def gemma_agg_check(request):
         """
         
         payload = {
-            "model": "gemma",
+            "model": get_ai_model(),
             "prompt": prompt,
             "stream": False
         }
@@ -1242,7 +1255,7 @@ def gemma_translate_simple_german(request):
         """
         
         payload = {
-            "model": "gemma",
+            "model": get_ai_model(),
             "prompt": prompt,
             "stream": False
         }

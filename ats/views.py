@@ -1110,6 +1110,37 @@ def evaluate_with_local_gemma(cover_letter, requirements_list):
         return 'D', "Geringe Übereinstimmung mit dem Anforderungsprofil (Fallback). Keine der gesuchten Schlüsselqualifikationen im Anschreiben identifiziert."
 
 
+def try_parse_json_reply(reply):
+    """
+    Attempts to extract and parse a JSON object from the LLM reply.
+    Supports raw JSON strings or JSON wrapped in markdown code blocks.
+    """
+    import json
+    import re
+    
+    cleaned = reply.strip()
+    if "```" in cleaned:
+        parts = cleaned.split("```")
+        for part in parts:
+            part_str = part.strip()
+            if part_str.startswith("json"):
+                part_str = part_str[4:].strip()
+            if (part_str.startswith("{") and part_str.endswith("}")) or (part_str.startswith("[") and part_str.endswith("]")):
+                cleaned = part_str
+                break
+                
+    try:
+        return json.loads(cleaned), True
+    except Exception:
+        match = re.search(r'(\{.*\})', cleaned, re.DOTALL)
+        if match:
+            try:
+                return json.loads(match.group(1)), True
+            except Exception:
+                pass
+    return None, False
+
+
 def log_ai_execution(action_name, model_used, latency, success, fallback_mode, error_msg, custom_prompt_active, prompt_used=""):
     import json
     try:
@@ -1269,42 +1300,60 @@ Bitte antworte genau im folgenden Format, damit das System deine Antwort parsen 
                     violations = []
                     optimized_text = text
                     
-                    # Smart format-agnostic parser supporting both custom prompts and standard headers
-                    reply_lower = reply.lower()
-                    import re
-                    
-                    opt_headers = [
-                        "=== optimierter text ===", 
-                        "optimierter text-vorschlag:", 
-                        "optimierter text:", 
-                        "optimierter text vorschlag:"
-                    ]
-                    opt_header_found = None
-                    for h in opt_headers:
-                        if h in reply_lower:
-                            opt_header_found = h
-                            break
-                            
-                    if opt_header_found:
-                        idx = reply_lower.find(opt_header_found)
-                        opt_part = reply[idx + len(opt_header_found):].strip()
-                        violation_part = reply[:idx].strip()
+                    parsed_json, is_json = try_parse_json_reply(reply)
+                    if is_json:
+                        status_val = str(parsed_json.get("status", "")).strip().lower()
+                        is_green = status_val in ["grün", "gruen", "green", "konform", "safe", "ok", "compliant"]
                         
-                        # Strip common section headers from violation text
-                        for h_val in ["=== verstösse ===", "=== verstoesse ===", "=== verstöße ===", "identifizierte risiken:", "ki agg-check ergebnis:"]:
-                            violation_part = re.sub(h_val, "", violation_part, flags=re.IGNORECASE)
-                            
-                        violations = [v.strip().lstrip("-*•# ") for v in violation_part.split("\n") if v.strip()]
-                        optimized_text = opt_part
-                    elif "=== OPTIMIERTER TEXT ===" in reply:
-                        parts = reply.split("=== OPTIMIERTER TEXT ===")
-                        opt_part = parts[1].strip()
-                        violation_part = parts[0].replace("=== VERSTÖSSE ===", "").strip()
-                        violations = [v.strip().lstrip("-*• ") for v in violation_part.split("\n") if v.strip()]
-                        optimized_text = opt_part
+                        if is_green:
+                            violations = []
+                        else:
+                            viols = parsed_json.get("violations") or parsed_json.get("verstoesse") or parsed_json.get("verstöße") or []
+                            if isinstance(viols, list):
+                                violations = [str(v).strip() for v in viols if str(v).strip()]
+                            elif isinstance(viols, str):
+                                violations = [v.strip() for v in viols.split("\n") if v.strip()]
+                            else:
+                                violations = [str(viols).strip()] if viols else []
+                                
+                        opt_text = parsed_json.get("optimized_text") or parsed_json.get("optimized") or parsed_json.get("text")
+                        if opt_text:
+                            optimized_text = str(opt_text).strip()
                     else:
-                        violations = [reply]
-                        optimized_text = text
+                        reply_lower = reply.lower()
+                        import re
+                        
+                        opt_headers = [
+                            "=== optimierter text ===", 
+                            "optimierter text-vorschlag:", 
+                            "optimierter text:", 
+                            "optimierter text vorschlag:"
+                        ]
+                        opt_header_found = None
+                        for h in opt_headers:
+                            if h in reply_lower:
+                                opt_header_found = h
+                                break
+                                
+                        if opt_header_found:
+                            idx = reply_lower.find(opt_header_found)
+                            opt_part = reply[idx + len(opt_header_found):].strip()
+                            violation_part = reply[:idx].strip()
+                            
+                            for h_val in ["=== verstösse ===", "=== verstoesse ===", "=== verstöße ===", "identifizierte risiken:", "ki agg-check ergebnis:"]:
+                                violation_part = re.sub(h_val, "", violation_part, flags=re.IGNORECASE)
+                                
+                            violations = [v.strip().lstrip("-*•# ") for v in violation_part.split("\n") if v.strip()]
+                            optimized_text = opt_part
+                        elif "=== OPTIMIERTER TEXT ===" in reply:
+                            parts = reply.split("=== OPTIMIERTER TEXT ===")
+                            opt_part = parts[1].strip()
+                            violation_part = parts[0].replace("=== VERSTÖSSE ===", "").strip()
+                            violations = [v.strip().lstrip("-*• ") for v in violation_part.split("\n") if v.strip()]
+                            optimized_text = opt_part
+                        else:
+                            violations = [reply]
+                            optimized_text = text
                     
                     violations = [v for v in violations if v and "keine verstöße" not in v.lower() and "keine offensichtlichen" not in v.lower() and "keine risiken" not in v.lower()]
                     
@@ -1553,34 +1602,51 @@ def validate_ai_prompt(request):
                     reply_lower = reply.lower()
                     
                     if prompt_type == 'AGG':
-                        opt_headers = [
-                            "=== optimierter text ===", 
-                            "optimierter text-vorschlag:", 
-                            "optimierter text:", 
-                            "optimierter text vorschlag:"
-                        ]
-                        opt_header_found = None
-                        for h in opt_headers:
-                            if h in reply_lower:
-                                opt_header_found = h
-                                break
-                        
-                        has_delimiters = opt_header_found is not None or "=== OPTIMIERTER TEXT ===" in reply
-                        
-                        if has_delimiters:
-                            log_ai_execution("Prompt-Validierung (AGG)", get_ai_model(), latency, True, False, "", True, prompt)
+                        parsed_json, is_json = try_parse_json_reply(reply)
+                        if is_json:
+                            log_ai_execution("Prompt-Validierung (AGG-JSON)", get_ai_model(), latency, True, False, "", True, prompt)
+                            status_val = str(parsed_json.get("status", "")).strip().lower()
+                            is_green = status_val in ["grün", "gruen", "green", "konform", "safe", "ok", "compliant"]
+                            
+                            if is_green:
+                                msg = 'Der Prompt wurde erfolgreich im JSON-Format ausgeführt und die Stellenausschreibung wurde als AGG-konform ("GRÜN") eingestuft.'
+                            else:
+                                msg = 'Der Prompt wurde erfolgreich im JSON-Format ausgeführt. Es wurden AGG-Risiken ("ROT") identifiziert.'
+                                
                             result = {
                                 'valid': True,
-                                'reply_preview': reply[:250] + "...",
-                                'message': 'Der Prompt wurde erfolgreich von der lokalen KI angewendet und das Antwortformat ist korrekt strukturiert.'
+                                'reply_preview': reply[:300] + "...",
+                                'message': msg
                             }
                         else:
-                            log_ai_execution("Prompt-Validierung (AGG)", get_ai_model(), latency, True, True, "Warnung: Keine standardmäßigen Antwort-Trenner gefunden.", True, prompt)
-                            result = {
-                                'valid': False,
-                                'reply_preview': reply[:300] + "...",
-                                'message': 'Die KI hat geantwortet, aber es wurden keine standardmäßigen Trenner wie "=== OPTIMIERTER TEXT ===" oder "=== VERSTÖSSE ===" im Antworttext gefunden. Das System wird versuchen, die Antwort als Freitext anzuzeigen, dies kann jedoch zu ungenauen Darstellungen führen.'
-                            }
+                            opt_headers = [
+                                "=== optimierter text ===", 
+                                "optimierter text-vorschlag:", 
+                                "optimierter text:", 
+                                "optimierter text vorschlag:"
+                            ]
+                            opt_header_found = None
+                            for h in opt_headers:
+                                if h in reply_lower:
+                                    opt_header_found = h
+                                    break
+                            
+                            has_delimiters = opt_header_found is not None or "=== OPTIMIERTER TEXT ===" in reply
+                            
+                            if has_delimiters:
+                                log_ai_execution("Prompt-Validierung (AGG)", get_ai_model(), latency, True, False, "", True, prompt)
+                                result = {
+                                    'valid': True,
+                                    'reply_preview': reply[:250] + "...",
+                                    'message': 'Der Prompt wurde erfolgreich von der lokalen KI angewendet und das Antwortformat ist korrekt strukturiert.'
+                                }
+                            else:
+                                log_ai_execution("Prompt-Validierung (AGG)", get_ai_model(), latency, True, True, "Warnung: Keine standardmäßigen Antwort-Trenner gefunden.", True, prompt)
+                                result = {
+                                    'valid': False,
+                                    'reply_preview': reply[:300] + "...",
+                                    'message': 'Die KI hat geantwortet, aber es wurden keine standardmäßigen Trenner wie "=== OPTIMIERTER TEXT ===" oder "=== VERSTÖSSE ===" im Antworttext gefunden. Das System wird versuchen, die Antwort als Freitext anzuzeigen, dies kann jedoch zu ungenauen Darstellungen führen.'
+                                }
                     else:
                         if reply and reply != test_text:
                             log_ai_execution("Prompt-Validierung (Easy)", get_ai_model(), latency, True, False, "", True, prompt)

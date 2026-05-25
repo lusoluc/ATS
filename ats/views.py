@@ -1146,27 +1146,43 @@ def gemma_agg_check(request):
         if not text:
             return JsonResponse({'success': False, 'error': 'Kein Text übermittelt.'})
             
-        prompt = f"""
-        Du bist der SecurATS AGG-Konformitätsprüfer (basierend auf Gemma).
-        Analysiere den folgenden Stellentext (Stellentitel und Beschreibung) auf mögliche Diskriminierungen (AGG-Verstöße) bezüglich Alter (z. B. 'Junior', 'Senior', 'jung'), Geschlecht (z. B. fehlendes m/w/d), Religion, Rasse oder Behinderung.
-        Halte gezielt nach 'Junior' oder 'Senior' Ausschau, da dies im deutschen Arbeitsrecht als verdeckte Alterskriterien ausgelegt werden kann! Empfiehl stattdessen neutrale Bezeichnungen mit Angabe der benötigten Berufserfahrung in Jahren.
-        
-        Ausschreibungstext:
-        {text}
-        
-        Bitte antworte genau im folgenden Format, damit das System deine Antwort parsen kann. Verwende exakt die Trenner:
-        
-        === VERSTÖSSE ===
-        - (Liste hier alle gefundenen Verstöße und problematischen Formulierungen stichpunktartig auf. Wenn keine vorhanden sind, schreibe "Keine Verstöße gefunden".)
-        
-        === OPTIMIERTER TEXT ===
-        (Gib hier den vollständigen, korrigierten, AGG-konformen Ausschreibungstext aus. Keine weiteren Kommentare vor oder nach diesem Block.)
-        """
+        # Get custom prompt from DB
+        custom_prompt = ""
+        try:
+            setting = SystemSetting.objects.filter(key="AI_AGG_PROMPT").first()
+            if setting and setting.value.strip():
+                custom_prompt = setting.value.strip()
+        except Exception:
+            pass
+            
+        if custom_prompt:
+            prompt = f"{custom_prompt}\n\nAusschreibungstext zum Prüfen:\n{text}"
+        else:
+            prompt = f"""Du bist der SecurATS AGG-Konformitätsprüfer (basierend auf Gemma).
+Analysiere den folgenden Stellentext (Stellentitel und Beschreibung) auf mögliche Diskriminierungen (AGG-Verstöße) bezüglich Alter (z. B. 'Junior', 'Senior', 'jung'), Geschlecht (z. B. fehlendes m/w/d), Religion, Rasse oder Behinderung.
+Halte gezielt nach 'Junior' oder 'Senior' Ausschau, da dies im deutschen Arbeitsrecht als verdeckte Alterskriterien ausgelegt werden kann! Empfiehl stattdessen neutrale Bezeichnungen mit Angabe der benötigten Berufserfahrung in Jahren.
+
+Ausschreibungstext:
+{text}
+
+Bitte antworte genau im folgenden Format, damit das System deine Antwort parsen kann. Verwende exakt die Trenner:
+
+=== VERSTÖSSE ===
+- (Liste hier alle gefundenen Verstöße und problematischen Formulierungen stichpunktartig auf. Wenn keine vorhanden sind, schreibe "Keine Verstöße gefunden".)
+
+=== OPTIMIERTER TEXT ===
+(Gib hier den vollständigen, korrigierten, AGG-konformen Ausschreibungstext aus. Keine weiteren Kommentare vor oder nach diesem Block.)"""
         
         payload = {
             "model": get_ai_model(),
             "prompt": prompt,
-            "stream": False
+            "stream": False,
+            "options": {
+                "temperature": 0.1,
+                "num_predict": 300,
+                "top_k": 20,
+                "top_p": 0.5
+            }
         }
         
         try:
@@ -1176,19 +1192,47 @@ def gemma_agg_check(request):
                 
                 violations = []
                 optimized_text = text
-                if "=== OPTIMIERTER TEXT ===" in reply:
+                
+                # Smart format-agnostic parser supporting both custom prompts and standard headers
+                reply_lower = reply.lower()
+                import re
+                
+                opt_headers = [
+                    "=== optimierter text ===", 
+                    "optimierter text-vorschlag:", 
+                    "optimierter text:", 
+                    "optimierter text vorschlag:"
+                ]
+                opt_header_found = None
+                for h in opt_headers:
+                    if h in reply_lower:
+                        opt_header_found = h
+                        break
+                        
+                if opt_header_found:
+                    idx = reply_lower.find(opt_header_found)
+                    opt_part = reply[idx + len(opt_header_found):].strip()
+                    violation_part = reply[:idx].strip()
+                    
+                    # Strip common section headers from violation text
+                    for h_val in ["=== verstösse ===", "=== verstoesse ===", "=== verstöße ===", "identifizierte risiken:", "ki agg-check ergebnis:"]:
+                        violation_part = re.sub(h_val, "", violation_part, flags=re.IGNORECASE)
+                        
+                    violations = [v.strip().lstrip("-*•# ") for v in violation_part.split("\n") if v.strip()]
+                    optimized_text = opt_part
+                elif "=== OPTIMIERTER TEXT ===" in reply:
                     parts = reply.split("=== OPTIMIERTER TEXT ===")
                     opt_part = parts[1].strip()
                     violation_part = parts[0].replace("=== VERSTÖSSE ===", "").strip()
-                    
                     violations = [v.strip().lstrip("-*• ") for v in violation_part.split("\n") if v.strip()]
                     optimized_text = opt_part
                 else:
+                    # If format is totally custom, try to extract lines and let the user read it
                     violations = [reply]
                     optimized_text = text
                 
                 # Filter out system or empty notes
-                violations = [v for v in violations if v and "keine verstöße" not in v.lower() and "keine offensichtlichen" not in v.lower()]
+                violations = [v for v in violations if v and "keine verstöße" not in v.lower() and "keine offensichtlichen" not in v.lower() and "keine risiken" not in v.lower()]
                 
                 return JsonResponse({
                     'success': True,
@@ -1206,6 +1250,11 @@ def gemma_agg_check(request):
         text_lower = text.lower()
         import re
         
+        # Check if the custom prompt explicitly whitelists/allows 'junior' or 'senior'
+        custom_lower = custom_prompt.lower()
+        junior_whitelisted = "junior" in custom_lower and ("ok" in custom_lower or "erlaubt" in custom_lower or "bag" in custom_lower or "keine änderung" in custom_lower or "keine aenderung" in custom_lower or "nicht das alter" in custom_lower)
+        senior_whitelisted = "senior" in custom_lower and ("ok" in custom_lower or "erlaubt" in custom_lower or "bag" in custom_lower or "keine änderung" in custom_lower or "keine aenderung" in custom_lower or "nicht das alter" in custom_lower)
+
         if "jung" in text_lower or "junge" in text_lower:
             violations.append("Mögliche Altersdiskriminierung durch das Wort 'jung/junge'. Empfohlen: 'dynamische/engagierte Talente (m/w/d)'.")
             optimized_text = re.sub(r'\bjunges\b', 'dynamisches', optimized_text, flags=re.IGNORECASE)
@@ -1213,12 +1262,12 @@ def gemma_agg_check(request):
             optimized_text = re.sub(r'\bjung\b', 'dynamisch', optimized_text, flags=re.IGNORECASE)
             optimized_text = re.sub(r'\bjungen\b', 'dynamischen', optimized_text, flags=re.IGNORECASE)
             
-        if "junior" in text_lower:
+        if "junior" in text_lower and not junior_whitelisted:
             violations.append("Formulierung 'Junior' im Stellentitel oder Text kann als Altersdiskriminierung (Bevorzugung jüngerer Bewerber) ausgelegt werden. Empfehlung: Angabe konkreter Berufserfahrung (z. B. 'mit erste Praxiserfahrung / Berufseinsteiger') statt Altersbegriffen.")
             optimized_text = re.sub(r'\bJunior\b', '', optimized_text)
             optimized_text = re.sub(r'\bjunior\b', 'mit erster Praxiserfahrung', optimized_text, flags=re.IGNORECASE)
 
-        if "senior" in text_lower:
+        if "senior" in text_lower and not senior_whitelisted:
             violations.append("Formulierung 'Senior' im Stellentitel oder Text kann als Altersdiskriminierung (Benachteiligung jüngerer Bewerber) ausgelegt werden. Empfehlung: Angabe konkreter Berufserfahrung (z. B. 'mit mehrjähriger Berufserfahrung') statt Altersbegriffen.")
             optimized_text = re.sub(r'\bSenior\b', '', optimized_text)
             optimized_text = re.sub(r'\bsenior\b', 'mit mehrjähriger Berufserfahrung', optimized_text, flags=re.IGNORECASE)

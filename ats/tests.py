@@ -7379,3 +7379,27 @@ class DemoSeedGuardTestCase(TestCase):
         from django.contrib.auth.models import User
         self.assertFalse(
             User.objects.filter(username__startswith="demo-").exists())
+
+
+class BruteForceLockoutTestCase(TestCase):
+    """Fund 5: Schutz gegen Login-Brute-Force-Angriffe (IP/Username Sperre)."""
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+        self.username = "lockeduser"
+        self.password = "wrongpass"
+
+    def test_brute_force_lockout_after_max_attempts(self):
+        url = reverse('ats:login')
+        # 5 fehlgeschlagene Versuche machen
+        for i in range(5):
+            r = self.client.post(url, {'username': self.username, 'password': self.password})
+            self.assertEqual(r.status_code, 200)
+            self.assertContains(r, "Bitte Benutzername und Passwort eingeben")
+
+        # Der 6. Versuch sollte die Lockout-Fehlermeldung zeigen
+        r = self.client.post(url, {'username': self.username, 'password': self.password})
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "Zu viele fehlerhafte Anmeldeversuche")
+

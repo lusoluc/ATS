@@ -35,7 +35,11 @@
         <p class="sub">Interne Anmeldung – Recruiter &amp; Admin</p>
 
         {% if form.errors %}
-            <div class="error">Anmeldung fehlgeschlagen. Bitte Benutzername und Passwort prüfen.</div>
+            {% for error in form.non_field_errors %}
+                <div class="error">{{ error }}</div>
+            {% empty %}
+                <div class="error">Anmeldung fehlgeschlagen. Bitte Benutzername und Passwort prüfen.</div>
+            {% endfor %}
         {% endif %}
 
         <label for="id_username">Benutzername</label>

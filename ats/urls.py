@@ -6,7 +6,7 @@ app_name = 'ats'
 
 urlpatterns = [
     # Authentifizierung (Recruiter/Admin)
-    path('recruiter/login/', auth_views.LoginView.as_view(), name='login'),
+    path('recruiter/login/', views.SafeLoginView.as_view(), name='login'),
     path('recruiter/logout/', auth_views.LogoutView.as_view(), name='logout'),
 
     # Public Career Portal URLs

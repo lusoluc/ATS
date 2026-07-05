@@ -1,0 +1,80 @@
+{% comment %}CMS-Baukasten-Rendering. Nur Design-Tokens, nur Autoescape.{% endcomment %}
+{% for b in content_blocks %}
+  {% if b.type == 'hero' %}
+  <div class="card" style="margin-bottom:var(--space-4); padding:0; overflow:hidden;">
+    {% if b.imageUrl %}<img src="{{ b.imageUrl }}" alt="" style="width:100%; max-height:300px; object-fit:cover; display:block;">{% endif %}
+    <div style="padding:var(--space-5);">
+      <h2 style="font-size:26px; margin:0 0 var(--space-2);">{{ b.heading }}</h2>
+      {% if b.text %}<p style="font-size:16px; color:var(--text-muted); margin:0; white-space:pre-line;">{{ b.text }}</p>{% endif %}
+    </div>
+  </div>
+
+  {% elif b.type == 'text' %}
+  <div style="margin-bottom:var(--space-4);">
+    {% if b.heading %}<h2 style="font-size:20px; margin:0 0 var(--space-2);">{{ b.heading }}</h2>{% endif %}
+    <p style="line-height:1.7; margin:0; white-space:pre-line;">{{ b.text }}</p>
+  </div>
+
+  {% elif b.type == 'checklist' %}
+  <div class="card" style="margin-bottom:var(--space-4);">
+    {% if b.heading %}<h2 style="font-size:18px; margin:0 0 var(--space-3);">{{ b.heading }}</h2>{% endif %}
+    <ul class="list-reset">
+      {% for item in b.items %}<li style="padding:6px 0; display:flex; gap:10px;"><i class="fa-solid fa-check" style="color:var(--accent); margin-top:4px;"></i><span>{{ item }}</span></li>{% endfor %}
+    </ul>
+  </div>
+
+  {% elif b.type == 'stats' %}
+  <div class="card" style="margin-bottom:var(--space-4); display:flex; gap:var(--space-5); flex-wrap:wrap; justify-content:space-around; text-align:center;">
+    {% for p in b.pairs %}<div><div style="font-size:30px; font-weight:800; color:var(--primary);">{{ p.a }}</div><div style="font-size:13px; color:var(--text-muted);">{{ p.b }}</div></div>{% endfor %}
+  </div>
+
+  {% elif b.type == 'quote' %}
+  <div class="card" style="margin-bottom:var(--space-4); border-left:4px solid var(--primary);">
+    <p style="font-size:17px; font-style:italic; margin:0 0 var(--space-2);">„{{ b.text }}"</p>
+    <p style="font-size:13px; color:var(--text-muted); margin:0;">— {{ b.author }}{% if b.role %}, {{ b.role }}{% endif %}</p>
+  </div>
+
+  {% elif b.type == 'faq' %}
+  <div class="card" style="margin-bottom:var(--space-4);">
+    {% if b.heading %}<h2 style="font-size:18px; margin:0 0 var(--space-3);">{{ b.heading }}</h2>{% endif %}
+    {% for p in b.pairs %}
+    <details style="padding:10px 0; border-bottom:1px solid var(--border-color);">
+      <summary style="cursor:pointer; font-weight:600;">{{ p.a }}</summary>
+      <p style="margin:8px 0 0; color:var(--text-muted); line-height:1.6;">{{ p.b }}</p>
+    </details>
+    {% endfor %}
+  </div>
+
+  {% elif b.type == 'image' %}
+  <figure style="margin:0 0 var(--space-4);">
+    <img src="{{ b.url }}" alt="{{ b.caption }}" style="width:100%; border-radius:var(--border-radius-lg); display:block;">
+    {% if b.caption %}<figcaption style="font-size:12px; color:var(--text-muted); margin-top:6px;">{{ b.caption }}</figcaption>{% endif %}
+  </figure>
+
+  {% elif b.type == 'contact' and b.person %}
+  <div class="card" style="display:flex; gap:var(--space-3); align-items:center; margin-bottom:var(--space-4);">
+    {% if b.person.photoUrl %}<img src="{{ b.person.photoUrl }}" alt="" style="width:56px; height:56px; border-radius:50%; object-fit:cover;">{% endif %}
+    <div>
+      <strong>{{ b.person.firstName }} {{ b.person.lastName }}</strong>
+      <p style="font-size:13px; color:var(--text-muted); margin:2px 0 0;">{{ b.person.globalJobTitle }}{% if b.person.phone %} · {{ b.person.phone }}{% endif %}{% if b.person.email %} · <a href="mailto:{{ b.person.email }}">{{ b.person.email }}</a>{% endif %}</p>
+    </div>
+  </div>
+
+  {% elif b.type == 'jobs' %}
+  <div style="margin-bottom:var(--space-4);">
+    {% if b.heading %}<h2 style="font-size:18px; margin:0 0 var(--space-3);">{{ b.heading }}</h2>{% endif %}
+    {% for job in b.job_list %}
+    <a href="{% url 'ats:job_detail' job.id %}" class="card" style="display:block; text-decoration:none; color:inherit; margin-bottom:var(--space-2);">
+      <strong>{{ job.title }}</strong>
+      <p style="font-size:13px; color:var(--text-muted); margin:4px 0 0;">{{ job.facility.name|default:"" }}{% if job.location %} · {{ job.location.name }}{% endif %}</p>
+    </a>
+    {% empty %}<p class="empty-state">Aktuell keine offenen Stellen.</p>{% endfor %}
+  </div>
+
+  {% elif b.type == 'cta' %}
+  <div class="card" style="margin-bottom:var(--space-4); text-align:center;">
+    {% if b.text %}<p style="font-size:16px; margin:0 0 var(--space-3);">{{ b.text }}</p>{% endif %}
+    <a href="{{ b.url }}" class="btn btn-primary" style="font-size:15px; padding:12px 26px;">{{ b.buttonLabel }}</a>
+  </div>
+  {% endif %}
+{% endfor %}

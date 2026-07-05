@@ -1,5 +1,7 @@
 #!/bin/bash
 # ==============================================================================
+# HINWEIS: Geht von PostgreSQL + pm2 aus. Fuer die aktuelle Django/Docker+SQLite-
+# Installation vor dem Ernstfall anpassen (siehe NORTHSTAR.md, offene Frage #3).
 # SecurATS - EMERGENCY DISASTER RECOVERY
 # ==============================================================================
 # WARNUNG: Dieses Skript löscht die aktuelle lokale Datenbank und 

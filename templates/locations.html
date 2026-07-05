@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Standorte · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap">
+  <h1 class="page-title"><i class="fa-solid fa-location-dot"></i> Standorte</h1>
+  <p class="page-lead">Standorte für Stellenausschreibungen und Zugriffsbereiche.</p>
+  <div class="card">
+    <form method="post" class="form-row" style="margin-bottom: var(--space-4);">
+      {% csrf_token %}
+      <input name="name" class="input" placeholder="Name" required>
+      <input name="address" class="input" placeholder="Adresse" style="flex:2;">
+      <input name="postalCode" class="input" placeholder="PLZ" style="max-width:110px;">
+      <input name="city" class="input" placeholder="Stadt">
+      <button type="submit" class="btn btn-primary">Hinzufügen</button>
+    </form>
+    <table class="data-table">
+      <thead><tr><th>Name</th><th>Adresse</th><th>PLZ / Stadt</th><th></th></tr></thead>
+      <tbody>
+      {% for l in locations %}
+        <tr>
+          <td><strong>{{ l.name }}</strong></td>
+          <td>{{ l.address|default:"–" }}</td>
+          <td>{{ l.postalCode|default:"" }} {{ l.city|default:"" }}</td>
+          <td style="text-align:right;"><form method="post" action="{% url 'ats:archive_location' l.id %}">{% csrf_token %}<button type="submit" class="btn-icon danger" title="Archivieren"><i class="fa-solid fa-box-archive"></i></button></form></td>
+        </tr>
+      {% empty %}<tr><td colspan="4" class="empty-state">Noch keine Standorte.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

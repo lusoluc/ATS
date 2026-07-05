@@ -1,0 +1,12 @@
+<div style="background:#111a2e;border:1px solid #1f2a44;border-radius:12px;padding:18px;margin-bottom:16px;">
+  <h3 style="color:#fff;margin:0 0 14px;font-size:16px;">{{ title }}</h3>
+  {% for label, count in rows %}
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <div style="width:170px;color:#cbd5e1;font-size:13px;">{{ label }}</div>
+      <div style="flex:1;background:#0d1526;border-radius:6px;overflow:hidden;">
+        <div style="height:20px;background:linear-gradient(90deg,#3b82f6,#60a5fa);width:{% widthratio count max 100 %}%;min-width:2px;"></div>
+      </div>
+      <div style="width:40px;text-align:right;color:#fff;font-weight:600;">{{ count }}</div>
+    </div>
+  {% empty %}<div style="color:#94a3b8;">Keine Daten.</div>{% endfor %}
+</div>

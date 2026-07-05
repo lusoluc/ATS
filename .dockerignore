@@ -11,6 +11,8 @@ env
 # Ignore Node.js / Frontend dependencies (extremely massive)
 node_modules
 **/node_modules
+# Stillgelegte Parallel-Stacks (Next.js + Express) – nicht ins Django-Image
+legacy
 frontend
 src
 dist

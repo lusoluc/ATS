@@ -1,0 +1,45 @@
+{% if brand %}
+<style id="brand-css">
+  /* Corporate Identity des Traegers – ueberschreibt die SecurATS-Tokens
+     NUR auf oeffentlichen Seiten. Kontrastfarben sind vorberechnet (WCAG). */
+  :root {
+    --primary: {{ brand.primary }};
+    --primary-light: {{ brand.primary }};
+    --primary-rgb: 0, 0, 0;
+    --accent: {{ brand.accent }};
+    --accent-light: {{ brand.accent }};
+    {% if brand.mode == 'LIGHT' %}
+    --bg-color: #f5f7fa;
+    --bg-gradient: linear-gradient(180deg, #ffffff 0%, #f5f7fa 100%);
+    --surface-color: #ffffff;
+    --surface-hover: #eef1f6;
+    --text-main: #1f2937;
+    --text-muted: #4b5563;
+    --glass-bg: rgba(255, 255, 255, 0.92);
+    --glass-border: rgba(15, 23, 42, 0.10);
+    --glass-glow: rgba(0, 0, 0, 0.04);
+    --border-color: rgba(15, 23, 42, 0.12);
+    --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.08);
+    --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.12);
+    {% endif %}
+  }
+  {% if brand.mode == 'LIGHT' %}
+  body { background: var(--bg-color); color: var(--text-main); }
+  .ambient-glow-1, .ambient-glow-2 { display: none; }
+  header { background: rgba(255,255,255,0.92); border-bottom-color: var(--border-color); }
+  .logo, .footer-logo { -webkit-text-fill-color: initial; background: none; color: var(--primary); }
+  footer { background: #ffffff; }
+  {% endif %}
+  .btn-cta, .btn-search, .btn-primary {
+    background: var(--primary) !important;
+    color: {{ brand.on_primary }} !important;
+    box-shadow: none;
+  }
+  .btn-cta:hover, .btn-search:hover, .btn-primary:hover {
+    background: {{ brand.primary_dark }} !important;
+  }
+  .badge-primary { background: {{ brand.primary }}1f; color: var(--primary); border-color: {{ brand.primary }}55; }
+  a { color: var(--primary); }
+  .nav-item a { color: var(--text-muted); }
+</style>
+{% endif %}

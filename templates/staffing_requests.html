@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+{% block title %}Personalbedarf · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap" style="max-width:900px;">
+  <h1 class="page-title"><i class="fa-solid fa-people-arrows"></i> Personalbedarf</h1>
+  <p class="page-lead">Bedarf strukturiert melden statt per Zuruf – Recruiting entscheidet nachvollziehbar und Sie sehen jederzeit den Stand.</p>
+
+  {% if can_admin_requisition %}
+  <div class="card" style="margin-bottom: var(--space-4); border-left:4px solid var(--primary);">
+    <h2 style="font-size:15px; margin:0 0 var(--space-1);"><i class="fa-solid fa-stamp"></i> Stellenfreigabe (optionaler Genehmigungsprozess)</h2>
+    <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--space-3);">Aktiviert = Pflicht: Ausschreibungen können nur noch aus genehmigtem Personalbedarf veröffentlicht werden. Zusätzlich kann jede Matrix-Regel unten für ihren Geltungsbereich Pflicht sein – auch ohne globalen Schalter.</p>
+    <form method="post" class="form-row">
+      {% csrf_token %}
+      <input type="hidden" name="form" value="requisition_settings">
+      <label style="display:flex; align-items:center; gap:8px; color:var(--text-main); font-size:14px;">
+        <input type="checkbox" name="required" value="1" {% if req_active %}checked{% endif %}> Prozess global aktiv (Pflicht)
+      </label>
+      <input type="text" name="chain" class="input" value="{{ req_chain_value }}" placeholder="Globale Kette, z. B. Bereichsleitung, Geschäftsführung" style="flex:2;">
+      <button type="submit" class="btn btn-primary">Speichern</button>
+    </form>
+  </div>
+
+  <div class="card" style="margin-bottom: var(--space-4);">
+    <h2 style="font-size:15px; margin:0 0 var(--space-1);"><i class="fa-solid fa-table-cells"></i> Routing-Matrix: Wer genehmigt was, mit welchem Formular?</h2>
+    <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--space-3);">Spezifischste Regel gewinnt (Einrichtung &gt; Abteilung &gt; Jobfamilie). Leere Dimension = „gilt für alle". Kette: Komma = nacheinander, „+" = parallel (alle müssen genehmigen), „(N)" am Gruppenende = Quorum (N von den Rollen genügen, z. B. „A + B + C (2)").</p>
+    <table class="data-table">
+      <thead><tr><th>Regel</th><th>Geltungsbereich</th><th>Genehmigungskette</th><th>Formular</th><th>Pflicht</th><th></th></tr></thead>
+      <tbody>
+        {% for rr in rule_rows %}
+        <tr>
+          <td>{{ rr.rule.name }}</td>
+          <td style="font-size:13px;">{{ rr.rule.facility.name|default:"Alle Einrichtungen" }} · {{ rr.rule.department.name|default:"alle Bereiche" }} · {{ rr.rule.jobFamily.name|default:"alle Kategorien" }}</td>
+          <td style="font-size:13px;">{{ rr.rule.chain }}</td>
+          <td style="font-size:13px;">
+            {% for i, q in rr.q_indexed %}
+            <span class="badge" title="{{ q.type }}">{{ q.question|truncatechars:28 }}
+              <form method="post" style="display:inline;">{% csrf_token %}<input type="hidden" name="form" value="rule_q_del"><input type="hidden" name="rule_id" value="{{ rr.rule.id }}"><input type="hidden" name="idx" value="{{ i }}"><button type="submit" class="btn-icon danger" style="padding:0 2px;" title="Frage entfernen" aria-label="Frage entfernen">×</button></form>
+            </span>
+            {% empty %}<span style="color:var(--text-muted);">Standardformular</span>{% endfor %}
+            <details style="margin-top:4px;">
+              <summary style="cursor:pointer; font-size:12px; color:var(--primary-light);">+ Frage</summary>
+              <form method="post" class="form-row" style="margin-top:6px;">
+                {% csrf_token %}
+                <input type="hidden" name="form" value="rule_q_add">
+                <input type="hidden" name="rule_id" value="{{ rr.rule.id }}">
+                <input type="text" name="q_question" class="input" placeholder="Frage, z. B. Welcher Tech-Stack?" required style="min-width:180px;">
+                <select name="q_type" class="input" style="max-width:130px;">
+                  <option value="TEXT">Freitext</option><option value="SELECT">Auswahl</option><option value="YES_NO">Ja/Nein</option>
+                </select>
+                <input type="text" name="q_options" class="input" placeholder="Optionen | getrennt" style="max-width:160px;">
+                <label style="font-size:12px; display:flex; align-items:center; gap:4px;"><input type="checkbox" name="q_mandatory" value="1" checked> Pflicht</label>
+                <button type="submit" class="btn btn-ghost" style="padding:6px 10px; font-size:12px;">Hinzufügen</button>
+              </form>
+            </details>
+          </td>
+          <td>{% if rr.rule.mandatory %}<span class="badge badge-danger">Pflicht</span>{% else %}<span class="badge">optional</span>{% endif %}</td>
+          <td><form method="post" onsubmit="return confirm('Regel löschen?');">{% csrf_token %}<input type="hidden" name="form" value="rule_delete"><input type="hidden" name="rule_id" value="{{ rr.rule.id }}"><button type="submit" class="btn-icon danger" title="Regel löschen" aria-label="Regel {{ rr.rule.name }} löschen"><i class="fa-solid fa-trash"></i></button></form></td>
+        </tr>
+        {% empty %}<tr><td colspan="6" class="empty-state">Noch keine Regeln – unten die erste anlegen.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+    <form method="post" class="form-row" style="margin-top: var(--space-3);">
+      {% csrf_token %}
+      <input type="hidden" name="form" value="rule_add">
+      <input type="text" name="name" class="input" placeholder="Regel-Name, z. B. Tech-Prozess IT" required style="min-width:160px;">
+      <select name="facility" class="input"><option value="">Alle Einrichtungen</option>{% for f in facilities %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}</select>
+      <select name="department" class="input"><option value="">alle Bereiche</option>{% for d in departments %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}</select>
+      <select name="job_family" class="input"><option value="">alle Kategorien</option>{% for jf in job_families %}<option value="{{ jf.id }}">{{ jf.name }}</option>{% endfor %}</select>
+      <input type="text" name="chain" class="input" placeholder="Kette: Bereichsleitung, Controlling + Betriebsrat (2), Geschäftsführung" required style="min-width:220px;">
+      <label style="font-size:12px; display:flex; align-items:center; gap:4px;"><input type="checkbox" name="mandatory" value="1" checked> Pflicht</label>
+      <button type="submit" class="btn btn-primary">Regel anlegen</button>
+    </form>
+  </div>
+  {% endif %}
+
+<div class="card">
+    <h2 style="font-size:16px; margin:0 0 var(--space-3);"><i class="fa-solid fa-plus" style="color:var(--accent-light);"></i> Bedarf melden</h2>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="form" value="create">
+      <div style="display:grid; grid-template-columns:2fr 1fr; gap:10px;">
+        <div class="field"><label for="sr-title">Was wird gebraucht? *</label>
+          <input id="sr-title" name="title" class="input" required placeholder="z. B. Pflegefachkraft Nachtdienst, Station 3"></div>
+        <div class="field"><label for="sr-headcount">Anzahl</label>
+          <input id="sr-headcount" name="headcount" type="number" class="input" value="1" min="1" max="99"></div>
+        <div class="field"><label for="sr-facility">Einrichtung *</label>
+          <select id="sr-facility" name="facility" class="input" required onchange="reloadScope()">
+            {% for f in facilities %}<option value="{{ f.id }}" {% if sel_fac and sel_fac.id == f.id %}selected{% endif %}>{{ f.name }}</option>{% endfor %}
+          </select></div>
+        <div class="field"><label for="sr-department">Bereich / Abteilung (optional)</label>
+          <select id="sr-department" name="department" class="input" onchange="reloadScope()">
+            <option value="">– keine Angabe –</option>
+            {% for d in departments %}<option value="{{ d.id }}" {% if sel_dep and sel_dep.id == d.id %}selected{% endif %}>{{ d.name }} ({{ d.facility.name }})</option>{% endfor %}
+          </select></div>
+        <div class="field"><label for="sr-family">Bereich</label>
+          <select id="sr-family" name="job_family" class="input" onchange="reloadScope()">
+            <option value="">–</option>
+            {% for jf in job_families %}<option value="{{ jf.id }}" {% if sel_fam and sel_fam.id == jf.id %}selected{% endif %}>{{ jf.name }}</option>{% endfor %}
+          </select></div>
+        <div class="field"><label for="sr-start">Gewünschter Start</label>
+          <input id="sr-start" name="desired_start" type="date" class="input"></div>
+      </div>
+      <div class="field"><label for="sr-just">Begründung * (Was passiert, wenn die Stelle unbesetzt bleibt?)</label>
+        <textarea id="sr-just" name="justification" class="textarea" rows="3" required placeholder="z. B. Nachtdienste seit März nur mit Leasingkräften abgedeckt – Mehrkosten ca. 8 T€/Monat, Team am Limit."></textarea></div>
+      {% if form_questions %}
+      <div style="border-top:1px solid var(--border-color); padding-top:10px; margin-top:6px;">
+        <p style="font-size:13px; color:var(--text-muted); margin:0 0 8px;"><i class="fa-solid fa-route"></i> Regel „{{ form_rule.name }}" verlangt zusätzliche Angaben:</p>
+        {% for q in form_questions %}
+        <div class="field">
+          <label for="rq_{{ q.id }}">{{ q.question }}{% if q.isMandatory %} *{% endif %}</label>
+          {% if q.type == 'TEXT' %}
+          <textarea id="rq_{{ q.id }}" name="rq_{{ q.id }}" class="textarea" rows="2" {% if q.isMandatory %}required{% endif %}></textarea>
+          {% elif q.type == 'SELECT' %}
+          <select id="rq_{{ q.id }}" name="rq_{{ q.id }}" class="input" {% if q.isMandatory %}required{% endif %}>
+            <option value="">– wählen –</option>
+            {% for o in q.options %}<option value="{{ o }}">{{ o }}</option>{% endfor %}
+          </select>
+          {% else %}
+          <select id="rq_{{ q.id }}" name="rq_{{ q.id }}" class="input" {% if q.isMandatory %}required{% endif %}>
+            <option value="">– wählen –</option><option value="JA">Ja</option><option value="NEIN">Nein</option>
+          </select>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Bedarf melden</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:16px; margin:0 0 var(--space-3);">Meine Meldungen</h2>
+    <table class="data-table"><thead><tr><th>Bedarf</th><th>Einrichtung</th><th>Status</th><th>Anmerkung</th></tr></thead><tbody>
+      {% for row in my_rows %}{% with r=row.req %}
+      <tr><td>{{ r.title }} ({{ r.headcount }}×){% if r.desiredStart %}<br><span style="color:var(--text-muted); font-size:12px;">ab {{ r.desiredStart|date:"d.m.Y" }}</span>{% endif %}</td>
+          <td>{{ r.facility.name }}</td>
+          <td><span class="badge {% if r.status == 'ACCEPTED' or r.status == 'CONVERTED' %}badge-accent{% elif r.status == 'DECLINED' %}badge-danger{% endif %}">{{ r.get_status_display }}</span></td>
+          <td style="color:var(--text-muted); font-size:13px;">{{ r.decisionNote|default:"–" }}</td></tr>
+      {% if row.steps %}
+      <tr><td colspan="4" style="padding-top:0;">
+        <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+          {% for st in row.steps %}
+          <span class="badge {% if st.status == 'APPROVED' %}badge-accent{% elif st.status == 'REJECTED' or st.status == 'RETURNED' %}badge-danger{% endif %}" title="{{ st.comment }}">{{ st.order }}. {{ st.role }}{% if st.status == 'APPROVED' %} ✓{% elif st.status == 'RETURNED' %} ↩{% elif st.status == 'REJECTED' %} ✕{% endif %}{% if st.decidedBy %} · {{ st.decidedBy.get_full_name|default:st.decidedBy.username }}{% if st.viaDelegation %} <em title="in Vertretung entschieden">i. V.</em>{% endif %}{% endif %}</span>
+          {% endfor %}
+        </div>
+        {% if row.can_decide %}
+        <form method="post" class="form-row" style="margin-top:8px;">
+          {% csrf_token %}
+          <input type="hidden" name="form" value="step_decide">
+          <input type="hidden" name="step_id" value="{{ row.current.id }}">
+          {% if row.due_count > 1 %}<span class="badge" title="Parallele Stufe: alle Rollen dieser Stufe müssen genehmigen">{{ row.due_count }} parallel fällig</span>{% endif %}
+            <input type="text" name="comment" class="input" placeholder="Kommentar (bei Rückgabe bitte begründen)" style="flex:2;">
+          <button type="submit" name="decision" value="approve" class="btn btn-primary" style="padding:7px 14px;">Genehmigen</button>
+          <button type="submit" name="decision" value="return" class="btn btn-ghost" style="padding:7px 14px;">Zur Nachbesserung</button>
+          <button type="submit" name="decision" value="reject" class="btn btn-ghost" style="padding:7px 14px; color:var(--danger-light);" onclick="return confirm('Endgültig ablehnen?');">Ablehnen</button>
+        </form>
+        {% endif %}
+        {% if row.can_resubmit %}
+        <form method="post" style="margin-top:8px;">
+          {% csrf_token %}
+          <input type="hidden" name="form" value="resubmit">
+          <input type="hidden" name="request_id" value="{{ r.id }}">
+          <textarea name="justification" class="textarea" rows="2" placeholder="Nachgebesserte Begründung">{{ r.justification }}</textarea>
+          <button type="submit" class="btn btn-primary" style="margin-top:6px; padding:7px 14px;">Erneut einreichen</button>
+        </form>
+        {% endif %}
+      </td></tr>
+      {% endif %}
+      {% endwith %}
+      {% empty %}<tr><td colspan="4" class="empty-state">Noch keine Meldungen.</td></tr>
+      {% endfor %}
+    </tbody></table>
+  </div>
+
+  {% if show_inbox %}
+  <div class="card">
+    <h2 style="font-size:16px; margin:0 0 var(--space-3);"><i class="fa-solid fa-inbox" style="color:var(--primary-light);"></i> Eingegangene Meldungen</h2>
+    <table class="data-table"><thead><tr><th>Bedarf</th><th>Von</th><th>Begründung</th><th>Aktion</th></tr></thead><tbody>
+      {% for row in inbox_rows %}{% with r=row.req %}
+      <tr>
+        <td>{{ r.title }} ({{ r.headcount }}×)<br><span style="color:var(--text-muted); font-size:12px;">{{ r.facility.name }}{% if r.jobFamily %} · {{ r.jobFamily.name }}{% endif %}{% if r.desiredStart %} · ab {{ r.desiredStart|date:"d.m.Y" }}{% endif %}</span></td>
+        <td style="font-size:13px;">{{ r.requestedBy.get_full_name|default:r.requestedBy.username|default:"–" }}<br><span style="color:var(--text-muted); font-size:12px;">{{ r.createdAt|date:"d.m.Y" }}</span></td>
+        <td style="color:var(--text-muted); font-size:13px; max-width:280px;">{{ r.justification|truncatechars:160 }}{% if row.answers %}<details style="margin-top:4px;"><summary style="cursor:pointer; font-size:12px; color:var(--primary-light);">Formular-Angaben</summary>{% for k, v in row.answers %}<div style="font-size:12px; margin-top:2px;"><strong>{{ k }}:</strong> {{ v }}</div>{% endfor %}</details>{% endif %}</td>
+        <td style="white-space:nowrap;">
+          {% if r.status == 'OPEN' %}
+          <form method="post" style="display:flex; gap:6px; flex-direction:column;">
+            {% csrf_token %}
+            <input type="hidden" name="form" value="decide">
+            <input type="hidden" name="request_id" value="{{ r.id }}">
+            <input type="text" name="note" class="input" placeholder="Anmerkung (optional)" style="padding:6px 8px; font-size:12px;">
+            <div style="display:flex; gap:6px;">
+              <button type="submit" name="decision" value="ACCEPTED" class="btn btn-primary" style="padding:6px 10px; font-size:12px;">Annehmen</button>
+              <button type="submit" name="decision" value="DECLINED" class="btn btn-ghost" style="padding:6px 10px; font-size:12px;">Ablehnen</button>
+            </div>
+          </form>
+          {% elif r.status == 'ACCEPTED' %}
+          <form method="post" style="display:flex; gap:6px; flex-direction:column;">
+            {% csrf_token %}
+            <input type="hidden" name="form" value="convert">
+            <input type="hidden" name="request_id" value="{{ r.id }}">
+            <select name="location" class="input" required style="padding:6px 8px; font-size:12px;">
+              <option value="">Standort wählen …</option>
+              {% for l in locations %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary" style="padding:6px 10px; font-size:12px;"><i class="fa-solid fa-file-circle-plus"></i> Als Entwurf anlegen</button>
+          </form>
+          {% elif r.status == 'CONVERTED' and r.convertedJob %}
+          <span class="badge badge-accent">Ausschreibung erstellt</span><br>
+          <a href="{% url 'ats:dashboard' %}" style="font-size:12px; color:var(--primary-light);">Im Dashboard bearbeiten →</a>
+          {% else %}<span class="badge {% if r.status == 'ACCEPTED' or r.status == 'CONVERTED' %}badge-accent{% elif r.status == 'DECLINED' %}badge-danger{% endif %}">{{ r.get_status_display }}</span>{% endif %}
+        </td>
+      </tr>
+      {% if row.steps %}
+      <tr><td colspan="4" style="padding-top:0;">
+        <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+          {% for st in row.steps %}<span class="badge {% if st.status == 'APPROVED' %}badge-accent{% elif st.status == 'REJECTED' or st.status == 'RETURNED' %}badge-danger{% endif %}" title="{{ st.comment }}">{{ st.order }}. {{ st.role }}{% if st.status == 'APPROVED' %} ✓{% elif st.status == 'RETURNED' %} ↩{% elif st.status == 'REJECTED' %} ✕{% endif %}{% if st.decidedBy %} · {{ st.decidedBy.get_full_name|default:st.decidedBy.username }}{% if st.viaDelegation %} <em title="in Vertretung entschieden">i. V.</em>{% endif %}{% endif %}</span>{% endfor %}
+        </div>
+        {% if row.can_decide %}
+        <form method="post" class="form-row" style="margin-top:8px;">
+          {% csrf_token %}
+          <input type="hidden" name="form" value="step_decide">
+          <input type="hidden" name="step_id" value="{{ row.current.id }}">
+          {% if row.due_count > 1 %}<span class="badge" title="Parallele Stufe: alle Rollen dieser Stufe müssen genehmigen">{{ row.due_count }} parallel fällig</span>{% endif %}
+            <input type="text" name="comment" class="input" placeholder="Kommentar (bei Rückgabe bitte begründen)" style="flex:2;">
+          <button type="submit" name="decision" value="approve" class="btn btn-primary" style="padding:7px 14px;">Genehmigen</button>
+          <button type="submit" name="decision" value="return" class="btn btn-ghost" style="padding:7px 14px;">Zur Nachbesserung</button>
+          <button type="submit" name="decision" value="reject" class="btn btn-ghost" style="padding:7px 14px; color:var(--danger-light);" onclick="return confirm('Endgültig ablehnen?');">Ablehnen</button>
+        </form>
+        {% endif %}
+      </td></tr>
+      {% endif %}
+      {% endwith %}
+      {% empty %}<tr><td colspan="4" class="empty-state">Keine Meldungen.</td></tr>
+      {% endfor %}
+
+    </tbody></table>
+    <p style="font-size:12px; color:var(--text-muted); margin-top:var(--space-2);">„Als Entwurf anlegen" erzeugt eine unveröffentlichte Ausschreibung mit den Bedarfsdaten (die interne Begründung bleibt intern). Vervollständigen und veröffentlichen Sie den Entwurf im Dashboard – der Prozess-Berater schlägt dort passende Screening-Fragen vor. Bei zustimmungspflichtigen Einrichtungen öffnet sich das Freigabe-Gate automatisch.</p>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+function reloadScope() {
+  const p = new URLSearchParams();
+  const f = document.getElementById('sr-facility').value;
+  const d = document.getElementById('sr-department').value;
+  const j = document.querySelector('[name="job_family"]').value;
+  if (f) p.set('facility', f); if (d) p.set('department', d); if (j) p.set('job_family', j);
+  window.location.search = p.toString();
+}
+</script>
+{% endblock %}

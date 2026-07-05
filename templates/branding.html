@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Erscheinungsbild · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap" style="max-width:820px;">
+  <h1 class="page-title"><i class="fa-solid fa-palette"></i> Erscheinungsbild (CI des Trägers)</h1>
+  <p class="page-lead">Wirkt auf die <strong>Bewerberseiten</strong> (Stellenbörse, Bewerbungsstrecke, Portal, Inhaltsseiten). Das Recruiter-ATS behält die SecurATS-Identität. Kontrastfarben werden automatisch berechnet (WCAG).</p>
+  {% if org %}
+  <div class="card" style="margin-bottom: var(--space-3);">
+    <h2 style="font-size:15px; margin:0 0 var(--space-2);">Von der Unternehmens-Website übernehmen</h2>
+    <form method="post" class="form-row">
+      {% csrf_token %}
+      <input type="hidden" name="form" value="import">
+      <input type="url" name="website" class="input" placeholder="https://www.ihr-traeger.de" value="{{ suggestion.website|default:'' }}" required>
+      <button type="submit" class="btn btn-primary">Analysieren</button>
+    </form>
+    {% if suggestion %}
+      {% if suggestion.error %}<p class="field-error" style="margin-top:8px;">{{ suggestion.error }}</p>
+      {% else %}
+      <p style="font-size:13px; color:var(--text-muted); margin:10px 0 4px;">Gefundene Vorschläge – unten übernommen, bitte prüfen und speichern:</p>
+      <ul class="list-reset" style="font-size:13px;">
+        <li>Primärfarbe: {% if suggestion.primary %}<span style="display:inline-block; width:14px; height:14px; border-radius:3px; background:{{ suggestion.primary }}; vertical-align:-2px;"></span> <code>{{ suggestion.primary }}</code>{% else %}– (Website liefert kein theme-color; bitte manuell setzen){% endif %}</li>
+        <li>Logo-Kandidat: {% if suggestion.logo %}<code style="word-break:break-all;">{{ suggestion.logo }}</code>{% else %}–{% endif %}</li>
+        <li>Bildvorschlag: {% if suggestion.hero %}<code style="word-break:break-all;">{{ suggestion.hero }}</code>{% else %}–{% endif %}</li>
+      </ul>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <form method="post">
+      {% csrf_token %}
+      <label style="display:flex; gap:8px; align-items:center; margin-bottom:var(--space-3); font-size:14px;">
+        <input type="checkbox" name="enabled" value="1" {% if org.brandEnabled %}checked{% endif %}> Branding auf Bewerberseiten aktivieren
+      </label>
+      <div class="form-row" style="margin-bottom:var(--space-3);">
+        <div class="field" style="flex:1;">
+          <label>Primärfarbe</label>
+          <input type="color" name="primary" value="{{ suggestion.primary|default:org.brandPrimary }}" style="width:100%; height:42px; padding:2px; border:1px solid var(--border-color); border-radius:var(--border-radius-sm); background:transparent;">
+        </div>
+        <div class="field" style="flex:1;">
+          <label>Akzentfarbe (leer = automatisch)</label>
+          <input type="text" name="accent" class="input" value="{{ org.brandAccent }}" placeholder="#0aa …">
+        </div>
+        <div class="field" style="flex:1;">
+          <label>Grundton</label>
+          <select name="mode" class="input">
+            <option value="LIGHT" {% if org.brandMode == 'LIGHT' %}selected{% endif %}>Hell (Standard der CI-Analyse)</option>
+            <option value="DARK" {% if org.brandMode == 'DARK' %}selected{% endif %}>Dunkel (SecurATS-Optik behalten)</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Logo-URL (oben links auf allen Bewerberseiten; Upload unter „Medien")</label>
+        <input type="text" name="logo_url" class="input" value="{{ suggestion.logo|default:org.brandLogoUrl }}"></div>
+      <div class="field"><label>Bild-URL für die Startseite (Bildsprache: Menschen/Haus, optional)</label>
+        <input type="text" name="hero_url" class="input" value="{{ suggestion.hero|default:org.brandHeroUrl }}"></div>
+      <button type="submit" class="btn btn-primary">Speichern</button>
+    </form>
+  </div>
+
+  {% if preview %}
+  <div class="card" style="margin-top:var(--space-3);">
+    <h2 style="font-size:15px; margin:0 0 var(--space-2);">Vorschau</h2>
+    <div style="border-radius:12px; overflow:hidden; border:1px solid var(--border-color);">
+      <div style="background:{% if preview.mode == 'LIGHT' %}#ffffff{% else %}#0b0d19{% endif %}; padding:14px 18px; display:flex; justify-content:space-between; align-items:center;">
+        {% if preview.logo %}<img src="{{ preview.logo }}" alt="Logo" style="height:26px;">{% else %}<strong style="color:{{ preview.primary }};">{{ preview.name }}</strong>{% endif %}
+        <span style="background:{{ preview.primary }}; color:{{ preview.on_primary }}; padding:7px 14px; border-radius:8px; font-size:13px; font-weight:600;">Jetzt bewerben</span>
+      </div>
+      <div style="background:{% if preview.mode == 'LIGHT' %}#f5f7fa{% else %}#151833{% endif %}; padding:16px 18px; font-size:13px; color:{% if preview.mode == 'LIGHT' %}#1f2937{% else %}#f3f4f6{% endif %};">
+        Pflegefachkraft (m/w/d) · <a style="color:{{ preview.primary }};">Details ansehen</a> · Textfarbe auf Primär: automatisch {{ preview.on_primary }}
+      </div>
+    </div>
+    <p style="font-size:12px; color:var(--text-muted); margin-top:8px;">Live prüfen: <a href="{% url 'ats:job_list' %}" target="_blank" style="color:var(--primary-light);">Stellenbörse öffnen</a></p>
+  </div>
+  {% endif %}
+  {% else %}<div class="card"><p class="empty-state">Noch keine Organisation angelegt.</p></div>{% endif %}
+</div>
+{% endblock %}

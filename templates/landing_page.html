@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}{{ lp.headline|default:lp.name }} · Karriere{% endblock %}
+{% block content %}
+<div style="max-width:860px; margin:0 auto;">
+  {% if expired %}
+  <div class="card" style="text-align:center; padding: var(--space-8) var(--space-5);">
+    <h1 style="font-size:26px; margin:0 0 var(--space-2);">Diese Aktion ist beendet</h1>
+    <p style="color:var(--text-muted); margin:0 0 var(--space-5);">Die Kampagne „{{ lp.headline|default:lp.name }}" ist abgeschlossen – aber wir suchen weiterhin Verstärkung.</p>
+    <a href="{% url 'ats:job_list' %}" class="btn btn-primary">Zu unseren offenen Stellen</a>
+  </div>
+  {% else %}
+  {% if lp.heroUrl or brand.hero %}
+  <div style="border-radius: var(--border-radius-lg); overflow:hidden; margin-bottom: var(--space-5); max-height:320px;">
+    <img src="{{ lp.heroUrl|default:brand.hero }}" alt="" style="width:100%; height:100%; object-fit:cover; display:block;">
+  </div>
+  {% endif %}
+  <h1 style="font-size:30px; margin:0 0 var(--space-2);">{{ lp.headline|default:lp.name }}</h1>
+  {% if lp.introText %}<p style="font-size:16px; color:var(--text-muted); margin:0 0 var(--space-5); white-space:pre-line;">{{ lp.introText }}</p>{% endif %}
+
+  {% if lp.contactPerson %}
+  <div class="card" style="display:flex; gap:var(--space-3); align-items:center; margin-bottom: var(--space-5);">
+    {% if lp.contactPerson.photoUrl %}<img src="{{ lp.contactPerson.photoUrl }}" alt="" style="width:56px; height:56px; border-radius:50%; object-fit:cover;">{% endif %}
+    <div>
+      <strong>{{ lp.contactPerson.firstName }} {{ lp.contactPerson.lastName }}</strong>
+      <p style="font-size:13px; color:var(--text-muted); margin:2px 0 0;">{{ lp.contactPerson.globalJobTitle }}{% if lp.contactPerson.phone %} · {{ lp.contactPerson.phone }}{% endif %}{% if lp.contactPerson.email %} · <a href="mailto:{{ lp.contactPerson.email }}">{{ lp.contactPerson.email }}</a>{% endif %}</p>
+      {% if lp.contactPerson.quote %}<p style="font-size:13px; font-style:italic; margin:4px 0 0;">„{{ lp.contactPerson.quote }}"</p>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% include 'includes/content_blocks.html' %}
+
+  <h2 style="font-size:18px; margin:0 0 var(--space-3);">{{ jobs|length }} offene Stelle{{ jobs|length|pluralize:"n" }}</h2>
+  {% for job in jobs %}
+  <a href="{% url 'ats:job_detail' job.id %}" class="card" style="display:block; text-decoration:none; color:inherit; margin-bottom: var(--space-3);">
+    <strong style="font-size:16px;">{{ job.title }}</strong>
+    <p style="font-size:13px; color:var(--text-muted); margin:4px 0 0;">
+      {{ job.facility.name|default:"" }}{% if job.location %} · {{ job.location.name }}{% endif %}
+    </p>
+  </a>
+  {% empty %}
+  <div class="card"><p class="empty-state">Aktuell keine passenden Stellen – schauen Sie gern in die <a href="/jobs/">gesamte Stellenbörse</a>.</p></div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

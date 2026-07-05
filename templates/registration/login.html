@@ -1,0 +1,51 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anmeldung · SecurATS</title>
+    <style>
+        :root { --bg:#0b1220; --card:#111a2e; --accent:#3b82f6; --text:#e5e7eb; --muted:#94a3b8; --border:#1f2a44; }
+        * { box-sizing:border-box; }
+        body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+               background:radial-gradient(1200px 600px at 50% -10%, #16233f 0%, var(--bg) 60%);
+               color:var(--text); font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+        .card { width:100%; max-width:380px; background:var(--card); border:1px solid var(--border);
+                border-radius:16px; padding:32px; box-shadow:0 20px 60px rgba(0,0,0,.45); }
+        .brand { font-weight:700; font-size:20px; margin:0 0 4px; }
+        .sub { color:var(--muted); font-size:13px; margin:0 0 24px; }
+        label { display:block; font-size:13px; color:var(--muted); margin:14px 0 6px; }
+        input { width:100%; padding:11px 12px; background:#0d1526; border:1px solid var(--border);
+                border-radius:9px; color:var(--text); font-size:14px; }
+        input:focus { outline:none; border-color:var(--accent); }
+        button { width:100%; margin-top:22px; padding:12px; background:var(--accent); color:#fff;
+                 border:none; border-radius:9px; font-size:15px; font-weight:600; cursor:pointer; }
+        button:hover { filter:brightness(1.08); }
+        .error { background:#3b1220; border:1px solid #7f1d1d; color:#fecaca; padding:10px 12px;
+                 border-radius:9px; font-size:13px; margin-bottom:8px; }
+        .foot { margin-top:18px; text-align:center; font-size:12px; color:var(--muted); }
+        a { color:var(--accent); text-decoration:none; }
+    </style>
+</head>
+<body>
+    <form class="card" method="post" action="{% url 'ats:login' %}">
+        {% csrf_token %}
+        <h1 class="brand">SecurATS</h1>
+        <p class="sub">Interne Anmeldung – Recruiter &amp; Admin</p>
+
+        {% if form.errors %}
+            <div class="error">Anmeldung fehlgeschlagen. Bitte Benutzername und Passwort prüfen.</div>
+        {% endif %}
+
+        <label for="id_username">Benutzername</label>
+        {{ form.username }}
+        <label for="id_password">Passwort</label>
+        {{ form.password }}
+
+        <input type="hidden" name="next" value="{{ next }}">
+        <button type="submit">Anmelden</button>
+        <p class="foot"><a href="{% url 'ats:home' %}">← Zurück zum Karriereportal</a></p>
+    </form>
+</body>
+</html>

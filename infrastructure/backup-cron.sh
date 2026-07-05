@@ -1,5 +1,8 @@
 #!/bin/bash
 # ==============================================================================
+# HINWEIS: Dieses Skript geht von einer PostgreSQL-Produktions-DB aus (pg_dump).
+# Die aktuelle Standard-Installation nutzt SQLite (shared/dev.db). Vor Produktivbetrieb
+# an die gewaehlte Ziel-DB anpassen (siehe NORTHSTAR.md, offene Frage #3).
 # SecurATS - Automated Vault Backup (Cronjob)
 # ==============================================================================
 # Sichert die PostgreSQL-Datenbank und alle hochgeladenen Dokumente (CVs).

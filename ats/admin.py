@@ -19,7 +19,8 @@ class OrganizationAdmin(admin.ModelAdmin):
 
 @admin.register(Facility)
 class FacilityAdmin(admin.ModelAdmin):
-    list_display = ('name', 'organization', 'createdAt')
+    list_editable = ('requiresApproval', 'approvalChain')
+    list_display = ('name', 'organization', 'createdAt', 'requiresApproval', 'approvalChain')
     search_fields = ('name', 'organization__name')
 
 @admin.register(FacilityProfile)
@@ -60,7 +61,8 @@ class ApplicantAdmin(admin.ModelAdmin):
 class ApplicationAdmin(admin.ModelAdmin):
     list_display = ('applicant', 'jobPosting', 'status', 'aiScore', 'createdAt')
     list_filter = ('status', 'aiScore')
-    search_fields = ('applicant__email', 'jobPosting__title')
+    # applicant__email ist verschlüsselt (kein Substring-Match möglich) -> nur Titel-Suche
+    search_fields = ('jobPosting__title',)
 
 # 4. Slots & CMS
 @admin.register(InterviewSlot)
@@ -105,3 +107,23 @@ admin.site.register(ScreeningQuestion)
 admin.site.register(RoleDelegation)
 admin.site.register(AuditLog)
 admin.site.register(AILearningSample)
+
+
+# BOLA UserScope – Zuweisung erlaubter Standorte/Einrichtungen je Auth-User
+from .models import UserScope
+
+@admin.register(UserScope)
+class UserScopeAdmin(admin.ModelAdmin):
+    list_display = ('user', 'full_access', 'createdAt')
+    list_filter = ('full_access',)
+    search_fields = ('user__username',)
+    filter_horizontal = ('locations', 'facilities')
+
+
+from .models import ApplicationDocument
+
+@admin.register(ApplicationDocument)
+class ApplicationDocumentAdmin(admin.ModelAdmin):
+    list_display = ('name', 'application', 'docType', 'createdAt')
+    search_fields = ('name',)
+    list_filter = ('docType',)

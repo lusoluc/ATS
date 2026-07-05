@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Landingpages · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap" style="max-width:980px;">
+  <h1 class="page-title"><i class="fa-solid fa-flag"></i> Kampagnen-Landingpages</h1>
+  <p class="page-lead">Eigene Seite je Messe, Einrichtung, Abteilung oder Aktion unter <code>/k/&lt;name&gt;/</code> – mit eigener Ansprache, passenden Stellen und eingebauter Messung (der Seiten-Name ist die Quelle). Träger-Branding wirkt automatisch.</p>
+
+  <div class="card" style="margin-bottom: var(--space-4);">
+    <h2 style="font-size:15px; margin:0 0 var(--space-2);">Neue Landingpage</h2>
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-row" style="margin-bottom:var(--space-2);">
+        <input type="text" name="name" class="input" placeholder="Name, z. B. Jobmesse Hamburg 09/2026" required>
+        <input type="text" name="headline" class="input" placeholder="Überschrift auf der Seite (optional)">
+      </div>
+      <div class="field"><textarea name="intro_text" class="textarea" rows="2" placeholder="Begrüßungstext – warum lohnt sich diese Einrichtung/dieser Bereich?"></textarea></div>
+      <div class="form-row" style="margin-bottom:var(--space-2);">
+        <select name="facility" class="input"><option value="">Einrichtung: alle</option>{% for f in facilities %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}</select>
+        <select name="department" class="input"><option value="">Abteilung: alle</option>{% for d in departments %}<option value="{{ d.id }}">{{ d.name }} ({{ d.facility.name }})</option>{% endfor %}</select>
+        <select name="job_family" class="input"><option value="">Jobfamilie: alle</option>{% for f in families %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}</select>
+        <select name="location" class="input"><option value="">Standort: alle</option>{% for l in locations %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}</select>
+      </div>
+      <div class="form-row" style="margin-bottom:var(--space-2);">
+        <select name="contact_person" class="input"><option value="">Ansprechperson (optional)</option>{% for c in contacts %}<option value="{{ c.id }}">{{ c.firstName }} {{ c.lastName }}</option>{% endfor %}</select>
+        <input type="text" name="hero_url" class="input" placeholder="Bild-URL (optional, sonst Branding-Bild)">
+      </div>
+      <label style="display:flex; gap:8px; align-items:center; font-size:14px; margin-bottom:var(--space-2);"><input type="checkbox" name="active" value="1" checked> Aktiv</label>
+      <button type="submit" class="btn btn-primary">Anlegen</button>
+    </form>
+  </div>
+
+  {% for r in rows %}
+  <div class="card" style="margin-bottom: var(--space-3);">
+    <div style="display:flex; gap: var(--space-4); flex-wrap:wrap;">
+      <img src="{{ r.qr }}" alt="QR {{ r.lp.name }}" style="width:110px; height:110px; background:#fff; padding:6px; border-radius:8px;">
+      <div style="flex:1; min-width:280px;">
+        <h2 style="font-size:16px; margin:0;">{{ r.lp.name }} {% if not r.lp.active %}<span class="badge badge-danger">inaktiv</span>{% endif %}{% if r.lp.is_expired %}<span class="badge badge-danger" title="Besucher sehen die Endseite mit Verweis auf die Stellenbörse"><i class="fa-solid fa-hourglass-end"></i> Kampagne beendet</span>{% endif %}</h2>
+        <p style="font-size:12px; color:var(--text-muted); margin:2px 0 var(--space-2);">
+          Scope: {{ r.lp.facility.name|default:"alle Einrichtungen" }} · {{ r.lp.department.name|default:"alle Abteilungen" }} · {{ r.lp.jobFamily.name|default:"alle Familien" }} · {{ r.lp.location.name|default:"alle Standorte" }}
+        </p>
+        <code style="font-size:12px; word-break:break-all; display:block; background:var(--surface-hover); padding:6px 10px; border-radius:8px;">{{ r.link }}</code>
+        <div style="display:flex; gap: var(--space-4); margin-top: var(--space-2); flex-wrap:wrap;">
+          <div><strong style="font-size:20px;">{{ r.lp.views }}</strong><span style="display:block; font-size:11px; color:var(--text-muted);">Aufrufe</span></div>
+          <div><strong style="font-size:20px;">{{ r.apps }}</strong><span style="display:block; font-size:11px; color:var(--text-muted);">Bewerbungen</span></div>
+          <div><strong style="font-size:20px;">{% if r.app_rate is not None %}{{ r.app_rate }}&nbsp;%{% else %}–{% endif %}</strong><span style="display:block; font-size:11px; color:var(--text-muted);">Bewerbungs-Quote</span></div>
+          <div><strong style="font-size:20px;">{{ r.invited }}</strong><span style="display:block; font-size:11px; color:var(--text-muted);">eingeladen</span></div>
+          <div><strong style="font-size:20px;">{% if r.invite_rate is not None %}{{ r.invite_rate }}&nbsp;%{% else %}–{% endif %}</strong><span style="display:block; font-size:11px; color:var(--text-muted);">Einladungsquote</span></div>
+          <div><strong style="font-size:20px; color:#22c55e;">{{ r.hired }}</strong><span style="display:block; font-size:11px; color:var(--text-muted);">eingestellt</span></div>
+        </div>
+        <form method="post" class="form-row" style="margin-top:var(--space-2); max-width:420px;">
+          {% csrf_token %}
+          <input type="hidden" name="form" value="expiry">
+          <input type="hidden" name="expiry_lp_id" value="{{ r.lp.id }}">
+          <input type="date" name="expires" class="input" value="{{ r.lp.expiresAt|date:'Y-m-d' }}" title="Kampagnen-Ende (leer = unbegrenzt)">
+          <button type="submit" class="btn btn-ghost" style="padding:6px 12px; font-size:12px;">Ablauf speichern</button>
+        </form>
+        <form method="post" style="margin-top:var(--space-2); display:flex; gap:8px; align-items:center;">
+          {% csrf_token %}
+          <input type="hidden" name="lp_id" value="{{ r.lp.id }}">
+          <input type="hidden" name="name" value="{{ r.lp.name }}">
+          <input type="hidden" name="headline" value="{{ r.lp.headline }}">
+          <input type="hidden" name="intro_text" value="{{ r.lp.introText }}">
+          <input type="hidden" name="hero_url" value="{{ r.lp.heroUrl }}">
+          <input type="hidden" name="facility" value="{{ r.lp.facility_id|default:'' }}">
+          <input type="hidden" name="department" value="{{ r.lp.department_id|default:'' }}">
+          <input type="hidden" name="job_family" value="{{ r.lp.jobFamily_id|default:'' }}">
+          <input type="hidden" name="location" value="{{ r.lp.location_id|default:'' }}">
+          <input type="hidden" name="contact_person" value="{{ r.lp.contactPerson_id|default:'' }}">
+          {% if r.lp.active %}
+          <button type="submit" class="btn btn-ghost" style="padding:6px 12px; font-size:12px;">Deaktivieren</button>
+          {% else %}
+          <input type="hidden" name="active" value="1">
+          <button type="submit" class="btn btn-primary" style="padding:6px 12px; font-size:12px;">Aktivieren</button>
+          {% endif %}
+          <a href="{{ r.link }}" target="_blank" style="font-size:12px;">Seite ansehen</a>
+          <a href="{% url 'ats:blocks_editor' kind='landing' obj_id=r.lp.id %}" style="font-size:12px;"><i class="fa-solid fa-cubes"></i> Baukasten</a>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% empty %}<div class="card"><p class="empty-state">Noch keine Landingpage.</p></div>{% endfor %}
+</div>
+{% endblock %}

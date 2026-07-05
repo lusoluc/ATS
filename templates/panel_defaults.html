@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Gremien-Defaults · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap" style="max-width:900px;">
+  <h1 class="page-title"><i class="fa-solid fa-users-rectangle"></i> Sichtungs-Gremien – Defaults</h1>
+  <p class="page-lead">Vererbungs-Leiter: <strong>Stelle &gt; Abteilung &gt; Einrichtung &gt; Standort &gt; Jobfamilie &gt; Organisation</strong>. Die spezifischste besetzte Ebene gewinnt komplett. „Bewusst kein Gremium" unterbricht die Vererbung (z. B. Firmen-Default für alle, Aushilfsstellen ohne Gremium). Jede Änderung ist auditiert.</p>
+  {% for title, rows in sections %}
+  <div class="card" style="margin-bottom: var(--space-3);">
+    <h2 style="font-size:15px; margin:0 0 var(--space-2);">{{ title }}</h2>
+    {% for r in rows %}
+    <details style="margin-bottom: var(--space-2);">
+      <summary style="cursor:pointer; font-size:14px;">{{ r.obj.name }}
+        {% if r.no_panel %}<span class="badge badge-danger">bewusst kein Gremium</span>
+        {% elif r.current %}<span class="badge badge-accent">{{ r.current|length }} Mitglied(er)</span>{% endif %}
+      </summary>
+      <form method="post" style="margin-top:8px; display:flex; flex-direction:column; gap:8px;">
+        {% csrf_token %}
+        <input type="hidden" name="level" value="{{ r.level }}">
+        <input type="hidden" name="entity_id" value="{{ r.obj.id }}">
+        <select name="members" class="input" multiple size="4">
+          {% for u in staff %}<option value="{{ u.id }}" {% if u.id|stringformat:"s" in r.current %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>{% endfor %}
+        </select>
+        <label style="font-size:13px; color:var(--text-muted); display:flex; gap:8px; align-items:center;">
+          <input type="checkbox" name="no_panel" value="1" {% if r.no_panel %}checked{% endif %}> Bewusst KEIN Gremium auf dieser Ebene (unterbricht Vererbung)
+        </label>
+        <button type="submit" class="btn btn-primary" style="align-self:flex-start; padding:6px 12px; font-size:13px;">Speichern</button>
+      </form>
+    </details>
+    {% empty %}<p class="empty-state" style="padding:var(--space-2);">Keine Einträge.</p>{% endfor %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

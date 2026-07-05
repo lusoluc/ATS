@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Job-Vorlagen · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap">
+  <h1 class="page-title"><i class="fa-solid fa-copy"></i> Job-Vorlagen</h1>
+  <p class="page-lead">Wiederverwendbare Vorlagen mit Versionierung: Speichern mit gleichem Titel legt eine neue Version an (v1 → v2 …). Tonalitäts-Overlay direkt in der Job-Anlage.</p>
+  <div class="card">
+    <form method="post" style="display:flex;flex-direction:column;gap: var(--space-2); margin-bottom: var(--space-4);">
+      {% csrf_token %}
+      <input name="title" class="input" placeholder="Titel (z.B. Krankenpfleger:in – Stationsleitung)" required>
+      <textarea name="content" class="textarea" placeholder="Vorlagen-Inhalt (Aufgaben, Anforderungen, Benefits …)" rows="5" required></textarea>
+      <button type="submit" class="btn btn-primary" style="align-self:flex-start;">Vorlage speichern</button>
+    </form>
+    <ul class="list-reset">
+      {% for t in templates %}
+      <li style="padding: var(--space-3); border:1px solid var(--border-color); border-radius: var(--border-radius-sm); margin-bottom: var(--space-2); color: var(--text-main);">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong>{{ t.title }} <span class="badge" title="Neue Version durch Speichern mit gleichem Titel">v{{ t.version }}</span></strong>
+          <form method="post" action="{% url 'ats:delete_job_template' t.id %}" onsubmit="return confirm('Vorlage löschen?');">{% csrf_token %}<button type="submit" class="btn-icon danger"><i class="fa-solid fa-trash"></i></button></form>
+        </div>
+        <div style="color:var(--text-muted);font-size:13px;margin-top:6px;white-space:pre-wrap;">{{ t.content|truncatechars:220 }}</div>
+      </li>
+      {% empty %}<li class="empty-state">Noch keine Vorlagen.</li>{% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

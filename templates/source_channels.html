@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Kanäle & Kampagnen · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap" style="max-width:960px;">
+  <h1 class="page-title"><i class="fa-solid fa-signs-post"></i> Kanäle & Kampagnen</h1>
+  <p class="page-lead">War die Jobmesse erfolgreich? Kanal anlegen → QR-Code auf den Aufsteller → jede Bewerbung trägt die Quelle. <strong>Erfolgreich heißt nicht viele Bewerbungen, sondern Bewerbungen, die weiterkommen</strong> – darum steht die Einladungsquote neben der Menge.</p>
+
+  <div class="card" style="margin-bottom: var(--space-3);">
+    <form method="post" class="form-row">
+      {% csrf_token %}
+      <input type="text" name="name" class="input" placeholder="z. B. Jobmesse Hamburg 09/2026" required>
+      <input type="text" name="note" class="input" placeholder="Notiz (Stand, Kosten, Ansprechperson) – optional">
+      <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Kanal anlegen</button>
+    </form>
+  </div>
+
+  {% for r in rows %}
+  <div class="card" style="margin-bottom: var(--space-3);">
+    <div style="display:flex; gap: var(--space-4); flex-wrap:wrap; align-items:flex-start;">
+      <img src="{{ r.qr }}" alt="QR-Code für {{ r.ch.name }}" style="width:120px; height:120px; background:#fff; padding:6px; border-radius:8px;">
+      <div style="flex:1; min-width:260px;">
+        <h2 style="font-size:16px; margin:0 0 2px;">{{ r.ch.name }}</h2>
+        <p style="font-size:12px; color:var(--text-muted); margin:0 0 var(--space-2);">seit {{ r.ch.createdAt|date:"d.m.Y" }}{% if r.ch.note %} · {{ r.ch.note }}{% endif %}</p>
+        <code style="font-size:12px; word-break:break-all; display:block; background:var(--surface-hover); padding:8px 10px; border-radius:8px;">{{ r.link }}</code>
+        <div style="display:flex; gap: var(--space-4); margin-top: var(--space-3); flex-wrap:wrap;">
+          <div><strong style="font-size:22px;">{{ r.total }}</strong><span class="muted" style="display:block; font-size:12px; color:var(--text-muted);">Bewerbungen</span></div>
+          <div><strong style="font-size:22px;">{{ r.progressed }}</strong><span style="display:block; font-size:12px; color:var(--text-muted);">in Sichtung+</span></div>
+          <div><strong style="font-size:22px;">{{ r.invited }}</strong><span style="display:block; font-size:12px; color:var(--text-muted);">eingeladen</span></div>
+          <div><strong style="font-size:22px;">{% if r.quote is not None %}{{ r.quote }}&nbsp;%{% else %}–{% endif %}</strong><span style="display:block; font-size:12px; color:var(--text-muted);">Einladungsquote</span></div>
+          <div><strong style="font-size:22px; color:#22c55e;">{{ r.hired }}</strong><span style="display:block; font-size:12px; color:var(--text-muted);">eingestellt</span></div>
+          <div><strong style="font-size:22px;">{% if r.days is not None %}{{ r.days }}{% else %}–{% endif %}</strong><span style="display:block; font-size:12px; color:var(--text-muted);">Ø Tage bis Einstellung</span></div>
+          <div><strong style="font-size:22px;">{% if r.cost_per_hire is not None %}{{ r.cost_per_hire }}&nbsp;€{% else %}–{% endif %}</strong><span style="display:block; font-size:12px; color:var(--text-muted);">Kosten je Einstellung</span></div>
+        </div>
+        <form method="post" class="form-row" style="margin-top: var(--space-2); max-width:420px;">
+          {% csrf_token %}
+          <input type="hidden" name="form" value="cost">
+          <input type="hidden" name="ch_id" value="{{ r.ch.id }}">
+          <input type="text" name="cost" class="input" value="{{ r.ch.costAmount|default_if_none:'' }}" placeholder="Kampagnenkosten in € (z. B. 1200,00)">
+          <button type="submit" class="btn btn-ghost" style="padding:6px 12px; font-size:12px;">Kosten speichern</button>
+        </form>
+        <form method="post" class="form-row" style="margin-top: var(--space-1); max-width:420px;">
+          {% csrf_token %}
+          <input type="hidden" name="form" value="expiry">
+          <input type="hidden" name="ch_id" value="{{ r.ch.id }}">
+          <input type="date" name="expires" class="input" value="{{ r.ch.expiresAt|date:'Y-m-d' }}" title="Kampagnen-Ende (leer = unbegrenzt)">
+          <button type="submit" class="btn btn-ghost" style="padding:6px 12px; font-size:12px;">Ablauf speichern</button>
+        </form>
+        {% if r.ch.is_expired %}<p style="font-size:12px; color:var(--danger-light); margin:6px 0 0;"><i class="fa-solid fa-hourglass-end"></i> Kampagne beendet ({{ r.ch.expiresAt|date:"d.m.Y" }}) – neue Bewerbungen werden diesem Kanal nicht mehr zugeordnet.</p>{% endif %}
+        <div style="display:none;">
+        </div>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="card"><p class="empty-state">Noch kein Kanal angelegt – der erste dauert 10 Sekunden.</p></div>
+  {% endfor %}
+
+  {% if freie %}
+  <div class="card">
+    <h2 style="font-size:15px; margin:0 0 var(--space-2);">Weitere Quellen (Import / Direkteingabe)</h2>
+    <table class="data-table"><thead><tr><th>Quelle</th><th>Bewerbungen</th><th>Eingeladen</th><th>Quote</th></tr></thead><tbody>
+      {% for f in freie %}<tr><td>{{ f.source }}</td><td>{{ f.total }}</td><td>{{ f.invited }}</td><td>{{ f.quote }}&nbsp;%</td></tr>{% endfor %}
+    </tbody></table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

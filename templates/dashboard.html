@@ -182,6 +182,9 @@
         font-weight: 600;
     }
 
+    .ai-score-none { background: rgba(148,163,184,.15); color: var(--text-muted); border: 1px solid var(--border-color); }
+    .card-move { background:none; border:none; color: var(--text-muted); cursor:pointer; padding:2px 4px; font-size:11px; opacity:0; transition: opacity .15s; }
+    .applicant-card:hover .card-move, .applicant-card:focus-within .card-move { opacity:1; }
     .kanban-cards-wrapper {
         display: flex;
         flex-direction: column;
@@ -327,6 +330,7 @@
             </span>
         </div>
         
+        <span class="sidebar-group-title">Arbeitsbereich</span>
         <div class="sidebar-link active" onclick="switchTab(this, 'kanban-tab')">
             <i class="fa-solid fa-rectangle-list"></i> Bewerbungsprozesse
         </div>
@@ -359,10 +363,63 @@
         <div class="sidebar-link" onclick="switchTab(this, 'stats-tab')">
             <i class="fa-solid fa-chart-line"></i> KPIs & Inklusions-ROI
         </div>
+
+        <div style="margin:12px 8px 4px; font-size:11px; letter-spacing:1px; color:#64748b; text-transform:uppercase;">Verwaltung</div>
+        <span class="sidebar-group-title">Entscheiden</span>
+        <a class="sidebar-link" href="{% url 'ats:approvals' %}"><i class="fa-solid fa-stamp"></i> Freigaben</a>
+        <a class="sidebar-link" href="{% url 'ats:governance' %}"><i class="fa-solid fa-landmark"></i> Governance</a>
+        <a class="sidebar-link" href="{% url 'ats:staffing_requests' %}"><i class="fa-solid fa-people-arrows"></i> Personalbedarf</a>
+        <a class="sidebar-link" href="{% url 'ats:panel_defaults' %}"><i class="fa-solid fa-users-rectangle"></i> Gremien</a>
+        <a class="sidebar-link" href="{% url 'ats:delegations' %}"><i class="fa-solid fa-user-shield"></i> Delegationen</a>
+        <span class="sidebar-group-title">Termine & Menschen</span>
+        <a class="sidebar-link" href="{% url 'ats:interviews' %}"><i class="fa-solid fa-calendar-days"></i> Interview-Kalender</a>
+        <a class="sidebar-link" href="{% url 'ats:talent_pool' %}"><i class="fa-solid fa-users"></i> Talent-Pool</a>
+        <a class="sidebar-link" href="{% url 'ats:analytics' %}"><i class="fa-solid fa-chart-column"></i> Analytics</a>
+        <a class="sidebar-link" href="{% url 'ats:source_channels' %}"><i class="fa-solid fa-signs-post"></i> Kanäle & Kampagnen</a>
+        <a class="sidebar-link" href="{% url 'ats:landing_pages' %}"><i class="fa-solid fa-flag"></i> Landingpages</a>
+        <span class="sidebar-group-title">Stammdaten & Inhalte</span>
+        <a class="sidebar-link" href="{% url 'ats:screening_questions' %}"><i class="fa-solid fa-circle-question"></i> Screening-Fragen</a>
+        <a class="sidebar-link" href="{% url 'ats:categories' %}"><i class="fa-solid fa-layer-group"></i> Kategorien</a>
+        <a class="sidebar-link" href="{% url 'ats:job_templates' %}"><i class="fa-solid fa-copy"></i> Job-Vorlagen</a>
+        <a class="sidebar-link" href="{% url 'ats:contacts' %}"><i class="fa-solid fa-address-book"></i> Ansprechpartner</a>
+        <a class="sidebar-link" href="{% url 'ats:branding' %}"><i class="fa-solid fa-palette"></i> Erscheinungsbild</a>
+        <span class="sidebar-group-title">System & Nachweis</span>
+        <a class="sidebar-link" href="{% url 'ats:data_import' %}"><i class="fa-solid fa-file-import"></i> Daten-Import</a>
+        <a class="sidebar-link" href="{% url 'ats:snippets' %}"><i class="fa-solid fa-puzzle-piece"></i> Textbausteine</a>
+        <a class="sidebar-link" href="{% url 'ats:locations' %}"><i class="fa-solid fa-location-dot"></i> Standorte</a>
+        <a class="sidebar-link" href="{% url 'ats:pages_manage' %}"><i class="fa-solid fa-file-lines"></i> Seiten</a>
+        <a class="sidebar-link" href="{% url 'ats:media_manage' %}"><i class="fa-solid fa-photo-film"></i> Medien</a>
+        <a class="sidebar-link" href="{% url 'ats:audit_log' %}"><i class="fa-solid fa-clipboard-list"></i> Audit-Log</a>
     </div>
 
     <!-- Right Content Area -->
     <div class="dashboard-main">
+        {% if gremium_error %}
+        <div class="alert alert-danger" role="alert" style="margin-bottom: var(--space-3);"><i class="fa-solid fa-users-rectangle"></i> Einladung noch nicht möglich – {{ gremium_error }}. Abstimmen: <a href="{% url 'ats:approvals' %}" style="color:inherit; text-decoration:underline;">Freigaben › Sichtungs-Gremium</a></div>
+        {% endif %}
+        {% if today_focus.any %}
+        <div class="card" style="padding: var(--space-3); margin-bottom: var(--space-3);" aria-label="Heute wichtig">
+            <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+                <strong style="font-size:13px; margin-right:4px;"><i class="fa-solid fa-bolt" style="color:var(--warning);"></i> Heute wichtig:</strong>
+                {% if today_focus.unread_count %}<span class="badge badge-danger" title="Eingehende Nachrichten von Bewerbenden, noch ungelesen">{{ today_focus.unread_count }} unbeantwortete Nachricht{{ today_focus.unread_count|pluralize:"en" }}</span>{% endif %}
+                {% if today_focus.stale_new %}<span class="badge badge-danger" title="Neue Bewerbungen, älter als 7 Tage ohne Erstsichtung">{{ today_focus.stale_new }} Erstsichtung{{ today_focus.stale_new|pluralize:"en" }} überfällig</span>{% endif %}
+                {% if today_focus.panel_votes %}<a href="{% url 'ats:approvals' %}" style="text-decoration:none;"><span class="badge badge-accent">{{ today_focus.panel_votes }} Gremium-Stimme{{ today_focus.panel_votes|pluralize:"n" }} ausstehend</span></a>{% endif %}
+                {% if today_focus.waiting_approvals %}<a href="{% url 'ats:approvals' %}" style="text-decoration:none;"><span class="badge badge-accent">{{ today_focus.waiting_approvals }} Freigabe{{ today_focus.waiting_approvals|pluralize:"n" }} wartet auf mich</span></a>{% endif %}
+                {% if today_focus.today_interviews %}<a href="{% url 'ats:interviews' %}" style="text-decoration:none;"><span class="badge badge-accent">{{ today_focus.today_interviews }} Gespräch{{ today_focus.today_interviews|pluralize:"e" }} heute</span></a>{% endif %}
+                {% if today_focus.pending_outcomes %}<a href="{% url 'ats:interviews' %}" style="text-decoration:none;"><span class="badge">{{ today_focus.pending_outcomes }} Ergebnis{{ today_focus.pending_outcomes|pluralize:"se" }} nachzutragen</span></a>{% endif %}
+                {% if today_focus.open_staffing %}<a href="{% url 'ats:staffing_requests' %}" style="text-decoration:none;"><span class="badge">{{ today_focus.open_staffing }} offene Bedarfsmeldung{{ today_focus.open_staffing|pluralize:"en" }}</span></a>{% endif %}
+            </div>
+            {% if today_focus.unread_preview %}
+            <div style="margin-top:8px; font-size:12px; color:var(--text-muted);">
+                {% for m in today_focus.unread_preview %}
+                <a href="/recruiter/applications/{{ m.application.id }}/messages/" style="color:var(--primary-light); text-decoration:none; margin-right:14px;">
+                    <i class="fa-solid fa-envelope"></i> {{ m.application.applicant.firstName }} {{ m.application.applicant.lastName }} · {{ m.application.jobPosting.title|truncatechars:32 }}
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
         
         <!-- ====================================================================
              TAB 1: BEWERBUNGSPROZESSE (KANBAN ATS)
@@ -373,9 +430,25 @@
                     <span class="badge badge-primary">ATS Command Center</span>
                     <h2 style="font-size: 28px; color: #fff; margin-top: 6px;">Bewerbungsprozesse (Kanban)</h2>
                 </div>
-                <button onclick="openInterviewModal()" class="btn-secondary-cta">
-                    <i class="fa-solid fa-calendar-days"></i> Termin vergeben
-                </button>
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <button id="bulk-toggle" onclick="toggleBulkMode()" class="btn-secondary-cta">
+                        <i class="fa-solid fa-list-check"></i> Mehrfachauswahl
+                    </button>
+                    <div id="bulk-bar" style="display:none; gap:8px; align-items:center;">
+                        <select id="bulk-status" class="filter-select" style="height:38px;">
+                            <option value="IN_REVIEW">→ In Prüfung</option>
+                            <option value="INVITED">→ Eingeladen</option>
+                            <option value="REJECTED">→ Abgelehnt</option>
+                            <option value="NEW">→ Neu</option>
+                        </select>
+                        <button onclick="applyBulkStatus(this)" class="btn-cta" style="height:38px; padding:0 16px;">
+                            Anwenden (<span id="bulk-count">0</span>)
+                        </button>
+                    </div>
+                    <button onclick="openInterviewModal()" class="btn-secondary-cta">
+                        <i class="fa-solid fa-calendar-days"></i> Termin vergeben
+                    </button>
+                </div>
             </div>
             
             <!-- Quick KPI Cards -->
@@ -439,6 +512,19 @@
                     </div>
                 </div>
                 
+                <!-- Eingestellt -->
+                <div class="kanban-column" id="col-HIRED" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event, 'HIRED')">
+                    <div class="column-header">
+                        <span class="column-title"><i class="fa-solid fa-handshake" style="color: #22c55e;"></i> Eingestellt</span>
+                        <span class="column-count" id="count-HIRED">{{ columns.HIRED|length }}</span>
+                    </div>
+                    <div class="kanban-cards-wrapper" id="cards-HIRED">
+                        {% for app in columns.HIRED %}
+                            {% include 'includes/kanban_card.html' with app=app %}
+                        {% endfor %}
+                    </div>
+                </div>
+
                 <!-- Abgelehnt -->
                 <div class="kanban-column" id="col-REJECTED" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event, 'REJECTED')">
                     <div class="column-header">
@@ -486,10 +572,14 @@
                                 <td><strong>{{ job.title }}</strong></td>
                                 <td>{{ job.location.city }}</td>
                                 <td>{{ job.department.name|default:"-" }}</td>
-                                <td><span class="badge badge-accent">{{ job.workflowState.name }}</span></td>
+                                <td><span class="badge {% if job.workflowState.name == 'published' %}badge-accent{% endif %}" id="job-state-{{ job.id }}">{{ job.workflowState.name }}</span></td>
                                 <td>{{ job.createdAt|date:"d.m.Y" }}</td>
-                                <td>
-                                    <button class="btn-search" style="padding: 4px 10px; height: auto; font-size: 11px; margin: 0; border-radius: var(--border-radius-sm);" onclick="editJobPosting('{{ job.id|escapejs }}', '{{ job.title|escapejs }}', '{{ job.description|escapejs }}', '{{ job.tasksJson|escapejs }}', '{{ job.requirementsJson|escapejs }}', '{{ job.screeningQuestionsJson|escapejs }}', '{{ job.facility.id|escapejs }}', '{{ job.department.id|default:''|escapejs }}', '{{ job.location.id|escapejs }}', '{{ job.jobFamily.id|escapejs }}', '{{ job.contactPerson.id|default:''|escapejs }}', '{{ job.jobTemplate.id|default:''|escapejs }}', '{{ job.workflowState.id|escapejs }}', '{% for b in job.benefits.all %}{{ b.id }},{% endfor %}')">
+                                <td style="white-space:nowrap;">
+                                    <!-- Schnell-Aktion: Anzeige mit einem Klick (de)aktivieren -->
+                                    <button class="btn-search" id="job-toggle-{{ job.id }}" style="padding: 4px 10px; height: auto; font-size: 11px; margin: 0 6px 0 0; border-radius: var(--border-radius-sm); {% if job.workflowState.name != 'published' %}background: var(--danger);{% endif %}" onclick="toggleJob('{{ job.id }}')">
+                                        <i class="fa-solid fa-power-off"></i> <span>{% if job.workflowState.name == 'published' %}Deaktivieren{% else %}Aktivieren{% endif %}</span>
+                                    </button>
+                                    <button class="btn-search" style="padding: 4px 10px; height: auto; font-size: 11px; margin: 0; border-radius: var(--border-radius-sm);" onclick="editJobPosting('{{ job.id|escapejs }}', '{{ job.title|escapejs }}', '{{ job.description|escapejs }}', '{{ job.tasksJson|escapejs }}', '{{ job.requirementsJson|escapejs }}', '{{ job.screeningQuestionsJson|escapejs }}', '{{ job.facility.id|escapejs }}', '{{ job.department.id|default:''|escapejs }}', '{{ job.location.id|escapejs }}', '{{ job.jobFamily.id|escapejs }}', '{{ job.contactPerson.id|default:''|escapejs }}', '{{ job.jobTemplate.id|default:''|escapejs }}', '{{ job.workflowState.id|escapejs }}', '{% for b in job.benefits.all %}{{ b.id }},{% endfor %}', '{{ job.panelUserIdsJson|escapejs }}', '{{ job.panelQuorum|default_if_none:''|escapejs }}', '{{ job.panelDeadlineDays|default_if_none:''|escapejs }}', '{{ job.interview_rounds_csv|escapejs }}')">
                                         <i class="fa-solid fa-pen-to-square"></i> Bearbeiten
                                     </button>
                                 </td>
@@ -724,6 +814,24 @@
                         <div class="form-group">
                             <label class="form-label" for="page-title">Titel der Seite</label>
                             <input type="text" name="title" id="page-title" class="form-input" placeholder="z. B. IT-Karriere Portal" required>
+                <div class="form-group" style="max-width:260px;">
+                    <label class="form-label" for="headcount">Zu besetzende Stellen</label>
+                    <input type="number" id="headcount" name="headcount" class="form-input" min="1" max="99" value="1">
+                </div>
+                <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                    <div class="form-group" style="max-width:220px;">
+                        <label class="form-label" for="panel_quorum">Gremium-Quorum (leer = Mehrheit)</label>
+                        <input type="number" id="panel_quorum" name="panel_quorum" class="form-input" min="1" max="15" placeholder="z. B. 2">
+                    </div>
+                    <div class="form-group" style="max-width:220px;">
+                        <label class="form-label" for="panel_deadline_days">Abstimmungs-Frist (Tage, leer = keine)</label>
+                        <input type="number" id="panel_deadline_days" name="panel_deadline_days" class="form-input" min="1" max="60" placeholder="z. B. 7">
+                    </div>
+                    <div class="form-group" style="flex:1; min-width:280px;">
+                        <label class="form-label" for="interview_rounds">Gesprächsrunden (kommasepariert, leer = keine Rundenpflicht)</label>
+                        <input type="text" id="interview_rounds" name="interview_rounds" class="form-input" placeholder="z. B. Erstgespräch, Fachgespräch, Probearbeit">
+                    </div>
+                </div>
                         </div>
                         
                         <div class="form-group">
@@ -1323,6 +1431,9 @@ MODALS & OVERLAYS
                     
                     <h3 style="color: #fff; font-size: 16px; margin-bottom: 12px;"><i class="fa-solid fa-clipboard-question"></i> Screening-Ergebnisse</h3>
                     <div id="modal-screening" style="font-size: 13px; color: #d1d5db; background: rgba(0,0,0,0.15); border: 1px solid var(--glass-border); padding: 16px; border-radius: var(--border-radius-sm);"></div>
+
+                    <h3 style="color: #fff; font-size: 16px; margin-top: 24px; margin-bottom: 12px;"><i class="fa-solid fa-comment-dots"></i> Interview-Feedback <span id="modal-fb-count" style="font-size:12px; color:var(--text-muted); font-weight:400;"></span></h3>
+                    <div id="modal-feedback" style="font-size: 13px; color: #d1d5db;">Lädt…</div>
                 </div>
 
                 <!-- Right half: AI Rating, CV Document preview mock, Recruiter Notes, and trigger scheduler -->
@@ -1359,6 +1470,9 @@ MODALS & OVERLAYS
                         <button id="modal-btn-schedule" class="btn-cta" style="width: 100%; height: 42px; display: flex; align-items: center; justify-content: center; font-size: 14px;">
                             <i class="fa-solid fa-calendar-plus" style="margin-right: 6px;"></i> Interview planen
                         </button>
+                        <a id="modal-btn-messages" href="#" class="btn-secondary-cta" style="width: 100%; height: 42px; display: flex; align-items: center; justify-content: center; font-size: 14px; margin-top: 10px; box-sizing: border-box;">
+                            <i class="fa-solid fa-comments" style="margin-right: 6px;"></i> Nachrichten
+                        </a>
                     </div>
                 </div>
 
@@ -1381,8 +1495,9 @@ MODALS & OVERLAYS
                 
                 <div class="form-group">
                     <label class="form-label" for="slot_id">Verfügbare Timeslots *</label>
-                    <select id="slot_id" name="slot_id" class="filter-select" required>
-                        <option value="">Timeslot wählen...</option>
+                    <select id="slot_id" name="slot_id" class="filter-select">
+                        <option value="">Direkt-Termin (in 2 Tagen, manuell abstimmen)</option>
+                        <option value="CANDIDATE_CHOICE">✨ Bewerber:in wählt selbst aus freien Slots (Portal)</option>
                         {% for slot in interview_slots %}
                             <option value="{{ slot.id }}">{{ slot.jobPosting.title }} - {{ slot.startTime|date:"d.m.Y H:i" }} Uhr</option>
                         {% empty %}
@@ -1392,20 +1507,37 @@ MODALS & OVERLAYS
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="location_type">Ort / Typ *</label>
+                    <label class="form-label" for="location_type">Gesprächsformat *</label>
                     <select id="location_type" name="location_type" class="filter-select">
-                        <option value="REMOTE">Google Meet / Video-Call (Remote)</option>
-                        <option value="IN_PERSON">Vor Ort im Office (In Person)</option>
+                        {% for code, label in interview_kinds %}<option value="{{ code }}" {% if code == 'VIDEO' %}selected{% endif %}>{{ label }}</option>{% endfor %}
                     </select>
                 </div>
 
                 <div class="form-group">
+                    <label class="form-label" for="participants">Interview-Team (interne Teilnehmende)</label>
+                    <select id="participants" name="participants" class="filter-select" multiple size="4" aria-describedby="participants-hint">
+                        {% for m in team_members %}<option value="{{ m.id }}">{{ m.get_full_name|default:m.username }}</option>{% endfor %}
+                    </select>
+                    <p id="participants-hint" style="font-size:11px; color: var(--text-muted); margin-top:4px;">Mehrfachauswahl mit Strg/Cmd. Alle Ausgewählten werden sofort per E-Mail informiert und in die Termin-Erinnerung einbezogen.</p>
+                </div>
+
+                <div class="form-group">
                     <label class="form-label" for="meeting_link">Meeting Link / Konferenzraum</label>
-                    <input type="text" id="meeting_link" name="meeting_link" class="form-input" placeholder="z. B. https://meet.google.com/xyz" value="https://meet.google.com/securats-video-call">
+                    <input type="text" id="meeting_link" name="meeting_link" class="form-input" placeholder="z. B. https://meet.example.de/raum-3 oder 'Haus B, Raum 214'">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="invite-message">Nachricht an die Bewerberin / den Bewerber</label>
+                    <textarea id="invite-message" name="message_text" class="form-textarea" rows="6" style="width:100%;"></textarea>
+                    <div style="display:flex; gap:8px; align-items:center; margin-top:6px;">
+                        <button type="button" class="btn-search" style="padding:4px 10px; height:auto; font-size:11px; margin:0; border-radius: var(--border-radius-sm);" onclick="polishInvite(this)"><i class="fa-solid fa-wand-magic-sparkles"></i> KI-Feinschliff (lokal)</button>
+                        <span id="invite-polish-status" aria-live="polite" style="font-size:11px; color: var(--text-muted);"></span>
+                    </div>
+                    <p style="font-size:11px; color: var(--text-muted); margin-top:6px;">Wird beim Buchen als Portal-Nachricht hinterlegt und per E-Mail versendet (Termin &amp; Ort werden automatisch angehängt). Leer lassen = nur Termin ohne Nachricht.</p>
                 </div>
 
                 <button type="submit" class="btn-apply-now" style="width: 100%; margin-top: 16px; height: 46px;">
-                    <i class="fa-solid fa-circle-check"></i> Termin verbindlich buchen
+                    <i class="fa-solid fa-circle-check"></i> Einladen: Termin buchen &amp; Nachricht senden
                 </button>
             </form>
         </div>
@@ -1437,6 +1569,25 @@ MODALS & OVERLAYS
                         </button>
                     </div>
                     <textarea name="description" id="job-desc-inp" class="form-textarea" rows="2" placeholder="Kurze Einleitung der Stelle..." required></textarea>
+                    <!-- B12/L4: Tonalitäts-Overlay – formuliert den Text um, ohne Fakten zu ändern -->
+                    <div style="display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap;">
+                        <select onchange="insertSnippet(this)" class="filter-select" style="max-width:230px;" aria-label="Textbaustein einfügen">
+                            <option value="">+ Textbaustein einfügen…</option>
+                            {% for sn in text_snippets %}
+                            <option value="{{ sn.content|escapejs }}">{{ sn.category }}{% if sn.jobFamily %} · {{ sn.jobFamily.name }}{% endif %}: {{ sn.content|truncatechars:40 }}</option>
+                            {% endfor %}
+                        </select>
+                        <select id="job-tone" class="filter-select" style="max-width:200px;">
+                            <option value="SIE">Ton: Sie (professionell)</option>
+                            <option value="DU">Ton: Du (locker)</option>
+                            <option value="HERZLICH">Ton: herzlich</option>
+                            <option value="NUECHTERN">Ton: nüchtern</option>
+                        </select>
+                        <button type="button" class="btn-secondary-cta" style="height:32px; font-size:12px; padding:0 14px;" onclick="applyToneToDescription(this)">
+                            <i class="fa-solid fa-wand-magic-sparkles" style="margin-right:6px;"></i>Mit KI umformulieren
+                        </button>
+                        <span id="job-tone-status" style="font-size:11px; color: var(--text-muted);"></span>
+                    </div>
                     
                     <!-- New Interactive Premium Suggestions Panel -->
                     <div id="agg-suggestions-box" class="glass-card" style="display: none; margin-top: 12px; padding: 16px; border: 1px solid rgba(139, 92, 246, 0.4); background: rgba(15, 12, 30, 0.85); box-shadow: 0 8px 32px 0 rgba(139, 92, 246, 0.2); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 8px; transition: all 0.3s ease;">
@@ -1565,7 +1716,23 @@ MODALS & OVERLAYS
 
                 <div class="form-group">
                     <label class="form-label" for="job-screening">Screening K.O. Fragen (JSON-Format)</label>
+                    <div style="display:flex; gap:8px; align-items:center; margin:6px 0;">
+                        <button type="button" class="btn-search" style="padding:4px 10px; height:auto; font-size:11px; margin:0; border-radius: var(--border-radius-sm);" onclick="usePreviousProcess(this)" title="Screening-Fragen, Aufgaben und Anforderungen der jüngsten Stelle gleicher Jobfamilie (bevorzugt gleiche Einrichtung) übernehmen"><i class="fa-solid fa-clock-rotate-left"></i> Bewährten Prozess übernehmen</button>
+                        <button type="button" class="btn-search" style="padding:4px 10px; height:auto; font-size:11px; margin:0; border-radius: var(--border-radius-sm);" onclick="suggestProcess(this, false)"><i class="fa-solid fa-lightbulb"></i> Prozess vorschlagen</button>
+                        <button type="button" class="btn-search" style="padding:4px 10px; height:auto; font-size:11px; margin:0; border-radius: var(--border-radius-sm);" onclick="suggestProcess(this, true)"><i class="fa-solid fa-wand-magic-sparkles"></i> + KI-Zusatzfragen</button>
+                        <span id="process-suggest-status" aria-live="polite" style="font-size:11px; color: var(--text-muted);"></span>
+                    </div>
+                    <div id="process-suggest-notes" aria-live="polite" style="display:none; font-size:12px; color: var(--text-muted); border:1px solid var(--border-color); border-radius: var(--border-radius-sm); padding:10px; margin-bottom:8px;"></div>
                     <textarea name="screening_questions" id="job-screening" class="form-textarea" rows="3" placeholder='[{"id": "q1", "question": "Haben Sie Erfahrung?", "type": "YES_NO", "isMandatory": true, "expectedAnswer": "YES"}]'></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="job-panel">Sichtungs-Gremium (höhere Positionen, optional)</label>
+                    <input type="hidden" name="panel_members_present" value="1">
+                    <select id="job-panel" name="panel_members" class="filter-select" multiple size="3" aria-describedby="panel-hint">
+                        {% for m in team_members %}<option value="{{ m.id }}">{{ m.get_full_name|default:m.username }}</option>{% endfor %}
+                    </select>
+                    <p id="panel-hint" style="font-size:11px; color: var(--text-muted); margin-top:4px;"><span id="panel-preview" style="display:block; color:var(--accent-light); margin-bottom:2px;"></span>Leer = erbt den Default (Abteilung › Einrichtung › Standort › Jobfamilie › Organisation, Pflege unter „Gremien"). Wenn besetzt: Einladungen erst nach absoluter Mehrheit „dafür" (Override nur mit Audit). Abstimmung unter Freigaben.</p>
                 </div>
 
                 <div class="form-group">
@@ -1627,6 +1794,238 @@ MODALS & OVERLAYS
 
     function dragCard(ev, appId) {
         ev.dataTransfer.setData("application_id", appId);
+        ev.target.classList.add('dragging');
+        ev.target.addEventListener('dragend', () => ev.target.classList.remove('dragging'), { once: true });
+    }
+
+    // B10: Karte positionsgenau einfügen (nächstes Element unterhalb der Mausposition)
+    // Stammdaten: Anzeige per Ein-Klick (de)aktivieren
+    function toggleJob(jobId) {
+        fetch(`/recruiter/jobs/${jobId}/toggle/`, { method: 'POST' })
+            .then(r => r.json())
+            .then(d => {
+                if (!d.success) return;
+                const badge = document.getElementById(`job-state-${jobId}`);
+                const btn = document.getElementById(`job-toggle-${jobId}`);
+                if (badge) {
+                    badge.innerText = d.active ? 'published' : 'draft';
+                    badge.classList.toggle('badge-accent', d.active);
+                }
+                if (btn) {
+                    btn.querySelector('span').innerText = d.active ? 'Deaktivieren' : 'Aktivieren';
+                    btn.style.background = d.active ? '' : 'var(--danger)';
+                }
+            });
+    }
+
+    // Stammdaten: Textbaustein in die Stellenbeschreibung einfügen
+    function insertSnippet(sel) {
+        const ta = document.getElementById('job-desc-inp');
+        if (!sel.value || !ta) return;
+        ta.value = (ta.value ? ta.value.trimEnd() + "\n\n" : "") + sel.value;
+        sel.selectedIndex = 0;
+    }
+
+    // Prozess-Gedaechtnis (Weg A): juengste Stelle gleicher Familie liefert den
+    // bewaehrten Prozess. Fuellt nur das Formular; belegte Felder werden nur
+    // nach Rueckfrage ueberschrieben – der Mensch speichert.
+    function refreshPanelPreview() {
+        const el = document.getElementById('panel-preview');
+        if (!el) return;
+        const v = id => { const n = document.getElementById(id); return n ? n.value : ''; };
+        const q = `job_family=${encodeURIComponent(v('job-family'))}&facility=${encodeURIComponent(v('job-facility'))}&department=${encodeURIComponent(v('job-department'))}&location=${encodeURIComponent(v('job-location'))}`;
+        fetch(`/recruiter/panel/preview/?${q}`).then(r => r.json()).then(d => {
+            if (d.none) { el.textContent = `Ohne eigene Auswahl: bewusst KEIN Gremium (${d.source}).`; }
+            else if (d.members && d.members.length) { el.textContent = `Ohne eigene Auswahl wirkt: ${d.source} – ${d.members.join(', ')}.`; }
+            else { el.textContent = 'Ohne eigene Auswahl: kein Gremium (keine Ebene besetzt).'; }
+        }).catch(() => { el.textContent = ''; });
+    }
+    ['job-family', 'job-facility', 'job-department', 'job-location'].forEach(id => {
+        document.addEventListener('DOMContentLoaded', () => {
+            const n = document.getElementById(id);
+            if (n) n.addEventListener('change', refreshPanelPreview);
+        });
+    });
+
+    function usePreviousProcess(btn) {
+        const fam = document.getElementById('job-family').value;
+        const fac = document.getElementById('job-facility') ? document.getElementById('job-facility').value : '';
+        const dept = document.getElementById('job-department') ? document.getElementById('job-department').value : '';
+        const loc = document.getElementById('job-location') ? document.getElementById('job-location').value : '';
+        const title = document.getElementById('job-title-inp') ? document.getElementById('job-title-inp').value : '';
+        const jobId = document.querySelector('#job-form [name="job_id"]') ? document.querySelector('#job-form [name="job_id"]').value : '';
+        if (!fam) { alert('Bitte zuerst die Jobfamilie wählen.'); return; }
+        btn.disabled = true;
+        fetch(`/recruiter/process/previous/?job_family=${encodeURIComponent(fam)}&facility=${encodeURIComponent(fac)}&department=${encodeURIComponent(dept)}&location=${encodeURIComponent(loc)}&title=${encodeURIComponent(title)}&exclude=${encodeURIComponent(jobId)}`)
+            .then(r => r.json())
+            .then(d => {
+                btn.disabled = false;
+                if (!d.found) { alert('Noch keine frühere Stelle dieser Jobfamilie vorhanden.'); return; }
+                const scr = document.getElementById('job-screening');
+                const tasks = document.getElementById('job-tasks-inp');
+                const reqs = document.getElementById('job-reqs-inp');
+                const filled = (scr.value.trim() && scr.value.trim() !== '[]') || tasks.value.trim() || reqs.value.trim();
+                if (filled && !confirm(`Felder sind bereits befüllt – mit dem Prozess von „${d.source_title}" (${d.source_date}) überschreiben?`)) return;
+                scr.value = JSON.stringify(d.screening_questions, null, 0);
+                try { tasks.value = JSON.parse(d.tasks).join('\n'); } catch (e) {}
+                try { reqs.value = JSON.parse(d.requirements).join('\n'); } catch (e) {}
+                alert(`Übernommen: ${d.source_title}${d.source_date ? ' (' + d.source_date + ')' : ''} – Herkunft: ${d.scope}. Bitte prüfen und anpassen.`);
+            })
+            .catch(() => { btn.disabled = false; alert('Abruf fehlgeschlagen.'); });
+    }
+
+    // Prozess-Berater: Vorschlaege fuellen nur das Formular – Mensch speichert.
+    function suggestProcess(btn, withAi) {
+        const status = document.getElementById('process-suggest-status');
+        const notesBox = document.getElementById('process-suggest-notes');
+        const titleEl = document.getElementById('job-title-inp');
+        const famEl = document.getElementById('job-family');
+        const facEl = document.getElementById('job-facility');
+        btn.disabled = true; status.innerText = withAi ? 'Regeln + lokale KI …' : 'Regeln werden geprüft …';
+        const fd = new FormData();
+        fd.append('title', titleEl ? titleEl.value : '');
+        fd.append('job_family', famEl ? famEl.value : '');
+        fd.append('facility', facEl ? facEl.value : '');
+        fd.append('with_ai', withAi ? '1' : '0');
+        fetch("{% url 'ats:suggest_process' %}", { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                if (d.questions && d.questions.length) {
+                    document.getElementById('job-screening').value = JSON.stringify(d.questions, null, 2);
+                }
+                const parts = [];
+                if (d.gate && d.gate.text) parts.push((d.gate.active ? '🔒 ' : '') + d.gate.text);
+                (d.notes || []).forEach(n => parts.push('• ' + n));
+                notesBox.innerText = parts.join('\n');
+                notesBox.style.display = parts.length ? 'block' : 'none';
+                status.innerText = d.questions.length
+                    ? `${d.questions.length} Frage(n) vorgeschlagen – bitte prüfen, wirksam erst nach Speichern.`
+                    : 'Keine Fragen vorgeschlagen (Hinweise beachten).';
+            })
+            .catch(() => { status.innerText = 'Vorschlag fehlgeschlagen.'; })
+            .finally(() => { btn.disabled = false; });
+    }
+
+    // Einladen: zentrale Vorlage + lokaler KI-Feinschliff
+    const INVITE_TEMPLATE_TEXT = "{{ invite_template|escapejs }}";
+    const COMPANY_NAME = "{{ company_name|escapejs }}";
+    function polishInvite(btn) {
+        const box = document.getElementById('invite-message');
+        const status = document.getElementById('invite-polish-status');
+        if (!box || !box.value.trim()) return;
+        btn.disabled = true; status.innerText = 'Lokale KI formuliert …';
+        const fd = new FormData();
+        fd.append('text', box.value);
+        fetch("{% url 'ats:polish_message' %}", { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                if (d.polished) { box.value = d.polished; box.dataset.touched = '1'; }
+                status.innerText = d.note || (d.used_ai ? 'Überarbeitet – bitte prüfen.' : '');
+            })
+            .catch(() => { status.innerText = 'KI nicht erreichbar – Text unverändert.'; })
+            .finally(() => { btn.disabled = false; });
+    }
+
+    // WP8/WCAG 2.1.1: Karten per Tastatur/Buttons verschieben (Alternative zu Drag&Drop)
+    function moveCard(appId, dir) {
+        const card = document.getElementById(`card-${appId}`);
+        if (!card) return;
+        const wrapper = card.parentElement;
+        const sibling = dir < 0 ? card.previousElementSibling : card.nextElementSibling;
+        if (!sibling || !sibling.classList.contains('applicant-card')) return;
+        if (dir < 0) { wrapper.insertBefore(card, sibling); }
+        else { wrapper.insertBefore(sibling, card); }
+        const status = wrapper.id.replace('cards-', '');
+        persistColumnOrder(status);
+        card.querySelector('.card-move')?.focus();
+    }
+
+    // WP4/UC-UM-08/09: Mehrfachauswahl + Sammel-Statuswechsel
+    let bulkMode = false;
+    function toggleBulkMode() {
+        bulkMode = !bulkMode;
+        document.querySelectorAll('.bulk-box').forEach(cb => {
+            cb.style.display = bulkMode ? 'inline-block' : 'none';
+            if (!bulkMode) cb.checked = false;
+        });
+        document.getElementById('bulk-bar').style.display = bulkMode ? 'flex' : 'none';
+        document.getElementById('bulk-toggle').classList.toggle('active', bulkMode);
+        updateBulkCount();
+    }
+    function updateBulkCount() {
+        const n = document.querySelectorAll('.bulk-box:checked').length;
+        const el = document.getElementById('bulk-count');
+        if (el) el.innerText = n;
+    }
+    document.addEventListener('change', (e) => {
+        if (e.target.classList && e.target.classList.contains('bulk-box')) updateBulkCount();
+    });
+    function applyBulkStatus(btn) {
+        const boxes = [...document.querySelectorAll('.bulk-box:checked')];
+        if (!boxes.length) return;
+        const status = document.getElementById('bulk-status').value;
+        if (!confirm(`${boxes.length} Bewerbung(en) auf "${status}" setzen?`)) return;
+        btn.disabled = true;
+        const fd = new FormData();
+        fd.append('status', status);
+        boxes.forEach(b => fd.append('ids[]', b.value));
+        fetch('/recruiter/board/bulk-status/', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                if (d.success) {
+                    boxes.forEach(b => {
+                        const card = b.closest('.applicant-card');
+                        const dest = document.getElementById(`cards-${status}`);
+                        if (card && dest) dest.appendChild(card);
+                        b.checked = false;
+                    });
+                    updateStatsCounters(); updateBulkCount();
+                    persistColumnOrder(status);
+                }
+            })
+            .finally(() => { btn.disabled = false; });
+    }
+
+    // B12/L4: Beschreibung per Tonalitäts-Overlay umformulieren (Fakten bleiben)
+    function applyToneToDescription(btn) {
+        const ta = document.getElementById('job-desc-inp');
+        const status = document.getElementById('job-tone-status');
+        const tone = document.getElementById('job-tone').value;
+        if (!ta.value.trim()) { status.innerText = 'Bitte zuerst eine Beschreibung eingeben.'; return; }
+        btn.disabled = true; status.innerText = 'KI formuliert um…';
+        const fd = new FormData();
+        fd.append('content', ta.value);
+        fd.append('tone', tone);
+        fetch('/recruiter/job-templates/tone/', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                if (d.reformulated) { ta.value = d.reformulated; }
+                status.innerText = d.used_ai ? 'Umformuliert (KI).' : 'KI nicht erreichbar – Text unverändert.';
+            })
+            .catch(() => { status.innerText = 'Fehler – Text unverändert.'; })
+            .finally(() => { btn.disabled = false; });
+    }
+
+    function getDragAfterElement(container, y) {
+        const cards = [...container.querySelectorAll('.applicant-card:not(.dragging)')];
+        return cards.reduce((closest, el) => {
+            const box = el.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) return { offset, element: el };
+            return closest;
+        }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
+    }
+
+    // B10: aktuelle Reihenfolge einer Spalte an den Server melden
+    function persistColumnOrder(status) {
+        const wrapper = document.getElementById(`cards-${status}`);
+        if (!wrapper) return;
+        const formData = new FormData();
+        formData.append('status', status);
+        [...wrapper.querySelectorAll('.applicant-card')].forEach(c =>
+            formData.append('ids[]', c.getAttribute('data-id')));
+        fetch('/recruiter/board/reorder/', { method: 'POST', body: formData })
+            .catch(err => console.error('Reorder fehlgeschlagen:', err));
     }
 
     function handleDrop(ev, newStatus) {
@@ -1637,15 +2036,26 @@ MODALS & OVERLAYS
         const appId = ev.dataTransfer.getData("application_id");
         if (!appId) return;
 
-        // Move card visually
+        // Move card visually — an der Mausposition einfügen (B10)
         const card = document.getElementById(`card-${appId}`);
         const destination = document.getElementById(`cards-${newStatus}`);
         if (card && destination) {
-            destination.appendChild(card);
+            const sourceWrapper = card.parentElement;
+            const oldStatus = sourceWrapper && sourceWrapper.id ? sourceWrapper.id.replace('cards-', '') : null;
+            const after = getDragAfterElement(destination, ev.clientY);
+            if (after) { destination.insertBefore(card, after); }
+            else { destination.appendChild(card); }
             
             // Trigger database status update via AJAX POST
             const formData = new FormData();
             formData.append('status', newStatus);
+            if (newStatus === 'HIRED') {
+                // Einstellungsdatum manuell setzbar (leer = heute)
+                const d = prompt('Einstellungsdatum (JJJJ-MM-TT) – leer lassen für heute:', '');
+                if (d === null) { location.reload(); return; }  // abgebrochen
+                if (d.trim()) formData.append('hired_at', d.trim());
+            }
+            formData.append('order', [...destination.querySelectorAll('.applicant-card')].indexOf(card));
             
             fetch(`/recruiter/applications/${appId}/update-status/`, {
                 method: 'POST',
@@ -1654,7 +2064,27 @@ MODALS & OVERLAYS
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
+                    if (data.notice) { alert(data.notice); }
                     updateStatsCounters();
+                    persistColumnOrder(newStatus);              // Zielspalte
+                    if (oldStatus && oldStatus !== newStatus) { // Quellspalte nachziehen
+                        persistColumnOrder(oldStatus);
+                    }
+                } else if (data.concerns_blocked) {
+                    // Dokumentierte Bedenken aus Interviews: bewusst bestätigen
+                    const list = (data.concerns || []).map(c => '• ' + c).join('\n');
+                    if (confirm((data.error || 'Es liegen Bedenken vor.') +
+                                '\n\n' + list + '\n\nTrotzdem einstellen?')) {
+                        formData.append('force', '1');
+                        fetch(`/recruiter/applications/${appId}/update-status/`, {
+                            method: 'POST', body: formData
+                        }).then(r => r.json()).then(d2 => {
+                            if (d2.success) { updateStatsCounters(); persistColumnOrder(newStatus); }
+                            else { location.reload(); }
+                        });
+                    } else {
+                        location.reload();   // Zug zurücknehmen
+                    }
                 } else {
                     console.error("Status-Update schlug fehl.");
                 }
@@ -1692,8 +2122,9 @@ MODALS & OVERLAYS
         document.getElementById('modal-coverletter').innerText = coverLetter || '(Kein Anschreiben übermittelt)';
         
         const scoreBadge = document.getElementById('modal-ai-score');
-        scoreBadge.innerText = aiScore || 'C';
-        scoreBadge.className = `ai-score-badge ai-score-${aiScore || 'C'}`;
+        scoreBadge.innerText = aiScore || '–';
+        scoreBadge.className = `ai-score-badge ai-score-${aiScore || 'none'}`;
+        scoreBadge.title = aiScore ? '' : 'Keine KI-Bewertung (Scoring deaktiviert oder ausstehend)';
         document.getElementById('modal-ai-rationale').innerText = aiRationale || 'Keine Bewertung vorhanden.';
         
         const cvBox = document.getElementById('modal-cv-preview');
@@ -1701,8 +2132,9 @@ MODALS & OVERLAYS
             cvBox.innerHTML = `
                 <div style="text-align: center;">
                     <i class="fa-solid fa-file-pdf" style="font-size: 52px; color: #ef4444; margin-bottom: 12px;"></i>
-                    <p style="font-size: 14px; font-weight: 600; color: #fff;">Lebenslauf.pdf</p>
-                    <a href="/media/${cvStorageId}" target="_blank" class="btn-secondary-cta" style="margin-top: 14px; display: inline-flex; height: 32px; font-size: 12px; align-items: center; padding: 0 16px;">Vollbild-Vorschau</a>
+                    <p style="font-size: 14px; font-weight: 600; color: #fff;">Lebenslauf</p>
+                    <a href="/recruiter/applications/${appId}/cv/" target="_blank" class="btn-secondary-cta" style="margin-top: 14px; display: inline-flex; height: 32px; font-size: 12px; align-items: center; padding: 0 16px;"><i class="fa-solid fa-download" style="margin-right:6px;"></i>Sicher herunterladen</a>
+                    <p style="font-size: 10px; color: var(--text-muted); margin-top: 8px;">Zugriff wird revisionssicher protokolliert.</p>
                 </div>`;
         } else {
             cvBox.innerHTML = `
@@ -1719,12 +2151,13 @@ MODALS & OVERLAYS
         if (screeningJson && screeningJson !== '{}') {
             try {
                 const questions = JSON.parse(screeningJson);
+                const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
                 let html = '<ul style="list-style: none; display: flex; flex-direction: column; gap: 8px;">';
                 for (const [q, a] of Object.entries(questions)) {
                     const icon = a === 'YES' ? '<i class="fa-solid fa-circle-check" style="color: var(--accent);"></i>' : '<i class="fa-solid fa-circle-xmark" style="color: #ef4444;"></i>';
                     html += `<li style="display: flex; justify-content: space-between; gap: 10px;">
-                        <span>${q}</span>
-                        <strong style="display: inline-flex; align-items: center; gap: 4px;">${icon} ${a === 'YES' ? 'Ja' : 'Nein'}</strong>
+                        <span>${escapeHtml(q)}</span>
+                        <strong style="display: inline-flex; align-items: center; gap: 4px;">${icon} ${a === 'YES' ? 'Ja' : (a === 'NO' ? 'Nein' : escapeHtml(a || '–'))}</strong>
                     </li>`;
                 }
                 html += '</ul>';
@@ -1738,10 +2171,52 @@ MODALS & OVERLAYS
 
         document.getElementById('modal-btn-schedule').onclick = function() {
             closeCandidateModal();
-            openInterviewModal(appId);
+            openInterviewModal(appId, name, job);
         };
+
+        // WP3: Nachrichten-Verlauf zur Bewerbung (UC-TK-10)
+        const msgBtn = document.getElementById('modal-btn-messages');
+        if (msgBtn) { msgBtn.href = `/recruiter/applications/${appId}/messages/`; }
         
+        loadCandidateFeedback(appId);
         document.getElementById('candidateModal').style.display = 'flex';
+    }
+
+    function loadCandidateFeedback(appId) {
+        const box = document.getElementById('modal-feedback');
+        const cnt = document.getElementById('modal-fb-count');
+        if (!box) return;
+        box.innerHTML = 'Lädt…'; if (cnt) cnt.textContent = '';
+        const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        fetch(`/recruiter/applications/${appId}/feedback.json`)
+          .then(r => r.json())
+          .then(data => {
+            if (!data.total) {
+                box.innerHTML = '<span style="color:var(--text-muted);">Noch kein Interview-Feedback erfasst.</span>';
+                return;
+            }
+            if (cnt) cnt.textContent = '(' + data.total + (data.open_concerns ? ' · ' + data.open_concerns + ' mit Bedenken' : '') + ')';
+            let html = '';
+            data.rounds.forEach(rd => {
+                html += `<div style="margin-bottom:10px;"><strong style="color:var(--text-muted); font-size:12px;">Runde ${rd.round}</strong>`;
+                rd.items.forEach(f => {
+                    const col = f.positive ? '#22c55e' : (f.recommendation.indexOf('dagegen') >= 0 ? '#ef4444' : '#f59e0b');
+                    html += `<div style="border-left:3px solid ${col}; padding:6px 10px; margin:6px 0; background:rgba(0,0,0,0.15); border-radius:4px;">
+                        <div><strong style="color:#fff;">${esc(f.author)}</strong> · ${esc(f.recommendation)}${f.score != null ? ' · <strong>' + f.score + ' %</strong>' : ''}</div>`;
+                    const rk = Object.keys(f.ratings || {});
+                    if (rk.length) {
+                        html += '<div style="margin-top:3px;">' + rk.map(k => `<span style="display:inline-block; background:rgba(255,255,255,.08); border-radius:3px; padding:1px 6px; margin:2px 3px 0 0; font-size:11px;">${esc(k)}: ${f.ratings[k]} %</span>`).join('') + '</div>';
+                    }
+                    if (f.strengths) html += `<div style="margin-top:3px;"><i class="fa-solid fa-plus" style="color:#22c55e;"></i> ${esc(f.strengths)}</div>`;
+                    if (f.concerns) html += `<div style="margin-top:3px; color:#f87171;"><i class="fa-solid fa-triangle-exclamation"></i> <strong>Bedenken:</strong> ${esc(f.concerns)}</div>`;
+                    if (f.comment) html += `<div style="margin-top:3px; color:var(--text-muted);">${esc(f.comment)}</div>`;
+                    html += '</div>';
+                });
+                html += '</div>';
+            });
+            box.innerHTML = html;
+          })
+          .catch(() => { box.innerHTML = '<span style="color:var(--text-muted);">Feedback konnte nicht geladen werden.</span>'; });
     }
 
     function closeCandidateModal() {
@@ -1778,12 +2253,23 @@ MODALS & OVERLAYS
     }
 
     // Modal controls for scheduler
-    function openInterviewModal(appId) {
+    function openInterviewModal(appId, candidateName, jobTitle) {
         if (appId) {
             document.getElementById('schedule-app-id').value = appId;
         } else if (activeApplicationId) {
             document.getElementById('schedule-app-id').value = activeApplicationId;
         }
+        // Einladungstext aus der zentralen Vorlage (UC-SB-10) vorbefuellen
+        const inviteBox = document.getElementById('invite-message');
+        if (inviteBox && !inviteBox.dataset.touched) {
+            let text = INVITE_TEMPLATE_TEXT;
+            const first = (candidateName || '').split(' ')[0] || '';
+            const last = (candidateName || '').split(' ').slice(1).join(' ');
+            text = text.replaceAll('[[FIRST_NAME]]', first).replaceAll('[[LAST_NAME]]', last)
+                       .replaceAll('[[JOB_TITLE]]', jobTitle || '').replaceAll('[[COMPANY_NAME]]', COMPANY_NAME);
+            inviteBox.value = text.trim();
+        }
+        if (inviteBox) { inviteBox.oninput = () => { inviteBox.dataset.touched = '1'; }; }
         document.getElementById('interviewModal').style.display = 'flex';
     }
 
@@ -1811,6 +2297,9 @@ MODALS & OVERLAYS
         document.getElementById('job-tasks-inp').value = '';
         document.getElementById('job-reqs-inp').value = '';
         document.getElementById('job-screening').value = '';
+        document.getElementById('panel_quorum').value = '';
+        document.getElementById('panel_deadline_days').value = '';
+        document.getElementById('interview_rounds').value = '';
         
         // Reset selections to first option
         document.getElementById('job-facility').selectedIndex = 0;
@@ -1835,7 +2324,17 @@ MODALS & OVERLAYS
         openJobCreatorModal();
     }
 
-    function editJobPosting(id, title, description, tasksJson, requirementsJson, screeningQuestionsJson, facilityId, departmentId, locationId, jobFamilyId, contactPersonId, jobTemplateId, workflowStateId, benefitsSelectedCsv) {
+    function editJobPosting(id, title, description, tasksJson, requirementsJson, screeningQuestionsJson, facilityId, departmentId, locationId, jobFamilyId, contactPersonId, jobTemplateId, workflowStateId, benefitsSelectedCsv, panelUserIdsJson, panelQuorum, panelDeadlineDays, interviewRoundsCsv) {
+        document.getElementById('panel_quorum').value = panelQuorum || '';
+        document.getElementById('panel_deadline_days').value = panelDeadlineDays || '';
+        document.getElementById('interview_rounds').value = interviewRoundsCsv || '';
+        // Gremium der Stelle vorbefuellen – sonst wuerde jedes Bearbeiten die
+        // Auswahl stillschweigend loeschen (panel_members_present wird immer gesendet).
+        try {
+            const panelIds = new Set(JSON.parse(panelUserIdsJson || '[]').map(String));
+            document.querySelectorAll('#job-panel option').forEach(o => { o.selected = panelIds.has(o.value); });
+        } catch (e) {}
+        setTimeout(refreshPanelPreview, 0);
         // Set hidden input
         document.getElementById('job-id-inp').value = id;
         

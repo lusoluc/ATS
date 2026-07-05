@@ -1,0 +1,251 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bewerbungsstatus · SecurATS</title>
+  <style>
+    /* P4: Portal auf Design-Tokens – Dark-Default = SecurATS-Optik.
+       Traeger-Branding (branding_css.html) ueberschreibt NUR die Tokens
+       und schaltet damit hell + Primaerfarbe, ohne diese Datei zu kennen. */
+    :root{
+      --bg-color:#0b1220;
+      --bg-gradient:radial-gradient(1200px 600px at 50% -10%,#16233f,#0b1220 60%);
+      --surface-color:#111a2e;
+      --surface-hover:#1a2540;
+      --border-color:#1f2a44;
+      --text-main:#e5e7eb;
+      --text-muted:#94a3b8;
+      --primary:#8b5cf6;
+      --primary-light:#a78bfa;
+      --accent:#14b8a6;
+      --danger:#ef4444;
+      --danger-light:#fca5a5;
+    }
+    *{box-sizing:border-box;}
+    body{margin:0;min-height:100vh;background:var(--bg-color);background-image:var(--bg-gradient);
+         color:var(--text-main);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:40px 16px;}
+    .wrap{max-width:640px;margin:0 auto;}
+    .brand-head{display:flex;align-items:center;gap:10px;margin:0 auto 18px;max-width:640px;}
+    .brand-head img{height:34px;width:auto;display:block;}
+    .brand-head span{font-weight:700;font-size:17px;color:var(--primary);}
+    .card{background:var(--surface-color);border:1px solid var(--border-color);border-radius:16px;padding:28px;margin-bottom:16px;}
+    h1{font-size:22px;margin:0 0 4px;} .muted{color:var(--text-muted);font-size:14px;}
+    .row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border-color);flex-wrap:wrap;}
+    .badge{padding:4px 10px;border-radius:999px;font-size:12px;background:var(--surface-hover);color:var(--text-muted);}
+    .b-INVITED{background:rgba(20,184,166,.16);color:#0d9488;}
+    .b-HIRED{background:rgba(34,197,94,.16);color:#16a34a;}
+    .b-REJECTED{background:rgba(148,163,184,.18);color:#64748b;}
+    .b-IN_REVIEW{background:rgba(245,158,11,.16);color:#b45309;}
+    .b-NEW{background:rgba(139,92,246,.14);color:var(--primary);}
+    .b-WITHDRAWN{background:rgba(148,163,184,.18);color:#64748b;}
+    button{background:none;border:1px solid var(--danger);color:var(--danger);border-radius:10px;
+           padding:10px 14px;min-height:44px;cursor:pointer;font-size:13px;}
+    input[type=text],input[type=email],input[type=tel],textarea,select{
+      width:100%;min-height:44px;padding:10px 12px;border-radius:10px;font-size:15px;
+      background:var(--bg-color);border:1px solid var(--border-color);color:var(--text-main);}
+    a{color:var(--primary);text-decoration:none;}
+    .pipeline { display:flex; margin:12px 0 2px; width:100%; }
+    .p-step { flex:1; text-align:center; position:relative; min-width:0; }
+    .p-dot { width:13px; height:13px; border-radius:50%; margin:0 auto 5px;
+        background:var(--surface-hover); border:2px solid var(--border-color);
+        position:relative; z-index:2; box-sizing:border-box; }
+    .p-step::before { content:""; position:absolute; top:6px; left:-50%;
+        width:100%; height:2px; background:var(--border-color); z-index:1; }
+    .p-step:first-child::before { display:none; }
+    .p-label { font-size:10.5px; color:var(--text-muted); display:block; line-height:1.3; }
+    .p-step.done .p-dot { background:var(--accent); border-color:var(--accent); }
+    .p-step.done::before { background:var(--accent); }
+    .p-step.done .p-label { color:var(--text-main); }
+    .p-step.current .p-dot { background:var(--primary); border-color:var(--primary-light);
+        box-shadow:0 0 0 4px rgba(139,92,246,.22); }
+    .p-step.current .p-label { color:var(--text-main); font-weight:700; }
+    .p-step.stopped .p-dot { background:#94a3b8; border-color:#94a3b8; }
+    @media (max-width:480px){
+      body{padding:16px 10px;}
+      .card{padding:18px 14px;}
+      .row{flex-direction:column;align-items:flex-start;}
+      .row > *{width:100%;}
+      button{width:100%;}
+    }
+  </style>
+{% include 'includes/branding_css.html' %}
+</head>
+<body>
+{% if brand %}<div class="brand-head">{% if brand.logo %}<img src="{{ brand.logo }}" alt="{{ brand.name }}">{% else %}<span>{{ brand.name }}</span>{% endif %}</div>{% endif %}
+<div class="wrap">
+  {% if expired %}
+    <div class="card"><h1>Link abgelaufen</h1>
+      <p class="muted">Dieser Zugangslink ist nicht mehr gültig. Bitte kontaktieren Sie uns, falls Sie Fragen zu Ihrer Bewerbung haben.</p>
+      <p><a href="{% url 'ats:home' %}">← Zur Startseite</a></p></div>
+  {% else %}
+    <div class="card">
+      <h1>Hallo {{ applicant_name }},</h1>
+      <p class="muted">hier sehen Sie den aktuellen Stand Ihrer Bewerbung(en) – ganz ohne Passwort.</p>
+    </div>
+    {% if booking_error %}<div class="card" role="alert" style="border-color:#7f1d1d; background:#2a1215; color:#fca5a5; margin-bottom:12px;">{{ booking_error }}</div>{% endif %}
+    <div class="card">
+      {% for r in rows %}
+        <div class="row">
+          <div>
+            <div style="font-weight:600;">{{ r.job }}</div>
+            <div class="muted">eingegangen am {{ r.created|date:"d.m.Y" }}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="badge b-{{ r.status }}">{{ r.label }}</span>
+            <div class="pipeline" role="img" aria-label="Bewerbungsfortschritt: {{ r.label }}">
+              <div class="p-step {% if r.status == 'NEW' %}current{% else %}done{% endif %}">
+                <div class="p-dot"></div><span class="p-label">Eingegangen</span>
+              </div>
+              <div class="p-step {% if r.status == 'IN_REVIEW' %}current{% elif r.status == 'INVITED' or r.status == 'HIRED' or r.status == 'REJECTED' %}done{% endif %}">
+                <div class="p-dot"></div><span class="p-label">In Sichtung</span>
+              </div>
+              <div class="p-step {% if r.status == 'INVITED' %}current{% elif r.status == 'HIRED' %}done{% endif %}">
+                <div class="p-dot"></div><span class="p-label">Gespräch</span>
+              </div>
+              <div class="p-step {% if r.status == 'REJECTED' %}stopped{% elif r.status == 'HIRED' %}done current{% endif %}">
+                <div class="p-dot"></div><span class="p-label">Entscheidung</span>
+              </div>
+            </div>
+            {% if r.can_withdraw %}
+              <form method="post" onsubmit="return confirm('Bewerbung wirklich zurückziehen?');">
+                {% csrf_token %}
+                <input type="hidden" name="withdraw_id" value="{{ r.id }}">
+                <button type="submit">Zurückziehen</button>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+        <div class="timeline" aria-label="Bewerbungsstatus">
+          {% for step in steps %}
+            <div class="tl-step {% if forloop.counter0 < r.stage %}done{% elif forloop.counter0 == r.stage %}{% if r.rejected %}rejected{% else %}current{% endif %}{% endif %}">
+              <div class="tl-dot"></div>
+              <div class="tl-label">{% if forloop.counter0 == 3 and r.rejected %}{{ r.label }}{% else %}{{ step }}{% endif %}</div>
+            </div>
+          {% endfor %}
+        </div>
+        {% if r.interview_at %}
+        <div style="border:1px solid #14532d; background:#0e3a2a; color:#6ee7b7; border-radius:10px; padding:10px 12px; margin:-6px 0 6px; font-size:14px;">
+          <strong>✓ {{ r.interview_kind|default:"Ihr Gesprächstermin" }}:</strong> {{ r.interview_at|date:"l, d.m.Y" }} um {{ r.interview_at|date:"H:i" }} Uhr
+        </div>
+        <details style="margin:0 0 16px;">
+          <summary style="cursor:pointer; color:#94a3b8; font-size:13px;">Termin ändern oder absagen</summary>
+          <div style="border:1px solid #334155; border-radius:10px; padding:12px; margin-top:8px;">
+            {% if r.can_self_service %}
+              {% if r.rebook_slots %}
+              <div style="font-weight:600; margin-bottom:8px; font-size:13px;">Anderen Termin wählen:</div>
+              <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+                {% for sl in r.rebook_slots %}
+                <form method="post" style="display:inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="rebook_interview_id" value="{{ r.interview_id }}">
+                  <input type="hidden" name="book_slot_id" value="{{ sl.id }}">
+                  <button type="submit" style="cursor:pointer; padding:8px 12px; border-radius:8px; border:1px solid #475569; background:#1e293b; color:#e2e8f0;">
+                    {{ sl.startTime|date:"D, d.m." }} · {{ sl.startTime|date:"H:i" }} Uhr{% if sl.kind %} · {{ sl.kind_label }}{% endif %}
+                  </button>
+                </form>
+                {% endfor %}
+              </div>
+              {% endif %}
+              <form method="post" onsubmit="return confirm('Termin wirklich absagen? Sie können danach jederzeit einen neuen wählen.');" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                {% csrf_token %}
+                <input type="hidden" name="cancel_interview_id" value="{{ r.interview_id }}">
+                <input type="text" name="reason" placeholder="Grund (optional)" style="flex:1; min-width:180px; background:#0b1220; border:1px solid #334155; border-radius:8px; color:#e2e8f0; padding:8px 10px;">
+                <button type="submit">Termin absagen</button>
+              </form>
+              <div class="muted" style="font-size:12px; margin-top:8px;">Umbuchen und Absagen ist bis 24 Stunden vor dem Termin möglich.</div>
+            {% else %}
+              <div class="muted" style="font-size:13px; margin-bottom:8px;">Ihr Termin ist in weniger als 24 Stunden – bitte senden Sie uns Ihren Änderungswunsch, wir melden uns schnellstmöglich:</div>
+              <form method="post" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                {% csrf_token %}
+                <input type="hidden" name="change_request_interview_id" value="{{ r.interview_id }}">
+                <input type="text" name="reason" required placeholder="z. B. Schicht getauscht – geht auch Donnerstag?" style="flex:1; min-width:220px; background:#0b1220; border:1px solid #334155; border-radius:8px; color:#e2e8f0; padding:8px 10px;">
+                <button type="submit" style="border-color:#334155; color:#e2e8f0;">Anfrage senden</button>
+              </form>
+            {% endif %}
+          </div>
+        </details>
+        {% elif r.slots %}
+        <div style="border:1px solid #334155; border-radius:10px; padding:12px; margin:-6px 0 16px;">
+          <div style="font-weight:600; margin-bottom:8px;">Bitte wählen Sie Ihren Gesprächstermin:</div>
+          <div style="display:flex; flex-wrap:wrap; gap:8px;">
+            {% for sl in r.slots %}
+            <form method="post" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="book_app_id" value="{{ r.id }}">
+              <input type="hidden" name="book_slot_id" value="{{ sl.id }}">
+              <button type="submit" style="cursor:pointer; padding:8px 12px; border-radius:8px; border:1px solid #475569; background:#1e293b; color:#e2e8f0;">
+                {{ sl.startTime|date:"D, d.m." }} · {{ sl.startTime|date:"H:i" }} Uhr{% if sl.kind %} · {{ sl.kind_label }}{% endif %}
+              </button>
+            </form>
+            {% endfor %}
+          </div>
+          <div class="muted" style="font-size:12px; margin-top:8px;">Ein Klick genügt – Sie erhalten sofort eine Bestätigung. Passt kein Termin? Antworten Sie einfach auf unsere E-Mail.</div>
+        </div>
+        {% endif %}
+        <details style="margin:0 0 16px;">
+          <summary style="cursor:pointer; color:#94a3b8; font-size:13px;">Nachrichten{% if r.messages %} ({{ r.messages|length }}){% endif %} &amp; Rückfrage stellen</summary>
+          <div style="border:1px solid #334155; border-radius:10px; padding:12px; margin-top:8px;">
+            {% for m in r.messages %}
+            <div style="margin-bottom:8px; display:flex; {% if m.direction == 'INBOUND' %}justify-content:flex-end;{% endif %}">
+              <div style="max-width:85%; font-size:13px; padding:8px 10px; border-radius:10px; white-space:pre-wrap;
+                {% if m.direction == 'INBOUND' %}background:#1d283f; border:1px solid #334155;
+                {% else %}background:#101a30; border:1px solid #26324d;{% endif %}">
+                <div style="color:#7c8aa5; font-size:11px; margin-bottom:2px;">{% if m.direction == 'INBOUND' %}Sie{% else %}Recruiting-Team{% endif %} · {{ m.createdAt|date:"d.m.Y H:i" }}</div>
+                {{ m.content }}
+              </div>
+            </div>
+            {% empty %}<p class="muted" style="font-size:13px;">Noch keine Nachrichten.</p>{% endfor %}
+            <form method="post" style="display:flex; gap:8px; margin-top:10px; align-items:flex-start;">
+              {% csrf_token %}
+              <input type="hidden" name="reply_app_id" value="{{ r.id }}">
+              <textarea name="content" required rows="2" placeholder="Ihre Rückfrage – wir melden uns so schnell wie möglich." style="flex:1; background:#0b1220; border:1px solid #334155; border-radius:8px; color:#e2e8f0; padding:8px 10px; font-family:inherit; font-size:13px;"></textarea>
+              <button type="submit" style="border-color:#334155; color:#e2e8f0; white-space:nowrap;">Senden</button>
+            </form>
+          </div>
+        </details>
+      {% empty %}
+        <p class="muted">Aktuell sind keine Bewerbungen hinterlegt.</p>
+      {% endfor %}
+    </div>
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+        <div>
+          <div style="font-weight:600; font-size:14px;">Talent-Pool</div>
+          {% if pool_member %}
+          <p class="muted" style="font-size:12px; margin:4px 0 0;">Sie sind aufgenommen (gültig bis {{ pool_member.expiresAt|date:"d.m.Y" }}). Wir weisen Sie gelegentlich auf passende Stellen hin – keine Dauer-Werbung.</p>
+          {% else %}
+          <p class="muted" style="font-size:12px; margin:4px 0 0;">{% if has_rejected %}Diesmal hat es nicht geklappt – aber vielleicht beim nächsten Mal: Mit{% else %}Gerade nicht die richtige Stelle dabei? Mit{% endif %} Ihrer Einwilligung weisen wir Sie 12 Monate lang auf passende neue Stellen hin (Bereich &amp; Standort Ihrer bisherigen Bewerbungen). Jederzeit hier widerrufbar.</p>
+          {% endif %}
+        </div>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="form" value="talent_pool">
+          {% if pool_member %}
+          <button type="submit" name="action" value="leave">Aus dem Pool austreten</button>
+          {% else %}
+          <button type="submit" name="action" value="join" style="border-color:#14532d; color:#6ee7b7;">In den Talent-Pool aufnehmen</button>
+          {% endif %}
+        </form>
+      </div>
+    </div>
+    <div class="card">
+      <details>
+        <summary style="cursor:pointer; color:#94a3b8; font-size:13px;">Meine Kontaktdaten</summary>
+        <form method="post" style="margin-top:10px;">
+          {% csrf_token %}
+          <input type="hidden" name="form" value="contact">
+          <label style="font-size:12px; color:#94a3b8;" for="cp-phone">Telefonnummer</label>
+          <input id="cp-phone" type="text" name="phone" value="{{ applicant_phone }}" placeholder="z. B. 0151 2345678" style="width:100%; background:#0b1220; border:1px solid #334155; border-radius:8px; color:#e2e8f0; padding:8px 10px; margin:4px 0 10px;">
+          <label style="font-size:12px; color:#94a3b8;" for="cp-email">Neue E-Mail-Adresse (aktuell: {{ applicant_email }})</label>
+          <input id="cp-email" type="email" name="new_email" placeholder="Nur ausfüllen, wenn sich Ihre E-Mail ändert" style="width:100%; background:#0b1220; border:1px solid #334155; border-radius:8px; color:#e2e8f0; padding:8px 10px; margin:4px 0 4px;">
+          <p class="muted" style="font-size:11px; margin:0 0 10px;">Die E-Mail-Adresse ist Ihr Zugangsschlüssel – eine Änderung prüfen wir persönlich und melden uns bei Ihnen.</p>
+          <button type="submit" style="border-color:#334155; color:#e2e8f0;">Speichern</button>
+        </form>
+      </details>
+    </div>
+    <p class="muted" style="text-align:center;">Ihre Daten verlassen unser Haus nicht und werden nach Ablauf der gesetzlichen Frist automatisch gelöscht.</p>
+  {% endif %}
+</div>
+</body>
+</html>

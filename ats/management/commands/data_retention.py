@@ -88,11 +88,9 @@ class Command(BaseCommand):
 
                 anonymized_count += 1
 
-                # Write AuditLog
-                AuditLog.objects.create(
-                    action="ANONYMIZE_DSGVO",
-                    applicationId=str(app.id),
-                    metadataJson=json.dumps({"days_threshold": days})
-                )
+                # Write AuditLog (in Integritätskette)
+                from ats.audit import write_audit
+                write_audit("ANONYMIZE_DSGVO", application_id=str(app.id),
+                            days_threshold=days)
 
         self.stdout.write(self.style.SUCCESS(f"Erfolgreich anonymisiert: {anonymized_count} Datensätze."))

@@ -329,14 +329,14 @@ class Command(BaseCommand):
                         createdAt=self.parse_date(r['createdAt'])
                     )
 
-                # RoleDelegation
-                for r in get_rows('RoleDelegation'):
-                    RoleDelegation.objects.create(
-                        id=r['id'], delegator_id=r['delegatorId'], delegatee_id=r['delegateeId'],
-                        scopeType=r['scopeType'], scopeId=r['scopeId'],
-                        validFrom=self.parse_date(r['validFrom']), validUntil=self.parse_date(r['validUntil']),
-                        createdAt=self.parse_date(r['createdAt']), updatedAt=self.parse_date(r['updatedAt'])
-                    )
+                # RoleDelegation: seit WP3 auf Django-Auth-User umgestellt.
+                # Alt-Datensätze referenzieren Prisma-User-UUIDs und sind nicht
+                # automatisch zuordenbar -> bewusst übersprungen (manuell neu anlegen).
+                skipped_delegations = len(get_rows('RoleDelegation'))
+                if skipped_delegations:
+                    self.stdout.write(self.style.WARNING(
+                        f"RoleDelegation: {skipped_delegations} Alt-Einträge übersprungen "
+                        "(FK zeigt jetzt auf Django-Auth-User)."))
 
                 # --- 4. MIGRATION LEVEL 4: Department Link & JobPosting ---
                 self.stdout.write("Migriere Level 4: Jobs & Abteilungskontakte...")

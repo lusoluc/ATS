@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}{{ facility.name }} · Karriere · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap">
+  <div class="card" style="margin-bottom: var(--space-4);">
+    <span class="badge badge-accent" style="margin-bottom: 10px;"><i class="fa-solid fa-building"></i> Einrichtung</span>
+    <h1 class="page-title" style="font-size: 30px;">{{ facility.name }}</h1>
+    {% if profile.description %}
+      <p style="color: var(--text-main); line-height: 1.8;">{{ profile.description|linebreaksbr }}</p>
+    {% endif %}
+    {% if images %}
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-3); margin-top: var(--space-4);">
+      {% for img in images %}
+        <img src="{{ img.url|default:img }}" alt="{{ img.alt|default:facility.name }}" style="width:100%; border-radius: var(--border-radius-md); border: 1px solid var(--glass-border);">
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2 style="margin:0 0 var(--space-3); font-size: 18px;"><i class="fa-solid fa-briefcase" style="color: var(--primary-light);"></i> Offene Stellen bei {{ facility.name }}</h2>
+    <ul class="list-reset">
+      {% for job in jobs %}
+      <li class="list-row">
+        <span>
+          <a href="{% url 'ats:job_detail' job.id %}" style="color: var(--text-main); text-decoration:none; font-weight:600;">{{ job.title }}</a>
+          <span style="color: var(--text-muted); font-size: 13px;"> · {{ job.location.name|default:"—" }}{% if job.jobFamily %} · {{ job.jobFamily.name }}{% endif %}</span>
+        </span>
+        <a class="btn btn-ghost" href="{% url 'ats:job_detail' job.id %}">Ansehen</a>
+      </li>
+      {% empty %}<li class="empty-state">Aktuell keine offenen Stellen – gern einen <a href="{% url 'ats:job_alert' %}" style="color: var(--primary-light);">Job-Alert</a> einrichten.</li>{% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

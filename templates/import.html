@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% block title %}Daten-Import · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap" style="max-width:760px;">
+  <h1 class="page-title"><i class="fa-solid fa-file-import"></i> Bewerberdaten importieren</h1>
+  <p class="page-lead">Bestandsbewerber aus Ihrem Altsystem oder Excel übernehmen – als CSV oder Excel (.xlsx). Erst <strong>prüfen</strong> (Testlauf ändert garantiert nichts), dann importieren.</p>
+
+  {% if fatal %}<div class="form-error-summary" role="alert">{{ fatal }}</div>{% endif %}
+
+  {% if report %}
+  <div class="card" style="margin-bottom: var(--space-4);">
+    <h2 style="margin:0 0 var(--space-2); font-size:17px;">
+      {% if report.dry_run %}<i class="fa-solid fa-flask" style="color: var(--accent-light);"></i> Testlauf-Ergebnis (nichts wurde geändert)
+      {% else %}<i class="fa-solid fa-check" style="color: var(--accent-light);"></i> Import abgeschlossen{% endif %}
+    </h2>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap: var(--space-3);">
+      <div><div style="font-size:24px; font-weight:700;">{{ report.total }}</div><div style="color:var(--text-muted); font-size:12px;">Zeilen gelesen</div></div>
+      <div><div style="font-size:24px; font-weight:700;">{{ report.applications_created }}</div><div style="color:var(--text-muted); font-size:12px;">Bewerbungen {% if report.dry_run %}würden entstehen{% else %}angelegt{% endif %}</div></div>
+      <div><div style="font-size:24px; font-weight:700;">{{ report.applicants_new }} / {{ report.applicants_reused }}</div><div style="color:var(--text-muted); font-size:12px;">Bewerber neu / wiedererkannt</div></div>
+      <div><div style="font-size:24px; font-weight:700;">{{ report.skipped_existing }}</div><div style="color:var(--text-muted); font-size:12px;">übersprungen (existiert bereits)</div></div>
+    </div>
+    {% if report.errors %}
+    <h3 style="margin: var(--space-4) 0 var(--space-2); font-size:14px; color: var(--danger-light);">{{ report.errors|length }} Fehlerzeile(n) – wurden nicht importiert:</h3>
+    <table class="data-table"><thead><tr><th>Zeile</th><th>Grund</th></tr></thead><tbody>
+      {% for line, reason in report.errors %}<tr><td>{{ line }}</td><td>{{ reason }}</td></tr>{% endfor %}
+    </tbody></table>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <form id="import-form" method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="field">
+        <label for="csv_file">CSV- oder Excel-Datei (max. 5 MB, 5.000 Zeilen)</label>
+        <input type="file" id="csv_file" name="csv_file" class="input" accept=".csv,.xlsx,.xlsm,text/csv" required>
+      </div>
+      <div class="field">
+        <label for="default_job">Standard-Stelle für Zeilen ohne Stellenangabe (optional)</label>
+        <select id="default_job" name="default_job" class="input">
+          <option value="">– keine (Zeile ohne Stelle wird Fehlerzeile) –</option>
+          {% for j in jobs %}<option value="{{ j.id }}">{{ j.title }}{% if j.location %} · {{ j.location.name }}{% endif %}</option>{% endfor %}
+        </select>
+      </div>
+      <div style="display:flex; gap: var(--space-2); flex-wrap:wrap;">
+        <button type="submit" name="action" value="preview" class="btn btn-ghost"><i class="fa-solid fa-flask"></i> Prüfen (Testlauf)</button>
+        <button type="submit" name="action" value="import" class="btn btn-primary" onclick="return confirm('Wirklich importieren? Vorher Testlauf empfohlen.');"><i class="fa-solid fa-file-import"></i> Importieren</button>
+      </div>
+    </form>
+    <div style="margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--border-color); color: var(--text-muted); font-size: 13px;">
+      <strong>Format:</strong> Kopfzeile Pflicht; Spalten <em>Vorname, Nachname, E-Mail</em> (Pflicht) sowie optional <em>Telefon, Stelle, Status, Quelle, Datum, Notiz</em> – deutsch oder englisch, Komma oder Semikolon, Excel-Export funktioniert direkt.
+      <a href="{% url 'ats:import_template' %}" style="color: var(--primary-light);"><i class="fa-solid fa-download"></i> Vorlage herunterladen</a><br>
+      <strong>Sicherheit:</strong> Bewerber werden über den verschlüsselungs­kompatiblen E-Mail-Index wiedererkannt (keine Duplikate); vorhandene Bewerbungen werden übersprungen; unbekannte Stellen werden <em>nicht</em> automatisch angelegt. Jeder Import landet im Audit-Log.
+    </div>
+  </div>
+</div>
+
+  {% if detected_headers %}
+  <div class="card" style="margin-top: var(--space-4);">
+    <h2 style="font-size:16px; margin:0 0 var(--space-1);"><i class="fa-solid fa-table-columns"></i> Spalten-Zuordnung prüfen</h2>
+    <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--space-3);">So wurden die Spalten Ihrer Datei erkannt. Falsch oder unerkannt? Zuordnung unten ändern, Datei erneut wählen und den Testlauf wiederholen – die manuelle Zuordnung gewinnt gegen die Automatik.</p>
+    <table class="data-table">
+      <thead><tr><th>Unser Feld</th><th>Ihre Spalte</th></tr></thead>
+      <tbody>
+        {% for m in mapping_rows %}
+        <tr>
+          <td>{{ m.label }}{% if m.required %} <span style="color:var(--danger-light);">*</span>{% endif %}</td>
+          <td>
+            <select name="map_{{ m.field }}" form="import-form" class="input" style="min-width:220px;">
+              <option value="">– automatisch{% if m.current %}: „{{ m.current }}"{% else %}: nicht erkannt{% endif %} –</option>
+              {% for h in detected_headers %}<option value="{{ h }}" {% if m.current == h %}selected{% endif %}>{{ h }}</option>{% endfor %}
+              <option value="__IGNORE__">Nicht importieren</option>
+            </select>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if unmapped_headers %}
+    <p style="font-size:13px; color:var(--warning); margin-top:var(--space-2);"><i class="fa-solid fa-triangle-exclamation"></i> Ohne Zuordnung (werden ignoriert): {{ unmapped_headers|join:", " }}</p>
+    {% endif %}
+  </div>
+{% endif %}
+
+<div class="card" style="margin-top: var(--space-4);">
+    <h2 style="font-size:16px; margin:0 0 var(--space-1);"><i class="fa-solid fa-file-zipper"></i> CV-Dateien aus dem Altsystem (ZIP)</h2>
+    <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--space-2);">
+      Nach dem Bewerber-Import: Lebensläufe und Zeugnisse als ZIP hochladen.
+      <strong>Konvention:</strong> Dateiname beginnt mit der E-Mail-Adresse –
+      z.&nbsp;B. <code>maria.weber@web.de_Lebenslauf.pdf</code> oder <code>m.weber@gmx.de.pdf</code>.
+      Zuordnung zur jüngsten Bewerbung der Person; erlaubt: PDF, DOC(X), JPG, PNG (je max. 10&nbsp;MB).
+      Erst Testlauf, dann Import – wie oben.
+    </p>
+    <form method="post" enctype="multipart/form-data" class="form-row">
+      {% csrf_token %}
+      <input type="hidden" name="form" value="cv_zip">
+      <input type="file" name="zip_file" accept=".zip" class="input" required>
+      <button type="submit" name="action" value="preview" class="btn btn-ghost">Testlauf</button>
+      <button type="submit" name="action" value="import" class="btn btn-primary" onclick="return confirm('CV-Dateien jetzt wirklich anhängen?');">Importieren</button>
+    </form>
+    {% if cv_report %}
+    <div style="margin-top: var(--space-3);">
+      <p style="font-size:14px;"><strong>{% if cv_dry %}Testlauf{% else %}Import{% endif %}:</strong>
+        {{ cv_report.total }} Datei(en) geprüft ·
+        {{ cv_report.matched|length }} zuordenbar{% if not cv_dry %} · {{ cv_report.attached }} angehängt{% endif %} ·
+        {{ cv_report.unmatched|length }} ohne Treffer · {{ cv_report.errors|length }} Fehler</p>
+      {% if cv_report.matched %}
+      <table class="data-table"><thead><tr><th>Datei</th><th>E-Mail</th><th>Bewerbung</th><th>Typ</th></tr></thead><tbody>
+        {% for m in cv_report.matched %}<tr><td>{{ m.0 }}</td><td>{{ m.1 }}</td><td>{{ m.2 }}</td><td>{{ m.3 }}</td></tr>{% endfor %}
+      </tbody></table>
+      {% endif %}
+      {% if cv_report.unmatched %}
+      <p style="font-size:13px; color:var(--text-muted); margin-top:var(--space-2);">Ohne Treffer:</p>
+      <ul class="list-reset" style="font-size:13px;">{% for u in cv_report.unmatched %}<li>{{ u.0 }} – {{ u.1 }}</li>{% endfor %}</ul>
+      {% endif %}
+      {% if cv_report.errors %}
+      <p class="field-error" style="margin-top:var(--space-2);">Fehler:</p>
+      <ul class="list-reset" style="font-size:13px;">{% for e in cv_report.errors %}<li>{{ e.0 }} – {{ e.1 }}</li>{% endfor %}</ul>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Governance · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap">
+  <h1 class="page-title"><i class="fa-solid fa-landmark"></i> Governance-Cockpit</h1>
+  <p class="page-lead">Datenminimierte Kontroll-Sicht für Betriebsrat, Schwerbehindertenvertretung und Datenschutz: ausschließlich Aggregate – keine Namen, keine Einzelfälle.</p>
+
+  <div class="card">
+    <h2 style="margin:0 0 var(--space-3); font-size:17px;">Verfahren im Überblick</h2>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap: var(--space-3);">
+      <div><div style="font-size:26px; font-weight:700;">{{ total }}</div><div style="color:var(--text-muted); font-size:12px;">Bewerbungen gesamt</div></div>
+      {% for r in by_status %}
+      <div><div style="font-size:26px; font-weight:700;">{{ r.c }}</div><div style="color:var(--text-muted); font-size:12px;">{{ r.status }}</div></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin:0 0 var(--space-3); font-size:17px;">Audit-Integrität & Datenschutz</h2>
+    <ul class="list-reset">
+      <li class="list-row"><span>Audit-Hashkette</span>
+        {% if chain.ok %}<span class="badge badge-accent">intakt · {{ chain.checked }} Einträge geprüft</span>
+        {% else %}<span class="badge badge-danger">BRUCH bei {{ chain.broken_id }}</span>{% endif %}
+      </li>
+      <li class="list-row"><span>DSGVO-Anonymisierungen (Retention-Läufe)</span><span class="badge">{{ anonymized }}</span></li>
+      <li class="list-row"><span>Protokollierte KI-Ausführungen (PII-redigiert)</span><span class="badge">{{ ai_logged }}</span></li>
+      <li class="list-row"><span>Talent-Pool-Einwilligungen</span><span class="badge">{{ consents }}</span></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2 style="margin:0 0 var(--space-3); font-size:17px;">Audit-Aktivität (Aktionen, aggregiert)</h2>
+    <table class="data-table">
+      <thead><tr><th>Aktion</th><th>Anzahl</th></tr></thead>
+      <tbody>
+        {% for a in audit_counts %}<tr><td>{{ a.action }}</td><td>{{ a.c }}</td></tr>
+        {% empty %}<tr><td colspan="2" class="empty-state">Noch keine Einträge.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+    <p style="color:var(--text-muted); font-size:12px; margin-top: var(--space-3);">Einzelne Einträge (mit Nutzer-/Vorgangsbezug) sind bewusst der rollenbeschränkten Audit-Ansicht vorbehalten.</p>
+  </div>
+</div>
+{% endblock %}

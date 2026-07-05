@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Screening-Fragen · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap">
+  <h1 class="page-title"><i class="fa-solid fa-circle-question"></i> Screening-Fragen-Bank</h1>
+  <p class="page-lead">Wiederverwendbare Fragen für Stellenausschreibungen.</p>
+  <div class="card">
+    <form method="post" class="form-row" style="margin-bottom: var(--space-4);">
+      {% csrf_token %}
+      <input type="text" name="question" class="input" placeholder="Neue Frage…" required>
+      <button type="submit" class="btn btn-primary">Hinzufügen</button>
+    </form>
+    <ul class="list-reset">
+      {% for q in questions %}
+      <li class="list-row">
+        <span>{{ q.question }}</span>
+        <form method="post" action="{% url 'ats:archive_screening_question' q.id %}">{% csrf_token %}
+          <button type="submit" title="Archivieren" class="btn-icon danger"><i class="fa-solid fa-box-archive"></i></button>
+        </form>
+      </li>
+      {% empty %}<li class="empty-state">Noch keine Fragen angelegt.</li>{% endfor %}
+    </ul>
+  </div>
+</div>
+
+  <div class="card" style="margin-top: var(--space-4);">
+    <h2 style="font-size:16px; margin:0 0 var(--space-1);"><i class="fa-solid fa-scale-balanced" style="color:var(--warning);"></i> Mindeststandards je Jobfamilie (Vorstand)</h2>
+    <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--space-3);">Diese Fragen werden bei <strong>jedem Speichern</strong> jeder Stelle der Familie serverseitig durchgesetzt: fehlende werden wieder eingefügt, <code>isMandatory</code> wird erzwungen – unabhängig davon, was Formular, Prozess-Übernahme oder Import liefern. Jede Änderung ist auditiert.</p>
+    {% if minimum_error %}<div class="alert alert-danger" role="alert" style="margin-bottom: var(--space-3);">{{ minimum_error }}</div>{% endif %}
+    {% for row in family_rows %}
+    <details style="margin-bottom: var(--space-2);">
+      <summary style="cursor:pointer; font-size:14px;">{{ row.family.name }}{% if row.questions %} <span class="badge badge-accent">{{ row.questions|length }} Standard{{ row.questions|length|pluralize:"s" }}</span>{% endif %}</summary>
+      <div style="margin-top:10px;">
+        {% for r in row.questions %}
+        <div class="card" style="padding: var(--space-3); margin-bottom: var(--space-2);">
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="form" value="minimum_builder">
+            <input type="hidden" name="family_id" value="{{ row.family.id }}">
+            <input type="hidden" name="idx" value="{{ r.i }}">
+            <div class="form-row" style="margin-bottom:8px;">
+              <input type="text" name="q_question" class="input" value="{{ r.q.question }}" placeholder="Frage / geforderter Nachweis" required style="flex:2;">
+              <select name="q_type" class="input" style="flex:1;">
+                {% for t, label in question_types.items %}<option value="{{ t }}" {% if r.q.type == t %}selected{% endif %}>{{ label }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="form-row" style="margin-bottom:8px;">
+              <textarea name="q_options" class="textarea" rows="2" placeholder="Nur bei Auswahl: eine Option je Zeile" style="flex:2;">{{ r.options_text }}</textarea>
+              <input type="text" name="q_expected" class="input" value="{{ r.q.expectedAnswer|default:'' }}" placeholder="K.O.-Antwort (YES/NO oder Option; leer = kein K.O.)" style="flex:1;">
+            </div>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <button type="submit" name="action" value="save" class="btn btn-ghost" style="padding:6px 12px; font-size:12px;">Speichern</button>
+              <button type="submit" name="action" value="up" class="btn-icon" title="nach oben" aria-label="Frage nach oben"><i class="fa-solid fa-arrow-up"></i></button>
+              <button type="submit" name="action" value="down" class="btn-icon" title="nach unten" aria-label="Frage nach unten"><i class="fa-solid fa-arrow-down"></i></button>
+              <button type="submit" name="action" value="delete" class="btn-icon danger" title="löschen" aria-label="Frage löschen" onclick="return confirm('Diesen Mindeststandard wirklich löschen?');"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </form>
+        </div>
+        {% endfor %}
+        <form method="post" class="form-row" style="margin-top:6px;">
+          {% csrf_token %}
+          <input type="hidden" name="form" value="minimum_builder">
+          <input type="hidden" name="family_id" value="{{ row.family.id }}">
+          <input type="hidden" name="action" value="add">
+          <input type="text" name="q_question" class="input" placeholder="Neue Frage / Nachweis, z. B. Führerschein Klasse B" required style="flex:2;">
+          <select name="q_type" class="input" style="flex:1;">
+            {% for t, label in question_types.items %}<option value="{{ t }}">{{ label }}</option>{% endfor %}
+          </select>
+          <input type="text" name="q_expected" class="input" placeholder="K.O.-Antwort (optional)" style="flex:1;">
+          <button type="submit" class="btn btn-primary" style="white-space:nowrap;"><i class="fa-solid fa-plus"></i> Hinzufügen</button>
+        </form>
+        <p style="font-size:12px; color:var(--text-muted); margin:8px 0 0;">Mindeststandards sind immer Pflicht. K.O.-Antwort nur setzen, wenn eine abweichende Antwort automatisch zur Absage führen soll. „Pflicht-Dokument" verlangt einen Upload (z. B. Führerschein, Impfnachweis) direkt im Bewerbungsformular.</p>
+      </div>
+    </details>
+    {% endfor %}
+  </div>
+{% endblock %}

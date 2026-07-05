@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Seiten · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap">
+  <h1 class="page-title"><i class="fa-solid fa-file-lines"></i> Seiten-Manager</h1>
+  <p class="page-lead">Inhalts-Seiten anlegen und bearbeiten. (Visueller Drag-&-Drop-Builder folgt.)</p>
+  <div class="card" style="margin-bottom: var(--space-4);">
+    <form method="post" style="display:flex;flex-direction:column;gap: var(--space-2);">
+      {% csrf_token %}
+      <input type="hidden" name="page_id" id="page_id">
+      <input name="title" id="f_title" class="input" placeholder="Titel" required>
+      <input name="slug" id="f_slug" class="input" placeholder="slug (optional – wird sonst erzeugt)">
+      <textarea name="content" id="f_content" class="textarea" placeholder="Inhalt" rows="6"></textarea>
+      <label style="color:var(--text-muted);display:flex;gap:8px;align-items:center;"><input type="checkbox" name="navEnabled" id="f_nav" checked> In Navigation anzeigen</label>
+      <button type="submit" class="btn btn-primary" style="align-self:flex-start;">Speichern</button>
+    </form>
+  </div>
+  <div class="card">
+    <table class="data-table">
+      <thead><tr><th>Titel</th><th>Slug</th><th>Nav</th><th></th></tr></thead>
+      <tbody>
+      {% for p in pages %}
+        <tr>
+          <td><a href="/pages/{{ p.slug }}/">{{ p.title }}</a></td>
+          <td style="color:var(--text-muted);">{{ p.slug }}</td>
+          <td>{% if p.navEnabled %}✓{% else %}–{% endif %}</td>
+          <td style="text-align:right;">
+            <a href="{% url 'ats:blocks_editor' kind='page' obj_id=p.id %}" class="btn-icon" title="Baukasten"><i class="fa-solid fa-cubes"></i></a>
+            <button type="button" onclick="editPage('{{ p.id }}','{{ p.title|escapejs }}','{{ p.slug|escapejs }}',this)" class="btn-icon" title="Bearbeiten"><i class="fa-solid fa-pen"></i></button>
+            <form method="post" action="{% url 'ats:delete_page' p.id %}" style="display:inline;" onsubmit="return confirm('Seite löschen?');">{% csrf_token %}<button type="submit" class="btn-icon danger"><i class="fa-solid fa-trash"></i></button></form>
+          </td>
+        </tr>
+      {% empty %}<tr><td colspan="4" class="empty-state">Noch keine Seiten.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<script>
+function editPage(id,title,slug,btn){
+  document.getElementById('page_id').value=id;
+  document.getElementById('f_title').value=title;
+  document.getElementById('f_slug').value=slug;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+{% endblock %}

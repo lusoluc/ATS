@@ -1,42 +1,26 @@
 #!/bin/bash
 # ==============================================================================
-# SecurATS - Zero-Downtime Deployment Script
+# SecurATS - Deployment (Django + Docker Compose)
 # ==============================================================================
-# Dieses Skript aktualisiert die laufende Plattform auf den neuesten Code,
-# baut das Projekt im Hintergrund und tauscht den laufenden Prozess nahtlos aus.
+# Kanonischer Stack ist Django (siehe NORTHSTAR.md, Abschnitt 6). Der frühere
+# Next.js/pm2-Ablauf ist nach legacy/ ausgelagert.
+# Voraussetzung: eine .env mit DJANGO_SECRET_KEY und PII_ENCRYPTION_KEY
+# (siehe .env.example). Migrationen laufen im Container-Entrypoint.
 # ==============================================================================
 
-set -e # Skript bricht bei einem Fehler sofort ab
+set -e
 
-echo "[SecurATS] Starte Zero-Downtime Deployment..."
+echo "[SecurATS] Deployment startet..."
 
-# 1. Neuesten Code laden
-echo "[1/5] Lade neuesten Code von GitHub..."
+echo "[1/3] Lade neuesten Code..."
 git fetch origin main
 git reset --hard origin/main
 
-# 2. Abhängigkeiten installieren
-echo "[2/5] Installiere Abhängigkeiten..."
-npm ci
+echo "[2/3] Baue das Django-Image..."
+docker compose build web
 
-# 3. Datenbank-Migrationen (Rückwärtskompatibel) anwenden
-echo "[3/5] Führe sichere Datenbank-Updates durch..."
-npx prisma generate
-npx prisma migrate deploy
+echo "[3/3] Rolle Container neu aus (Migrationen laufen im Entrypoint)..."
+docker compose up -d web
+docker image prune -f >/dev/null 2>&1 || true
 
-# 4. Neue Version im Hintergrund bauen
-echo "[4/5] Baue die neue Plattform-Version (Next.js)..."
-npm run build
-
-# 5. Nahtloser Austausch (Zero Downtime)
-echo "[5/5] Führe Graceful Reload durch..."
-# Prüfen ob PM2 bereits den Prozess "securats" kennt.
-# Wenn ja: reload (Downtime = 0). Wenn nein: neu starten.
-if pm2 show securats > /dev/null; then
-    pm2 reload securats --update-env
-else
-    pm2 start npm --name "securats" -- start
-    pm2 save
-fi
-
-echo "[SecurATS] Deployment erfolgreich abgeschlossen! Plattform ist aktuell."
+echo "[SecurATS] Deployment erfolgreich abgeschlossen."

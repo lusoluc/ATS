@@ -217,6 +217,16 @@
         </select>
     </div>
 
+    <div class="filter-group">
+        <label class="form-label" for="family">Kategorie</label>
+        <select id="family" name="family" class="filter-select">
+            <option value="">Alle Kategorien</option>
+            {% for fam in families %}
+                <option value="{{ fam.id }}" {% if family_filter == fam.id|stringformat:"s" %}selected{% endif %}>{{ fam.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
     <div style="display: flex; gap: 8px;">
         <button type="submit" class="btn-search">
             <i class="fa-solid fa-magnifying-glass"></i> Filtern

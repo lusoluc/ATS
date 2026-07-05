@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Job-Alert · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap" style="max-width:560px;">
+  <div class="card">
+  {% if submitted %}
+    <h1 class="page-title"><i class="fa-solid fa-envelope-circle-check"></i> Fast geschafft!</h1>
+    {% if updated %}
+      <p class="page-lead">Ihre Alarm-Einstellungen wurden <strong>aktualisiert</strong> – pro E-Mail-Adresse gibt es genau ein Abo, es entstehen keine doppelten Einträge.</p>
+    {% else %}
+      <p class="page-lead">Wir haben Ihnen einen <strong>Bestätigungslink</strong> geschickt. Erst nach Klick ist der Alarm aktiv (Double-Opt-in).</p>
+    {% endif %}
+    <p style="color:var(--text-muted); font-size:13px;">DSGVO-Hinweis: Ihr Abo verfällt automatisch 12 Monate nach der letzten Bestätigung und wird dann gelöscht. Abmelden ist jederzeit über den Link in jeder E-Mail möglich.</p>
+    <a class="btn btn-ghost" href="{% url 'ats:job_list' %}">← Zu den offenen Stellen</a>
+  {% else %}
+    <h1 class="page-title"><i class="fa-solid fa-bell"></i> Job-Alert einrichten</h1>
+    <p class="page-lead">Sie bestimmen den Rahmen: Stichwort, Einrichtung, Umkreis – oder einfach alles. Passende neue Stellen kommen direkt ins Postfach.</p>
+    <form method="post">{% csrf_token %}
+      {% if error %}<div class="form-error-summary" role="alert">{{ error }}</div>{% endif %}
+      <div class="field">
+        <label for="email">E-Mail-Adresse *</label>
+        <input type="email" id="email" name="email" class="input{% if error %} input-invalid{% endif %}" placeholder="name@beispiel.de" required value="{{ form_data.email|default:'' }}"{% if error %} aria-invalid="true" aria-describedby="err-email"{% endif %}>
+        {% if error %}<span class="field-error" id="err-email">{{ error }}</span>{% endif %}
+      </div>
+      <div class="field">
+        <label for="keyword">Jobtitel enthält (optional)</label>
+        <input type="text" id="keyword" name="keyword" class="input" placeholder='z.B. "Pflege" oder "Leitung"'>
+      </div>
+      <div class="field">
+        <label for="facility">Nur diese Einrichtung (optional)</label>
+        <select id="facility" name="facility" class="input">
+          <option value="">– alle Einrichtungen –</option>
+          {% for f in facilities %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="field" style="flex:2; margin-bottom:0;">
+          <label for="location">Umkreis um Standort (optional)</label>
+          <select id="location" name="location" class="input">
+            <option value="">– Standort wählen –</option>
+            {% for l in locations %}<option value="{{ l.id }}">{{ l.name }}{% if l.city %} ({{ l.city }}){% endif %}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="field" style="flex:1; margin-bottom:0;">
+          <label for="radius">Umkreis (km)</label>
+          <input type="number" id="radius" name="radius" class="input" min="1" max="500" placeholder="z.B. 30">
+        </div>
+      </div>
+      <label style="display:flex;gap:8px;align-items:center;color:var(--text-muted);margin: var(--space-3) 0;">
+        <input type="checkbox" name="global"> Über <strong>alle</strong> neuen Stellen informieren
+      </label>
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">Alarm einrichten / aktualisieren</button>
+      <p style="color:var(--text-muted); font-size:12px; margin-top: var(--space-3);">
+        Double-Opt-in per Bestätigungslink · verfällt automatisch nach 12 Monaten ·
+        jederzeit abmeldbar · eine Anmeldung je E-Mail (bestehende Einstellungen werden aktualisiert).
+      </p>
+    </form>
+  {% endif %}
+  </div>
+</div>
+{% endblock %}

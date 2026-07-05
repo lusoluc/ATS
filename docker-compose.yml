@@ -1,31 +1,103 @@
+# SecurATS – Produktions-Compose (P0.1)
+# Erstinstallation:  cp .env.example .env  → 2 Secrets setzen →  docker compose up -d
+# Update:            docker compose pull && docker compose up -d   (Migrationen laufen automatisch)
+# Mit lokaler KI:    docker compose --profile ki up -d
 name: securats
 
 services:
-  # ============================================================================
-  # 1. Consolidated Unified Django Web Application
-  # ============================================================================
+  db:
+    image: postgres:16-alpine
+    container_name: securats-db
+    restart: always
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-securats}
+      - POSTGRES_USER=${POSTGRES_USER:-securats}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?In .env setzen (siehe .env.example)}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-securats} -d ${POSTGRES_DB:-securats}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [securats-network]
+
   web:
+    # Release-Images kommen aus der GitHub Container Registry (Tag = Version);
+    # ohne gezogenes Image wird lokal gebaut (build-Fallback).
+    image: ghcr.io/lusoluc/ats:${SECURATS_VERSION:-latest}
     build:
       context: .
       dockerfile: Dockerfile
-    image: securats-django:latest
-    container_name: securats-django
+      args:
+        SECURATS_VERSION: ${SECURATS_VERSION:-dev}
+    container_name: securats-web
     restart: always
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
-      - "3000:8000"  # Maps career portal externally to port 3000 (previously next.js)
+      - "${SECURATS_PORT:-3000}:8000"
     volumes:
-      - ./shared:/app/shared
-      - ./media:/app/media
+      - media:/app/media
     environment:
-      - PORT=8000
-      - DATABASE_URL=file:/app/shared/dev.db
       - DEBUG=False
-      - DJANGO_SECRET_KEY=enterprise-secret-key-super-secure-change-me
-      - PII_ENCRYPTION_KEY=securats-fallback-super-secure-encryption-key-for-pii-at-rest=
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    networks:
-      - securats-network
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:?In .env setzen (siehe .env.example)}
+      - PII_ENCRYPTION_KEY=${PII_ENCRYPTION_KEY:?In .env setzen (siehe .env.example)}
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=${POSTGRES_DB:-securats}
+      - POSTGRES_USER=${POSTGRES_USER:-securats}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - OLLAMA_HOST=${OLLAMA_HOST:-ollama}
+      - OLLAMA_PORT=${OLLAMA_PORT:-11434}
+      - SECURATS_ADMIN_USER=${SECURATS_ADMIN_USER:-}
+      - SECURATS_ADMIN_PASSWORD=${SECURATS_ADMIN_PASSWORD:-}
+      - FEED_ACCESS_TOKEN=${FEED_ACCESS_TOKEN:-}
+    networks: [securats-network]
+
+  # --- Optionales KI-Profil: docker compose --profile ki up -d -----------------
+  ollama:
+    image: ollama/ollama:latest
+    container_name: securats-ollama
+    restart: always
+    profiles: [ki]
+    volumes:
+      - ollama:/root/.ollama
+    networks: [securats-network]
+
+  worker:
+    # Arbeitet die KI-Task-Queue ab (nur nötig bei AI_ASYNC=1)
+    image: ghcr.io/lusoluc/ats:${SECURATS_VERSION:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: securats-worker
+    restart: always
+    profiles: [ki]
+    depends_on:
+      db:
+        condition: service_healthy
+      web:
+        condition: service_healthy  # verhindert parallele Migrationen beim Start
+    command: ["python", "manage.py", "ai_worker", "--loop"]
+    volumes:
+      - media:/app/media
+    environment:
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - PII_ENCRYPTION_KEY=${PII_ENCRYPTION_KEY}
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=${POSTGRES_DB:-securats}
+      - POSTGRES_USER=${POSTGRES_USER:-securats}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - OLLAMA_HOST=${OLLAMA_HOST:-ollama}
+      - OLLAMA_PORT=${OLLAMA_PORT:-11434}
+    networks: [securats-network]
+
+volumes:
+  pgdata:
+  media:
+  ollama:
 
 networks:
   securats-network:

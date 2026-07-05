@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Talent-Pool · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap">
+  <h1 class="page-title"><i class="fa-solid fa-users"></i> Talent-Pool</h1>
+  <p class="page-lead">Einwilligungsbasiert (Opt-in im Bewerbungsportal, 12 Monate, jederzeit widerrufbar). Passende offene Stellen werden automatisch vorgeschlagen – je Person und Stelle ist genau eine Ansprache möglich.</p>
+  <div class="card" style="margin-bottom: var(--space-4);">
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap: var(--space-3);">
+      <div><div style="font-size:24px; font-weight:700;">{{ pool_stats.active }}</div><div style="color:var(--text-muted); font-size:12px;">aktive Einwilligungen</div></div>
+      <div><div style="font-size:24px; font-weight:700;">{{ pool_stats.expired }}</div><div style="color:var(--text-muted); font-size:12px;">kürzlich abgelaufen (Löschung nach Kulanzfrist)</div></div>
+      <div><div style="font-size:24px; font-weight:700;">{{ pool_stats.contacts_90d }}</div><div style="color:var(--text-muted); font-size:12px;">Hinweise versendet (90 Tage)</div></div>
+      <div><div style="font-size:24px; font-weight:700;">{{ pool_stats.conversions_90d }}</div><div style="color:var(--text-muted); font-size:12px;">daraus neue Bewerbungen</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <table class="data-table">
+      <thead><tr><th>E-Mail</th><th>Aufgenommen / gültig bis</th><th>Passende offene Stellen</th></tr></thead>
+      <tbody>
+        {% for r in rows %}
+        <tr {% if r.expired %}style="opacity:0.45;"{% endif %}>
+          <td>{{ r.sub.email }}{% if r.expired %}<br><span class="badge badge-danger">abgelaufen</span>{% endif %}</td>
+          <td style="white-space:nowrap; color:var(--text-muted); font-size:13px;">{{ r.sub.createdAt|date:"d.m.Y" }} / {{ r.sub.expiresAt|date:"d.m.Y" }}</td>
+          <td>
+            {% for m in r.matches %}
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px; flex-wrap:wrap;">
+              <span style="font-size:13px;">{{ m.job.title }}{% if m.job.location %} <span style="color:var(--text-muted);">· {{ m.job.location.name }}</span>{% endif %}</span>
+              {% if m.contacted_at %}
+              <span class="badge badge-accent" title="Bereits angesprochen – Doppel-Ansprachen sind gesperrt">hingewiesen am {{ m.contacted_at|date:"d.m.Y" }}</span>
+              {% else %}
+              <form method="post" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="contact_sub_id" value="{{ r.sub.id }}">
+                <input type="hidden" name="job_id" value="{{ m.job.id }}">
+                <button type="submit" class="btn btn-ghost" style="padding:4px 10px; font-size:12px;"><i class="fa-solid fa-paper-plane"></i> Auf Stelle hinweisen</button>
+              </form>
+              {% endif %}
+            </div>
+            {% empty %}<span class="empty-state" style="padding:0; font-size:13px;">{% if r.expired %}–{% else %}derzeit keine{% endif %}</span>{% endfor %}
+          </td>
+        </tr>
+        {% empty %}<tr><td colspan="3" class="empty-state">Noch keine Talent-Pool-Einträge. Bewerbende treten über ihr Portal bei (Einwilligung).</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

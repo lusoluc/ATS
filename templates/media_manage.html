@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Medien · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap">
+  <h1 class="page-title"><i class="fa-solid fa-photo-film"></i> Medien-Verwaltung</h1>
+  <p class="page-lead">Bilder und Dateien für Stellenanzeigen und Inhaltsseiten.</p>
+  <div class="card">
+    <form method="post" enctype="multipart/form-data" class="form-row" style="margin-bottom: var(--space-4);">
+      {% csrf_token %}
+      <input type="file" name="file" required style="color:var(--text-main);">
+      <input name="name" class="input" placeholder="Anzeigename (optional)">
+      <input name="altText" class="input" placeholder="Alt-Text für Barrierefreiheit (beschreibt das Bild)">
+      <button type="submit" class="btn btn-primary">Hochladen</button>
+    </form>
+    <table class="data-table">
+      <thead><tr><th>Name</th><th>Typ</th><th>Datum</th><th></th></tr></thead>
+      <tbody>
+      {% for a in assets %}
+        <tr>
+          <td><a href="{{ a.file.url }}" target="_blank">{{ a.name }}</a></td>
+          <td style="color:var(--text-muted);">{{ a.contentType|default:"–" }}</td>
+          <td>{{ a.createdAt|date:"d.m.Y H:i" }}</td>
+          <td style="text-align:right;"><form method="post" action="{% url 'ats:delete_media' a.id %}" onsubmit="return confirm('Datei löschen?');">{% csrf_token %}<button type="submit" class="btn-icon danger"><i class="fa-solid fa-trash"></i></button></form></td>
+        </tr>
+      {% empty %}<tr><td colspan="4" class="empty-state">Noch keine Medien.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

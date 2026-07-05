@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Job-Alert verwalten · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap" style="max-width:520px;">
+  <div class="card">
+    <h1 class="page-title"><i class="fa-solid fa-bell"></i> Ihr Job-Alert</h1>
+    {% if message %}<p class="page-lead" style="color: var(--accent-light);">{{ message }}</p>{% endif %}
+    <ul class="list-reset">
+      <li class="list-row"><span>Status</span><span class="badge {% if sub.status == 'ACTIVE' %}badge-accent{% endif %}">{{ sub.status }}</span></li>
+      {% if sub.keyword %}<li class="list-row"><span>Stichwort</span><span>{{ sub.keyword }}</span></li>{% endif %}
+      {% if sub.facility %}<li class="list-row"><span>Einrichtung</span><span>{{ sub.facility.name }}</span></li>{% endif %}
+      {% if sub.radiusKm %}<li class="list-row"><span>Umkreis</span><span>{{ sub.radiusKm }} km</span></li>{% endif %}
+      <li class="list-row"><span>Alles-Alarm</span><span>{% if sub.globalAlert %}✓{% else %}–{% endif %}</span></li>
+      <li class="list-row"><span>Zuletzt bestätigt</span><span>{{ sub.lastConfirmedAt|date:"d.m.Y" }} (verfällt nach 12 Monaten)</span></li>
+    </ul>
+    <div style="display:flex; gap: var(--space-2); margin-top: var(--space-4); flex-wrap:wrap;">
+      <form method="post">{% csrf_token %}
+        <button type="submit" name="action" value="renew" class="btn btn-primary"><i class="fa-solid fa-rotate"></i> Um 12 Monate verlängern</button>
+      </form>
+      <form method="post" onsubmit="return confirm('Job-Alert wirklich abmelden?');">{% csrf_token %}
+        <button type="submit" name="action" value="unsubscribe" class="btn btn-ghost" style="color: var(--danger-light); border-color: var(--danger);"><i class="fa-solid fa-bell-slash"></i> Abmelden</button>
+      </form>
+    </div>
+    <p style="color:var(--text-muted); font-size:12px; margin-top: var(--space-3);">Neue Einstellungen? Einfach auf der <a href="{% url 'ats:job_alert' %}" style="color: var(--primary-light);">Job-Alert-Seite</a> mit derselben E-Mail erneut eintragen – das Abo wird aktualisiert, nicht dupliziert.</p>
+  </div>
+</div>
+{% endblock %}

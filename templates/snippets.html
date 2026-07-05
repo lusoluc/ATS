@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Textbausteine · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap">
+  <h1 class="page-title"><i class="fa-solid fa-puzzle-piece"></i> Textbausteine</h1>
+  <p class="page-lead">Wiederkehrende Absätze (Einleitung, Aufgaben, Anforderungen, Benefits) einmal formulieren – und in der Job-Anlage per Klick einfügen.</p>
+  <div class="card">
+    <form method="post" style="display:flex; flex-direction:column; gap: var(--space-2); margin-bottom: var(--space-4);">
+      {% csrf_token %}
+      <div class="form-row">
+        <select name="category" class="input" style="max-width:200px;">
+          <option value="INTRO">Einleitung</option>
+          <option value="TASKS">Aufgaben</option>
+          <option value="REQUIREMENTS">Anforderungen</option>
+          <option value="BENEFITS">Benefits</option>
+          <option value="CLOSING">Abschluss</option>
+        </select>
+        <select name="jobFamily" class="input" style="max-width:240px;">
+          <option value="">Alle Kategorien (allgemein)</option>
+          {% for f in families %}<option value="{{ f.id }}">nur {{ f.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <textarea name="content" class="textarea" rows="3" placeholder="Bausteintext …" required></textarea>
+      <button type="submit" class="btn btn-primary" style="align-self:flex-start;">Baustein speichern</button>
+    </form>
+    <ul class="list-reset">
+      {% for s in snippets %}
+      <li class="list-row" style="align-items:flex-start;">
+        <span style="flex:1;">
+          <span class="badge">{{ s.category }}</span>
+          {% if s.jobFamily %}<span class="badge badge-accent">{{ s.jobFamily.name }}</span>{% endif %}
+          <div style="color:var(--text-muted); font-size:13px; margin-top:6px; white-space:pre-wrap;">{{ s.content|truncatechars:260 }}</div>
+        </span>
+        <form method="post" onsubmit="return confirm('Baustein löschen?');">{% csrf_token %}
+          <input type="hidden" name="delete_id" value="{{ s.id }}">
+          <button type="submit" class="btn-icon danger"><i class="fa-solid fa-trash"></i></button>
+        </form>
+      </li>
+      {% empty %}<li class="empty-state">Noch keine Bausteine.</li>{% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

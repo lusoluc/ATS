@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Nachrichten · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap" style="max-width:720px;">
+  <h1 class="page-title"><i class="fa-solid fa-comments"></i> Nachrichten</h1>
+  <p class="page-lead">Verlauf zur Bewerbung {{ application.id|truncatechars:12 }}.</p>
+  <div class="card">
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom: var(--space-4);">
+      {% for m in messages %}
+        <div style="align-self:{% if m.direction == 'OUTBOUND' %}flex-end;background:rgba(139,92,246,0.18);border:1px solid rgba(139,92,246,0.35){% else %}flex-start;background:var(--surface-hover);border:1px solid var(--border-color){% endif %};max-width:80%;padding:10px 14px;border-radius:12px;color:var(--text-main);">
+          <div>{{ m.content }}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">{{ m.direction }} · {{ m.createdAt|date:"d.m.Y H:i" }}</div>
+        </div>
+      {% empty %}<p class="empty-state">Noch keine Nachrichten.</p>{% endfor %}
+    </div>
+    <form method="post" class="form-row">
+      {% csrf_token %}
+      <input name="content" class="input" placeholder="Nachricht an Bewerber…" required>
+      <button type="submit" class="btn btn-primary">Senden</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

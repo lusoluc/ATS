@@ -165,6 +165,14 @@
     </div>
 
     <form method="POST" action="{% url 'ats:bewerben' job.id %}" enctype="multipart/form-data" class="glass-card">
+            {% if errors %}
+            <div class="form-error-summary" role="alert" tabindex="-1">
+                <strong><i class="fa-solid fa-circle-exclamation"></i> Bitte prüfen Sie Ihre Angaben:</strong>
+                <ul style="margin:8px 0 0 18px;">
+                    {% for field, msg in errors.items %}<li><a href="#{{ field }}" style="color:inherit;">{{ msg }}</a></li>{% endfor %}
+                </ul>
+            </div>
+            {% endif %}
         {% csrf_token %}
 
         <!-- BOT HONEYPOT SPAM PROTECTION (Hidden from real users, bots will fill it) -->
@@ -175,35 +183,47 @@
 
         <!-- 1. Lebenslauf Upload -->
         <div class="form-group">
-            <label class="form-label">Lebenslauf hochladen *</label>
+            <label class="form-label" for="cv_file">Lebenslauf hochladen *</label>
             <div class="file-upload-wrapper" id="uploadWrapper">
-                <input type="file" id="cv_file" name="cv_file" class="file-upload-input" accept=".pdf" required>
+                <input type="file" id="cv_file" name="cv_file" class="file-upload-input" accept=".pdf,.png,.jpg,.jpeg,.heic,image/*" required{% if errors.cv_file %} aria-invalid="true" aria-describedby="err-cv_file"{% endif %}>{% if errors.cv_file %}<span class="field-error" id="err-cv_file" style="display:block; margin-top:6px;">{{ errors.cv_file }}</span>{% endif %}
                 <i class="fa-solid fa-cloud-arrow-up file-upload-icon"></i>
-                <div class="file-upload-text" id="uploadText">Klicken oder Lebenslauf hierhin ziehen</div>
-                <div class="file-upload-info">Unterstützte Formate: PDF (Max. 5 MB)</div>
+                <div class="file-upload-text" id="uploadText">Klicken, hierhin ziehen – oder ein Foto machen</div>
+                <div class="file-upload-info">PDF oder Foto (JPG/PNG). Ein Handy-Foto genügt. Max. 5 MB.</div>
+            </div>
+        </div>
+
+        <!-- 1b. Weitere Nachweise (optional, Mehrfach) -->
+        <div class="form-group">
+            <label class="form-label" for="documents">Weitere Nachweise (optional)</label>
+            <input type="file" id="documents" name="documents" class="form-input" multiple
+                   accept=".pdf,.png,.jpg,.jpeg,.heic,image/*"
+                   aria-describedby="docsHelp" style="padding: 12px;">
+      {% if errors.documents %}<span class="field-error">{{ errors.documents }}</span>{% endif %}
+            <div id="docsHelp" class="file-upload-info" style="margin-top: 6px;">
+                Zeugnisse, Zertifikate, z.&nbsp;B. Approbation oder Facharzt-Anerkennung. Mehrere Dateien möglich.
             </div>
         </div>
 
         <!-- 2. Stammdaten -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
             <div class="form-group">
                 <label class="form-label" for="first_name">Vorname *</label>
-                <input type="text" id="first_name" name="first_name" class="form-input" required placeholder="z. B. Max">
+                <input type="text" id="first_name" name="first_name" class="form-input{% if errors.first_name %} input-invalid{% endif %}" required placeholder="z. B. Max" value="{{ form_data.first_name|default:'' }}"{% if errors.first_name %} aria-invalid="true" aria-describedby="err-first_name"{% endif %}>{% if errors.first_name %}<span class="field-error" id="err-first_name">{{ errors.first_name }}</span>{% endif %}
             </div>
             <div class="form-group">
                 <label class="form-label" for="last_name">Nachname *</label>
-                <input type="text" id="last_name" name="last_name" class="form-input" required placeholder="z. B. Mustermann">
+                <input type="text" id="last_name" name="last_name" class="form-input{% if errors.last_name %} input-invalid{% endif %}" required placeholder="z. B. Mustermann" value="{{ form_data.last_name|default:'' }}"{% if errors.last_name %} aria-invalid="true" aria-describedby="err-last_name"{% endif %}>{% if errors.last_name %}<span class="field-error" id="err-last_name">{{ errors.last_name }}</span>{% endif %}
             </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
             <div class="form-group">
                 <label class="form-label" for="email">E-Mail Adresse *</label>
-                <input type="email" id="email" name="email" class="form-input" required placeholder="z. B. max.mustermann@web.de">
+                <input type="email" id="email" name="email" class="form-input{% if errors.email %} input-invalid{% endif %}" required placeholder="z. B. max.mustermann@web.de" value="{{ form_data.email|default:'' }}"{% if errors.email %} aria-invalid="true" aria-describedby="err-email"{% endif %}>{% if errors.email %}<span class="field-error" id="err-email">{{ errors.email }}</span>{% endif %}
             </div>
             <div class="form-group">
                 <label class="form-label" for="phone">Telefonnummer</label>
-                <input type="tel" id="phone" name="phone" class="form-input" placeholder="z. B. +49 170 1234567">
+                <input type="tel" id="phone" name="phone" class="form-input" value="{{ form_data.phone|default:'' }}" placeholder="z. B. +49 170 1234567">
             </div>
         </div>
 
@@ -216,11 +236,24 @@
                         <label class="screening-question-label" for="question_{{ q.id }}">
                             {{ q.question }} {% if q.isMandatory %}*{% endif %}
                         </label>
+                        {% if q.type == 'FILE' %}
+                        <input type="file" id="question_{{ q.id }}" name="question_{{ q.id }}" class="form-input" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" {% if q.isMandatory %}required{% endif %}>
+                        <span style="display:block; font-size:12px; color:var(--text-muted); margin-top:4px;">PDF, Word, JPG oder PNG – ein Handy-Foto genügt.</span>
+                        {% elif q.type == 'TEXT' %}
+                        <textarea id="question_{{ q.id }}" name="question_{{ q.id }}" rows="2" class="form-textarea" {% if q.isMandatory %}required{% endif %} maxlength="1000">{{ q.value|default:'' }}</textarea>
+                        {% elif q.type == 'SELECT' %}
                         <select id="question_{{ q.id }}" name="question_{{ q.id }}" class="screening-select" {% if q.isMandatory %}required{% endif %}>
                             <option value="">Bitte auswählen...</option>
-                            <option value="YES">Ja</option>
-                            <option value="NO">Nein</option>
+                            {% for opt in q.options %}<option value="{{ opt }}" {% if q.value == opt %}selected{% endif %}>{{ opt }}</option>{% endfor %}
                         </select>
+                        {% else %}
+                        <select id="question_{{ q.id }}" name="question_{{ q.id }}" class="screening-select" {% if q.isMandatory %}required{% endif %}>
+                            <option value="">Bitte auswählen...</option>
+                            <option value="YES" {% if q.value == 'YES' %}selected{% endif %}>Ja</option>
+                            <option value="NO" {% if q.value == 'NO' %}selected{% endif %}>Nein</option>
+                        </select>
+                        {% endif %}
+                        {% if q.error %}<span class="field-error">{{ q.error }}</span>{% endif %}
                     </div>
                 {% endfor %}
             </div>
@@ -229,12 +262,12 @@
         <!-- 4. Anschreiben -->
         <div class="form-group">
             <label class="form-label" for="cover_letter">Kurzes Anschreiben / Nachricht (Optional)</label>
-            <textarea id="cover_letter" name="cover_letter" rows="4" class="form-textarea" placeholder="Erzählen Sie uns kurz, warum Sie perfekt auf diese Stelle passen..."></textarea>
+            <textarea id="cover_letter" name="cover_letter" rows="4" class="form-textarea" placeholder="Erzählen Sie uns kurz, warum Sie perfekt auf diese Stelle passen...">{{ form_data.cover_letter|default:'' }}</textarea>
         </div>
 
         <!-- 5. GDPR & Consent Checks -->
         <div class="checkbox-group">
-            <input type="checkbox" id="consent_privacy" name="consent_privacy" class="checkbox-input" required>
+            <input type="checkbox" id="consent_privacy" name="consent_privacy" class="checkbox-input" required{% if errors.consent_privacy %} aria-invalid="true" aria-describedby="err-consent_privacy"{% endif %}>{% if errors.consent_privacy %}<span class="field-error" id="err-consent_privacy" style="display:block;">{{ errors.consent_privacy }}</span>{% endif %}
             <label for="consent_privacy" class="checkbox-label">
                 Ich stimme der Verarbeitung meiner PII-Bewerberdaten zu und bestätige die <a href="/pages/ueber-uns/" target="_blank">Datenschutzerklärung</a> von SecurATS. *
             </label>
@@ -248,6 +281,10 @@
         </div>
 
         <!-- 6. Submit Button -->
+        <p style="color: var(--text-muted); font-size: 12px; margin: 0 0 10px; display:flex; align-items:center; gap:8px;">
+          <i class="fa-solid fa-shield-halved" style="color: var(--accent-light);"></i>
+          Ihre Unterlagen werden verschlüsselt gespeichert, verlassen unser Haus nicht und werden nach Ablauf der gesetzlichen Frist automatisch gelöscht. Den Stand Ihrer Bewerbung verfolgen Sie über einen persönlichen Link – ganz ohne Konto.
+        </p>
         <button type="submit" class="btn-apply-now" style="width: 100%;">
             <i class="fa-solid fa-paper-plane"></i> Bewerbung jetzt absenden
         </button>

@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+{% block title %}Analytics · SecurATS{% endblock %}
+{% block content %}
+<div style="max-width:1000px;margin:30px auto;color:#e5e7eb;">
+  <h1 style="color:#fff;"><i class="fa-solid fa-chart-column"></i> Erfolgs- & Insight-Dashboard</h1>
+  <p style="color:#94a3b8;">Alle Auswertungen lokal berechnet – keine Cloud-BI. (Sichtbereich = Ihre Standorte.)</p>
+
+  <div style="display:flex;gap:16px;flex-wrap:wrap;margin:20px 0;">
+    <div style="flex:1;min-width:180px;background:#111a2e;border:1px solid #1f2a44;border-radius:12px;padding:18px;">
+      <div style="font-size:32px;font-weight:700;color:#fff;">{{ total }}</div>
+      <div style="color:#94a3b8;">Bewerbungen gesamt</div>
+    </div>
+    <div style="flex:1;min-width:180px;background:#111a2e;border:1px solid #1f2a44;border-radius:12px;padding:18px;">
+      <div style="font-size:32px;font-weight:700;color:#fff;">{{ avg_days|default:"–" }}</div>
+      <div style="color:#94a3b8;">Ø Tage bis Entscheidung</div>
+    </div>
+  </div>
+
+  {% include "partials/_bars.html" with title="Funnel / Status" rows=by_status max=max_status %}
+  {% include "partials/_bars.html" with title="Quellen der Bewerbungen" rows=by_source max=max_status %}
+  {% include "partials/_bars.html" with title="KI-Score-Verteilung" rows=by_score max=max_status %}
+  {% include "partials/_bars.html" with title="Standort-Vergleich" rows=by_location max=max_status %}
+  {% include "partials/_bars.html" with title="Verlauf (letzte 6 Monate)" rows=by_month max=max_status %}
+</div>
+
+<div class="page-wrap" style="margin-top:0;">
+
+  <!-- WP5: Engpass- & Anomalie-Hinweise -->
+  <div class="card">
+    <h2 style="margin:0 0 var(--space-3); font-size:18px;"><i class="fa-solid fa-triangle-exclamation" style="color:var(--warning);"></i> Hinweise & Handlungsvorschläge</h2>
+    <ul class="list-reset">
+      {% for f in anomalies %}
+      <li class="list-row" style="align-items:flex-start; gap:12px;">
+        <span class="badge {% if f.severity == 'warn' %}badge-danger{% elif f.severity == 'ok' %}badge-accent{% endif %}">{{ f.severity }}</span>
+        <span style="flex:1;">
+          <strong>{{ f.title }}</strong><br>
+          <span style="color:var(--text-muted); font-size:13px;">→ {{ f.action }}</span>
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <!-- WP5: Time-to-Fill-Prognose -->
+  <div class="card">
+    <h2 style="margin:0 0 var(--space-1); font-size:18px;"><i class="fa-solid fa-chart-line" style="color:var(--primary-light);"></i> Time-to-Fill-Prognose (offene Stellen)</h2>
+    <p style="color:var(--text-muted); font-size:12px; margin:0 0 var(--space-3);">Transparente Methode: historischer Durchschnitt bis zur Einladung je Jobfamilie{% if forecast.global_avg %} · Gesamtdurchschnitt {{ forecast.global_avg }} Tage{% endif %}.</p>
+    <table class="data-table">
+      <thead><tr><th>Stelle</th><th>Standort</th><th>Prognose</th><th>Offen seit</th><th>Basis</th></tr></thead>
+      <tbody>
+      {% for r in forecast.rows %}
+        <tr>
+          <td>{{ r.job }}</td>
+          <td>{{ r.location }}</td>
+          <td>{% if r.forecast_days %}~{{ r.forecast_days }} Tage{% else %}– (keine Historie){% endif %}</td>
+          <td>{% if r.overdue %}<span class="badge badge-danger">{{ r.age_days }} Tage</span>{% else %}{{ r.age_days }} Tage{% endif %}</td>
+          <td style="color:var(--text-muted);">{{ r.basis }}</td>
+        </tr>
+      {% empty %}<tr><td colspan="5" class="empty-state">Keine offenen Stellen.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if stage_rows %}
+  <div class="card">
+    <h2 style="font-size:16px; margin:0 0 var(--space-1);"><i class="fa-solid fa-filter-circle-xmark" style="color:var(--warning);"></i> Stellenfreigabe: Welche Stufe bremst?</h2>
+    <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--space-3);">Ø Wartetage je Genehmigungsstufe (fällig bis entschieden). Die oberste Zeile ist der Engpass. Offene Zahlen = aktuell fällige, unentschiedene Anträge.</p>
+    <table class="data-table">
+      <thead><tr><th>Stufe / Rolle</th><th>entschieden</th><th>Ø Wartetage</th><th>aktuell fällig</th><th>ältester offener</th></tr></thead>
+      <tbody>
+        {% for r in stage_rows %}
+        <tr {% if forloop.first and r.avg_days is not None %}style="background:rgba(245,158,11,.07);"{% endif %}>
+          <td>{{ r.role }}{% if forloop.first and r.avg_days is not None %} <span class="badge" style="background:rgba(245,158,11,.16); color:#fbbf24;">Engpass</span>{% endif %}</td>
+          <td>{{ r.decided }}</td>
+          <td>{% if r.avg_days is not None %}<span style="display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; background:{% if r.level == 'red' %}#ef4444{% elif r.level == 'amber' %}#f59e0b{% else %}#22c55e{% endif %};" title="{% if r.level == 'red' %}kritisch (>7 Tage){% elif r.level == 'amber' %}beobachten (4–7 Tage){% else %}im grünen Bereich (≤3 Tage){% endif %}"></span>{{ r.avg_days }}{% else %}–{% endif %}</td>
+          <td>{{ r.open_now }}</td>
+          <td>{% if r.oldest_open_days is not None %}{{ r.oldest_open_days }} Tage{% else %}–{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- WP5: Fairness-/AGG-Cockpit -->
+  <div class="card">
+    <h2 style="margin:0 0 var(--space-1); font-size:18px;"><i class="fa-solid fa-scale-balanced" style="color:var(--accent-light);"></i> Fairness-Cockpit (KI-Entscheidungen)</h2>
+    <p style="color:var(--text-muted); font-size:12px; margin:0 0 var(--space-3);">{{ fairness.note }}</p>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:var(--space-3);">
+      <div><div style="font-size:24px; font-weight:700;">{{ fairness.scored }}/{{ fairness.total }}</div><div style="color:var(--text-muted); font-size:12px;">KI-bewertet</div></div>
+      <div><div style="font-size:24px; font-weight:700;">A {{ fairness.score_dist.A }} · B {{ fairness.score_dist.B }} · C {{ fairness.score_dist.C }} · D {{ fairness.score_dist.D }}</div><div style="color:var(--text-muted); font-size:12px;">Score-Verteilung</div></div>
+      <div><div style="font-size:24px; font-weight:700;">{% if fairness.override_rate_pct != None %}{{ fairness.override_rate_pct }}%{% else %}–{% endif %}</div><div style="color:var(--text-muted); font-size:12px;">Mensch-über-KI-Quote (Einladung trotz D: {{ fairness.invited_low }} · Absage trotz A: {{ fairness.rejected_high }})</div></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom: var(--space-4);">
+    <h2 style="margin:0 0 var(--space-1); font-size:18px;"><i class="fa-solid fa-calendar-check" style="color:var(--accent-light);"></i> Termine &amp; Selbstbuchung</h2>
+    <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--space-3);">Letzte {{ appointments.days }} Tage · nur Aggregate im eigenen Zugriffsbereich, keine Einzelfälle.</p>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap: var(--space-3);">
+      <div><div style="font-size:24px; font-weight:700;">{{ appointments.planned_total }}</div><div style="color:var(--text-muted); font-size:12px;">Termine geplant</div></div>
+      <div><div style="font-size:24px; font-weight:700;">{% if appointments.self_booking_share is not None %}{{ appointments.self_booking_share }} %{% else %}–{% endif %}</div><div style="color:var(--text-muted); font-size:12px;">davon selbst gebucht (Portal)</div></div>
+      <div><div style="font-size:24px; font-weight:700;">{% if appointments.median_hours_to_choice is not None %}{{ appointments.median_hours_to_choice }} h{% else %}–{% endif %}</div><div style="color:var(--text-muted); font-size:12px;">Median bis zur Terminwahl</div></div>
+      <div><div style="font-size:24px; font-weight:700;">{% if appointments.after_hours_share is not None %}{{ appointments.after_hours_share }} %{% else %}–{% endif %}</div><div style="color:var(--text-muted); font-size:12px;">Buchungen abends/Wochenende</div></div>
+      <div><div style="font-size:24px; font-weight:700;">{{ appointments.rebooked }} / {{ appointments.cancelled }}</div><div style="color:var(--text-muted); font-size:12px;">umgebucht / abgesagt</div></div>
+      <div><div style="font-size:24px; font-weight:700;">{{ appointments.change_requests }}</div><div style="color:var(--text-muted); font-size:12px;">Änderungswünsche</div></div>
+      <div><div style="font-size:24px; font-weight:700;">{% if appointments.utilization is not None %}{{ appointments.utilization }} %{% else %}–{% endif %}</div><div style="color:var(--text-muted); font-size:12px;">Slot-Auslastung ({{ appointments.slots_used }} genutzt, {{ appointments.slots_expired }} verfallen, {{ appointments.slots_open }} offen)</div></div>
+      <div><div style="font-size:24px; font-weight:700;">{% if appointments.no_show_rate is not None %}{{ appointments.no_show_rate }} %{% else %}–{% endif %}</div><div style="color:var(--text-muted); font-size:12px;">No-Show-Quote ({{ appointments.completed }} stattgefunden, {{ appointments.no_shows }} No-Show, {{ appointments.short_cancelled }} kurzfr. abgesagt{% if appointments.outcome_pending %}, {{ appointments.outcome_pending }} offen{% endif %})</div></div>
+    </div>
+    {% if appointments.kinds %}
+    <h3 style="font-size:13px; color:var(--text-muted); margin: var(--space-3) 0 var(--space-1);">Gesprächsformate</h3>
+    <div style="display:flex; flex-wrap:wrap; gap:8px;">
+      {% for label, c in appointments.kinds %}<span class="badge">{{ label }}: {{ c }}</span>{% endfor %}
+    </div>
+    {% endif %}
+    {% if appointments.hints %}
+    <h3 style="font-size:13px; color:var(--text-muted); margin: var(--space-3) 0 var(--space-1);">Handlungsvorschläge</h3>
+    <ul style="margin:0; padding-left:18px; font-size:13px;">
+      {% for h in appointments.hints %}<li style="margin-bottom:4px;">{{ h }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+
+  {% if is_leadership %}
+  <!-- WP5: Standort-Benchmarking (nur Leitung) -->
+  <div class="card">
+    <h2 style="margin:0 0 var(--space-3); font-size:18px;"><i class="fa-solid fa-ranking-star" style="color:var(--primary-light);"></i> Standort-Benchmarking</h2>
+    <table class="data-table">
+      <thead><tr><th>Standort</th><th>Bewerbungen</th><th>Eingeladen</th><th>Quote</th><th>Ø Dauer</th></tr></thead>
+      <tbody>
+      {% for b in benchmark %}
+        <tr><td>{{ b.location }}</td><td>{{ b.total }}</td><td>{{ b.invited }}</td><td>{{ b.conversion_pct }}%</td><td>{% if b.avg_days %}{{ b.avg_days }} Tage{% else %}–{% endif %}</td></tr>
+      {% empty %}<tr><td colspan="5" class="empty-state">Noch keine Daten.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+    {% if costs %}
+    <h3 style="margin:var(--space-4) 0 var(--space-2); font-size:15px;">Kosten pro Einstellung (aus SOURCE_COST_*-Einstellungen)</h3>
+    <table class="data-table">
+      <thead><tr><th>Quelle</th><th>Kanalkosten</th><th>Einladungen</th><th>Kosten je Einladung</th></tr></thead>
+      <tbody>
+      {% for c in costs %}
+        <tr><td>{{ c.source }}</td><td>{{ c.cost }} €</td><td>{{ c.hires }}</td><td>{% if c.cost_per_hire %}{{ c.cost_per_hire }} €{% else %}– (keine Einladungen){% endif %}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- WP5: Export + KI-Analyst -->
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+      <h2 style="margin:0; font-size:18px;"><i class="fa-solid fa-comments" style="color:var(--accent-light);"></i> Frag deine Daten (lokale KI)</h2>
+      <a class="btn btn-ghost" href="{% url 'ats:analytics_export' %}"><i class="fa-solid fa-file-csv"></i> CSV-Export (Excel)</a>
+    </div>
+    <p style="color:var(--text-muted); font-size:12px; margin:var(--space-2) 0 var(--space-3);">Die KI erhält ausschließlich aggregierte Kennzahlen – keine personenbezogenen Daten. Läuft vollständig on-prem.</p>
+    <div class="form-row">
+      <input id="ask-input" class="input" placeholder='z.B. "Welcher Standort hat die beste Einladungsquote – und woran könnte das liegen?"'>
+      <button class="btn btn-primary" onclick="askAnalytics(this)">Fragen</button>
+    </div>
+    <div id="ask-answer" aria-live="polite" style="display:none; margin-top:var(--space-3); padding:var(--space-3); border:1px solid var(--border-color); border-radius:var(--border-radius-sm); color:var(--text-main); white-space:pre-wrap;"></div>
+  </div>
+</div>
+
+<script>
+function askAnalytics(btn) {
+  const q = document.getElementById('ask-input').value.trim();
+  const out = document.getElementById('ask-answer');
+  if (!q) return;
+  btn.disabled = true; out.style.display = 'block'; out.innerText = 'Lokale KI denkt nach …';
+  const fd = new FormData(); fd.append('question', q);
+  fetch("{% url 'ats:analytics_ask' %}", { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(d => { out.innerText = d.answer || d.error || 'Keine Antwort.'; })
+    .catch(() => { out.innerText = 'Fehler bei der Anfrage.'; })
+    .finally(() => { btn.disabled = false; });
+}
+</script>
+
+
+  {% if hiring_summary.count %}
+  <div class="card" style="margin-top: var(--space-4); display:flex; gap:var(--space-5); align-items:center;">
+    <i class="fa-solid fa-handshake" style="font-size:28px; color:#22c55e;"></i>
+    <div><strong style="font-size:26px;">{{ hiring_summary.count }}</strong><span style="display:block; font-size:12px; color:var(--text-muted);">Einstellungen</span></div>
+    <div><strong style="font-size:26px;">{{ hiring_summary.avg_days }}</strong><span style="display:block; font-size:12px; color:var(--text-muted);">Ø Tage von Bewerbung bis Einstellung</span></div>
+  </div>
+  {% endif %}
+
+  {% if page_rows %}
+  <div class="card" style="margin-top: var(--space-4);">
+    <h2 style="font-size:16px; margin:0 0 var(--space-1);"><i class="fa-solid fa-file-lines"></i> Inhaltsseiten</h2>
+    <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--space-3);">Aufrufe je veröffentlichter Seite (automatisch für jede neue Seite; technisches Grundrauschen enthalten). Kampagnen mit Trichter laufen bewusst über Landingpages.</p>
+    <table class="data-table">
+      <thead><tr><th>Seite</th><th>Pfad</th><th>Aufrufe</th></tr></thead>
+      <tbody>
+        {% for r in page_rows %}<tr><td>{{ r.title }}</td><td style="color:var(--text-muted);">/pages/{{ r.slug }}/</td><td>{{ r.views }}</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if landing_rows %}
+  <div class="card" style="margin-top: var(--space-4);">
+    <h2 style="font-size:16px; margin:0 0 var(--space-1);"><i class="fa-solid fa-flag"></i> Landingpages & Kampagnen</h2>
+    <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--space-3);">Der volle Trichter je Kampagne: Aufrufe → Bewerbungen → Einladungen. Verwalten unter <a href="{% url 'ats:landing_pages' %}">Landingpages</a>; Aufrufe enthalten technisches Grundrauschen.</p>
+    <table class="data-table">
+      <thead><tr><th>Kampagne</th><th>Aufrufe</th><th>Bewerbungen</th><th>Bewerbungs-Quote</th><th>Eingeladen</th><th>Einladungsquote</th><th>Eingestellt</th></tr></thead>
+      <tbody>
+        {% for r in landing_rows %}
+        <tr>
+          <td>{{ r.name }}{% if not r.active %} <span class="badge badge-danger">inaktiv</span>{% endif %}</td>
+          <td>{{ r.views }}</td>
+          <td>{{ r.apps }}</td>
+          <td>{% if r.app_rate is not None %}{{ r.app_rate }}&nbsp;%{% else %}–{% endif %}</td>
+          <td>{{ r.invited }}</td>
+          <td>{% if r.invite_rate is not None %}{{ r.invite_rate }}&nbsp;%{% else %}–{% endif %}</td>
+          <td style="color:#22c55e; font-weight:600;">{{ r.hired }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+{% endblock %}

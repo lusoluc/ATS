@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Delegationen · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap">
+  <h1 class="page-title"><i class="fa-solid fa-user-shield"></i> Delegationen (Vertretung)</h1>
+  <p class="page-lead">Zeitlich begrenzte Übertragung von Zuständigkeiten (Urlaub/Vertretung) – wirkt im Sichtungs-Gremium und in der Stellenfreigabe-Kette („i. V."). Jede Rolle legt ihre eigene Vertretung selbst an; Anlage und Beendigung werden revisionssicher protokolliert.</p>
+
+  <div class="card" style="margin-bottom: var(--space-4);">
+    <form method="post" class="form-row">
+      {% csrf_token %}
+      {% if is_admin %}
+      <select name="delegator" class="input" title="Assistenz-Fall: Vertretung im Namen einer anderen Person anlegen">
+        <option value="">Vertreten wird: ich selbst</option>
+        {% for u in users %}<option value="{{ u }}">Vertreten wird: {{ u }}</option>{% endfor %}
+      </select>
+      {% endif %}
+      <select name="delegatee" class="input" required>
+        <option value="">Vertretung an…</option>
+        {% for u in users %}<option value="{{ u }}">{{ u }}</option>{% endfor %}
+      </select>
+      <select name="scopeType" class="input" style="max-width:150px;">
+        <option value="ALL">Alles</option>
+        <option value="FACILITY">Einrichtung</option>
+        <option value="JOB">Einzelne Stelle</option>
+      </select>
+      <input type="date" name="validFrom" class="input" required style="max-width:170px;">
+      <input type="date" name="validUntil" class="input" required style="max-width:170px;">
+      <button type="submit" class="btn btn-primary">Anlegen</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <table class="data-table">
+      <thead><tr><th>Von</th><th>An</th><th>Umfang</th><th>Von</th><th>Bis</th><th></th></tr></thead>
+      <tbody>
+        {% for d in delegations %}
+        <tr>
+          <td>{{ d.delegator.get_username }}</td>
+          <td>{{ d.delegatee.get_username }}</td>
+          <td>{{ d.scopeType }}{% if d.scopeId %} ({{ d.scopeId|truncatechars:12 }}){% endif %}</td>
+          <td>{{ d.validFrom|date:"d.m.Y" }}</td>
+          <td>{{ d.validUntil|date:"d.m.Y" }}</td>
+          <td style="text-align:right;">
+            {% if d.validUntil > now %}
+            <form method="post" onsubmit="return confirm('Delegation jetzt beenden?');">{% csrf_token %}
+              <input type="hidden" name="end_id" value="{{ d.id }}">
+              <button type="submit" class="btn-icon danger" title="Jetzt beenden"><i class="fa-solid fa-stop-circle"></i></button>
+            </form>
+            {% else %}<span class="badge">beendet</span>{% endif %}
+          </td>
+        </tr>
+        {% empty %}<tr><td colspan="6" class="empty-state">Keine aktiven Delegationen.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

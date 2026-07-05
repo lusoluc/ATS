@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block title %}Ansprechpartner · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap">
+  <h1 class="page-title"><i class="fa-solid fa-address-book"></i> Ansprechpartner-Zentrale</h1>
+  <p class="page-lead">Einmal pflegen, überall aktuell: Ansprechpartner sind an den Anzeigen referenziert – Änderungen an Telefon, Foto oder Rolle wirken sofort auf allen Stellenanzeigen.</p>
+
+  <div class="card" style="margin-bottom: var(--space-4);">
+    <h2 style="margin:0 0 var(--space-3); font-size:16px;">Neu anlegen / bearbeiten</h2>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="save">
+      <input type="hidden" name="cp_id" id="cp_id">
+      <div class="form-row" style="margin-bottom: var(--space-2);">
+        <input name="firstName" id="f_first" class="input" placeholder="Vorname *" required>
+        <input name="lastName" id="f_last" class="input" placeholder="Nachname *" required>
+        <input name="globalJobTitle" id="f_role" class="input" placeholder="Rolle (z.B. Pflegedienstleitung)">
+      </div>
+      <div class="form-row" style="margin-bottom: var(--space-2);">
+        <input type="email" name="email" id="f_email" class="input" placeholder="E-Mail *" required>
+        <input name="phone" id="f_phone" class="input" placeholder="Telefon">
+        <input name="photoUrl" id="f_photo" class="input" placeholder="Foto-URL (optional)">
+      </div>
+      <div class="form-row">
+        <input name="quote" id="f_quote" class="input" placeholder='Zitat für die Anzeige (optional, z.B. "Melden Sie sich gern direkt bei mir!")' style="flex:3;">
+        <button type="submit" class="btn btn-primary">Speichern</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card" style="margin-bottom: var(--space-4);">
+    <h2 style="margin:0 0 var(--space-2); font-size:16px;"><i class="fa-solid fa-rotate" style="color: var(--accent-light);"></i> Überall ersetzen (Urlaub / Ausscheiden)</h2>
+    <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--space-3);">Tauscht die Ansprechperson in <strong>allen</strong> Stellenanzeigen in einem Schritt – revisionssicher protokolliert.</p>
+    <form method="post" class="form-row" onsubmit="return confirm('Ansprechperson wirklich in ALLEN Anzeigen ersetzen?');">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="replace_everywhere">
+      <select name="old_id" class="input" required><option value="">Bisher…</option>{% for c in all_contacts %}<option value="{{ c.id }}">{{ c }}</option>{% endfor %}</select>
+      <i class="fa-solid fa-arrow-right" style="color:var(--text-muted);"></i>
+      <select name="new_id" class="input" required><option value="">Künftig…</option>{% for c in all_contacts %}<option value="{{ c.id }}">{{ c }}</option>{% endfor %}</select>
+      <button type="submit" class="btn btn-primary">Ersetzen</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <table class="data-table">
+      <thead><tr><th>Person</th><th>Kontakt</th><th>Zugeordnet</th><th>In Anzeigen</th><th></th></tr></thead>
+      <tbody>
+      {% for c in contacts %}
+        <tr>
+          <td><strong>{{ c.obj.firstName }} {{ c.obj.lastName }}</strong>{% if c.obj.globalJobTitle %}<br><span style="color:var(--text-muted); font-size:12px;">{{ c.obj.globalJobTitle }}</span>{% endif %}</td>
+          <td style="font-size:13px;">{{ c.obj.email }}{% if c.obj.phone %}<br>{{ c.obj.phone }}{% endif %}</td>
+          <td style="font-size:12px; color:var(--text-muted);">
+            {% for f in c.facilities %}<span class="badge">{{ f }}</span> {% endfor %}
+            {% for d in c.departments %}<span class="badge badge-accent">{{ d }}</span> {% endfor %}
+            {% if not c.facilities and not c.departments %}–{% endif %}
+          </td>
+          <td>{% if c.jobs_count %}<span class="badge badge-accent">{{ c.jobs_count }} aktiv</span>{% else %}–{% endif %}</td>
+          <td style="text-align:right; white-space:nowrap;">
+            <button type="button" class="btn-icon" title="Bearbeiten"
+              onclick="editCp('{{ c.obj.id }}','{{ c.obj.firstName|escapejs }}','{{ c.obj.lastName|escapejs }}','{{ c.obj.email|escapejs }}','{{ c.obj.phone|default:''|escapejs }}','{{ c.obj.globalJobTitle|default:''|escapejs }}','{{ c.obj.photoUrl|default:''|escapejs }}','{{ c.obj.quote|default:''|escapejs }}')"><i class="fa-solid fa-pen"></i></button>
+            {% if c.jobs_count == 0 %}
+            <form method="post" style="display:inline;" onsubmit="return confirm('Ansprechperson löschen?');">{% csrf_token %}
+              <input type="hidden" name="action" value="delete"><input type="hidden" name="cp_id" value="{{ c.obj.id }}">
+              <button type="submit" class="btn-icon danger" title="Löschen"><i class="fa-solid fa-trash"></i></button>
+            </form>
+            {% else %}<span class="btn-icon" title="In Verwendung – zuerst „Überall ersetzen“ nutzen" style="opacity:.4;"><i class="fa-solid fa-lock"></i></span>{% endif %}
+          </td>
+        </tr>
+        <tr><td colspan="5" style="padding-top:0;">
+          <form method="post" class="form-row" style="font-size:12px;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="assign"><input type="hidden" name="cp_id" value="{{ c.obj.id }}">
+            <select name="facility" class="input" style="max-width:200px;"><option value="">+ Einrichtung…</option>{% for f in facilities %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}</select>
+            <select name="department" class="input" style="max-width:200px;"><option value="">+ Abteilung…</option>{% for d in departments %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}</select>
+            <input name="roleTitle" class="input" placeholder="Rolle dort (optional)" style="max-width:220px;">
+            <button type="submit" class="btn btn-ghost" style="padding:6px 12px;">Zuordnen</button>
+          </form>
+        </td></tr>
+      {% empty %}<tr><td colspan="5" class="empty-state">Noch keine Ansprechpartner – oben anlegen.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<script>
+function editCp(id, first, last, email, phone, role, photo, quote) {
+  document.getElementById('cp_id').value = id;
+  document.getElementById('f_first').value = first;
+  document.getElementById('f_last').value = last;
+  document.getElementById('f_email').value = email;
+  document.getElementById('f_phone').value = phone;
+  document.getElementById('f_role').value = role;
+  document.getElementById('f_photo').value = photo;
+  document.getElementById('f_quote').value = quote;
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+</script>
+{% endblock %}

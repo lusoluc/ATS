@@ -9,6 +9,8 @@ Diese hochmoderne, quelloffene Karriereplattform ist eine vollständig integrier
 
 Der absolute USP (Unique Selling Proposition) dieser Architektur ist der kompromisslose Fokus auf **Datensouveränität** und **Legal Compliance**. Durch eine Zero-Data-Transfer-Policy, integrierte lokale Sprachmodell-Unterstützung und extrem hohe Verschlüsselungsstandards (AES-256) löst SecurATS die größten Schmerzpunkte heutiger HR-Abteilungen: Den Schutz hochsensibler Personendaten bei gleichzeitiger Sicherstellung höchster Prozessstabilität.
 
+> **Hinweis zum Implementierungsstand:** Dieses Dokument beschreibt Vision und Funktionsumfang. Die *aktuelle* referenzielle Umsetzung ist ein konsolidierter **Django-Stack** (App `ats`, lokale Ollama/Gemma-Anbindung, feldweise Fernet-Verschlüsselung sensibler PII); der frühere Next.js/Prisma/Puck-Stack ist nach `legacy/` verschoben. Wo unten historische Stack-Begriffe stehen (Prisma, Puck, `pm2`), beziehen sie sich auf die Ursprungsarchitektur – die dahinterstehenden *Fähigkeiten* sind in der Django-Umsetzung abgebildet oder als Ziel dokumentiert. Der maßgebliche, tagesaktuelle Umsetzungsstand steht in `NORTHSTAR.md` und `CHANGELOG.md`.
+
 Dieses System ist nicht nur eine Recruiting-Software, sondern ein aktives Risikomanagement- und Compliance-Tool. Durch die extrem hohen Standards an Datensicherheit und Informationsschutz ist diese Plattform out-of-the-box für streng regulierte Branchen konzipiert. Dazu gehören insbesondere:
 *   **Krankenhauswesen & Gesundheitssektor:** Sicherer Umgang mit Gesundheitsdaten nach Art. 9 DSGVO.
 *   **Kirche & Diakonie:** Erfüllt die verschärften Anforderungen des DSG-EKD und KDG.
@@ -95,7 +97,7 @@ SecurATS bietet eine hochflexible Schnittstellen-Architektur zur größten europ
 
 ### 4.4 Applicant Tracking System (ATS)
 *   **Kanban-Board:** Interaktive, visuelle Spaltenansicht zur Steuerung von Bewerbern durch anpassbare Phasen.
-*   **Workflow Engine:** Anpassbare, mehrstufige Genehmigungsverfahren für interne Abstimmungen vor einer Einstellung.
+*   **Workflow Engine:** Anpassbare, mehrstufige Genehmigungsverfahren für interne Abstimmungen vor einer Einstellung (Details zur vorgeschalteten Stellenfreigabe siehe §4.10).
 *   **Interne Kommentare:** Geschützte Notizfunktion für den sicheren, internen Austausch über Kandidaten.
 *   **Terminplanung (Interview Slots):** Integrierter Kalender, über den Bewerber eigenständig zugewiesene Termine buchen können (kein Calendly nötig).
 
@@ -141,3 +143,20 @@ Das System ist darauf ausgelegt, autark zu laufen. Wir nutzen sichere, quelloffe
 *   **Point-in-Time Recovery (Automated Vault):** Ein automatisierter Cronjob sichert Datenbank (pg_dump) und das Dateisystem (Lebensläufe) in komprimierten, versionierten Archiven. Dies ermöglicht eine Wiederherstellung auf den exakten Stand vor einem Systemausfall (Minimaler RPO).
 *   **Emergency Restore (Disaster Recovery):** Über ein `emergency-restore.sh` Skript kann ein komplett zerstörter Server in unter 5 Minuten (RTO) aus dem Backup-Vault hochgezogen und live geschaltet werden.
 *   **Rückwärtskompatible Migrationen:** Prisma-Datenbankschemata werden nach dem "Expand and Contract"-Pattern migriert. Dadurch stürzt das alte Frontend bei einem Datenbank-Rollout nicht ab.
+
+### 4.10 Governance-Ebene: Stellenfreigabe & mehrstufige Genehmigung (Regulierte Träger)
+
+Diese Ebene liegt *vor* der eigentlichen Ausschreibung und macht SecurATS für regulierte Organisationen (Pflege, Sozialwirtschaft, Banken-IT) einsetzbar, bei denen eine Neueinstellung erst nach formaler, revisionssicherer Freigabe veröffentlicht werden darf. Sie ist optional je Installation, aber wenn aktiviert, technisch verbindlich.
+
+*   **Personalbedarfs-Antrag (Requisition):** Fach- und Führungskräfte melden Personalbedarf strukturiert statt per E-Mail; jeder Antrag trägt Begründung, Anzahl, Einrichtung und die per Regel geforderten Zusatzangaben.
+*   **No-Code Routing-Matrix:** Regeln verknüpfen einen Geltungsbereich (Einrichtung × Abteilung × Job-Kategorie, mit Wildcards) mit einem *eigenen* dynamischen Bedarfsformular und einer *eigenen* Genehmigungskette. Die spezifischste Regel gewinnt (exakt vor teilweise vor Fallback) – ein Filial-Standard bleibt einstufig, während die Tech-Abteilung die volle Gremienkette durchläuft. Vollständig ohne Code oder JSON pflegbar.
+*   **Sequenzielle UND parallele Ketten:** Rollen werden nacheinander (Komma) oder parallel (`+`) geschaltet – „Bereichsleitung, Controlling + Betriebsrat, Geschäftsführung". Bei parallelen Stufen müssen alle Rollen der Stufe genehmigen (Reihenfolge frei), bevor die nächste fällig wird; eine einzige Rückgabe stoppt den Antrag.
+*   **Drei dichte Veröffentlichungs-Gates:** Ohne genehmigten Bedarf lässt sich eine Stelle an keinem der drei möglichen Punkte veröffentlichen – Erstellungs-Wizard, Schnell-Umschalter und finale Job-Freigabe sind gleichermaßen abgesichert (ein früher gefundener Bypass am dritten Punkt ist geschlossen).
+*   **Vertretung in der Kette („i. V."):** Zeitlich begrenzte Delegationen erlauben es einem Vertreter, eine fällige Stufe stellvertretend zu entscheiden – mit sichtbarer „i. V."-Kennzeichnung und Audit-Eintrag des Vertretenen. Jede Rolle pflegt ihre Vertretung selbst; im Assistenz-Fall kann die HR-Leitung stellvertretend anlegen. Zeitfenster und Geltungsbereich werden serverseitig erzwungen.
+*   **Fälligkeits-Benachrichtigung:** Sobald eine Stufe fällig wird (Antragseingang, Abschluss der Vorstufe, Wiedervorlage), erhalten alle entscheidungsberechtigten Personen und ihre aktiven Vertretungen automatisch eine E-Mail – ereignisgetrieben, ohne Cron, ohne Doppelversand.
+*   **Gremium mit Quorum & Frist:** Für das Sichtungs-Gremium ist ein „N von M"-Quorum je Stelle (statt starrer Mehrheit) und eine Abstimmungsfrist mit Überfälligkeits-Badge und einmaliger Eskalations-Mail konfigurierbar.
+*   **Gesprächsrunden als formale Zustände:** Mehrstufige Interview-Prozesse (z. B. Erstgespräch → Fachgespräch → Probearbeit) sind formale Pflicht-Zustände; eine Einstellung ist erst möglich, wenn alle definierten Runden abgeschlossen sind.
+*   **Engpass-Steuerung:** Die Analytics zeigen je Genehmigungsstufe die durchschnittliche Wartezeit (fällig bis entschieden) und markieren die langsamste Stufe als Engpass – parallele Gruppen korrekt berücksichtigt. Führungskräfte sehen konzernweit, welche Instanz Einstellungen ausbremst.
+*   **Lückenlose Revisionssicherheit:** Jede Stufen-Entscheidung, jede Vertretung, jede Benachrichtigung und jedes blockierte Veröffentlichungs-Ereignis wird unveränderlich im Audit-Log festgehalten – von der Teamleitung bis zum Aufsichtsrat nachvollziehbar.
+
+> **Architektur-Hinweis (Mandantenfähigkeit):** Die Routing-Matrix bildet bewusst *keine* Mandanten-Dimension ab. SecurATS wird On-Premise je Träger betrieben (ein Träger = eine Installation), was die stärkste denkbare Datentrennung darstellt und der KRITIS-/DSGVO-Ausrichtung entspricht. Einrichtungen, Abteilungen und Job-Kategorien innerhalb eines Trägers werden über den Geltungsbereich der Regeln abgebildet.

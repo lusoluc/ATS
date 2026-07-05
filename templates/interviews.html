@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+{% load ats_extras %}
+{% block title %}Team-Kalender · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap" style="max-width:1100px;">
+  <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+    <h1 class="page-title" style="margin:0;"><i class="fa-solid fa-calendar-days"></i> Team-Kalender</h1>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <a class="btn btn-ghost" href="?monat={{ prev_month }}" aria-label="Voriger Monat"><i class="fa-solid fa-chevron-left"></i></a>
+      <strong style="min-width:150px; text-align:center;">{{ month_label }}</strong>
+      <a class="btn btn-ghost" href="?monat={{ next_month }}" aria-label="Nächster Monat"><i class="fa-solid fa-chevron-right"></i></a>
+      <a class="btn btn-ghost" href="{% url 'ats:interviews_ics' %}" title="Alle anstehenden Interviews als Kalenderdatei (Outlook, Thunderbird …)"><i class="fa-solid fa-download"></i> .ics</a>
+    </div>
+  </div>
+  <p class="page-lead">Gespräche und freie Timeslots des ganzen Teams – ein Kalender für alle Standorte. {% if saved %}<span class="badge badge-accent">Slots angelegt ✓</span>{% endif %}</p>
+
+  <div class="card" style="padding: var(--space-2); overflow-x:auto;">
+    <table style="width:100%; border-collapse:collapse; table-layout:fixed; min-width:760px;" aria-label="Monatskalender">
+      <thead><tr>
+        <th style="padding:6px; font-size:12px; color:var(--text-muted);">Mo</th><th style="padding:6px; font-size:12px; color:var(--text-muted);">Di</th><th style="padding:6px; font-size:12px; color:var(--text-muted);">Mi</th><th style="padding:6px; font-size:12px; color:var(--text-muted);">Do</th><th style="padding:6px; font-size:12px; color:var(--text-muted);">Fr</th><th style="padding:6px; font-size:12px; color:var(--text-muted);">Sa</th><th style="padding:6px; font-size:12px; color:var(--text-muted);">So</th>
+      </tr></thead>
+      <tbody>
+      {% for week in weeks %}
+        <tr>
+        {% for cell in week %}
+          <td style="vertical-align:top; border:1px solid var(--border-color); height:92px; padding:4px; {% if cell.is_today %}background: rgba(124,58,237,.10); box-shadow: inset 0 0 0 1px var(--primary);{% endif %}">
+            {% if cell %}
+              <div style="font-size:11px; color:var(--text-muted); text-align:right;">{{ cell.day }}</div>
+              {% for ev in cell.events %}
+                <div style="font-size:11px; margin:2px 0; padding:2px 5px; border-radius:6px; display:flex; justify-content:space-between; gap:4px;
+                  {% if ev.kind == 'interview' %}background: rgba(124,58,237,.22); border:1px solid var(--primary);
+                  {% elif ev.kind == 'slot' %}background: rgba(13,148,136,.18); border:1px dashed var(--accent);
+                  {% else %}background: rgba(148,163,184,.14); border:1px solid var(--border-color); color: var(--text-muted);{% endif %}"
+                  title="{{ ev.time }} · {{ ev.title }} · {{ ev.sub }}">
+                  <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ ev.time }} {{ ev.title }}</span>
+                  {% if ev.deletable %}
+                  <form method="post" action="{% url 'ats:slot_delete' ev.slot_id %}" style="display:inline;">{% csrf_token %}
+                    <button type="submit" style="background:none; border:none; color:var(--text-muted); cursor:pointer; padding:0;" aria-label="Slot löschen" title="Slot löschen"><i class="fa-solid fa-xmark"></i></button>
+                  </form>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            {% endif %}
+          </td>
+        {% endfor %}
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <div style="display:flex; gap:14px; font-size:12px; color:var(--text-muted); padding:8px 4px 2px;">
+      <span><span style="display:inline-block; width:10px; height:10px; background:rgba(124,58,237,.5); border-radius:3px;"></span> Interview</span>
+      <span><span style="display:inline-block; width:10px; height:10px; background:rgba(13,148,136,.5); border-radius:3px;"></span> Slot frei</span>
+      <span><span style="display:inline-block; width:10px; height:10px; background:rgba(148,163,184,.4); border-radius:3px;"></span> Slot belegt</span>
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap: var(--space-4); margin-top: var(--space-4);">
+    <div class="card">
+      <h2 style="font-size:16px; margin:0 0 var(--space-3);"><i class="fa-solid fa-plus" style="color:var(--accent-light);"></i> Timeslots anbieten</h2>
+      <form method="post" action="{% url 'ats:slot_create' %}">
+        {% csrf_token %}
+        <div class="field"><label for="slot-kind">Format</label>
+          <select id="slot-kind" name="kind" class="input">
+            <option value="">– offen –</option>
+            {% for code, label in interview_kinds %}<option value="{{ code }}">{{ label }}</option>{% endfor %}
+          </select></div>
+        <div class="field"><label for="slot-job">Stelle *</label>
+          <select id="slot-job" name="job_id" class="input" required>
+            {% for j in jobs %}<option value="{{ j.id }}">{{ j.title }}</option>{% endfor %}
+          </select></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div class="field"><label for="slot-date">Datum *</label><input type="date" id="slot-date" name="date" class="input" required></div>
+          <div class="field"><label for="slot-time">Uhrzeit *</label><input type="time" id="slot-time" name="time" class="input" required></div>
+          <div class="field"><label for="slot-duration">Dauer (Min.)</label><input type="number" id="slot-duration" name="duration" class="input" value="45" min="15" max="240" step="15"></div>
+          <div class="field"><label for="slot-repeat">Wöchentl. wiederholen</label>
+            <select id="slot-repeat" name="repeat" class="input">
+              <option value="1">nur dieser Termin</option><option value="2">2 Wochen</option>
+              <option value="4">4 Wochen</option><option value="8">8 Wochen</option>
+            </select></div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top:8px;"><i class="fa-solid fa-calendar-plus"></i> Slot(s) anlegen</button>
+        <p style="font-size:12px; color:var(--text-muted); margin-top:8px;">Freie Slots kann das ganze Team beim Einladen nutzen – oder Bewerbende wählen selbst im Portal. Löschen können Sie nur eigene, unbelegte Slots (HR-Admin: alle).</p>
+      </form>
+    </div>
+    <div class="card">
+      <h2 style="font-size:16px; margin:0 0 var(--space-3);"><i class="fa-solid fa-clock" style="color:var(--accent-light);"></i> Nächste Gespräche</h2>
+      <table class="data-table"><tbody>
+        {% for iv in upcoming %}
+        <tr><td style="white-space:nowrap;">{{ iv.scheduledAt|date:"d.m. H:i" }}</td>
+            <td>{{ iv.application.applicant.firstName }} {{ iv.application.applicant.lastName }}</td>
+            <td style="color:var(--text-muted);">{{ iv.application.jobPosting.title }}</td></tr>
+        {% empty %}<tr><td class="empty-state">Keine anstehenden Gespräche.</td></tr>{% endfor %}
+      </tbody></table>
+      {% if round_rows %}
+      <h3 style="font-size:14px; margin: var(--space-3) 0 var(--space-2);"><i class="fa-solid fa-stairs" style="color:var(--primary-light);"></i> Gesprächsrunden ({{ round_rows|length }})</h3>
+      <table class="data-table">
+        <tbody>
+        {% for row in round_rows %}
+        <tr>
+          <td>{{ row.app.applicant.firstName }} {{ row.app.applicant.lastName }}<br>
+              <span style="color:var(--text-muted); font-size:12px;">{{ row.app.jobPosting.title }}</span></td>
+          <td>
+            <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
+              {% for st in row.steps %}
+              <span class="badge {% if st.done %}badge-accent{% endif %}" {% if st.current %}style="border:1px solid var(--primary-light);"{% endif %}>{{ forloop.counter }}. {{ st.label }}{% if st.done %} ✓{% elif st.current %} · aktuell{% endif %}</span>
+              {% endfor %}
+            </div>
+          </td>
+          <td style="white-space:nowrap;">
+            {% if not row.state.complete %}
+            <form method="post" action="{% url 'ats:advance_interview_round' row.app.id %}" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{% url 'ats:interviews' %}">
+              <button type="submit" class="btn btn-primary" style="padding:6px 12px; font-size:12px;">Runde abschließen</button>
+            </form>
+            {% else %}<span class="badge badge-accent">Alle Runden abgeschlossen</span>{% endif %}
+            {% if row.state.done %}
+            <form method="post" action="{% url 'ats:advance_interview_round' row.app.id %}" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="op" value="back">
+              <input type="hidden" name="next" value="{% url 'ats:interviews' %}">
+              <button type="submit" class="btn btn-ghost" style="padding:6px 10px; font-size:12px;" title="Letzte Runde zur Korrektur zurücknehmen">↩</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <td colspan="3" style="padding-top:0;">
+            <details style="margin:2px 0 var(--space-2);">
+              <summary style="cursor:pointer; font-size:13px; color:var(--text-muted);">
+                <i class="fa-solid fa-comment-dots"></i> Interview-Feedback
+                ({{ row.feedback.total }}){% if row.feedback.open_concerns %} · <span style="color:var(--danger-light); font-weight:600;">{{ row.feedback.open_concerns }} mit Bedenken</span>{% endif %}{% if not row.my_feedback %} · <em>Sie haben zu dieser Runde noch nicht bewertet</em>{% endif %}
+              </summary>
+              <div style="padding:var(--space-2) 0;">
+                {% for rnd, items in row.feedback.by_round %}
+                <div style="margin-bottom:var(--space-2);">
+                  <strong style="font-size:12px; color:var(--text-muted);">Runde {{ rnd|add:1 }}</strong>
+                  {% for f in items %}
+                  <div style="border-left:3px solid {% if f.is_positive %}var(--accent){% elif f.recommendation == 'NEUTRAL' %}var(--warning){% else %}var(--danger-light){% endif %}; padding:4px 10px; margin:6px 0; background:rgba(255,255,255,.02);">
+                    <div style="font-size:13px;"><strong>{{ f.author.get_full_name|default:f.author.username }}</strong> · {{ f.recommendation_label }}{% if f.overall_score is not None %} · <strong>{{ f.overall_score }} %</strong> gesamt{% endif %}
+                      {% for crit, val in f.ratings.items %}<span class="badge" style="font-size:11px;">{{ crit }}: {{ val }} %</span>{% endfor %}
+                    </div>
+                    {% if f.strengths %}<div style="font-size:12px; margin-top:3px;"><i class="fa-solid fa-plus" style="color:var(--accent);"></i> {{ f.strengths }}</div>{% endif %}
+                    {% if f.concerns %}<div style="font-size:12px; margin-top:3px; color:var(--danger-light);"><i class="fa-solid fa-triangle-exclamation"></i> <strong>Bedenken:</strong> {{ f.concerns }}</div>{% endif %}
+                    {% if f.comment %}<div style="font-size:12px; margin-top:3px; color:var(--text-muted);">{{ f.comment }}</div>{% endif %}
+                  </div>
+                  {% endfor %}
+                </div>
+                {% empty %}
+                <p style="font-size:12px; color:var(--text-muted);">Noch kein Feedback erfasst.</p>
+                {% endfor %}
+
+                <form method="post" action="{% url 'ats:save_interview_feedback' row.app.id %}" style="border-top:1px solid var(--border); padding-top:var(--space-2); margin-top:var(--space-1);" oninput="fbAvg(this)">
+                  {% csrf_token %}
+                  <input type="hidden" name="next" value="{% url 'ats:interviews' %}">
+                  <input type="hidden" name="round" value="{{ row.state.done }}">
+                  <div style="font-size:12px; margin-bottom:6px; color:var(--text-muted);">{% if row.my_feedback %}Ihr Feedback zu Runde {{ row.state.done|add:1 }} bearbeiten{% else %}Ihr Feedback zu Runde {{ row.state.done|add:1 }}{% endif %} · <span style="color:var(--text-muted);">mehrere Kolleg:innen können unabhängig bewerten</span></div>
+                  <div style="display:flex; flex-direction:column; gap:8px; max-width:460px; margin-bottom:8px;">
+                    {% for crit in feedback_criteria %}
+                    <label style="display:flex; align-items:center; gap:10px; font-size:13px;">
+                      <span style="flex:0 0 150px;">{{ crit }}</span>
+                      <input type="range" name="rate_{{ crit }}" min="0" max="100" step="5" value="{% with cur=row.my_feedback.ratings %}{{ cur|dictkey:crit|default:70 }}{% endwith %}" class="fb-slider" style="flex:1;" oninput="this.nextElementSibling.textContent=this.value+' %'">
+                      <output style="flex:0 0 44px; text-align:right; font-weight:600;">{% with cur=row.my_feedback.ratings %}{{ cur|dictkey:crit|default:70 }}{% endwith %} %</output>
+                    </label>
+                    {% endfor %}
+                  </div>
+                  <div style="font-size:12px; margin-bottom:8px;">Gesamteindruck: <strong class="fb-avg">–</strong> <span style="color:var(--text-muted);">(automatische Empfehlung – optional unten übersteuern)</span></div>
+                  <input type="text" name="strengths" class="input" placeholder="Stärken (Freitext)" value="{{ row.my_feedback.strengths|default:'' }}" style="margin-bottom:6px;">
+                  <input type="text" name="concerns" class="input" placeholder="Bedenken (werden bei Folgerunde &amp; finaler Entscheidung angezeigt)" value="{{ row.my_feedback.concerns|default:'' }}" style="margin-bottom:6px;">
+                  <textarea name="comment" class="input" placeholder="Weitere Anmerkungen (Freitext, optional)" rows="2" style="margin-bottom:6px; resize:vertical;">{{ row.my_feedback.comment|default:'' }}</textarea>
+                  <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <select name="recommendation" class="input" style="max-width:210px;">
+                      <option value="">Empfehlung automatisch aus Score</option>
+                      {% for val, label in feedback_recommendations %}<option value="{{ val }}" {% if row.my_feedback.recommendation == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-primary" style="padding:6px 14px; font-size:12px;">Feedback speichern</button>
+                  </div>
+                </form>
+              </div>
+            </details>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+
+      {% if pending_outcomes %}
+      <h3 style="font-size:14px; margin: var(--space-3) 0 var(--space-2);"><i class="fa-solid fa-clipboard-check" style="color:var(--warning);"></i> Ergebnis erfassen ({{ pending_outcomes|length }})</h3>
+      <table class="data-table"><tbody>
+        {% for iv in pending_outcomes %}
+        <tr>
+          <td style="white-space:nowrap;">{{ iv.scheduledAt|date:"d.m. H:i" }}</td>
+          <td>{{ iv.application.applicant.firstName }} {{ iv.application.applicant.lastName }}<br>
+              <span style="color:var(--text-muted); font-size:12px;">{{ iv.kind_label }} · {{ iv.application.jobPosting.title }}</span></td>
+          <td style="white-space:nowrap;">
+            <form method="post" action="{% url 'ats:interview_outcome' iv.id %}" style="display:inline;">{% csrf_token %}
+              <input type="hidden" name="outcome" value="COMPLETED">
+              <button type="submit" class="btn-icon" title="Stattgefunden" aria-label="Stattgefunden"><i class="fa-solid fa-check" style="color:var(--success);"></i></button>
+            </form>
+            <form method="post" action="{% url 'ats:interview_outcome' iv.id %}" style="display:inline;">{% csrf_token %}
+              <input type="hidden" name="outcome" value="NO_SHOW">
+              <button type="submit" class="btn-icon" title="Nicht erschienen (No-Show)" aria-label="Nicht erschienen"><i class="fa-solid fa-user-slash" style="color:var(--danger-light);"></i></button>
+            </form>
+            <form method="post" action="{% url 'ats:interview_outcome' iv.id %}" style="display:inline;">{% csrf_token %}
+              <input type="hidden" name="outcome" value="CANCELLED">
+              <button type="submit" class="btn-icon" title="Kurzfristig abgesagt" aria-label="Kurzfristig abgesagt"><i class="fa-solid fa-calendar-xmark" style="color:var(--text-muted);"></i></button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody></table>
+      {% endif %}
+            <h3 style="font-size:14px; margin: var(--space-3) 0 var(--space-2);">Freie Slots</h3>
+      <table class="data-table"><tbody>
+        {% for sl in free_slots %}
+        <tr><td style="white-space:nowrap;">{{ sl.startTime|date:"d.m. H:i" }}</td>
+            <td><span class="badge">{{ sl.kind_label }}</span></td>
+            <td style="color:var(--text-muted);">{{ sl.jobPosting.title }}</td>
+            <td style="color:var(--text-muted); font-size:12px;">{% if sl.createdBy %}{{ sl.createdBy.username }}{% endif %}</td></tr>
+        {% empty %}<tr><td class="empty-state">Keine freien Slots – oben anlegen.</td></tr>{% endfor %}
+      </tbody></table>
+    </div>
+  </div>
+</div>
+
+  {% if can_manage_formats %}
+  <div class="card" style="margin-top: var(--space-4);">
+    <h2 style="font-size:15px; margin:0 0 var(--space-1);"><i class="fa-solid fa-sliders"></i> Gesprächsformate verwalten</h2>
+    <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--space-3);">Formate gelten überall (Timeslots, Termin-Vergabe, Selbstbuchung). Bestehende Termine behalten ihre Bezeichnung, auch wenn ein Format entfernt wird.</p>
+    {% for code, label in interview_kinds %}
+    <form method="post" action="{% url 'ats:interview_formats' %}" class="form-row" style="margin-bottom:6px;">
+      {% csrf_token %}
+      <input type="hidden" name="code" value="{{ code }}">
+      <input type="text" name="label" class="input" value="{{ label }}" style="flex:2;">
+      <button type="submit" name="action" value="rename" class="btn btn-ghost" style="padding:6px 12px; font-size:12px;">Umbenennen</button>
+      <button type="submit" name="action" value="delete" class="btn-icon danger" title="entfernen" aria-label="Format {{ label }} entfernen" onclick="return confirm('Format wirklich entfernen? Bestehende Termine behalten ihre Bezeichnung.');"><i class="fa-solid fa-trash"></i></button>
+    </form>
+    {% endfor %}
+    <form method="post" action="{% url 'ats:interview_formats' %}" class="form-row" style="margin-top:10px;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add">
+      <input type="text" name="label" class="input" placeholder="Neues Format, z. B. Assessment-Center-Tag" required style="flex:2;">
+      <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Hinzufügen</button>
+    </form>
+  </div>
+  {% endif %}
+<script>
+function fbAvg(form) {
+  var sliders = form.querySelectorAll('.fb-slider');
+  if (!sliders.length) return;
+  var sum = 0;
+  sliders.forEach(function(s){ sum += parseInt(s.value, 10) || 0; });
+  var avg = Math.round(sum / sliders.length);
+  var label = avg >= 85 ? 'Klar dafür' : avg >= 70 ? 'Eher dafür'
+            : avg >= 45 ? 'Unentschieden' : avg >= 25 ? 'Eher dagegen'
+            : 'Klar dagegen';
+  var out = form.querySelector('.fb-avg');
+  if (out) out.textContent = avg + ' % · ' + label;
+}
+document.querySelectorAll('form[oninput="fbAvg(this)"]').forEach(fbAvg);
+</script>
+{% endblock %}

@@ -35,7 +35,7 @@
         gap: 16px;
     }
 
-    .kununu-card {
+    .trust-card {
         background: rgba(139, 92, 246, 0.1);
         border: 1px solid rgba(139, 92, 246, 0.2);
         border-radius: var(--border-radius-lg);
@@ -53,7 +53,7 @@
         50% { transform: translateY(-10px); }
     }
 
-    .kununu-score {
+    .trust-score {
         font-family: 'Outfit', sans-serif;
         font-size: 42px;
         font-weight: 800;
@@ -64,7 +64,7 @@
         -webkit-text-fill-color: transparent;
     }
 
-    .kununu-stars {
+    .trust-stars {
         color: #fbbf24;
         font-size: 18px;
         margin-bottom: 6px;
@@ -220,32 +220,28 @@
 <section class="hero-section">
     <div class="hero-content">
         <span class="badge badge-accent" style="margin-bottom: 16px;">
-            <i class="fa-solid fa-sparkles"></i> Karrieremöglichkeiten
+            <i class="fa-solid fa-sparkles"></i> Karriere bei uns
         </span>
-        <h1>{{ home_page.title|default:"Gestalten Sie das Recruiting der Zukunft" }}</h1>
-        <p>{{ home_page.content|default:"Werden Sie Teil eines innovativen Teams bei SecurATS. Wir verbinden modernste HR-Technologien mit kompromissloser Datensicherheit und erstklassigem Design." }}</p>
-        
+        <h1>{{ home_page.title|default:"Finden Sie die Stelle, die zu Ihrem Leben passt" }}</h1>
+        <p>{{ home_page.content|default:"Bewerben Sie sich in wenigen Minuten – ohne Konto, ohne Hürden. Ein Handy-Foto Ihres Lebenslaufs genügt. Ihre Daten bleiben dabei vollständig bei uns im Haus." }}</p>
+
         <div class="hero-actions">
             <a href="{% url 'ats:job_list' %}" class="btn-cta">
-                <i class="fa-solid fa-briefcase" style="margin-right: 8px;"></i> Stellenangebote ansehen
+                <i class="fa-solid fa-briefcase" style="margin-right: 8px;"></i> Offene Stellen ansehen
             </a>
-            <a href="#benefits" class="btn-secondary-cta">Unsere Benefits</a>
+            <a href="{% url 'ats:job_alert' %}" class="btn-secondary-cta"><i class="fa-solid fa-bell" style="margin-right:6px;"></i> Job-Alert einrichten</a>
         </div>
     </div>
-    
+
     <div>
-        <div class="kununu-card">
-            <img src="https://www.kununu.com/favicon.ico" alt="kununu" style="width: 24px; opacity: 0.8; margin-bottom: 8px;">
-            <div style="font-size: 14px; font-weight: 600; text-transform: uppercase; color: var(--text-muted);">kununu Top Company</div>
-            <div class="kununu-score">4.8 / 5</div>
-            <div class="kununu-stars">
-                <i class="fa-solid fa-star"></i>
-                <i class="fa-solid fa-star"></i>
-                <i class="fa-solid fa-star"></i>
-                <i class="fa-solid fa-star"></i>
-                <i class="fa-solid fa-star-half-stroke"></i>
-            </div>
-            <p style="font-size: 13px; color: var(--text-muted);">Bester Arbeitgeber im IT-Sektor 2026</p>
+        <div class="trust-card">
+            <div style="font-size: 14px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px;">So bewerben Sie sich hier</div>
+            <ul class="list-reset" style="text-align:left; font-size:14px; display:flex; flex-direction:column; gap:10px;">
+                <li><i class="fa-solid fa-bolt" style="color: var(--accent-light); width:20px;"></i> In wenigen Minuten – ohne Registrierung</li>
+                <li><i class="fa-solid fa-camera" style="color: var(--accent-light); width:20px;"></i> Handy-Foto statt PDF genügt</li>
+                <li><i class="fa-solid fa-universal-access" style="color: var(--accent-light); width:20px;"></i> Barrierefrei: Vorlesen, Leichte Sprache &amp; mehr</li>
+                <li><i class="fa-solid fa-shield-halved" style="color: var(--accent-light); width:20px;"></i> DSGVO-konform, Daten bleiben im Haus</li>
+            </ul>
         </div>
     </div>
 </section>

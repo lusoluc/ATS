@@ -1,0 +1,73 @@
+"""Zentraler Helfer für revisionssichere, integritätsgesicherte Audit-Logs.
+
+Jeder Eintrag hasht seinen Vorgänger (Hash-Kette). Nachträgliche Änderung oder
+Löschung eines Eintrags bricht die Kette und ist per `verify_audit_chain()`
+erkennbar (UC-MB-12, UC-NS-02).
+"""
+import hashlib
+import json
+
+from django.db import transaction
+from django.utils import timezone
+
+from .models import AuditLog
+
+
+def _entry_hash(prev, action, user_id, application_id, metadata_json, created_iso):
+    payload = "|".join([
+        prev or "", action or "", user_id or "", application_id or "",
+        metadata_json or "", created_iso or "",
+    ])
+    return hashlib.sha256(payload.encode("utf-8", "ignore")).hexdigest()
+
+
+def create_chained_audit(action, user_id=None, application_id=None, metadata_json="{}"):
+    """Legt einen Audit-Eintrag an und verkettet ihn mit dem letzten Eintrag."""
+    with transaction.atomic():
+        last = AuditLog.objects.select_for_update().order_by("-createdAt", "-id").first()
+        prev = last.entryHash if last and last.entryHash else ""
+        created = timezone.now()
+        digest = _entry_hash(prev, action, user_id, application_id,
+                             metadata_json, created.isoformat())
+        return AuditLog.objects.create(
+            action=action, userId=user_id, applicationId=application_id,
+            metadataJson=metadata_json, createdAt=created,
+            prevHash=prev, entryHash=digest,
+        )
+
+
+def write_audit(action, user=None, application_id=None, **metadata):
+    """Schreibt einen verketteten Audit-Eintrag (bevorzugter Einstiegspunkt)."""
+    username = None
+    if user is not None and getattr(user, "is_authenticated", False):
+        username = user.get_username()
+    return create_chained_audit(
+        action=action,
+        user_id=username,
+        application_id=str(application_id) if application_id else None,
+        metadata_json=json.dumps(metadata, default=str),
+    )
+
+
+def verify_audit_chain():
+    """Prüft die Integrität der Hash-Kette.
+
+    Rückgabe: dict mit ok(bool), checked(int), unchained(int) und ggf. broken_id.
+    - unchained: Alt-/Fremd-Einträge ohne Hash (vor Einführung der Kette) werden
+      übersprungen, aber gezählt – sie brechen die Kette nicht.
+    """
+    prev = ""
+    checked = 0
+    unchained = 0
+    for e in AuditLog.objects.order_by("createdAt", "id").iterator():
+        if not e.entryHash:
+            unchained += 1
+            continue
+        expected = _entry_hash(prev, e.action, e.userId, e.applicationId,
+                               e.metadataJson, e.createdAt.isoformat())
+        if expected != e.entryHash or (e.prevHash or "") != prev:
+            return {"ok": False, "checked": checked, "unchained": unchained,
+                    "broken_id": str(e.id)}
+        prev = e.entryHash
+        checked += 1
+    return {"ok": True, "checked": checked, "unchained": unchained}

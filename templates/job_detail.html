@@ -3,6 +3,12 @@
 {% block title %}SecurATS - {{ job.title }}{% endblock %}
 
 {% block content %}
+{% if job_filled %}
+<div class="card" style="border-left:4px solid var(--warning); margin-bottom: var(--space-4);" role="status">
+  <strong>Diese Stelle ist bereits besetzt.</strong>
+  <p style="font-size:13px; color:var(--text-muted); margin:4px 0 0;">Eine Initiativbewerbung ist trotzdem willkommen – wir melden uns, sobald eine passende Stelle frei wird. Weitere offene Stellen finden Sie in der <a href="/jobs/">Stellenbörse</a>.</p>
+</div>
+{% endif %}
 <style>
     .detail-layout {
         display: grid;
@@ -209,6 +215,9 @@
             <h1 class="detail-title">{{ job.title }}</h1>
             <div class="detail-meta-pills">
                 <span class="badge badge-primary"><i class="fa-solid fa-location-dot" style="margin-right: 6px;"></i> {{ job.location.name }}</span>
+                {% if job.facility.profile.slug %}
+                <a class="badge badge-accent" href="{% url 'ats:facility_profile' job.facility.profile.slug %}" style="text-decoration:none;"><i class="fa-solid fa-building" style="margin-right: 6px;"></i> {{ job.facility.name }} kennenlernen</a>
+                {% endif %}
                 {% if job.department %}
                     <span class="badge badge-accent"><i class="fa-solid fa-users" style="margin-right: 6px;"></i> {{ job.department.name }}</span>
                 {% endif %}
@@ -218,8 +227,30 @@
 
         {% if job.description %}
         <div class="detail-block">
-            <h2><i class="fa-solid fa-align-left"></i> Stellenbeschreibung</h2>
-            <p style="color: #d1d5db; font-size: 15px; line-height: 1.8;">{{ job.description|linebreaksbr }}</p>
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+                <h2 style="margin:0;"><i class="fa-solid fa-align-left"></i> Stellenbeschreibung</h2>
+                {% if job.descriptionEasy %}
+                <button type="button" id="easyToggle" onclick="toggleEasyLang()"
+                        style="background:none;border:1px solid var(--glass-border);color:var(--text-main);border-radius:var(--border-radius-sm);padding:6px 12px;cursor:pointer;font-size:13px;">
+                    <i class="fa-solid fa-language"></i> <span id="easyToggleLabel">Leichte Sprache</span>
+                </button>
+                {% endif %}
+            </div>
+            <p id="descStandard" style="color: #d1d5db; font-size: 15px; line-height: 1.8; margin-top: 12px;">{{ job.description|linebreaksbr }}</p>
+            {% if job.descriptionEasy %}
+            <p id="descEasy" style="display:none; color: #d1d5db; font-size: 17px; line-height: 2; margin-top: 12px;">{{ job.descriptionEasy|linebreaksbr }}</p>
+            <script>
+            function toggleEasyLang() {
+                var std = document.getElementById('descStandard');
+                var easy = document.getElementById('descEasy');
+                var label = document.getElementById('easyToggleLabel');
+                var showEasy = easy.style.display === 'none';
+                easy.style.display = showEasy ? 'block' : 'none';
+                std.style.display = showEasy ? 'none' : 'block';
+                label.textContent = showEasy ? 'Normale Sprache' : 'Leichte Sprache';
+            }
+            </script>
+            {% endif %}
         </div>
         {% endif %}
 
@@ -285,7 +316,7 @@
             <div class="contact-card">
                 <h3 style="color: #fff; margin-bottom: 16px; font-size: 18px;">Ihr Ansprechpartner</h3>
                 {% if job.contactPerson.photoUrl %}
-                    <img src="{{ job.contactPerson.photoUrl }}" alt="{{ job.contactPerson.firstName }}" class="contact-avatar">
+                    <img src="{{ job.contactPerson.photoUrl }}" alt="Foto von {{ job.contactPerson.firstName }} {{ job.contactPerson.lastName }}, Ansprechperson für diese Stelle" class="contact-avatar">
                 {% endif %}
                 <h4 class="contact-name">{{ job.contactPerson.firstName }} {{ job.contactPerson.lastName }}</h4>
                 <div class="contact-title">{{ job.contactPerson.globalJobTitle|default:"Recruiter" }}</div>

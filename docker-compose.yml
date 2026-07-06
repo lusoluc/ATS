@@ -54,6 +54,7 @@ services:
       - SECURATS_ADMIN_USER=${SECURATS_ADMIN_USER:-}
       - SECURATS_ADMIN_PASSWORD=${SECURATS_ADMIN_PASSWORD:-}
       - FEED_ACCESS_TOKEN=${FEED_ACCESS_TOKEN:-}
+      - DEMO_MODE=${DEMO_MODE:-0}
     networks: [securats-network]
 
   # --- Optionales KI-Profil: docker compose --profile ki up -d -----------------
@@ -92,6 +93,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - OLLAMA_HOST=${OLLAMA_HOST:-ollama}
       - OLLAMA_PORT=${OLLAMA_PORT:-11434}
+      - DEMO_MODE=${DEMO_MODE:-0}
     networks: [securats-network]
 
 volumes:

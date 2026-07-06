@@ -23,23 +23,147 @@
     --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.12);
     {% endif %}
   }
-  {% if brand.mode == 'LIGHT' %}
-  body { background: var(--bg-color); color: var(--text-main); }
-  .ambient-glow-1, .ambient-glow-2 { display: none; }
-  header { background: rgba(255,255,255,0.92); border-bottom-color: var(--border-color); }
-  .logo, .footer-logo { -webkit-text-fill-color: initial; background: none; color: var(--primary); }
-  footer { background: #ffffff; }
-  {% endif %}
+
+  /* ----------------------------------------------------
+     Universal Button Overrides (Both Light & Dark Modes)
+     ---------------------------------------------------- */
   .btn-cta, .btn-search, .btn-primary {
     background: var(--primary) !important;
     color: {{ brand.on_primary }} !important;
-    box-shadow: none;
+    box-shadow: none !important;
   }
   .btn-cta:hover, .btn-search:hover, .btn-primary:hover {
     background: {{ brand.primary_dark }} !important;
   }
-  .badge-primary { background: {{ brand.primary }}1f; color: var(--primary); border-color: {{ brand.primary }}55; }
-  a { color: var(--primary); }
-  .nav-item a { color: var(--text-muted); }
+
+  .btn-secondary-cta {
+    border: 1px solid var(--primary) !important;
+    background: transparent !important;
+    color: var(--primary) !important;
+    box-shadow: none !important;
+  }
+  .btn-secondary-cta:hover {
+    background: var(--primary) !important;
+    color: {{ brand.on_primary }} !important;
+  }
+
+  .badge-primary {
+    background: {{ brand.primary }}1f !important;
+    color: var(--primary) !important;
+    border-color: {{ brand.primary }}55 !important;
+  }
+  a {
+    color: var(--primary);
+  }
+  .nav-item a {
+    color: var(--text-muted);
+  }
+
+  /* ----------------------------------------------------
+     Light Theme Specific Overrides
+     ---------------------------------------------------- */
+  {% if brand.mode == 'LIGHT' %}
+  body {
+    background: var(--bg-color);
+    color: var(--text-main);
+  }
+  .ambient-glow-1, .ambient-glow-2 {
+    display: none !important;
+  }
+  header {
+    background: rgba(255,255,255,0.92);
+    border-bottom-color: var(--border-color);
+  }
+  .logo, .footer-logo {
+    -webkit-text-fill-color: initial !important;
+    background: none !important;
+    color: var(--primary) !important;
+  }
+  footer {
+    background: #ffffff;
+  }
+
+  /* Title Contrast Overrides */
+  .section-title {
+    color: var(--text-main) !important;
+  }
+  .section-subtitle {
+    color: var(--text-muted) !important;
+  }
+
+  /* Hero Section Title */
+  .hero-content h1 {
+    background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+  }
+
+  /* Tech Cards & Cards in Light Mode */
+  .tech-card {
+    background: var(--surface-color) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: var(--shadow-md) !important;
+  }
+  .tech-card:hover {
+    box-shadow: var(--shadow-lg) !important;
+    border-color: var(--primary) !important;
+  }
+  .tech-card h3 {
+    color: var(--text-main) !important;
+  }
+  .tech-card p {
+    color: var(--text-muted) !important;
+  }
+
+  /* Pricing Teaser */
+  .pricing-teaser {
+    background: var(--surface-color) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: var(--shadow-md) !important;
+  }
+  .pricing-teaser h2 {
+    color: var(--text-main) !important;
+  }
+  .pricing-teaser p {
+    color: var(--text-muted) !important;
+  }
+
+  /* Persona Selector (Tabs) */
+  .persona-tab {
+    background: var(--surface-hover) !important;
+    color: var(--text-muted) !important;
+    border: 1px solid var(--border-color) !important;
+  }
+  .persona-tab:hover {
+    background: var(--surface-color) !important;
+    color: var(--primary) !important;
+    border-color: var(--primary) !important;
+  }
+  .persona-tab.active {
+    background: var(--primary) !important;
+    color: {{ brand.on_primary }} !important;
+    border-color: var(--primary) !important;
+  }
+  .persona-meta h3, .persona-features h4 {
+    color: var(--text-main) !important;
+  }
+  .use-case-item span {
+    color: var(--text-main) !important;
+  }
+
+  /* Public Pages Titles & Content */
+  .job-card-title, .detail-title, .detail-block h2, .contact-name, .apply-header h1, .screening-block h3 {
+    color: var(--text-main) !important;
+  }
+  .detail-list-item, .contact-quote, .checkbox-label, .screening-question-label {
+    color: var(--text-main) !important;
+  }
+  .contact-quote {
+    background: var(--surface-hover) !important;
+  }
+  .job-card-teaser {
+    color: var(--text-muted) !important;
+  }
+  {% endif %}
 </style>
 {% endif %}

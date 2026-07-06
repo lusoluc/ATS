@@ -16,7 +16,7 @@
 
     .apply-header h1 {
         font-size: 32px;
-        color: #fff;
+        color: var(--text-main);
         margin-bottom: 8px;
     }
 
@@ -31,7 +31,7 @@
         border-radius: var(--border-radius-md);
         padding: 30px 20px;
         text-align: center;
-        background: rgba(11, 13, 25, 0.4);
+        background: var(--surface-color);
         cursor: pointer;
         transition: var(--transition-smooth);
         margin-bottom: 24px;
@@ -88,7 +88,7 @@
 
     .checkbox-label {
         font-size: 13px;
-        color: #d1d5db;
+        color: var(--text-main);
         line-height: 1.5;
         cursor: pointer;
     }
@@ -104,7 +104,7 @@
 
     /* Screening questions block */
     .screening-block {
-        background: rgba(255, 255, 255, 0.02);
+        background: var(--surface-color);
         border: 1px solid var(--glass-border);
         border-radius: var(--border-radius-md);
         padding: 24px;
@@ -113,7 +113,7 @@
 
     .screening-block h3 {
         font-size: 18px;
-        color: #fff;
+        color: var(--text-main);
         margin-bottom: 16px;
         display: flex;
         align-items: center;
@@ -135,18 +135,18 @@
     .screening-question-label {
         display: block;
         font-size: 14px;
-        color: #e5e7eb;
+        color: var(--text-main);
         margin-bottom: 8px;
         font-weight: 500;
     }
 
     .screening-select {
         width: 100%;
-        background: rgba(11, 13, 25, 0.6);
+        background: var(--surface-color);
         border: 1px solid var(--glass-border);
         border-radius: var(--border-radius-sm);
         padding: 10px 14px;
-        color: #fff;
+        color: var(--text-main);
         font-size: 14px;
         outline: none;
         transition: var(--transition-smooth);
@@ -161,7 +161,7 @@
     <div class="apply-header">
         <span class="badge badge-accent" style="margin-bottom: 12px;"><i class="fa-solid fa-bolt"></i> One-Click Bewerbung</span>
         <h1>Jetzt bewerben</h1>
-        <p>für die Position: <strong style="color: #fff;">{{ job.title }}</strong></p>
+        <p>für die Position: <strong style="color: var(--text-main);">{{ job.title }}</strong></p>
     </div>
 
     <form method="POST" action="{% url 'ats:bewerben' job.id %}" enctype="multipart/form-data" class="glass-card">

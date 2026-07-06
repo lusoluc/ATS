@@ -36,7 +36,7 @@
 
     .detail-title {
         font-size: 36px;
-        color: #fff;
+        color: var(--text-main);
         margin-top: 12px;
         margin-bottom: 20px;
         line-height: 1.2;
@@ -58,7 +58,7 @@
     .detail-block h2 {
         font-size: 24px;
         margin-bottom: 20px;
-        color: #fff;
+        color: var(--text-main);
         display: flex;
         align-items: center;
         gap: 10px;
@@ -78,7 +78,7 @@
         gap: 12px;
         margin-bottom: 16px;
         font-size: 15px;
-        color: #d1d5db;
+        color: var(--text-main);
     }
 
     .detail-list-item i {
@@ -97,7 +97,7 @@
     }
 
     .cta-card {
-        background: linear-gradient(135deg, rgba(23, 27, 56, 0.9) 0%, rgba(11, 13, 25, 0.9) 100%);
+        background: var(--glass-bg);
         border: 1px solid var(--glass-border);
         border-radius: var(--border-radius-lg);
         padding: 30px;
@@ -151,7 +151,7 @@
 
     .contact-name {
         font-size: 20px;
-        color: #fff;
+        color: var(--text-main);
         margin-bottom: 4px;
     }
 
@@ -165,9 +165,9 @@
 
     .contact-quote {
         font-style: italic;
-        color: #d1d5db;
+        color: var(--text-main);
         font-size: 14px;
-        background: rgba(255, 255, 255, 0.03);
+        background: var(--surface-hover);
         padding: 12px 16px;
         border-radius: var(--border-radius-sm);
         margin-bottom: 20px;
@@ -290,7 +290,7 @@
                     <li class="detail-list-item" style="margin-bottom: 0;">
                         <span style="font-size: 22px; margin-right: 8px;">{{ benefit.icon|default:"🎁" }}</span>
                         <div>
-                            <strong style="color: #fff; display: block;">{{ benefit.name }}</strong>
+                            <strong style="color: var(--text-main); display: block;">{{ benefit.name }}</strong>
                             <span style="font-size: 13px; color: var(--text-muted);">{{ benefit.description }}</span>
                         </div>
                     </li>
@@ -304,7 +304,7 @@
     <div class="detail-sidebar">
         <!-- Application Call to Action -->
         <div class="cta-card">
-            <h3 style="color: #fff; margin-bottom: 12px; font-size: 20px;">Bewerbung in 2 Minuten</h3>
+            <h3 style="color: var(--text-main); margin-bottom: 12px; font-size: 20px;">Bewerbung in 2 Minuten</h3>
             <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 24px;">Keine langen Registrierungen. Einfach Lebenslauf hochladen und absenden.</p>
             <a href="{% url 'ats:bewerben' job.id %}" class="btn-apply-now">
                 <i class="fa-solid fa-bolt"></i> One-Click bewerben
@@ -314,7 +314,7 @@
         <!-- Contact Person Card -->
         {% if job.contactPerson %}
             <div class="contact-card">
-                <h3 style="color: #fff; margin-bottom: 16px; font-size: 18px;">Ihr Ansprechpartner</h3>
+                <h3 style="color: var(--text-main); margin-bottom: 16px; font-size: 18px;">Ihr Ansprechpartner</h3>
                 {% if job.contactPerson.photoUrl %}
                     <img src="{{ job.contactPerson.photoUrl }}" alt="Foto von {{ job.contactPerson.firstName }} {{ job.contactPerson.lastName }}, Ansprechperson für diese Stelle" class="contact-avatar">
                 {% endif %}

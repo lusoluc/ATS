@@ -1717,7 +1717,7 @@ def make_ollama_request(url, payload, timeout=8.0):
         return False, str(e)
 
 
-def evaluate_with_local_gemma(cover_letter, requirements_list):
+def evaluate_with_local_gemma(cover_letter, requirements_list, application_id=None):
     """
     Evaluates the applicant's cover letter against the job requirements using local Gemma AI.
     If the local Gemma service (Ollama on port 11434) is offline, it falls back to high-fidelity rule matching.
@@ -1770,12 +1770,14 @@ def evaluate_with_local_gemma(cover_letter, requirements_list):
                              prompt_used=cover_letter,
                              tokens=res_data.get("eval_count"),
                              params=options, prompt_version=PROMPT_VERSION,
-                             repaired=repaired)
+                             repaired=repaired,
+                             application_id=str(application_id) if application_id else None)
             return score, rationale
     except Exception as e:
         logger.exception("Lokales KI-Scoring fehlgeschlagen; regelbasierter Fallback aktiv")
         log_ai_execution("Bewerbungs-Scoring", get_ai_model(), None, False, True, str(e), False,
-                         prompt_used=cover_letter, prompt_version=PROMPT_VERSION)
+                         prompt_used=cover_letter, prompt_version=PROMPT_VERSION,
+                         application_id=str(application_id) if application_id else None)
         
     # Fallback to high-fidelity rule-based parsing
     text_lower = cover_letter.lower()

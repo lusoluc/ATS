@@ -89,8 +89,11 @@ Bei jeder Erweiterung der KI-Anbindung: System-Prompt und Nutzereingaben
 strikt trennen; Anweisung an das Modell, Inhalte in `<CV_TEXT>`-artigen Tags
 niemals als Instruktion zu behandeln.
 
-## 3. Rechtliche Leitplanken (AGG & DSGVO)
+## 3. Rechtliche Leitplanken (EU AI Act, AGG & DSGVO)
 
+* **EU AI Act (Hochrisiko-Systeme):**
+  - Da das Bewerber-Scoring regulatorisch als "High-Risk" gilt, MUSS dieses Modul immer als optionales Opt-in (`AI_SCORING_ENABLED=1`) realisiert sein. Ohne dieses Opt-in darf der Code keinen Platzhalter-Score erfinden.
+  - Es gilt das "Human-in-the-Loop"-Prinzip: Die KI darf niemals vollautomatisch Zu- oder Absagen generieren, sondern liefert nur einen Score (A-D) und eine verständliche Begründung (`rationale`).
 * **AGG:** Kein Bewertungs- oder Scoring-Feature darf Alter, Geschlecht,
   Herkunft, Religion oder Aussehen einbeziehen. KI-Prompts verbieten diese
   Merkmale explizit.
@@ -99,9 +102,9 @@ niemals als Instruktion zu behandeln.
   `expectedAnswer` = K.O.; `isMandatory` ohne `expectedAnswer` = Pflichtfeld
   mit Formular-Fehler, NIE automatische Ablehnung (siehe `ats/questions.py`).
   Wer einen neuen Fragetyp einführt, muss diese Unterscheidung erhalten.
-* **Löschung/Retention:** Neue Datenspeicherung braucht einen Bezug zur
-  bestehenden Retention-Logik (Command `retention_cleanup` o. ä.), keine
-  Speicherung „auf Vorrat" ohne Löschpfad.
+* **Löschung/Retention & Logging (DSGVO):**
+  - Neue Datenspeicherung braucht einen Bezug zur bestehenden Retention-Logik (Command `retention_cleanup` o. ä.), keine Speicherung „auf Vorrat" ohne Löschpfad.
+  - **Audit-Logging von KI-Ausführungen:** Alle KI-Ausführungen müssen lückenlos protokolliert werden (`log_ai_execution`), wobei zur Nachvollziehbarkeit des Audit-Trails die unverschlüsselte `application_id` (UUID) übermittelt und mitgeloggt wird. Um DSGVO-Vorgaben einzuhalten, darf kein Klartext von Bewerberdaten in das Audit-Log geschrieben werden (diese müssen per `redact_for_log` in Länge + SHA-256-Hash maskiert werden).
 
 ## 4. Architektur-Muster dieser Codebasis (bitte fortsetzen, nicht neu erfinden)
 

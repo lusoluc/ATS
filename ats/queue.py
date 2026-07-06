@@ -32,7 +32,7 @@ def _handle_score_application(payload: dict) -> dict:
     from .views import evaluate_with_local_gemma
     app = Application.objects.get(id=payload["application_id"])
     score, rationale = evaluate_with_local_gemma(
-        app.coverLetterTxt or "", app.jobPosting.requirementsJson)
+        app.coverLetterTxt or "", app.jobPosting.requirementsJson, application_id=app.id)
     app.aiScore = score
     app.aiRationale = rationale
     app.save(update_fields=["aiScore", "aiRationale", "updatedAt"])

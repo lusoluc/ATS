@@ -833,7 +833,10 @@ def dashboard(request):
     job_families = JobFamily.objects.filter(archived=False)
     contact_persons = ContactPerson.objects.all()
     all_benefits = Benefit.objects.all()
-    job_templates = JobTemplate.objects.all()
+    latest_tpl_ids = {}
+    for t in JobTemplate.objects.order_by('-version', '-createdAt'):
+        latest_tpl_ids.setdefault(t.title.lower(), t.id)
+    job_templates = JobTemplate.objects.filter(id__in=latest_tpl_ids.values()).order_by('title')
     
     # Learning samples and spambot counts
     ai_learning_samples = AILearningSample.objects.select_related('application', 'application__applicant', 'application__jobPosting')
@@ -6134,4 +6137,123 @@ class SafeLoginView(AuthLoginView):
             pass
             
         return super().form_valid(form)
+
+
+@recruiter_required
+def job_template_detail(request, tpl_id):
+    """B12: Gibt die Historie (parent-Kette) einer Vorlage und die verknüpften Stellen zurück (inkl. Diff)."""
+    template = get_object_or_404(JobTemplate, id=tpl_id)
+    # Alle Versionen dieses Titels absteigend sortiert
+    all_versions = JobTemplate.objects.filter(title__iexact=template.title).order_by('-version')
+    latest_version = all_versions.first()
+    
+    history_data = []
+    for v in all_versions:
+        # Stellen ermitteln, die diese spezielle Version nutzen
+        jobs = []
+        for job in v.jobPostings.all():
+            jobs.append({
+                'id': str(job.id),
+                'title': job.title,
+                'location': job.location.city if job.location else '—',
+                'state': job.workflowState.name if job.workflowState else 'draft'
+            })
+            
+        # Diff gegen die aktuellste Version ermitteln
+        diff_html = ""
+        if v.id != latest_version.id:
+            old_lines = v.content.splitlines()
+            new_lines = latest_version.content.splitlines()
+            import difflib
+            diff_lines = []
+            for line in difflib.ndiff(old_lines, new_lines):
+                if line.startswith('+ '):
+                    diff_lines.append(f'<div style="color:#4ade80; background:rgba(34,197,94,0.1); padding:2px 4px; border-radius:2px;"><span style="font-weight:bold; margin-right:4px;">+</span>{line[2:]}</div>')
+                elif line.startswith('- '):
+                    diff_lines.append(f'<div style="color:#f87171; background:rgba(239,68,68,0.1); padding:2px 4px; border-radius:2px;"><span style="font-weight:bold; margin-right:4px;">-</span>{line[2:]}</div>')
+                elif line.startswith('? '):
+                    continue
+                else:
+                    diff_lines.append(f'<div style="color:var(--text-muted); padding:2px 4px;"> {line[2:]}</div>')
+            diff_html = '\n'.join(diff_lines)
+        else:
+            diff_html = '<div style="color:var(--text-muted); font-style:italic; padding:4px;">Dies ist die aktuellste Version. Keine Änderungen.</div>'
+            
+        history_data.append({
+            'id': str(v.id),
+            'version': v.version,
+            'createdAt': v.createdAt.strftime('%d.%m.%Y %H:%M'),
+            'content': v.content,
+            'active_jobs_count': len(jobs),
+            'active_jobs': jobs,
+            'is_latest': (v.id == latest_version.id),
+            'diff_html': diff_html
+        })
+        
+    return JsonResponse({
+        'success': True,
+        'title': template.title,
+        'latest_version': latest_version.version,
+        'history': history_data
+    })
+
+
+@recruiter_required
+def restore_job_template(request, tpl_id):
+    """B12: Erzeugt eine neue Version auf Basis des Inhalts einer alten Version."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST erforderlich'}, status=405)
+    template = get_object_or_404(JobTemplate, id=tpl_id)
+    latest = JobTemplate.objects.filter(title__iexact=template.title).order_by('-version').first()
+    new_tpl = JobTemplate.objects.create(
+        title=template.title,
+        content=template.content,
+        version=(latest.version + 1) if latest else 1,
+        parent=latest
+    )
+    from .models import AuditLog
+    AuditLog.objects.create(
+        action="RESTORE_TEMPLATE",
+        metadataJson=json.dumps({
+            'template_id': str(new_tpl.id),
+            'title': new_tpl.title,
+            'restored_from_version': template.version,
+            'new_version': new_tpl.version
+        })
+    )
+    return JsonResponse({'success': True, 'new_tpl_id': str(new_tpl.id), 'new_version': new_tpl.version})
+
+
+@recruiter_required
+def update_job_posting_template(request, job_id):
+    """B12: Aktualisiert eine Stellenanzeige auf die neueste Version ihrer verknüpften Vorlage."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST erforderlich'}, status=405)
+    job = get_object_or_404(JobPosting, id=job_id)
+    if not scope_jobs(request.user, JobPosting.objects.filter(id=job.id)).exists():
+        return JsonResponse({'success': False, 'error': 'Kein Zugriff'}, status=403)
+    if not job.jobTemplate:
+        return JsonResponse({'success': False, 'error': 'Keine Vorlage verknüpft'}, status=400)
+        
+    latest = JobTemplate.objects.filter(title__iexact=job.jobTemplate.title).order_by('-version').first()
+    if latest and latest.id != job.jobTemplate.id:
+        old_tpl_version = job.jobTemplate.version
+        job.jobTemplate = latest
+        job.save(update_fields=['jobTemplate', 'updatedAt'])
+        
+        from .models import AuditLog
+        AuditLog.objects.create(
+            action="UPDATE_JOB_TEMPLATE_VERSION",
+            metadataJson=json.dumps({
+                'job_id': str(job.id),
+                'job_title': job.title,
+                'template_title': latest.title,
+                'old_version': old_tpl_version,
+                'new_version': latest.version
+            })
+        )
+        return JsonResponse({'success': True, 'new_version': latest.version})
+        
+    return JsonResponse({'success': False, 'error': 'Bereits auf der neuesten Version'})
+
 

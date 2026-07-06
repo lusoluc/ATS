@@ -569,7 +569,13 @@
                     <tbody>
                         {% for job in active_jobs %}
                             <tr>
-                                <td><strong>{{ job.title }}</strong></td>
+                                <td>
+                                    <strong>{{ job.title }}</strong>
+                                    {% if job.is_template_outdated %}
+                                        <span class="badge" id="job-tpl-outdated-badge-{{ job.id }}" style="background: rgba(245,158,11,0.15); color:#fbbf24; font-size:10px; margin-left: 8px;" title="Vorlage veraltet! Eine neuere Version ist verfügbar.">v{{ job.jobTemplate.version }} veraltet!</span>
+                                        <button type="button" class="btn" id="job-tpl-update-btn-{{ job.id }}" style="padding: 2px 6px; font-size: 10px; margin-left:4px; vertical-align:middle; background:rgba(139,92,246,0.15); color:#c084fc; border:1px solid rgba(139,92,246,0.3); border-radius:3px; cursor:pointer;" onclick="updateJobTemplate('{{ job.id }}')" title="Auf die neueste Vorlagenversion aktualisieren"><i class="fa-solid fa-arrows-rotate"></i> Update</button>
+                                    {% endif %}
+                                </td>
                                 <td>{{ job.location.city }}</td>
                                 <td>{{ job.department.name|default:"-" }}</td>
                                 <td><span class="badge {% if job.workflowState.name == 'published' %}badge-accent{% endif %}" id="job-state-{{ job.id }}">{{ job.workflowState.name }}</span></td>
@@ -1816,6 +1822,28 @@ MODALS & OVERLAYS
                     btn.style.background = d.active ? '' : 'var(--danger)';
                 }
             });
+    }
+
+    function updateJobTemplate(jobId) {
+        if (!confirm("Möchten Sie diese Stelle auf die neueste Version der verknüpften Vorlage aktualisieren?")) return;
+        fetch(`/recruiter/jobs/${jobId}/update-template/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.success) {
+                alert("Stellenvorlage erfolgreich auf Version v" + d.new_version + " aktualisiert!");
+                location.reload();
+            } else {
+                alert("Fehler beim Aktualisieren: " + d.error);
+            }
+        })
+        .catch(err => {
+            alert("Verbindungsfehler.");
+        });
     }
 
     // Stammdaten: Textbaustein in die Stellenbeschreibung einfügen

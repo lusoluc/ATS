@@ -394,6 +394,13 @@ class JobPosting(models.Model):
         return ", ".join(interview_rounds(self))
     benefits = models.ManyToManyField(Benefit, related_name='jobPostings', blank=True)
 
+    @property
+    def is_template_outdated(self):
+        if not self.jobTemplate:
+            return False
+        latest = JobTemplate.objects.filter(title__iexact=self.jobTemplate.title).order_by('-version').first()
+        return latest and latest.id != self.jobTemplate.id
+
     createdAt = models.DateTimeField(default=timezone.now)
     updatedAt = models.DateTimeField(auto_now=True)
 

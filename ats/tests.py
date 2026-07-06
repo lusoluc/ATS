@@ -7403,3 +7403,117 @@ class BruteForceLockoutTestCase(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, "Zu viele fehlerhafte Anmeldeversuche")
 
+
+class JobTemplateHierarchyTestCase(TestCase):
+    """B12: Versionierung, Diff und Master-Hierarchie für Job-Vorlagen."""
+
+    def setUp(self):
+        from django.contrib.auth.models import User, Group
+        from ats.models import JobTemplate, JobPosting, Facility, Location, JobFamily, WorkflowState, Organization
+        self.user = User.objects.create_user(username="recruiter2", password="password")
+        g, _ = Group.objects.get_or_create(name="Recruiter")
+        self.user.groups.add(g)
+        self.client.force_login(self.user)
+
+        self.org = Organization.objects.create(name="SecurATS")
+        self.fac = Facility.objects.create(name="Einrichtung A", organization=self.org)
+        self.loc = Location.objects.create(name="Standort A", city="City A")
+        self.fam = JobFamily.objects.create(name="Pflege")
+        self.state = WorkflowState.objects.create(name="published")
+
+        # Create template version 1
+        self.tpl_v1 = JobTemplate.objects.create(
+            title="Pflege-Vorlage",
+            content="Wir suchen Pflegekräfte.\nAnforderungen: Deutsch.",
+            version=1
+        )
+        # Create template version 2 (same title)
+        self.tpl_v2 = JobTemplate.objects.create(
+            title="Pflege-Vorlage",
+            content="Wir suchen Pflegekräfte.\nAnforderungen: Deutsch.\nNeu: Führerschein.",
+            version=2,
+            parent=self.tpl_v1
+        )
+
+        # Create job using v1 (outdated)
+        self.job = JobPosting.objects.create(
+            title="Altenpfleger:in",
+            organization=self.org,
+            facility=self.fac,
+            location=self.loc,
+            jobFamily=self.fam,
+            workflowState=self.state,
+            jobTemplate=self.tpl_v1
+        )
+
+    def test_template_version_creation_and_outdated_property(self):
+        # Verify setup
+        self.assertEqual(self.tpl_v1.version, 1)
+        self.assertEqual(self.tpl_v2.version, 2)
+        self.assertEqual(self.tpl_v2.parent, self.tpl_v1)
+        
+        # Verify job is linked to v1 and is detected as outdated
+        self.assertEqual(self.job.jobTemplate, self.tpl_v1)
+        self.assertTrue(self.job.is_template_outdated)
+
+    def test_job_template_detail_view(self):
+        url = reverse('ats:job_template_detail', args=[self.tpl_v1.id])
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['title'], "Pflege-Vorlage")
+        self.assertEqual(data['latest_version'], 2)
+        
+        # Check history list
+        self.assertEqual(len(data['history']), 2)
+        v1_data = next(x for x in data['history'] if x['version'] == 1)
+        v2_data = next(x for x in data['history'] if x['version'] == 2)
+        
+        self.assertFalse(v1_data['is_latest'])
+        self.assertTrue(v2_data['is_latest'])
+        
+        # Verify active jobs are returned for v1
+        self.assertEqual(v1_data['active_jobs_count'], 1)
+        self.assertEqual(v1_data['active_jobs'][0]['title'], "Altenpfleger:in")
+        
+        # Verify diff is generated for v1 (outdated)
+        self.assertIn("Führerschein", v1_data['diff_html'])
+
+    def test_restore_template_version(self):
+        # Restore v1 as new version v3
+        url = reverse('ats:restore_job_template', args=[self.tpl_v1.id])
+        r = self.client.post(url)
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['new_version'], 3)
+        
+        from ats.models import JobTemplate, AuditLog
+        new_tpl = JobTemplate.objects.get(id=data['new_tpl_id'])
+        self.assertEqual(new_tpl.version, 3)
+        self.assertEqual(new_tpl.title, "Pflege-Vorlage")
+        self.assertEqual(new_tpl.content, self.tpl_v1.content) # Content from v1 restored
+        self.assertEqual(new_tpl.parent, self.tpl_v2) # Parent is the previous latest (v2)
+        
+        # Audit log verification
+        self.assertTrue(AuditLog.objects.filter(action="RESTORE_TEMPLATE").exists())
+
+    def test_update_job_posting_template_version(self):
+        # Update job to use latest template version (v2)
+        url = reverse('ats:update_job_posting_template', args=[self.job.id])
+        r = self.client.post(url)
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['new_version'], 2)
+        
+        self.job.refresh_from_db()
+        self.assertEqual(self.job.jobTemplate, self.tpl_v2)
+        self.assertFalse(self.job.is_template_outdated)
+        
+        # Audit log verification
+        from ats.models import AuditLog
+        self.assertTrue(AuditLog.objects.filter(action="UPDATE_JOB_TEMPLATE_VERSION").exists())
+
+

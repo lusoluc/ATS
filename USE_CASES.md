@@ -40,7 +40,7 @@
 | ID | Use Case | Seite / Flow | QA-Prüfkriterium || ID | Use Case | Seite / Flow | QA-Prüfkriterium |
 |---|---|---|---|
 | UC-SB-01 | …eine neue Stelle für eine Tochter ausschreiben | Dashboard › Jobs › „Stelle anlegen" | Stelle in ≤ 3 Klicks angelegt; Standort/Kategorie wählbar |
-| UC-SB-02 | …dieselbe Stelle per Vorlage in mehreren Töchtern nutzen | `/recruiter/job-templates/` → Job anlegen | Vorlage 1-Klick übernommen; Delta editierbar |
+| UC-SB-02 | …dieselbe Stelle per Vorlage in mehreren Töchtern nutzen | `/recruiter/job-templates/` → Job anlegen | Vorlage 1-Klick übernommen; Delta editierbar; Stelle verknüpft die exakte Vorlagen-Version (Master-Hierarchie) |
 | UC-SB-03 | …die Tonalität einer Vorlage je Abteilung anpassen | Job-Vorlagen › „Ton anpassen" (KI) | KI-Vorschlag erscheint; Fallback bei KI-Ausfall |
 | UC-SB-04 | …eine Stelle mit 1 Klick zu StepStone/BA/Google posten | Dashboard › Jobs › Multiposting | Kanäle auswählbar; Feed-URL erzeugt |
 | UC-SB-05 | …das Kanban über alle Standorte überblicken | Dashboard › Kanban | Alle Standorte sichtbar (Full-Access); Spalten klar |
@@ -114,6 +114,9 @@
 | UC-SB-26 | …sehen, ob Selbstbuchung/Slots funktionieren – und was ich ändern sollte | `/recruiter/analytics/` › „Termine & Selbstbuchung" | Selbstbuchungs-Quote, Median bis Terminwahl, Abend/Wochenend-Anteil, Umbuchungen/Absagen/Änderungswünsche, Slot-Auslastung (genutzt/verfallen/offen), Formate-Verteilung + regelbasierte Handlungsvorschläge; nur Aggregate im BOLA-Scope (PII-frei getestet); Kennzahlen auch im lokalen KI-Analysten abfragbar |
 | UC-SB-24 | …je Runde das passende Prüfformat wählen (Telefon, Video, vor Ort, Probearbeit, Assessment, schriftliche Aufgabe) | Einlade-Modal › Gesprächsformat | 6 Formate durchgängig: Modal, Slot-Anlage, Kalender-Badges, Portal, Erinnerung, .ics-Betreff; mehrstufige Runden möglich (vergangenes Gespräch blockiert Runde 2 nicht, getestet) |
 | UC-SB-25 | …das Interview-Team zusammenstellen und automatisch informieren | Einlade-Modal › Interview-Team | Mehrfachauswahl interner Teilnehmender; sofortige Team-Mail bei Planung, Team-Erinnerung vor dem Termin an ALLE Beteiligten (getestet) |
+| UC-SB-41 | …die gesamte Versionierungshistorie einer Job-Vorlage sichten, Versionen vergleichen (Diff) und eine alte Version wiederherstellen (Rollback) | `/recruiter/job-templates/` | Historie expandierbar; Änderungen werden als Zeilen-Diff angezeigt; Wiederherstellen erzeugt eine neue Version auf Basis der alten |
+| UC-SB-42 | …sehen, welche Stellen mit welcher Version einer Vorlage verknüpft sind, und Stellen mit veralteten Vorlagen per Klick aktualisieren | `/recruiter/job-templates/` & Dashboard (Tab 2) | Liste verknüpfter Stellen pro Version sichtbar; Warn-Badge bei veralteten Vorlagen im Job-Manager; Ein-Klick-Update aktualisiert die Stelle auf die neueste Vorlagenversion |
+
 
 ### A2 · Tobias Klein — dezentraler Recruiter (eine Tochter) [TK]
 

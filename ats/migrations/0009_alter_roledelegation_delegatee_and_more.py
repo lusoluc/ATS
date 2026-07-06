@@ -13,14 +13,30 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
+        migrations.AlterUniqueTogether(
+            name='roledelegation',
+            unique_together=set(),
+        ),
+        migrations.RemoveField(
+            model_name='roledelegation',
+            name='delegatee',
+        ),
+        migrations.RemoveField(
+            model_name='roledelegation',
+            name='delegator',
+        ),
+        migrations.AddField(
             model_name='roledelegation',
             name='delegatee',
             field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='delegationsReceived', to=settings.AUTH_USER_MODEL),
         ),
-        migrations.AlterField(
+        migrations.AddField(
             model_name='roledelegation',
             name='delegator',
             field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='delegationsGiven', to=settings.AUTH_USER_MODEL),
+        ),
+        migrations.AlterUniqueTogether(
+            name='roledelegation',
+            unique_together={('delegator', 'delegatee', 'scopeType', 'scopeId')},
         ),
     ]

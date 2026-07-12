@@ -1731,7 +1731,7 @@ class ScoringDefaultOffTestCase(TestCase):
         from unittest.mock import patch
         from .models import Application, AiTask, email_blind_index
         job = self._job()
-        with patch("ats.views.evaluate_with_local_gemma") as mock_eval:
+        with patch("ats.views.public.evaluate_with_local_gemma") as mock_eval:
             r = self._apply(job, "off@x.de")
         self.assertEqual(r.status_code, 200)
         mock_eval.assert_not_called()                       # KI wird nicht einmal berührt
@@ -1745,7 +1745,7 @@ class ScoringDefaultOffTestCase(TestCase):
         from .models import SystemSetting, Application, email_blind_index
         job = self._job()
         SystemSetting.objects.create(key="AI_SCORING_ENABLED", value="1")
-        with patch("ats.views.evaluate_with_local_gemma", return_value=("B", "Passt.")) as mock_eval:
+        with patch("ats.views.public.evaluate_with_local_gemma", return_value=("B", "Passt.")) as mock_eval:
             self._apply(job, "on@x.de")
         mock_eval.assert_called_once()
         app = Application.objects.get(applicant__emailHash=email_blind_index("on@x.de"))
@@ -1757,7 +1757,7 @@ class ScoringDefaultOffTestCase(TestCase):
         job = self._job()
         SystemSetting.objects.create(key="AI_SCORING_ENABLED", value="1")
         SystemSetting.objects.create(key="AI_ASYNC", value="1")
-        with patch("ats.views.evaluate_with_local_gemma") as mock_eval:
+        with patch("ats.views.public.evaluate_with_local_gemma") as mock_eval:
             self._apply(job, "queue@x.de")
         mock_eval.assert_not_called()                       # nicht synchron
         self.assertEqual(AiTask.objects.filter(taskType="SCORE_APPLICATION",
@@ -7402,6 +7402,27 @@ class BruteForceLockoutTestCase(TestCase):
         r = self.client.post(url, {'username': self.username, 'password': self.password})
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, "Zu viele fehlerhafte Anmeldeversuche")
+
+    def test_production_cache_is_shared_not_per_process(self):
+        """Sicherheitskonfiguration: Der Lockout-Cache MUSS in Produktion
+        prozessuebergreifend sein. LocMemCache (Django-Default) ist pro
+        Gunicorn-Worker isoliert -> ein Angreifer umginge das Limit ueber
+        mehrere Worker, und ein Neustart vergisst die Zaehler. Diese
+        Regressions-Wache schlaegt an, falls die Produktions-Cache-Logik
+        wieder auf reinen LocMemCache zurueckfaellt."""
+        import inspect
+        import securats.settings as st
+        src = inspect.getsource(st)
+        # In Produktion muss ein geteilter Cache waehlbar sein:
+        self.assertIn('DatabaseCache', src)
+        self.assertIn('RedisCache', src)
+        # ... und LocMemCache darf NUR im Entwicklungs-Zweig stehen
+        # (nach einem 'else' hinter der Produktionsbedingung).
+        self.assertIn("not DEBUG", src)
+        # Der Lockout-View nutzt tatsaechlich den Cache
+        import ats.views as v
+        vsrc = inspect.getsource(v.SafeLoginView)
+        self.assertIn('cache', vsrc)
 
 
 class JobTemplateHierarchyTestCase(TestCase):

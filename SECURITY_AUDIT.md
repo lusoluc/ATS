@@ -3,7 +3,7 @@
 **Datum:** 2026-07-05 · **Prüfumfang:** Django-Backend (`ats/`), Settings, Templates,
 Management-Commands · **Methodik:** manueller Code-Review entlang OWASP-Kategorien,
 jeder Fund am echten Code verifiziert, Fixes mit Regressionstests abgesichert.
-**Ergebnis:** 4 Funde behoben, 1 Härtungs-Empfehlung. **Teststand danach: 340 grün.**
+**Ergebnis:** 6 Funde behoben (Stand nach GitHub-Sync). **Teststand: 347 grün.**
 
 ---
 
@@ -15,7 +15,8 @@ jeder Fund am echten Code verifiziert, Fixes mit Regressionstests abgesichert.
 | 2 | `schedule_interview` ohne Auth-Decorator | Broken Access Control | Hoch | ✅ behoben |
 | 3 | `toggle_learning_sample` ohne BOLA-Scope | Broken Object Level Auth | Mittel | ✅ behoben |
 | 4 | Demo-Seeds legen Backdoor-Konten ohne DEMO_MODE an | Insecure Defaults | Mittel–Hoch | ✅ behoben |
-| 5 | Kein Brute-Force-Schutz am Login | Hardening | Niedrig | ⚠ Empfehlung |
+| 5 | Kein Brute-Force-Schutz am Login | Hardening | Niedrig | ✅ behoben (Login-Lockout) |
+| 6 | Lockout-Cache prozess-lokal (LocMemCache) unwirksam bei mehreren Workern | Security Misconfiguration | Mittel | ✅ behoben (geteilter Cache) |
 
 ---
 
@@ -78,6 +79,24 @@ Keine Ratenbegrenzung/Sperre bei wiederholten Fehllogins. Für den regulierten
 Betrieb empfohlen: `django-axes` (Konten-/IP-Sperre nach N Fehlversuchen) plus
 Reverse-Proxy-Ratelimit. Bewusst NICHT im Code umgesetzt (Paket + Migration +
 Betriebsentscheidung); als Betriebs-/Hardening-Aufgabe dokumentiert.
+
+**Update (nach GitHub-Sync):** Fund 5 ist umgesetzt (SafeLoginView mit IP-/
+Username-Lockout, 5 Versuche / 10 Min). Dabei fiel Fund 6 auf.
+
+## Fund 6 — Lockout-Cache prozess-lokal · Mittel · behoben
+
+**Wo:** Der Login-Lockout zaehlt Fehlversuche im Django-Cache, aber es war
+KEIN CACHES-Backend konfiguriert -> Default LocMemCache, isoliert je Prozess.
+Bei 3 Gunicorn-Workern (siehe Dockerfile) haette ein Angreifer die Versuche
+ueber die Worker verteilt (effektiv 3x Limit), und jeder Neustart/Deploy
+haette die Zaehler vergessen.
+
+**Fix:** CACHES in settings.py: Redis bei gesetzter REDIS_URL, sonst in
+Produktion ein von allen Workern GETEILTER Datenbank-Cache
+(DatabaseCache, Tabelle securats_cache), LocMemCache nur als
+Entwicklungs-Fallback. Entrypoint legt die Cache-Tabelle idempotent an.
+Regressions-Wache im Test schlaegt an, falls jemand wieder auf reinen
+LocMemCache zurueckfaellt.
 
 ---
 

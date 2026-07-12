@@ -1,5 +1,11 @@
 # SecurATS – Betriebs-Runbook (WP7)
 
+> **Cache (sicherheitsrelevant):** Der Login-Lockout teilt seine Zähler über einen
+> gemeinsamen Cache. In Produktion wird automatisch ein DB-Cache genutzt (die Tabelle
+> `securats_cache` legt der Entrypoint via `createcachetable` idempotent an); mit
+> gesetzter `REDIS_URL` wird Redis bevorzugt. Reiner Prozess-Cache (LocMemCache) nur
+> in Entwicklung – er würde das Lockout-Limit pro Gunicorn-Worker vervielfachen.
+
 Zielgruppe: IT-Admin (Persona Sven Ostermann). Alles läuft on-prem; keine Cloud-Abhängigkeit.
 
 ## 1. Komponenten

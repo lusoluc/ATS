@@ -114,6 +114,37 @@ else:
         }
     }
 
+# Cache — SICHERHEITSRELEVANT: Der Login-Lockout (SafeLoginView) zaehlt
+# Fehlversuche im Cache. Der Django-Default (LocMemCache) ist PRO PROZESS
+# isoliert; bei mehreren Gunicorn-Workern koennte ein Angreifer die Versuche
+# ueber die Worker verteilen (effektiv N-faches Limit) und ein Neustart
+# vergisst alle Zaehler. Ein von allen Workern GETEILTER Cache ist daher
+# Pflicht. Redis wird bevorzugt (REDIS_URL); ohne Redis nutzen wir den
+# Datenbank-Cache (prozessuebergreifend, ueberlebt Neustarts, keine neue
+# Infrastruktur). Reines LocMemCache nur als Entwicklungs-Fallback.
+if os.environ.get('REDIS_URL'):
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': os.environ['REDIS_URL'],
+        }
+    }
+elif os.environ.get('POSTGRES_HOST') or not DEBUG:
+    # Produktion ohne Redis: gemeinsamer DB-Cache (Tabelle via
+    # `manage.py createcachetable` anlegen — siehe OPERATIONS.md).
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+            'LOCATION': 'securats_cache',
+        }
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        }
+    }
+
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 

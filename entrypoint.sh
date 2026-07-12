@@ -22,6 +22,12 @@ fi
 echo "Migrationen anwenden ..."
 python manage.py migrate --noinput
 
+# Cache-Tabelle fuer den DB-Cache (Login-Lockout ueber alle Worker teilen).
+# Idempotent: legt die Tabelle nur an, wenn sie fehlt. Bei Redis-Cache
+# (REDIS_URL) ist das ein harmloser No-Op-Fehler, daher || true.
+echo "Cache-Tabelle sicherstellen ..."
+python manage.py createcachetable securats_cache || true
+
 echo "Statische Dateien einsammeln ..."
 python manage.py collectstatic --noinput
 

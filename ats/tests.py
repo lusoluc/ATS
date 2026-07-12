@@ -874,6 +874,28 @@ class WP4FeatureTestCase(TestCase):
         r = self.client.post(reverse('ats:bulk_update_status'), data={"status": "X", "ids[]": []})
         self.assertEqual(r.status_code, 400)
 
+    def test_bulk_skips_out_of_scope_applications(self):
+        """Bulk darf kein Schlupfloch um den Einzel-BOLA-Schutz sein: eine
+        Bewerbung außerhalb des Zugriffsbereichs muss übersprungen werden,
+        während die eigenen normal durchlaufen."""
+        from .permissions import can_access_application
+        apps = self._setup_apps()
+        outsider = make_user("wp4bulk3", role="Recruiter")
+        if hasattr(outsider, 'scope'):
+            outsider.scope.facilities.clear()
+            outsider.scope.locations.clear()
+        # Nur sinnvoll, wenn der Scope tatsächlich greift
+        if not can_access_application(outsider, apps[0]):
+            self.client.force_login(outsider)
+            r = self.client.post(reverse('ats:bulk_update_status'), data={
+                "status": "REJECTED",
+                "ids[]": [str(a.id) for a in apps]})
+            self.assertEqual(r.status_code, 200)
+            self.assertEqual(r.json()["updated"], 0)   # nichts durchgelassen
+            for a in apps:
+                a.refresh_from_db()
+                self.assertEqual(a.status, "NEW")      # unverändert
+
     def test_job_template_versioning(self):
         from .models import JobTemplate
         admin = make_user("wp4tpl", role="HR-Admin")
@@ -7892,3 +7914,159 @@ class AiGuardrailsCoverageTestCase(TestCase):
         self.assertEqual(wrapped.count("<<<ENDE>>>"), 1)
         self.assertTrue(wrapped.endswith("<<<ENDE>>>"))
         self.assertEqual(wrapped.count("<<<BEWERBER_INHALT>>>"), 1)
+
+
+class DataRetentionAnonymizationTestCase(TestCase):
+    """DSGVO-Anonymisierung (`data_retention`) – bisher UNGETESTET, obwohl
+    sie Personendaten unwiderruflich verändert und per Cron automatisch läuft.
+
+    Diese Tests sichern beide Fehlerrichtungen ab:
+      * zu VIEL löschen (aktive Bewerbungen, Talent-Pool-Einwilligung,
+        frische Absagen) -> Datenverlust, Vertrauensbruch
+      * zu WENIG löschen (Fristen greifen nicht) -> DSGVO-Verstoß
+    """
+
+    def _world(self):
+        from .models import (Organization, Location, Facility, JobFamily,
+                             WorkflowState, JobPosting)
+        org = Organization.objects.create(name="O")
+        loc = Location.objects.create(name="HH")
+        fac = Facility.objects.create(name="F", organization=org)
+        fam = JobFamily.objects.create(name="DR-Fam")
+        ws = WorkflowState.objects.create(name="published")
+        self.job = JobPosting.objects.create(
+            title="Pflegefachkraft", organization=org, facility=fac,
+            location=loc, jobFamily=fam, workflowState=ws)
+
+    def _application(self, email, status, age_days, consent=False,
+                     first="Erika", last="Muster"):
+        from .models import Applicant, Application
+        ap = Applicant.objects.create(firstName=first, lastName=last,
+                                      email=email, phone="0170-1")
+        app = Application.objects.create(
+            applicant=ap, jobPosting=self.job, status=status,
+            coverLetterTxt="Mein Anschreiben",
+            internalNotes="Interner Vermerk",
+            consentTalentPool=consent)
+        # updatedAt ist auto_now -> per Query zurückdatieren
+        Application.objects.filter(id=app.id).update(
+            updatedAt=timezone.now() - datetime.timedelta(days=age_days))
+        app.refresh_from_db()
+        return ap, app
+
+    def _run(self, days=180, dry=False):
+        from io import StringIO
+        from django.core.management import call_command
+        out = StringIO()
+        args = ["data_retention", "--days", str(days)]
+        if dry:
+            args.append("--dry-run")
+        call_command(*args, stdout=out)
+        return out.getvalue()
+
+    def test_old_rejection_without_consent_is_anonymized(self):
+        self._world()
+        ap, app = self._application("alt@x.de", "REJECTED", age_days=200)
+        self._run()
+        app.refresh_from_db(); ap.refresh_from_db()
+        self.assertEqual(app.coverLetterTxt, "ANONYMISIERT")
+        self.assertIsNone(app.cvStorageId)
+        self.assertEqual(ap.lastName, "Anonymisiert")
+        self.assertIsNone(ap.phone)
+        self.assertNotEqual(ap.email, "alt@x.de")   # PII ersetzt
+
+    def test_talent_pool_consent_protects_from_anonymization(self):
+        """Einwilligung = Aufbewahrungsgrund. Wer zugestimmt hat, bleibt."""
+        self._world()
+        ap, app = self._application("pool@x.de", "REJECTED", age_days=300,
+                                    consent=True)
+        self._run()
+        app.refresh_from_db(); ap.refresh_from_db()
+        self.assertEqual(app.coverLetterTxt, "Mein Anschreiben")
+        self.assertEqual(ap.email, "pool@x.de")     # unangetastet
+
+    def test_recent_rejection_is_not_touched(self):
+        self._world()
+        ap, app = self._application("frisch@x.de", "REJECTED", age_days=10)
+        self._run(days=180)
+        ap.refresh_from_db()
+        self.assertEqual(ap.email, "frisch@x.de")   # Frist noch nicht um
+
+    def test_active_application_never_anonymized(self):
+        self._world()
+        ap, app = self._application("aktiv@x.de", "IN_REVIEW", age_days=999)
+        self._run()
+        app.refresh_from_db(); ap.refresh_from_db()
+        self.assertEqual(app.coverLetterTxt, "Mein Anschreiben")
+        self.assertEqual(ap.email, "aktiv@x.de")
+
+    def test_person_with_other_active_application_keeps_identity(self):
+        """Der subtilste Fall: alte Absage bei Stelle A, aber die Person
+        läuft bei Stelle B noch aktiv mit. Die ALTE Bewerbung wird
+        anonymisiert – die PERSON darf es nicht, sonst verliert das
+        laufende Verfahren seinen Bewerber."""
+        from .models import Application
+        self._world()
+        ap, old_app = self._application("beides@x.de", "REJECTED",
+                                        age_days=250)
+        active = Application.objects.create(
+            applicant=ap, jobPosting=self.job, status="INVITED",
+            coverLetterTxt="Zweite Bewerbung")
+        self._run()
+        old_app.refresh_from_db(); ap.refresh_from_db()
+        active.refresh_from_db()
+        # Die alte Bewerbung ist anonymisiert ...
+        self.assertEqual(old_app.coverLetterTxt, "ANONYMISIERT")
+        # ... die Person bleibt aber identifizierbar (laufendes Verfahren!)
+        self.assertEqual(ap.email, "beides@x.de")
+        self.assertEqual(ap.lastName, "Muster")
+        self.assertEqual(active.coverLetterTxt, "Zweite Bewerbung")
+
+    def test_dry_run_changes_nothing(self):
+        self._world()
+        ap, app = self._application("probe@x.de", "REJECTED", age_days=250)
+        out = self._run(dry=True)
+        app.refresh_from_db(); ap.refresh_from_db()
+        self.assertIn("DRY-RUN", out)
+        self.assertEqual(app.coverLetterTxt, "Mein Anschreiben")
+        self.assertEqual(ap.email, "probe@x.de")
+
+    def test_anonymization_is_audited(self):
+        from .models import AuditLog
+        self._world()
+        ap, app = self._application("audit@x.de", "REJECTED", age_days=250)
+        self._run()
+        self.assertTrue(AuditLog.objects.filter(
+            action="ANONYMIZE_DSGVO", applicationId=str(app.id)).exists())
+
+    def test_withdrawn_is_treated_like_rejected(self):
+        self._world()
+        ap, app = self._application("zurueck@x.de", "WITHDRAWN",
+                                    age_days=250)
+        self._run()
+        app.refresh_from_db()
+        self.assertEqual(app.coverLetterTxt, "ANONYMISIERT")
+
+    def test_cv_file_is_deleted_from_storage(self):
+        """Anonymisierung muss auch die HOCHGELADENE DATEI entfernen –
+        ein Datenbankfeld zu leeren genügt nicht, die PDF liegt sonst
+        weiter im Dateisystem."""
+        import tempfile
+        from django.test import override_settings
+        from django.core.files.storage import default_storage
+        from django.core.files.base import ContentFile
+        from .models import Application
+        with tempfile.TemporaryDirectory() as tmp:
+            with override_settings(MEDIA_ROOT=tmp):
+                self._world()
+                ap, app = self._application("cv@x.de", "REJECTED",
+                                            age_days=250)
+                path = default_storage.save("cvs/lebenslauf.pdf",
+                                            ContentFile(b"%PDF-1.4 fake"))
+                Application.objects.filter(id=app.id).update(cvStorageId=path)
+                self.assertTrue(default_storage.exists(path))
+                self._run()
+                app.refresh_from_db()
+                self.assertIsNone(app.cvStorageId)
+                self.assertFalse(default_storage.exists(path),
+                                 "CV-Datei liegt noch im Dateisystem!")

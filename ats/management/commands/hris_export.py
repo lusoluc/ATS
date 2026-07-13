@@ -143,9 +143,26 @@ class Command(BaseCommand):
                 f"HRIS-Export beendet. Erfolgreich: {ok}, fehlgeschlagen: {failed}."))
 
     # ------------------------------------------------------------------ intern
+    def _mapping(self):
+        """Gespeicherte Feldzuordnung (aus der Mapper-Oberflaeche) anwenden.
+
+        Ohne Zuordnung wird das Standard-Schema gesendet. Damit ist die
+        Mapper-Seite kein Blender mehr, sondern konfiguriert diesen Export
+        tatsaechlich.
+        """
+        from ats.models import SystemSetting
+        row = SystemSetting.objects.filter(key='HRIS_FIELD_MAPPING').first()
+        if not row:
+            return {}
+        try:
+            data = json.loads(row.value)
+            return data if isinstance(data, dict) else {}
+        except (ValueError, TypeError):
+            return {}
+
     def _payload(self, app):
         loc = getattr(app.jobPosting, 'location', None)
-        return {
+        base = {
             "source": "SecurATS",
             "timestamp": timezone.now().isoformat(),
             "candidate": {
@@ -166,6 +183,27 @@ class Command(BaseCommand):
                 "screeningRationale": app.aiRationale or "",
             },
         }
+        mapping = self._mapping()
+        if not mapping:
+            return base
+        # Zuordnung anwenden: {SecurATS-Feld: HRIS-Zielfeld}
+        flat = {
+            "uuid": base["candidate"]["uuid"],
+            "firstName": base["candidate"]["firstName"],
+            "lastName": base["candidate"]["lastName"],
+            "email": base["candidate"]["email"],
+            "phone": base["candidate"]["phone"],
+            "postingId": base["jobReq"]["postingId"],
+            "title": base["jobReq"]["title"],
+            "location": base["jobReq"]["location"],
+            "screeningScore": base["evaluation"]["screeningScore"],
+            "screeningRationale": base["evaluation"]["screeningRationale"],
+        }
+        mapped = {target: flat.get(src, "")
+                  for src, target in mapping.items() if target}
+        return {"source": "SecurATS",
+                "timestamp": base["timestamp"],
+                "candidate": mapped}
 
     def _post(self, endpoint, token, payload):
         """Echte Uebertragung. Wirft bei Fehler - kein stiller Schein-Erfolg."""

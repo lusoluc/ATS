@@ -198,21 +198,30 @@
     <!-- Right panel: Sync controls, Sandbox select & Candidate list -->
     <div class="detail-sidebar" style="gap: 30px;">
         
-        <!-- Sync trigger card -->
+        <!-- Zuordnung speichern -->
         <div class="cta-card">
-            <h3 style="color: #fff; margin-bottom: 12px; font-size: 20px;">Schnittstellen-Aktionen</h3>
-            
-            <div class="form-group" style="text-align: left; margin-bottom: 20px;">
-                <label class="form-label" for="sync_target">Zielsystem</label>
-                <select id="sync_target" class="filter-select">
-                    <option value="MOCK_SAP_SANDBOX">SAP SF Sandbox (Testumgebung)</option>
-                    <option value="MOCK_SAP_STAGING">SAP SF Staging (Qualitätssicherung)</option>
-                    <option value="MOCK_SAP_PROD">SAP SF Production (Echtes HRIS)</option>
-                </select>
+            <h3 style="color: #fff; margin-bottom: 12px; font-size: 20px;">Feldzuordnung</h3>
+
+            <div style="text-align: left; margin-bottom: 16px; font-size: 12px; color: rgba(255,255,255,0.75); line-height: 1.5;">
+                Hier legen Sie fest, <strong>welches SecurATS-Feld auf welches HRIS-Feld</strong> abgebildet wird.
+                <br><br>
+                <i class="fa-solid fa-circle-info"></i>
+                <strong>Diese Seite überträgt keine Daten.</strong> Die Zuordnung wird gespeichert;
+                die tatsächliche Übertragung übernimmt der Befehl <code>hris_export</code> –
+                und nur, wenn ein echter Endpunkt (<code>HRIS_ENDPOINT</code>) konfiguriert ist.
+            </div>
+
+            <div style="text-align: left; margin-bottom: 16px; font-size: 12px;">
+                Status Zielsystem:
+                {% if endpoint_configured %}
+                    <span style="color:#10b981;"><i class="fa-solid fa-circle-check"></i> HRIS_ENDPOINT konfiguriert</span>
+                {% else %}
+                    <span style="color:#f59e0b;"><i class="fa-solid fa-triangle-exclamation"></i> nicht konfiguriert – keine Übertragung möglich</span>
+                {% endif %}
             </div>
 
             <button onclick="triggerSapSync()" class="btn-apply-now" style="width: 100%;">
-                <i class="fa-solid fa-arrows-spin"></i> Sync jetzt ausführen
+                <i class="fa-solid fa-floppy-disk"></i> Feldzuordnung speichern
             </button>
         </div>
 
@@ -242,32 +251,17 @@
 <script>
     function triggerSapSync() {
         const consoleEl = document.getElementById('sapConsole');
-        const targetSelect = document.getElementById('sync_target');
-        const target = targetSelect.value;
-
-        // Build mapping data dictionary
+        // Feldzuordnung einsammeln
         const mappings = {};
         document.querySelectorAll('.sap-select').forEach(sel => {
             mappings[sel.getAttribute('data-local')] = sel.value;
         });
 
-        // Visual console log steps
-        logConsole('info', `Starte Datensynchronisation mit: ${target}...`);
-        logConsole('info', 'Feldzuordnungen werden geladen und validiert...');
-        
-        setTimeout(() => {
-            logConsole('info', `Felder erfolgreich transformiert: ${JSON.stringify(mappings)}`);
-        }, 800);
+        logConsole('info', 'Feldzuordnung wird geprüft und gespeichert ...');
 
-        setTimeout(() => {
-            logConsole('info', 'Sende HTTPS-POST Payload über gesicherte mTLS Verbindung...');
-        }, 1500);
-
-        // Fetch to trigger our Django backend simulation
-        setTimeout(() => {
+        {
             const formData = new FormData();
             formData.append('mapping_data', JSON.stringify(mappings));
-            formData.append('sync_target', target);
 
             fetch("{% url 'ats:sap_sf_mapper' %}", {
                 method: 'POST',
@@ -279,18 +273,21 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    logConsole('success', `[SUCCESS] Synchronisation abgeschlossen.`);
-                    logConsole('success', `Exportierte Bewerbersätze: ${data.records_exported}`);
-                    logConsole('success', `SAP Response-Code: 201 Created. Msg: ${data.message}`);
+                    logConsole('success', `[OK] Feldzuordnung gespeichert (${data.saved_fields} Felder).`);
+                    logConsole('warning', `[HINWEIS] Es wurden KEINE Daten übertragen.`);
+                    logConsole('info', data.message);
+                    if (!data.endpoint_configured) {
+                        logConsole('warning', '[HINWEIS] HRIS_ENDPOINT ist nicht gesetzt – eine echte Übertragung ist derzeit nicht möglich.');
+                    }
                 } else {
-                    logConsole('warning', `[ERROR] Synchronisation fehlgeschlagen.`);
+                    logConsole('warning', `[FEHLER] ${data.error || 'Zuordnung konnte nicht gespeichert werden.'}`);
                 }
             })
             .catch(err => {
                 console.error(err);
-                logConsole('warning', '[ERROR] Netzwerkfehler bei der Übermittlung.');
+                logConsole('warning', '[FEHLER] Netzwerkfehler beim Speichern.');
             });
-        }, 2200);
+        }
     }
 
     function logConsole(type, msg) {

@@ -90,6 +90,21 @@ def seed_data_if_empty():
     if Organization.objects.exists():
         return  # Already seeded
 
+    # SICHERHEITSRIEGEL (sonst füllt sich eine PRODUKTIV-Datenbank von selbst
+    # mit erfundenen Bewerbern):
+    # Diese Funktion wird im Dashboard UND auf der öffentlichen Startseite
+    # aufgerufen. Ohne Riegel legte der erste Seitenaufruf einer frischen
+    # Installation – auch der eines anonymen Besuchers – Phantasie-Stellen,
+    # erfundene Bewerber:innen samt Anschreiben, fabrizierte KI-Bewertungen
+    # und einen Fake-Meeting-Link an. Für ein DSGVO-Produkt in einem
+    # regulierten Markt ist das inakzeptabel: erfundene Personendaten in der
+    # Kundendatenbank, sichtbar auf der öffentlichen Stellenbörse.
+    # Demo-Daten gibt es nur noch bewusst: DEMO_MODE=1 oder Entwicklung
+    # (DEBUG=True) – bzw. explizit über `manage.py seed_demo`.
+    if not (getattr(settings, 'DEMO_MODE', False)
+            or getattr(settings, 'DEBUG', False)):
+        return
+
     with transaction.atomic():
         # 1. Organization
         org = Organization.objects.create(name="SecurATS GmbH")

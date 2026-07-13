@@ -8810,3 +8810,134 @@ class HrisExportHonestyTestCase(TestCase):
                 action="HRIS_EXPORT_FAILED").exists())
         finally:
             os.environ.pop('HRIS_ENDPOINT', None)
+
+
+class SapMapperHonestyTestCase(TestCase):
+    """SAP-Feldzuordnung: war ein Blender, ist jetzt ein echtes Werkzeug.
+
+    Befund: Der POST tat NICHTS, meldete aber „Synchronisation erfolgreich",
+    zählte „exportierte Bewerbersätze" und die Oberfläche gab einen frei
+    erfundenen „SAP Response-Code: 201 Created" aus. Die Zielsystem-Auswahl bot
+    „SAP SF Production (Echtes HRIS)" an – der Wert hieß intern MOCK_SAP_PROD.
+    In einer Demo hätte ein Interessent geglaubt, die Anbindung funktioniere.
+    """
+
+    def setUp(self):
+        self.admin = make_user("sap-admin", role="HR-Admin")
+        self.client.force_login(self.admin)
+
+    def test_saving_mapping_never_claims_a_transfer(self):
+        import json
+        r = self.client.post(reverse('ats:sap_sf_mapper'), {
+            "mapping_data": json.dumps({"email": "sf_email",
+                                        "lastName": "sf_last_name"})})
+        body = r.json()
+        self.assertTrue(body["success"])
+        self.assertEqual(body["saved_fields"], 2)
+        # Kein Erfolgs-Theater mehr:
+        self.assertNotIn("records_exported", body)
+        self.assertIn("KEINE Daten übertragen", body["message"])
+
+    def test_mapping_is_persisted(self):
+        import json
+        from .models import SystemSetting
+        self.client.post(reverse('ats:sap_sf_mapper'), {
+            "mapping_data": json.dumps({"email": "sf_email"})})
+        saved = SystemSetting.objects.get(key="HRIS_FIELD_MAPPING")
+        self.assertEqual(json.loads(saved.value), {"email": "sf_email"})
+
+    def test_invalid_mapping_is_rejected(self):
+        r = self.client.post(reverse('ats:sap_sf_mapper'),
+                             {"mapping_data": "kein json"})
+        self.assertEqual(r.status_code, 400)
+
+    def test_ui_no_longer_fabricates_a_sap_response_code(self):
+        """Regressions-Wache gegen das erfundene „201 Created"."""
+        import os
+        tpl = os.path.join('templates', 'sap_sf_mapper.html')
+        src = open(tpl, encoding='utf-8').read()
+        self.assertNotIn("201 Created", src)
+        self.assertNotIn("MOCK_SAP_PROD", src)
+        self.assertNotIn("mTLS Verbindung", src)
+        self.assertIn("KEINE Daten übertragen", src)
+
+    def test_export_actually_uses_the_saved_mapping(self):
+        """Der Kreis schließt sich: Die gespeicherte Zuordnung wird vom
+        echten Export tatsächlich angewendet – der Mapper ist kein
+        Schaufenster mehr."""
+        import json
+        from .models import (SystemSetting, Organization, Location, Facility,
+                             JobFamily, WorkflowState, JobPosting, Applicant,
+                             Application)
+        from ats.management.commands.hris_export import Command
+        SystemSetting.objects.create(
+            key="HRIS_FIELD_MAPPING",
+            value=json.dumps({"email": "sf_email", "lastName": "sf_last_name"}))
+        org = Organization.objects.create(name="O")
+        loc = Location.objects.create(name="HH", city="Hamburg")
+        fac = Facility.objects.create(name="F", organization=org)
+        fam = JobFamily.objects.create(name="SM-Fam")
+        ws = WorkflowState.objects.create(name="published")
+        job = JobPosting.objects.create(title="J", organization=org,
+                                        facility=fac, location=loc,
+                                        jobFamily=fam, workflowState=ws)
+        app = Application.objects.create(
+            applicant=Applicant.objects.create(firstName="S", lastName="Meier",
+                                               email="sm@x.de"),
+            jobPosting=job, status="INVITED")
+        payload = Command()._payload(app)
+        self.assertEqual(payload["candidate"],
+                         {"sf_email": "sm@x.de", "sf_last_name": "Meier"})
+
+
+class ProductionNoAutoSeedTestCase(TestCase):
+    """Eine frische PRODUKTIV-Installation darf sich NIEMALS selbst mit
+    erfundenen Bewerbern füllen.
+
+    Befund: `seed_data_if_empty()` lief im Dashboard UND auf der öffentlichen
+    Startseite – ohne jeden Schutz. Der erste Seitenaufruf einer frischen
+    Installation (auch der eines anonymen Besuchers!) legte Phantasie-Stellen,
+    erfundene Bewerber:innen samt Anschreiben, fabrizierte KI-Bewertungen und
+    einen Fake-Meeting-Link an. Die öffentliche Stellenbörse hätte dem Kunden
+    erfundene Stellen gezeigt.
+    """
+
+    @override_settings(DEBUG=False, DEMO_MODE=False)
+    def test_public_homepage_does_not_seed_fake_data_in_production(self):
+        from .models import Applicant, JobPosting, Organization
+        r = self.client.get(reverse('ats:home'))
+        self.assertEqual(r.status_code, 200)      # Seite funktioniert ...
+        self.assertEqual(Applicant.objects.count(), 0)    # ... bleibt aber leer
+        self.assertEqual(JobPosting.objects.count(), 0)
+        self.assertEqual(Organization.objects.count(), 0)
+
+    @override_settings(DEBUG=False, DEMO_MODE=False)
+    def test_dashboard_does_not_seed_fake_data_in_production(self):
+        from .models import Applicant
+        rec = make_user("ns-rec", role="Recruiter")
+        self.client.force_login(rec)
+        r = self.client.get(reverse('ats:dashboard'))
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(Applicant.objects.count(), 0)
+
+    @override_settings(DEBUG=False, DEMO_MODE=False)
+    def test_system_settings_are_still_created_in_production(self):
+        """Der Riegel darf die NÖTIGEN Grundeinstellungen nicht blockieren –
+        nur die erfundenen Personendaten."""
+        from .models import SystemSetting
+        self.client.get(reverse('ats:home'))
+        self.assertTrue(SystemSetting.objects.filter(key="COMPANY_NAME").exists())
+
+    @override_settings(DEBUG=False, DEMO_MODE=True)
+    def test_demo_mode_may_seed(self):
+        """Auf einer bewussten Demo-Instanz sind Demo-Daten erwünscht."""
+        from .models import Applicant
+        self.client.get(reverse('ats:home'))
+        self.assertGreater(Applicant.objects.count(), 0)
+
+    @override_settings(DEBUG=False, DEMO_MODE=False)
+    def test_no_fake_meeting_link_in_production_db(self):
+        from .models import Interview
+        self.client.get(reverse('ats:home'))
+        self.assertFalse(Interview.objects.filter(
+            meetingLink__icontains="meet.google.com").exists())

@@ -34,6 +34,25 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
   Autovorlauf bietet Zusage/Absage gar nicht erst zur Auswahl an.
 
 ### Behoben
+- **Frische Produktiv-Installation füllte sich selbst mit erfundenen Bewerbern
+  (schwerwiegend).** `seed_data_if_empty()` lief im Dashboard **und auf der
+  öffentlichen Startseite** – ohne jeden Schutz. Der erste Seitenaufruf einer
+  leeren Installation (auch der eines **anonymen Besuchers**) legte
+  Phantasie-Stellen, erfundene Bewerber:innen samt Anschreiben, **fabrizierte
+  KI-Bewertungen** und einen Fake-Meeting-Link an; die öffentliche Stellenbörse
+  zeigte dem Kunden erfundene Stellen. Für ein DSGVO-Produkt im regulierten
+  Markt inakzeptabel. Demo-Daten entstehen jetzt nur noch bewusst
+  (`DEMO_MODE=1`, Entwicklung, oder `manage.py seed_demo`); nötige
+  Grundeinstellungen werden weiterhin angelegt.
+- **SAP-Feldzuordnung war ein Blender.** Der „Sync jetzt ausführen"-Knopf übertrug
+  **nichts**, meldete aber „Synchronisation abgeschlossen", zählte „Exportierte
+  Bewerbersätze" und die Konsole gab einen **frei erfundenen** „SAP Response-Code:
+  201 Created" aus (hartkodiert im Frontend). Die Zielsystem-Auswahl bot „SAP SF
+  Production (Echtes HRIS)" an – intern hieß der Wert `MOCK_SAP_PROD`. Jetzt ist
+  die Seite ein echtes Werkzeug: Sie **speichert die Feldzuordnung**, sagt klar,
+  dass **keine Daten übertragen** werden, zeigt an, ob ein Endpunkt konfiguriert
+  ist – und die Zuordnung wird vom (echten) `hris_export` **tatsächlich
+  angewendet**.
 - **HRIS-Export täuschte Erfolg vor (schwerwiegend).** `hris_export` stellte
   **nie** eine HTTP-Anfrage. Es baute eine Schein-Antwort, schrieb eine **frei
   erfundene SAP-ID** in die Bewerberakte und protokollierte

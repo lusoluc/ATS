@@ -113,28 +113,54 @@ def hr_ba_xml_feed(request):
 
 @hr_admin_required
 def sap_sf_mapper(request):
-    """Renders the SAP SuccessFactors Field Mapper UI and serves as the sync broker."""
+    """Feldzuordnung für den HRIS-/SAP-Export.
+
+    EHRLICHKEIT: Diese Seite überträgt KEINE Daten. Sie war früher ein
+    Blender – der POST tat nichts, meldete aber "Synchronisation
+    erfolgreich", zählte "exportierte Bewerbersätze" und die Oberfläche gab
+    einen frei erfundenen "SAP Response-Code: 201 Created" aus. Ein
+    Interessent hätte in der Demo geglaubt, die SAP-Anbindung funktioniere.
+
+    Jetzt: Hier wird die Feldzuordnung GESPEICHERT (SystemSetting
+    HRIS_FIELD_MAPPING). Die tatsächliche Übertragung übernimmt der Befehl
+    `hris_export` – und nur, wenn ein echter Endpunkt (HRIS_ENDPOINT)
+    konfiguriert ist.
+    """
+    from ..models import SystemSetting
+
     if request.method == 'POST':
-        # Handles a mock field synchronization
-        mapping_data = request.POST.get('mapping_data', '{}')
-        sync_target = request.POST.get('sync_target', 'MOCK_SAP_SANDBOX')
-        
-        # Simulate connecting to SAP SuccessFactors APIs, field transformation and sending data
-        AuditLog.objects.create(
-            action="SAP_SF_SYNC",
-            metadataJson=json.dumps({"target": sync_target, "mapping": mapping_data})
-        )
+        mapping_raw = request.POST.get('mapping_data', '{}')
+        try:
+            mapping = json.loads(mapping_raw)
+            if not isinstance(mapping, dict):
+                raise ValueError
+        except (ValueError, TypeError):
+            return JsonResponse({'success': False,
+                                 'error': 'Ungültige Zuordnung.'}, status=400)
+
+        SystemSetting.objects.update_or_create(
+            key='HRIS_FIELD_MAPPING',
+            defaults={'value': json.dumps(mapping)})
+        write_audit('HRIS_MAPPING_SAVED', user=request.user,
+                    fields=len(mapping))
+
+        endpoint_set = bool(os.environ.get('HRIS_ENDPOINT', '').strip())
         return JsonResponse({
             'success': True,
-            'message': 'Datenübertragung an SAP SuccessFactors erfolgreich simuliert.',
-            'timestamp': timezone.now().isoformat(),
-            'records_exported': Application.objects.filter(status='INVITED').count()
+            'saved_fields': len(mapping),
+            'endpoint_configured': endpoint_set,
+            # Klartext statt Schein-Erfolg:
+            'message': (
+                'Feldzuordnung gespeichert. Es wurden KEINE Daten übertragen. '
+                + ('Die Übertragung erfolgt über den Befehl "hris_export".'
+                   if endpoint_set else
+                   'Für eine echte Übertragung muss HRIS_ENDPOINT gesetzt sein '
+                   '(derzeit nicht konfiguriert).')),
         })
-        
-    # GET: render mapping management page
-    applications_to_sync = Application.objects.filter(status='INVITED').select_related('applicant', 'jobPosting')
-    
-    # Predefined target schema mapping
+
+    # GET: Zuordnungs-Oberfläche
+    applications_to_sync = (Application.objects.filter(status='INVITED')
+                            .select_related('applicant', 'jobPosting'))
     sap_schema_fields = [
         {'id': 'sf_candidate_id', 'label': 'Candidate ID (UUID)', 'type': 'String'},
         {'id': 'sf_first_name', 'label': 'First Name', 'type': 'String'},
@@ -143,10 +169,12 @@ def sap_sf_mapper(request):
         {'id': 'sf_job_req_id', 'label': 'Job Requisition ID', 'type': 'String'},
         {'id': 'sf_score_rating', 'label': 'AI Screening Rating', 'type': 'String'},
     ]
-    
+    saved = SystemSetting.objects.filter(key='HRIS_FIELD_MAPPING').first()
     context = {
         'applications': applications_to_sync,
         'sap_schema_fields': sap_schema_fields,
+        'saved_mapping_json': saved.value if saved else '{}',
+        'endpoint_configured': bool(os.environ.get('HRIS_ENDPOINT', '').strip()),
         'slug': 'sap-sf'
     }
     return render(request, 'sap_sf_mapper.html', context)

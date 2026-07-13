@@ -673,6 +673,64 @@ class AuditChainTestCase(TestCase):
         self.assertFalse(result["ok"])
         self.assertEqual(result["broken_id"], str(mid.id))
 
+    def test_deleting_an_entry_breaks_the_chain(self):
+        """Das häufigste Vertuschungsszenario: einen Eintrag LÖSCHEN (statt
+        ändern). Der Nachfolger zeigt dann auf einen prevHash, den es nicht
+        mehr gibt -> die Kette muss brechen."""
+        from .audit import write_audit, verify_audit_chain
+        from .models import AuditLog
+        write_audit("READ_CV", application_id="d1")
+        mid = write_audit("STATUS_CHANGE", application_id="d1", to="INVITED")
+        write_audit("READ_DOCUMENT", application_id="d2")
+        self.assertTrue(verify_audit_chain()["ok"])
+        # Mittleren Eintrag entfernen (z.B. um eine Einsicht zu verbergen)
+        AuditLog.objects.filter(id=mid.id).delete()
+        self.assertFalse(verify_audit_chain()["ok"])
+
+    def test_truncating_the_tail_is_the_one_undetectable_case(self):
+        """Ehrliche Grenze der reinen Hash-Kette: Wird das ENDE der Kette
+        abgeschnitten (die letzten n Einträge gelöscht), bleibt der Rest in
+        sich stimmig – das ist ohne externen Anker (z.B. periodisch
+        veröffentlichter Root-Hash) prinzipiell nicht erkennbar. Dieser Test
+        HÄLT DIESE ANNAHME FEST, damit sie bewusst bleibt und nicht mit
+        falscher Sicherheit verwechselt wird."""
+        from .audit import write_audit, verify_audit_chain
+        from .models import AuditLog
+        write_audit("READ_CV", application_id="t1")
+        write_audit("READ_CV", application_id="t2")
+        last = write_audit("READ_CV", application_id="t3")
+        AuditLog.objects.filter(id=last.id).delete()   # Ende gekappt
+        # Bekannte Grenze: bleibt gültig. Wenn dieser Test eines Tages
+        # fehlschlägt, wurde ein Anker-Mechanismus ergänzt -> Doku anpassen.
+        self.assertTrue(verify_audit_chain()["ok"])
+
+    def test_chain_recovers_after_manipulation_is_reverted(self):
+        """Wird eine Manipulation rückgängig gemacht, muss die Kette wieder
+        als gültig erkannt werden (kein Fehlalarm-Rest)."""
+        from .audit import write_audit, verify_audit_chain
+        from .models import AuditLog
+        write_audit("A", application_id="r1")
+        mid = write_audit("B", application_id="r1")
+        write_audit("C", application_id="r1")
+        original = mid.metadataJson
+        mid.metadataJson = '{"x": 1}'
+        mid.save(update_fields=["metadataJson"])
+        self.assertFalse(verify_audit_chain()["ok"])
+        # zurücksetzen
+        AuditLog.objects.filter(id=mid.id).update(metadataJson=original)
+        self.assertTrue(verify_audit_chain()["ok"])
+
+    def test_unchained_legacy_entries_do_not_break_chain(self):
+        """Alt-Einträge ohne entryHash (aus der Zeit vor der Kette) dürfen
+        die Verifikation nicht scheitern lassen, werden aber gezählt."""
+        from .audit import write_audit, verify_audit_chain
+        from .models import AuditLog
+        AuditLog.objects.create(action="LEGACY", metadataJson="{}")  # kein Hash
+        write_audit("NEU", application_id="l1")
+        result = verify_audit_chain()
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["unchained"], 1)
+
     def test_ai_execution_entries_are_chained(self):
         from .views import log_ai_execution
         from .audit import verify_audit_chain, write_audit
@@ -1407,6 +1465,76 @@ class EmailBlindIndexTestCase(TestCase):
         self.assertEqual(len(raw_hash), 64)             # HMAC-SHA256 hex
         a.refresh_from_db()
         self.assertEqual(a.email, "ay@ex.org")          # transparent entschlüsselt+normalisiert
+
+    def test_blind_index_is_keyed_not_plain_hash(self):
+        """Sicherheitseigenschaft: Der Blind-Index ist ein SCHLÜSSELABHÄNGIGER
+        HMAC, kein reiner Hash. Sonst könnte ein Angreifer mit Lesezugriff auf
+        die Indexspalte per Wörterbuch (bekannte E-Mails durchhashen) die
+        Adressen rückrechnen. Dieser Test schlägt an, falls jemand den HMAC
+        später zu sha256(email) 'vereinfacht'."""
+        import hashlib
+        from .models import email_blind_index
+        email = "opfer@example.org"
+        plain = hashlib.sha256(email.encode()).hexdigest()
+        self.assertNotEqual(email_blind_index(email), plain)
+
+    def test_blind_index_changes_with_the_key(self):
+        """Rotiert der PII-Schlüssel, ändert sich der Index zwingend mit –
+        Beleg dafür, dass er tatsächlich schlüsselgebunden ist."""
+        from django.test import override_settings
+        from .models import email_blind_index
+        a = email_blind_index("x@y.de")
+        with override_settings(PII_ENCRYPTION_KEY="ein-voellig-anderer-schluessel"):
+            b = email_blind_index("x@y.de")
+        self.assertNotEqual(a, b)
+
+    def test_blind_index_is_deterministic_and_normalized(self):
+        """Deterministisch (sonst kein unique/lookup) und robust gegen
+        Schreibweise/Whitespace – genau die Eigenschaft, die get_or_create
+        trägt."""
+        from .models import email_blind_index
+        self.assertEqual(email_blind_index("a@b.de"), email_blind_index("a@b.de"))
+        self.assertEqual(email_blind_index("  A@B.de "),
+                         email_blind_index("a@b.de"))
+
+    def test_encrypted_field_ciphertext_is_non_deterministic(self):
+        """Fernet nutzt einen Zufalls-IV: zweimal derselbe Klartext ergibt
+        UNTERSCHIEDLICHE Ciphertexte. Wäre das nicht so, könnte man aus der
+        DB ablesen, welche Bewerber denselben Wert teilen."""
+        from .models import get_fernet_cipher
+        c = get_fernet_cipher()
+        v1 = c.encrypt(b"Aylin").decode()
+        v2 = c.encrypt(b"Aylin").decode()
+        self.assertNotEqual(v1, v2)                       # verschiedene IVs
+        self.assertEqual(c.decrypt(v1.encode()).decode(),
+                         c.decrypt(v2.encode()).decode()) # beide entschlüsseln gleich
+
+    def test_cover_letter_encrypted_at_rest(self):
+        """Nicht nur die E-Mail: auch das Anschreiben (Freitext-PII) muss
+        verschlüsselt in der DB liegen."""
+        from django.db import connection
+        from .models import (Organization, Location, Facility, JobFamily,
+                             WorkflowState, JobPosting, Applicant, Application)
+        org = Organization.objects.create(name="O")
+        loc = Location.objects.create(name="HH")
+        fac = Facility.objects.create(name="F", organization=org)
+        fam = JobFamily.objects.create(name="EF-Fam")
+        ws = WorkflowState.objects.create(name="published")
+        job = JobPosting.objects.create(title="J", organization=org,
+                                        facility=fac, location=loc,
+                                        jobFamily=fam, workflowState=ws)
+        ap = Applicant.objects.create(firstName="E", lastName="F",
+                                      email="ef@x.de")
+        secret = "GEHEIMES Anschreiben mit Klartext-PII"
+        app = Application.objects.create(applicant=ap, jobPosting=job,
+                                         status="NEW", coverLetterTxt=secret)
+        with connection.cursor() as cur:
+            cur.execute("SELECT coverLetterTxt FROM ats_application WHERE id = %s",
+                        [app.id.hex])
+            raw = cur.fetchone()[0]
+        self.assertNotIn("GEHEIMES", raw)                 # kein Klartext in DB
+        app.refresh_from_db()
+        self.assertEqual(app.coverLetterTxt, secret)      # ORM entschlüsselt
 
     def test_uniqueness_and_lookup_via_blind_index(self):
         from django.db import IntegrityError, transaction

@@ -8198,3 +8198,131 @@ class DataRetentionAnonymizationTestCase(TestCase):
                 self.assertIsNone(app.cvStorageId)
                 self.assertFalse(default_storage.exists(path),
                                  "CV-Datei liegt noch im Dateisystem!")
+
+
+# ===========================================================================
+# WÄCHTER-TESTS (Guardrails): Sie prüfen nicht einzelne Funktionen, sondern
+# ganze FehlerKLASSEN – automatisch bei JEDEM Testlauf, auch für Code, der
+# erst in Zukunft dazukommt. So können sich die im Sicherheits-Audit
+# gefundenen Muster nicht unbemerkt wiederholen.
+# Wenn ein Wächter fehlschlägt: NICHT die Whitelist blind erweitern, sondern
+# prüfen, ob der neue Code wirklich absichtlich so sein soll.
+# ===========================================================================
+
+class GuardrailAuthDecoratorTestCase(TestCase):
+    """Jede HTTP-View braucht einen eigenen Auth-Decorator – es gibt KEINE
+    globale Login-Middleware (siehe SECURITY_AUDIT.md, Fund 2). Neue Views
+    ohne Decorator, die nicht bewusst öffentlich sind, lässt dieser Test
+    durchfallen, damit die schedule_interview-Lücke sich nie wiederholt."""
+
+    # Bewusst öffentliche Views (Stellenbörse, Bewerbung, Portale, Health).
+    # Neue Einträge hier bedeuten: „ja, das darf ohne Login erreichbar sein".
+    PUBLIC_ALLOWLIST = {
+        "healthz_ai", "healthz",
+        "home", "job_list", "job_detail", "bewerben", "candidate_portal",
+        "page_detail", "facility_profile", "landing_page",
+        "job_alert_subscribe", "job_alert_confirm", "job_alert_manage",
+        "pricing_view",
+    }
+
+    def _iter_views(self):
+        import ast, os
+        base = os.path.join(os.path.dirname(__file__), "views")
+        for fname in os.listdir(base):
+            if not fname.endswith(".py") or fname == "__init__.py":
+                continue
+            tree = ast.parse(open(os.path.join(base, fname),
+                                  encoding="utf-8").read())
+            for node in tree.body:
+                if not isinstance(node, ast.FunctionDef):
+                    continue
+                if node.name.startswith("_"):
+                    continue
+                args = [a.arg for a in node.args.args]
+                if not args or args[0] != "request":
+                    continue   # keine HTTP-View
+                decs = []
+                for d in node.decorator_list:
+                    if isinstance(d, ast.Name):
+                        decs.append(d.id)
+                    elif isinstance(d, ast.Call) and isinstance(d.func, ast.Name):
+                        decs.append(d.func.id)
+                    elif isinstance(d, ast.Attribute):
+                        decs.append(d.attr)
+                yield fname, node.name, decs
+
+    def test_every_http_view_is_authorized_or_allowlisted(self):
+        offenders = []
+        for fname, name, decs in self._iter_views():
+            has_auth = any("required" in d or "login" in d for d in decs)
+            if not has_auth and name not in self.PUBLIC_ALLOWLIST:
+                offenders.append(f"{fname}:{name}")
+        self.assertEqual(
+            offenders, [],
+            "Neue View(s) ohne Auth-Decorator und nicht auf der "
+            "PUBLIC_ALLOWLIST. Entweder Decorator ergänzen (@recruiter_required "
+            "/ @hr_admin_required / @any_staff_required) ODER – wenn wirklich "
+            f"öffentlich gewollt – zur Allowlist hinzufügen: {offenders}")
+
+    def test_allowlist_has_no_stale_entries(self):
+        """Hält die Whitelist ehrlich: entfernte/umbenannte öffentliche Views
+        dürfen nicht als tote Ausnahmen zurückbleiben."""
+        existing = {name for _, name, _ in self._iter_views()}
+        stale = [n for n in self.PUBLIC_ALLOWLIST if n not in existing]
+        self.assertEqual(stale, [],
+                         f"Veraltete Allowlist-Einträge (View gibt es nicht "
+                         f"mehr): {stale}")
+
+
+class GuardrailNoCsrfExemptTestCase(TestCase):
+    """@csrf_exempt darf nirgends im Code auftauchen (Audit-Prinzip). Wenn
+    doch, ist es fast immer ein Fehler – bewusste Ausnahmen müssten hier
+    explizit begründet ergänzt werden."""
+
+    def test_no_csrf_exempt_decorator_in_views(self):
+        import os
+        base = os.path.join(os.path.dirname(__file__), "views")
+        hits = []
+        for fname in os.listdir(base):
+            if not fname.endswith(".py"):
+                continue
+            src = open(os.path.join(base, fname), encoding="utf-8").read()
+            if "@csrf_exempt" in src:
+                hits.append(fname)
+        self.assertEqual(hits, [],
+                         f"@csrf_exempt gefunden in: {hits} – CSRF-Schutz "
+                         "nicht ohne zwingenden Grund abschalten.")
+
+
+class GuardrailNoRawSqlTestCase(TestCase):
+    """Kein rohes SQL / .extra() / RawSQL in Views (SQL-Injection-Fläche).
+    Das ORM ist durchgängig zu nutzen (Audit-Prinzip)."""
+
+    def test_no_raw_sql_constructs_in_views(self):
+        import os, re
+        base = os.path.join(os.path.dirname(__file__), "views")
+        pattern = re.compile(r"\.raw\(|\.extra\(|RawSQL|connection\.cursor\(")
+        hits = []
+        for fname in os.listdir(base):
+            if not fname.endswith(".py"):
+                continue
+            src = open(os.path.join(base, fname), encoding="utf-8").read()
+            for m in pattern.finditer(src):
+                line = src[:m.start()].count("\n") + 1
+                hits.append(f"{fname}:{line}:{m.group(0)}")
+        self.assertEqual(hits, [],
+                         f"Rohes SQL in Views gefunden: {hits} – ORM nutzen "
+                         "oder, falls unvermeidbar, hier bewusst ausnehmen.")
+
+
+class GuardrailProductionCacheTestCase(TestCase):
+    """Der Login-Lockout-Cache muss in Produktion geteilt sein (Fund 6):
+    LocMemCache pro Gunicorn-Worker würde das Limit vervielfachen."""
+
+    def test_shared_cache_backend_selectable(self):
+        import inspect
+        import securats.settings as st
+        src = inspect.getsource(st)
+        self.assertIn("DatabaseCache", src)
+        self.assertIn("RedisCache", src)
+        self.assertIn("not DEBUG", src)

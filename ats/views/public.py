@@ -396,6 +396,58 @@ def bewerben(request, job_id):
             portal_url = request.build_absolute_uri(
                 reverse('ats:candidate_portal', args=[portal_token])
             )
+
+            # Eingangsbestaetigung an die Bewerber:in.
+            # WARUM das wichtig ist: Die Erfolgsseite verspricht eine
+            # Bestaetigung per Mail – bisher wurde KEINE verschickt. Schlimmer:
+            # der Magic-Link zum Status-Portal stand nur auf dieser einen Seite.
+            # Wer den Tab schloss, kam nie wieder ins Portal (Status, Termine,
+            # Rueckfragen) – das Feature war praktisch unbenutzbar.
+            # Eine Vorlage "Eingangsbestaetigung" wird genutzt, wenn vorhanden
+            # (Platzhalter {name}, {stelle}, {firma}, {portal}); sonst
+            # freundlicher Standardtext.
+            # Ein Mailfehler darf die Bewerbung NIE scheitern lassen.
+            try:
+                from django.core.mail import send_mail
+                from ..models import EmailTemplate
+                _fs = SystemSetting.objects.filter(key='FIRMA').first()
+                company = (_fs.value if _fs else '') or 'SecurATS'
+                tpl = (EmailTemplate.objects
+                       .filter(name__icontains='eingangsbest').first())
+                if tpl:
+                    body = (tpl.textContent or tpl.htmlContent or '')
+                    subject = (tpl.subject or 'Ihre Bewerbung ist eingegangen')
+                    for k, v in (('{name}', applicant.firstName or ''),
+                                 ('{stelle}', job.title),
+                                 ('{firma}', company),
+                                 ('{portal}', portal_url)):
+                        body = body.replace(k, v)
+                        subject = subject.replace(k, v)
+                else:
+                    subject = f'Ihre Bewerbung ist eingegangen – {job.title}'
+                    body = (
+                        f'Guten Tag {applicant.firstName},\n\n'
+                        f'vielen Dank für Ihre Bewerbung auf die Stelle '
+                        f'"{job.title}". Wir haben Ihre Unterlagen erhalten '
+                        f'und melden uns, sobald wir sie gesichtet haben.\n\n'
+                        f'Ihren Bewerbungsstatus können Sie jederzeit hier '
+                        f'einsehen – ohne Passwort, der Link ist persönlich '
+                        f'und 90 Tage gültig:\n{portal_url}\n\n'
+                        f'Dort sehen Sie den aktuellen Stand, können Termine '
+                        f'wahrnehmen und uns Rückfragen stellen.\n\n'
+                        f'Freundliche Grüße\n{company}')
+                if applicant.email:
+                    send_mail(subject, body, None, [applicant.email],
+                              fail_silently=True)
+                    write_audit('APPLICATION_CONFIRMATION_SENT',
+                                application_id=application.id)
+            except Exception:
+                # Bewerbung ist bereits gespeichert – sie darf an einer
+                # fehlgeschlagenen Mail nicht scheitern.
+                logger.exception(
+                    'Eingangsbestaetigung fuer Bewerbung %s fehlgeschlagen',
+                    application.id)
+
             return render(request, 'bewerbung_success.html',
                           {'job': job, 'nav_pages': nav_pages, 'portal_url': portal_url})
 

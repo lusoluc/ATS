@@ -34,6 +34,25 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
   Autovorlauf bietet Zusage/Absage gar nicht erst zur Auswahl an.
 
 ### Behoben
+- **HRIS-Export täuschte Erfolg vor (schwerwiegend).** `hris_export` stellte
+  **nie** eine HTTP-Anfrage. Es baute eine Schein-Antwort, schrieb eine **frei
+  erfundene SAP-ID** in die Bewerberakte und protokollierte
+  `HRIS_EXPORT_SUCCESS` mit `"target": "SAP_SF_PRODUCTION"` im **Audit-Log** –
+  dem Compliance-Nachweis, der nicht lügen darf. Betreiber hätten geglaubt,
+  Bewerberdaten seien an SAP übertragen worden; übertragen wurde nichts.
+  Neu: echte Übertragung (HTTP POST, Timeout, Statusprüfung) bei gesetztem
+  `HRIS_ENDPOINT`; **ohne Konfiguration bricht der Befehl ab** statt zu
+  simulieren; `--dry-run` zeigt die Struktur ohne PII; protokolliert wird nur
+  das *tatsächliche* Ergebnis (echte Referenz oder gar keine). Regressions-Wache
+  im Test verhindert die Rückkehr der Schein-Antwort.
+- **Eingangsbestätigung fehlte komplett.** Die Erfolgsseite versprach „Sie
+  erhalten in Kürze eine Bestätigung per E-Mail" – es wurde **keine** verschickt.
+  Gravierender: Der Magic-Link zum Kandidatenportal stand nur auf dieser einen
+  Seite. Wer den Tab schloss, kam **nie wieder** ins Portal (Status, Termine,
+  Rückfragen) – das Feature war praktisch unbenutzbar. Neu: Bestätigungsmail mit
+  Portal-Link (Vorlage „Eingangsbestätigung" mit `{name}`, `{stelle}`, `{firma}`,
+  `{portal}` wird genutzt, wenn vorhanden), auditiert. Ein Mailfehler lässt die
+  Bewerbung nicht scheitern (getestet).
 - **Irreführende Standard-Vorbelegung entfernt.** Wurde eine Automatik-Regel ohne
   eigene Aktionen angelegt, erzeugte SecurATS Aktionen, die es **nie gab**
   (`AUTO_INVITE_INTERVIEW`, `TRIGGER_PROCESS` mit „CALENDAR_SYNC"/„ZOOM_ROOM_CREATE",

@@ -99,3 +99,16 @@ unwiederbringlich verloren**; Schlüssel getrennt vom DB-Backup aufbewahren). **
 `PII_ENCRYPTION_KEY` dient auch als HMAC-Key des E-Mail-Blind-Index – bei Rotation
 müssen alle `emailHash`-Werte neu berechnet werden (alle Applicants re-saven),
 sonst schlagen E-Mail-Lookups fehl.
+
+
+## HRIS-Export (optional)
+
+`python manage.py hris_export` überträgt Bewerbungen im Status *Eingeladen* an ein
+HRIS (z. B. SAP SuccessFactors).
+
+- **Erfordert `HRIS_ENDPOINT`** (und optional `HRIS_TOKEN`). Ohne Endpunkt bricht der
+  Befehl ab – er täuscht **keinen** Erfolg vor.
+- `--dry-run` zeigt, welche Bewerbungen und welche Felder übertragen würden (ohne PII).
+- `--all` überträgt auch bereits übertragene erneut (sonst überspringt er sie).
+- **Datenschutz:** Der Export sendet personenbezogene Daten an ein Drittsystem.
+  Auftragsverarbeitung klären, bevor der Endpunkt gesetzt wird.

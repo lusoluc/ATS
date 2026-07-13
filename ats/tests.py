@@ -8603,3 +8603,210 @@ class AutomationFormEditorTestCase(TestCase):
         r = self.client.get(reverse('ats:dashboard'))
         self.assertContains(r, 'automation-roles-data')
         self.assertContains(r, 'Recruiter')
+
+
+class ApplicationConfirmationMailTestCase(TestCase):
+    """Eingangsbestätigung nach Bewerbung.
+
+    Befund, den diese Tests festhalten: Die Erfolgsseite versprach
+    „Sie erhalten in Kürze eine Bestätigung per E-Mail" – es wurde KEINE
+    verschickt. Schlimmer: Der Magic-Link zum Kandidatenportal stand nur auf
+    dieser einen Seite. Wer den Tab schloss, kam nie wieder ins Portal
+    (Status, Termine, Rückfragen) – das Feature war praktisch unbenutzbar.
+    """
+
+    def setUp(self):
+        from .models import (Organization, Location, Facility, JobFamily,
+                             WorkflowState, JobPosting)
+        org = Organization.objects.create(name="O")
+        loc = Location.objects.create(name="HH")
+        fac = Facility.objects.create(name="F", organization=org)
+        fam = JobFamily.objects.create(name="CM-Fam")
+        ws = WorkflowState.objects.create(name="published")
+        self.job = JobPosting.objects.create(
+            title="Pflegefachkraft", organization=org, facility=fac,
+            location=loc, jobFamily=fam, workflowState=ws)
+
+    def _apply(self, email="bewerber@x.de"):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        cv = SimpleUploadedFile("lebenslauf.pdf", b"%PDF-1.4 test",
+                                content_type="application/pdf")
+        return self.client.post(
+            reverse('ats:bewerben', args=[self.job.id]),
+            {"first_name": "Erika", "last_name": "Muster", "email": email,
+             "phone": "0170-1", "cover_letter": "Ich bewerbe mich.",
+             "consent_privacy": "on",   # DSGVO-Pflichteinwilligung
+             "cv_file": cv})            # Lebenslauf ist Pflicht
+
+    def test_confirmation_mail_is_sent(self):
+        from django.core import mail
+        mail.outbox = []
+        self._apply()
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["bewerber@x.de"])
+        self.assertIn("Pflegefachkraft", mail.outbox[0].subject)
+
+    def test_confirmation_mail_contains_portal_link(self):
+        """Der Kern des Fixes: Ohne den Link in der Mail wäre das
+        Kandidatenportal nach dem Schließen des Tabs unerreichbar."""
+        from django.core import mail
+        from .models import ApplicantToken
+        mail.outbox = []
+        self._apply()
+        token = ApplicantToken.objects.get().token
+        self.assertIn(token, mail.outbox[0].body)
+        self.assertIn("/bewerber/", mail.outbox[0].body)
+
+    def test_portal_link_from_mail_actually_works(self):
+        """Ende-zu-Ende: der Link aus der Mail führt ins Portal."""
+        from django.core import mail
+        from .models import ApplicantToken
+        mail.outbox = []
+        self._apply()
+        token = ApplicantToken.objects.get().token
+        r = self.client.get(reverse('ats:candidate_portal', args=[token]))
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "Pflegefachkraft")
+
+    def test_confirmation_is_audited(self):
+        from .models import AuditLog
+        self._apply()
+        self.assertTrue(AuditLog.objects.filter(
+            action="APPLICATION_CONFIRMATION_SENT").exists())
+
+    def test_email_template_is_used_when_present(self):
+        from django.core import mail
+        from .models import EmailTemplate
+        EmailTemplate.objects.create(
+            name="Eingangsbestätigung", subject="Danke, {name}!",
+            textContent="Hallo {name}, Stelle: {stelle}. Portal: {portal}",
+            htmlContent="")
+        mail.outbox = []
+        self._apply()
+        self.assertEqual(mail.outbox[0].subject, "Danke, Erika!")
+        self.assertIn("Stelle: Pflegefachkraft", mail.outbox[0].body)
+        self.assertIn("/bewerber/", mail.outbox[0].body)   # Platzhalter ersetzt
+
+    def test_mail_failure_never_breaks_the_application(self):
+        """Wichtigster Fall: Der Mailversand darf die Bewerbung NIE
+        scheitern lassen – die Bewerbung ist bereits gespeichert."""
+        from unittest.mock import patch
+        from .models import Application
+        with patch("django.core.mail.send_mail",
+                   side_effect=OSError("SMTP down")):
+            r = self._apply(email="robust@x.de")
+        self.assertEqual(r.status_code, 200)               # Erfolgsseite
+        self.assertEqual(Application.objects.count(), 1)   # Bewerbung da!
+
+
+class HrisExportHonestyTestCase(TestCase):
+    """HRIS-Export: darf NIEMALS Erfolg erfinden.
+
+    Befund: Die frühere Fassung stellte nie eine HTTP-Anfrage, erfand eine
+    SAP-ID, schrieb sie in die Bewerberakte und protokollierte
+    HRIS_EXPORT_SUCCESS mit "target": "SAP_SF_PRODUCTION" im Audit-Log.
+    Das Audit-Log ist der Compliance-Nachweis – es darf nicht lügen.
+    """
+
+    def setUp(self):
+        from .models import (Organization, Location, Facility, JobFamily,
+                             WorkflowState, JobPosting, Applicant, Application)
+        org = Organization.objects.create(name="O")
+        loc = Location.objects.create(name="HH", city="Hamburg")
+        fac = Facility.objects.create(name="F", organization=org)
+        fam = JobFamily.objects.create(name="HE-Fam")
+        ws = WorkflowState.objects.create(name="published")
+        job = JobPosting.objects.create(title="Pflegekraft", organization=org,
+                                        facility=fac, location=loc,
+                                        jobFamily=fam, workflowState=ws)
+        self.app = Application.objects.create(
+            applicant=Applicant.objects.create(firstName="H", lastName="E",
+                                               email="he@x.de"),
+            jobPosting=job, status="INVITED")
+
+    def _run(self, **kw):
+        from io import StringIO
+        from django.core.management import call_command
+        out = StringIO()
+        call_command("hris_export", stdout=out, **kw)
+        return out.getvalue()
+
+    def test_without_endpoint_it_refuses_instead_of_faking(self):
+        """Der Kern: Ohne Konfiguration wird abgebrochen – KEIN Erfolg,
+        KEIN Audit-Eintrag, KEINE erfundene ID."""
+        from django.core.management.base import CommandError
+        from .models import AuditLog
+        import os
+        os.environ.pop('HRIS_ENDPOINT', None)
+        with self.assertRaises(CommandError):
+            self._run()
+        self.assertFalse(AuditLog.objects.filter(
+            action="HRIS_EXPORT_SUCCESS").exists())
+        self.app.refresh_from_db()
+        self.assertNotIn("SAP-ID", self.app.internalNotes or "")
+
+    def test_no_fabricated_sap_id_anywhere_in_code(self):
+        """Regressions-Wache: Die Schein-Antwort darf nicht zurückkehren."""
+        import ast, inspect
+        from ats.management.commands import hris_export
+        src = inspect.getsource(hris_export)
+        # Nur den CODE pruefen – der Modul-Docstring erklaert bewusst, was
+        # frueher falsch war und darf die Begriffe nennen.
+        tree = ast.parse(src)
+        code = "\n".join(
+            ast.unparse(n) for n in tree.body
+            if not (isinstance(n, ast.Expr) and isinstance(n.value, ast.Constant)))
+        self.assertNotIn("mock_response", code)
+        self.assertNotIn("SAP_SF_PRODUCTION", code)
+        self.assertNotIn("SF-CAND-", code)
+        # Und: es MUSS einen echten HTTP-Aufruf geben
+        self.assertIn("urlopen", code)
+
+    def test_dry_run_transmits_nothing_and_leaks_no_pii(self):
+        from .models import AuditLog
+        out = self._run(dry_run=True)
+        self.assertIn("DRY-RUN", out)
+        self.assertNotIn("he@x.de", out)          # keine PII im Terminal
+        self.assertEqual(AuditLog.objects.count(), 0)
+
+    def test_real_transmission_logs_only_real_values(self):
+        """Mit Endpunkt wird wirklich gesendet; protokolliert wird nur, was
+        das Zielsystem tatsächlich zurückgab."""
+        import os, json
+        from unittest.mock import patch
+        from .models import AuditLog
+        os.environ['HRIS_ENDPOINT'] = 'https://hris.example/api/candidates'
+        try:
+            with patch.object(
+                    __import__('ats.management.commands.hris_export',
+                               fromlist=['Command']).Command, '_post',
+                    return_value=("SF-REAL-42", 201)):
+                self._run()
+            entry = AuditLog.objects.get(action="HRIS_EXPORT_SUCCESS")
+            meta = json.loads(entry.metadataJson)
+            self.assertEqual(meta["remoteId"], "SF-REAL-42")
+            self.assertEqual(meta["httpStatus"], 201)
+            self.app.refresh_from_db()
+            self.assertIn("SF-REAL-42", self.app.internalNotes)
+        finally:
+            os.environ.pop('HRIS_ENDPOINT', None)
+
+    def test_transmission_failure_is_logged_as_failure(self):
+        """Ein Fehler beim Zielsystem wird als FEHLER protokolliert –
+        nicht als Erfolg."""
+        import os, json
+        from unittest.mock import patch
+        from .models import AuditLog
+        os.environ['HRIS_ENDPOINT'] = 'https://hris.example/api/candidates'
+        try:
+            with patch.object(
+                    __import__('ats.management.commands.hris_export',
+                               fromlist=['Command']).Command, '_post',
+                    side_effect=OSError("Verbindung abgelehnt")):
+                self._run()
+            self.assertFalse(AuditLog.objects.filter(
+                action="HRIS_EXPORT_SUCCESS").exists())
+            self.assertTrue(AuditLog.objects.filter(
+                action="HRIS_EXPORT_FAILED").exists())
+        finally:
+            os.environ.pop('HRIS_ENDPOINT', None)

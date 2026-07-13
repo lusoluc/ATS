@@ -8497,3 +8497,109 @@ class WorkflowActionsTestCase(TestCase):
         skip = AuditLog.objects.filter(action="WORKFLOW_ACTION_SKIPPED").first()
         self.assertIsNotNone(skip)
         self.assertIn("Unbekannter Aktionstyp", skip.metadataJson)
+
+
+class AutomationFormEditorTestCase(TestCase):
+    """No-Code-Editor für die Prozess-Automatik + Aufräumen der irreführenden
+    Standard-Vorbelegungen.
+
+    Kern-Befund, den diese Tests festhalten: Die frühere Vorbelegung erzeugte
+    Aktionen, die es NIE gab (AUTO_INVITE_INTERVIEW, TRIGGER_PROCESS,
+    SEND_CONTRACT). Ein Admin sah "Vertrag senden" in der Pipeline – und es
+    passierte nichts. Vorbelegt wird jetzt nur, was wirklich ausgeführt wird.
+    """
+
+    def setUp(self):
+        from .models import WorkflowState
+        self.admin = make_user("af-admin", role="HR-Admin")
+        for s in ("NEW", "IN_REVIEW", "INVITED", "REJECTED"):
+            WorkflowState.objects.get_or_create(name=s)
+        self.client.force_login(self.admin)
+
+    def _saved_steps(self):
+        from .models import AppWorkflowDef
+        import json
+        return json.loads(AppWorkflowDef.objects.get().stepsJson)
+
+    def test_defaults_contain_no_phantom_actions(self):
+        """Die Vorbelegung darf KEINE Aktionstypen mehr erzeugen, die der
+        Ausführer nicht kennt – sonst führt das UI den Admin in die Irre."""
+        from .views import execute_workflow_actions  # noqa: F401
+        self.client.post(reverse('ats:save_app_workflow'), {
+            "name": "Standard", "steps": ["NEW", "IN_REVIEW", "INVITED",
+                                          "REJECTED"]})
+        phantom = {"AUTO_INVITE_INTERVIEW", "TRIGGER_PROCESS", "SEND_CONTRACT"}
+        for step in self._saved_steps():
+            for a in step["actions"]:
+                self.assertNotIn(a.get("type"), phantom,
+                                 f"Phantom-Aktion {a.get('type')} in "
+                                 f"{step['state']} – wird nie ausgeführt!")
+
+    def test_defaults_only_use_implemented_action_types(self):
+        """Jede vorbelegte Aktion muss ein Typ sein, den execute_workflow_actions
+        tatsächlich behandelt."""
+        implemented = {"EMAIL_NOTIFICATION", "ADD_NOTE", "CREATE_TASK",
+                       "AUTO_ADVANCE", "APPROVAL_COMMITTEE"}
+        self.client.post(reverse('ats:save_app_workflow'), {
+            "name": "Standard", "steps": ["NEW", "IN_REVIEW", "INVITED",
+                                          "REJECTED"]})
+        for step in self._saved_steps():
+            for a in step["actions"]:
+                self.assertIn(a.get("type"), implemented)
+
+    def test_defaults_are_actually_executed(self):
+        """Beweis, dass die Vorbelegung wirkt: INVITED legt eine Aufgabe an."""
+        from .models import (Organization, Location, Facility, JobFamily,
+                             WorkflowState, JobPosting, Applicant,
+                             Application, WorkflowTask, AppWorkflowDef)
+        import json
+        from .views import execute_workflow_actions
+        self.client.post(reverse('ats:save_app_workflow'), {
+            "name": "Standard", "steps": ["INVITED"]})
+        org = Organization.objects.create(name="O")
+        loc = Location.objects.create(name="HH")
+        fac = Facility.objects.create(name="F", organization=org)
+        fam = JobFamily.objects.create(name="AF-Fam")
+        ws = WorkflowState.objects.get(name="INVITED")
+        job = JobPosting.objects.create(title="J", organization=org,
+                                        facility=fac, location=loc,
+                                        jobFamily=fam, workflowState=ws)
+        app = Application.objects.create(
+            applicant=Applicant.objects.create(firstName="A", lastName="F",
+                                               email="af@x.de"),
+            jobPosting=job, status="INVITED")
+        steps = json.loads(AppWorkflowDef.objects.get().stepsJson)
+        execute_workflow_actions(app, steps[0]["actions"])
+        self.assertEqual(WorkflowTask.objects.count(), 1)   # Aufgabe entstand
+
+    def test_form_editor_json_is_accepted(self):
+        """Das JSON, das der Baukasten erzeugt, muss der Server unverändert
+        übernehmen (Format-Vertrag zwischen Editor und save_app_workflow)."""
+        import json
+        built = [{"step": "IN_REVIEW", "actions": [
+            {"type": "CREATE_TASK", "title": "Referenzen einholen",
+             "role": "Recruiter", "due_days": 3},
+            {"type": "AUTO_ADVANCE", "to": "INVITED"}]}]
+        self.client.post(reverse('ats:save_app_workflow'), {
+            "name": "Baukasten", "steps": ["IN_REVIEW"],
+            "custom_actions_json": json.dumps(built)})
+        steps = self._saved_steps()
+        actions = steps[0]["actions"]
+        self.assertEqual(actions[0]["title"], "Referenzen einholen")
+        self.assertEqual(actions[0]["due_days"], 3)
+        self.assertEqual(actions[1]["to"], "INVITED")
+
+    def test_editor_is_rendered_instead_of_raw_json_field(self):
+        """Der Baukasten ist da – und der Hinweis auf die Human-in-the-Loop-
+        Grenze steht sichtbar im Formular."""
+        r = self.client.get(reverse('ats:dashboard'))
+        self.assertContains(r, 'id="automation-rows"')
+        self.assertContains(r, 'automation-add')
+        self.assertContains(r, "Zusagen und Absagen trifft immer ein Mensch")
+        # Die alte irreführende Werbung ist weg
+        self.assertNotContains(r, "Vertragsentwürfe")
+
+    def test_roles_are_offered_to_the_editor(self):
+        r = self.client.get(reverse('ats:dashboard'))
+        self.assertContains(r, 'automation-roles-data')
+        self.assertContains(r, 'Recruiter')

@@ -15,6 +15,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.csrf import ensure_csrf_cookie
 from ..permissions import any_staff_required, recruiter_required, hr_admin_required
 from ..permissions import scope_applications, scope_jobs, can_access_application
+from django.contrib.auth.models import Group
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.conf import settings
@@ -179,6 +180,9 @@ def dashboard(request):
         # New Context Variables for Command Center
         'all_pages': all_pages,
         'all_workflows': all_workflows,
+        # Rollen für den Automatik-Editor (Aufgaben-/Benachrichtigungs-Empfänger)
+        'all_roles': list(Group.objects.order_by('name')
+                          .values_list('name', flat=True)),
         'app_workflows': app_workflows,
         'all_email_templates': all_email_templates,
         'all_system_settings': all_system_settings,

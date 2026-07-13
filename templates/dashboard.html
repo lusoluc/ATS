@@ -732,18 +732,41 @@
                         </div>
 
                         <div class="form-group" style="margin-top: 16px;">
-                            <label class="form-label" for="app-workflow-custom-json">
-                                <i class="fa-solid fa-code" style="color: var(--accent);"></i> Erweiterte Automatisierungs-Regeln (JSON-Format, Optional)
+                            <label class="form-label">
+                                <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent);"></i> Automatik: Was soll passieren?
                             </label>
-                            <textarea name="custom_actions_json" id="app-workflow-custom-json" class="form-textarea" rows="4" placeholder='[{"step": "IN_REVIEW", "actions": [{"type": "CREATE_TASK", "title": "Referenzen einholen", "role": "Recruiter", "due_days": 3}, {"type": "EMAIL_NOTIFICATION", "role": "Bereichsleitung"}, {"type": "ADD_NOTE", "text": "Automatisch in Prüfung genommen"}, {"type": "AUTO_ADVANCE", "to": "INVITED"}]}]' style="font-family: monospace; font-size: 11px;"></textarea>
-                            <small style="color:var(--text-muted); font-size:11px; display:block; margin-top:4px;">
-                              Verfügbare Aktionen: <code>CREATE_TASK</code> (Aufgabe für eine Rolle, optional <code>due_days</code>) ·
-                              <code>EMAIL_NOTIFICATION</code> (an <code>recipient</code>-Adresse und/oder <code>role</code>; <code>"recipient": "applicant"</code> schreibt dem Bewerber) ·
-                              <code>ADD_NOTE</code> (automatischer Vermerk) ·
-                              <code>AUTO_ADVANCE</code> (Status weiterschieben – <strong>nur</strong> NEW/IN_REVIEW/INVITED; Zu- und Absagen bleiben bewusst der menschlichen Entscheidung vorbehalten) ·
-                              <code>APPROVAL_COMMITTEE</code> (Gremiums-Hinweis).
-                            </small>
-                            <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Tipp: Wenn Sie dies leer lassen, befüllt SecurATS diese Pipeline automatisch mit ausgereiften Standard-Automatisierungen (z. B. Komitee-Prüfungen, E-Mail-Weiterleitungen, Gesprächs-Einladungen und Vertragsentwürfe)!</div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">
+                                Legen Sie fest, was automatisch geschieht, wenn eine Bewerbung eine Phase erreicht.
+                                Ohne Eintrag nutzt SecurATS eine schlanke Standard-Vorbelegung.
+                            </div>
+
+                            <div id="automation-rows"></div>
+                            {{ all_roles|json_script:"automation-roles-data" }}
+
+                            <button type="button" class="btn" id="automation-add"
+                                    style="margin-top: 8px; font-size: 12px; padding: 6px 12px;">
+                                <i class="fa-solid fa-plus"></i> Aktion hinzufügen
+                            </button>
+
+                            <details style="margin-top: 12px;">
+                                <summary style="font-size: 11px; color: var(--text-muted); cursor: pointer;">
+                                    Für Fortgeschrittene: JSON ansehen/bearbeiten
+                                </summary>
+                                <textarea name="custom_actions_json" id="app-workflow-custom-json"
+                                          class="form-textarea" rows="4"
+                                          style="font-family: monospace; font-size: 11px; margin-top: 6px;"></textarea>
+                                <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">
+                                    Wird automatisch aus den Feldern oben erzeugt. Manuelle Änderungen hier
+                                    überschreiben den Baukasten beim Speichern.
+                                </div>
+                            </details>
+
+                            <div style="font-size: 10px; color: var(--text-muted); margin-top: 8px;">
+                                <i class="fa-solid fa-shield-halved"></i>
+                                <strong>Bewusste Grenze:</strong> Der Status-Autovorlauf kann Bewerbungen nur
+                                innerhalb der Sichtung weiterschieben (Neu / In Prüfung / Eingeladen).
+                                <strong>Zusagen und Absagen trifft immer ein Mensch</strong> – die Automatik kann das nicht.
+                            </div>
                         </div>
                         
                         <button type="submit" class="btn-cta" style="width: 100%;">
@@ -2432,7 +2455,173 @@ MODALS & OVERLAYS
         openJobCreatorModal();
     }
 
+    /* =====================================================================
+       Automatik-Baukasten (No-Code)
+       Ersetzt das frühere rohe JSON-Feld: Aktionen werden über Auswahllisten
+       zusammengeklickt; das JSON entsteht daraus beim Speichern automatisch.
+       Beim Bearbeiten einer Regel werden die Felder aus stepsJson zurückbefüllt.
+       ===================================================================== */
+    const AUTOMATION_STATES = [
+        ['NEW', 'Neu'], ['IN_REVIEW', 'In Prüfung'], ['INVITED', 'Eingeladen'],
+        ['REJECTED', 'Abgesagt'], ['HIRED', 'Eingestellt']
+    ];
+    // Nur diese Ziele erlaubt der Server beim Autovorlauf (Human-in-the-Loop):
+    const ADVANCE_TARGETS = [['NEW', 'Neu'], ['IN_REVIEW', 'In Prüfung'], ['INVITED', 'Eingeladen']];
+    const AUTOMATION_ROLES = JSON.parse(document.getElementById('automation-roles-data')?.textContent || '[]');
+
+    const ACTION_TYPES = [
+        ['CREATE_TASK', 'Aufgabe anlegen'],
+        ['EMAIL_NOTIFICATION', 'E-Mail senden'],
+        ['ADD_NOTE', 'Vermerk hinzufügen'],
+        ['AUTO_ADVANCE', 'Status weiterschieben'],
+        ['APPROVAL_COMMITTEE', 'Gremiums-Hinweis']
+    ];
+
+    function optionsHtml(pairs, selected) {
+        return pairs.map(([v, l]) =>
+            `<option value="${v}"${v === selected ? ' selected' : ''}>${l}</option>`).join('');
+    }
+
+    function automationFieldsHtml(type, a) {
+        a = a || {};
+        const roleOpts = optionsHtml([['', '– alle –']].concat(AUTOMATION_ROLES.map(r => [r, r])), a.role || '');
+        if (type === 'CREATE_TASK') {
+            return `<input type="text" class="form-input af-title" placeholder="Aufgabe, z. B. Referenzen einholen"
+                           value="${(a.title || '').replace(/"/g, '&quot;')}" style="flex:2; min-width:180px;">
+                    <select class="filter-select af-role" style="flex:1;">${roleOpts}</select>
+                    <input type="number" class="form-input af-due" min="0" placeholder="Frist (Tage)"
+                           value="${a.due_days || ''}" style="width:110px;">`;
+        }
+        if (type === 'EMAIL_NOTIFICATION') {
+            const isApplicant = a.recipient === 'applicant';
+            return `<select class="filter-select af-mode" style="flex:1;">
+                        <option value="applicant"${isApplicant ? ' selected' : ''}>an Bewerber:in</option>
+                        <option value="internal"${!isApplicant ? ' selected' : ''}>intern (Adresse / Rolle)</option>
+                    </select>
+                    <input type="text" class="form-input af-addr" placeholder="E-Mail-Adresse (optional)"
+                           value="${isApplicant ? '' : (a.recipient || '').replace(/"/g, '&quot;')}"
+                           style="flex:2; min-width:160px;${isApplicant ? 'display:none;' : ''}">
+                    <select class="filter-select af-role" style="flex:1;${isApplicant ? 'display:none;' : ''}">${roleOpts}</select>`;
+        }
+        if (type === 'ADD_NOTE') {
+            return `<input type="text" class="form-input af-text" placeholder="Vermerk, z. B. Unterlagen angefordert"
+                           value="${(a.text || '').replace(/"/g, '&quot;')}" style="flex:3;">`;
+        }
+        if (type === 'AUTO_ADVANCE') {
+            return `<select class="filter-select af-to" style="flex:2;">${optionsHtml(ADVANCE_TARGETS, a.to || '')}</select>
+                    <span style="font-size:10px; color:var(--text-muted); flex:1;">Zu-/Absagen nicht möglich (Mensch entscheidet)</span>`;
+        }
+        return `<span style="font-size:11px; color:var(--text-muted); flex:3;">Keine weiteren Angaben nötig.</span>`;
+    }
+
+    function addAutomationRow(step, action) {
+        action = action || {};
+        const type = action.type || 'CREATE_TASK';
+        const row = document.createElement('div');
+        row.className = 'automation-row';
+        row.style.cssText = 'display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-bottom:6px; padding:8px; background:rgba(11,13,25,0.3); border:1px solid var(--glass-border); border-radius:var(--border-radius-sm);';
+        row.innerHTML = `
+            <span style="font-size:11px; color:var(--text-muted);">Wenn</span>
+            <select class="filter-select af-step" style="flex:1; min-width:120px;">${optionsHtml(AUTOMATION_STATES, step || 'IN_REVIEW')}</select>
+            <span style="font-size:11px; color:var(--text-muted);">dann</span>
+            <select class="filter-select af-type" style="flex:1; min-width:150px;">${optionsHtml(ACTION_TYPES, type)}</select>
+            <span class="af-fields" style="display:flex; gap:6px; flex:3; flex-wrap:wrap;">${automationFieldsHtml(type, action)}</span>
+            <button type="button" class="btn af-del" title="Entfernen" style="padding:4px 9px;">
+                <i class="fa-solid fa-trash"></i></button>`;
+        // Typwechsel -> passende Felder nachladen
+        row.querySelector('.af-type').addEventListener('change', e => {
+            row.querySelector('.af-fields').innerHTML = automationFieldsHtml(e.target.value, {});
+            bindEmailMode(row);
+        });
+        row.querySelector('.af-del').addEventListener('click', () => row.remove());
+        bindEmailMode(row);
+        document.getElementById('automation-rows').appendChild(row);
+    }
+
+    function bindEmailMode(row) {
+        const mode = row.querySelector('.af-mode');
+        if (!mode) return;
+        const toggle = () => {
+            const internal = mode.value === 'internal';
+            const addr = row.querySelector('.af-addr');
+            const role = row.querySelector('.af-role');
+            if (addr) addr.style.display = internal ? '' : 'none';
+            if (role) role.style.display = internal ? '' : 'none';
+        };
+        mode.addEventListener('change', toggle);
+        toggle();
+    }
+
+    /* Formularfelder -> JSON (Format, das der Server erwartet) */
+    function serializeAutomation() {
+        const byStep = {};
+        document.querySelectorAll('#automation-rows .automation-row').forEach(row => {
+            const step = row.querySelector('.af-step').value;
+            const type = row.querySelector('.af-type').value;
+            const a = { type: type };
+            if (type === 'CREATE_TASK') {
+                const title = (row.querySelector('.af-title')?.value || '').trim();
+                if (!title) return;                       // ohne Titel keine Aufgabe
+                a.title = title;
+                const role = row.querySelector('.af-role')?.value;
+                if (role) a.role = role;
+                const due = row.querySelector('.af-due')?.value;
+                if (due) a.due_days = parseInt(due, 10);
+            } else if (type === 'EMAIL_NOTIFICATION') {
+                if (row.querySelector('.af-mode')?.value === 'applicant') {
+                    a.recipient = 'applicant';
+                } else {
+                    const addr = (row.querySelector('.af-addr')?.value || '').trim();
+                    const role = row.querySelector('.af-role')?.value;
+                    if (!addr && !role) return;           // ohne Empfänger sinnlos
+                    if (addr) a.recipient = addr;
+                    if (role) a.role = role;
+                }
+            } else if (type === 'ADD_NOTE') {
+                const text = (row.querySelector('.af-text')?.value || '').trim();
+                if (!text) return;
+                a.text = text;
+            } else if (type === 'AUTO_ADVANCE') {
+                const to = row.querySelector('.af-to')?.value;
+                if (!to) return;
+                a.to = to;
+            }
+            (byStep[step] = byStep[step] || []).push(a);
+        });
+        return Object.keys(byStep).map(s => ({ step: s, actions: byStep[s] }));
+    }
+
+    /* JSON -> Formularfelder (beim Bearbeiten einer bestehenden Regel) */
+    function loadAutomationFromSteps(stepsJson) {
+        const box = document.getElementById('automation-rows');
+        box.innerHTML = '';
+        let steps = [];
+        try { steps = JSON.parse(stepsJson || '[]'); } catch (e) { steps = []; }
+        (Array.isArray(steps) ? steps : []).forEach(st => {
+            if (!st || typeof st !== 'object') return;
+            const state = (st.state || st.name || '').toUpperCase();
+            (st.actions || []).forEach(a => addAutomationRow(state, a));
+        });
+    }
+
+    document.getElementById('automation-add')?.addEventListener('click', () => addAutomationRow());
+
+    // Beim Absenden: Baukasten -> verstecktes JSON-Feld.
+    // Hat jemand das JSON von Hand bearbeitet, gewinnt die Handarbeit.
+    document.getElementById('app-workflow-form')?.addEventListener('submit', () => {
+        const ta = document.getElementById('app-workflow-custom-json');
+        const built = serializeAutomation();
+        const manual = (ta.value || '').trim();
+        let manualIsCustom = false;
+        if (manual) {
+            try { manualIsCustom = JSON.stringify(JSON.parse(manual)) !== JSON.stringify(built); }
+            catch (e) { manualIsCustom = true; }   // ungültiges JSON: nicht überschreiben
+        }
+        if (!manualIsCustom) ta.value = built.length ? JSON.stringify(built) : '';
+    });
+
     function editAppWorkflow(id, name, facilityId, locationIdsJson, categoryIdsJson, jobIdsJson, stepsJson) {
+        loadAutomationFromSteps(stepsJson);
         document.getElementById('app-workflow-id').value = id;
         document.getElementById('app-workflow-name').value = name;
         document.getElementById('app-workflow-facility').value = facilityId || '';

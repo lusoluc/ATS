@@ -25,6 +25,25 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
   `WORKFLOW_ACTION_BLOCKED` protokolliert. Der Autovorlauf löst außerdem keine
   Folge-Automatik aus (keine Ketten, keine Endlosschleifen) – beides getestet.
 
+- **No-Code-Editor für die Prozess-Automatik.** Das rohe JSON-Textfeld ist durch
+  einen Baukasten ersetzt: „Wenn *Phase* → dann *Aktion*" mit Auswahllisten und
+  passenden Feldern je Aktionstyp. Das JSON entsteht daraus automatisch; für
+  Fortgeschrittene bleibt es aufklappbar sichtbar und von Hand überschreibbar.
+  Beim Bearbeiten einer Regel werden die Felder zurückbefüllt.
+- Die Human-in-the-Loop-Grenze steht jetzt sichtbar im Formular; der
+  Autovorlauf bietet Zusage/Absage gar nicht erst zur Auswahl an.
+
+### Behoben
+- **Irreführende Standard-Vorbelegung entfernt.** Wurde eine Automatik-Regel ohne
+  eigene Aktionen angelegt, erzeugte SecurATS Aktionen, die es **nie gab**
+  (`AUTO_INVITE_INTERVIEW`, `TRIGGER_PROCESS` mit „CALENDAR_SYNC"/„ZOOM_ROOM_CREATE",
+  `SEND_CONTRACT`). Ein Admin sah „Vertrag senden" in seiner Pipeline – ausgeführt
+  wurde nichts. Die Vorbelegung nutzt jetzt ausschließlich Aktionen, die
+  tatsächlich wirken (Vermerk, Aufgabe, Absage-Mail); zwei Tests verhindern
+  einen Rückfall.
+- Werbetext „ausgereifte Standard-Automatisierungen … Vertragsentwürfe" entfernt –
+  er versprach Funktionen, die nicht existierten.
+
 ### Geändert
 - Migration `0042` (Modell `WorkflowTask`).
 - Unbekannte Aktionstypen werden weiterhin **ehrlich übersprungen** statt

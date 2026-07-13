@@ -84,26 +84,31 @@ def save_app_workflow(request):
                     step_actions = item.get('actions', [])
                     break
                     
-            # If no override, generate rich default automation presets!
+            # Ohne ausdrueckliche Aktion: sinnvolle, WIRKSAME Vorbelegung.
+            # (Frueher standen hier Phantasie-Aktionen wie AUTO_INVITE_INTERVIEW,
+            # TRIGGER_PROCESS oder SEND_CONTRACT – die gab es nie, sie wurden
+            # stillschweigend uebersprungen. Ein Admin sah "Vertrag senden" in
+            # der Pipeline, und es passierte nichts. Jetzt werden nur Aktionen
+            # vorbelegt, die tatsaechlich ausgefuehrt werden.)
             if not step_actions:
                 if step.upper() == 'IN_REVIEW':
                     step_actions = [
-                        {"type": "EMAIL_NOTIFICATION", "recipient": "komitee@securats.de", "template": "Gremiums-Prüfung"},
-                        {"type": "APPROVAL_COMMITTEE", "roles": ["DEPT_HEAD", "HR_LEAD"]}
+                        {"type": "ADD_NOTE",
+                         "text": "In Prüfung genommen."},
                     ]
                 elif step.upper() == 'INVITED':
                     step_actions = [
-                        {"type": "AUTO_INVITE_INTERVIEW"},
-                        {"type": "TRIGGER_PROCESS", "processes": ["CALENDAR_SYNC", "ZOOM_ROOM_CREATE"]}
+                        {"type": "CREATE_TASK",
+                         "title": "Gespräch terminieren und Unterlagen prüfen",
+                         "role": "Recruiter", "due_days": 3},
                     ]
                 elif step.upper() == 'REJECTED':
                     step_actions = [
-                        {"type": "EMAIL_NOTIFICATION", "recipient": "applicant", "template": "Absage"}
+                        {"type": "EMAIL_NOTIFICATION",
+                         "recipient": "applicant", "template": "Absage"}
                     ]
-                elif step.upper() == 'APPROVED' or step.upper() == 'NEW':
-                    step_actions = [
-                        {"type": "SEND_CONTRACT", "contract_template": "Standard_DE_2026"}
-                    ]
+                # NEW/andere: bewusst KEINE Vorbelegung – lieber nichts als
+                # etwas, das nur so aussieht, als täte es etwas.
                     
             structured_steps.append({
                 "name": step,

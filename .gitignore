@@ -18,3 +18,8 @@ db.sqlite3
 staticfiles/
 media/
 
+
+# Test-/Coverage-Artefakte
+.coverage
+htmlcov/
+.pytest_cache/

@@ -3,6 +3,33 @@
 Format: [Keep a Changelog](https://keepachangelog.com/de/), Versionierung: [SemVer](https://semver.org/lang/de/).
 Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen automatisch, siehe INSTALL.md).
 
+## [Unreleased]
+
+### Hinzugefügt
+- **Prozess-Automatik: echte Aktionen statt „nicht implementiert".** Die
+  Automatik führte bisher nur Bewerber-Mails aus; alles andere – auch das
+  Beispiel im eigenen Konfigurations-Feld – wurde stillschweigend
+  übersprungen. Neu wirken:
+  - `CREATE_TASK` – **Aufgabe/Erinnerung** an eine *Rolle* (nicht an eine
+    Person, damit Urlaub sie nicht verwaisen lässt), optional mit Frist.
+    Neue Seite „Aufgaben" mit Überfälligkeits-Markierung, Erledigen und
+    Wieder-Öffnen; Badge in der Navigation.
+  - `EMAIL_NOTIFICATION` an **interne** Empfänger (feste Adresse und/oder alle
+    Mitglieder einer Rolle) – bisher wirkte nur der Bewerber-Fall.
+  - `ADD_NOTE` – automatischer, gekennzeichneter Vermerk in den internen Notizen.
+  - `AUTO_ADVANCE` – **Status-Autovorlauf** innerhalb der Sichtung.
+- **Compliance-Grenze im Autovorlauf (Human-in-the-Loop):** `AUTO_ADVANCE` kann
+  ausschließlich nach NEW / IN_REVIEW / INVITED schieben. **Zu- und Absagen sind
+  hart gesperrt** – sie bleiben der menschlichen Entscheidung vorbehalten
+  (`.agents/AGENTS.md`). Ein blockierter Versuch wird als
+  `WORKFLOW_ACTION_BLOCKED` protokolliert. Der Autovorlauf löst außerdem keine
+  Folge-Automatik aus (keine Ketten, keine Endlosschleifen) – beides getestet.
+
+### Geändert
+- Migration `0042` (Modell `WorkflowTask`).
+- Unbekannte Aktionstypen werden weiterhin **ehrlich übersprungen** statt
+  Erfolg zu simulieren – nur der Audit-Wortlaut wurde präzisiert.
+
 ## [1.7.0] – 2026-07-05
 
 Reife-Release der Stellenfreigabe: Vertretung, parallele Stufen,

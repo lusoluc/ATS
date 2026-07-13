@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block title %}Aufgaben · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap">
+  <h1 class="page-title"><i class="fa-solid fa-list-check"></i> Aufgaben</h1>
+  <p class="page-lead">
+    Aufgaben, die die Prozess-Automatik ausgelöst hat (z.&nbsp;B. „Referenzen einholen"
+    beim Wechsel in „Eingeladen"). Zugewiesen wird an eine <strong>Rolle</strong>, nicht an eine
+    Person – so bleibt keine Aufgabe im Urlaub liegen. Sie sehen nur Aufgaben aus Ihrem
+    Zugriffsbereich.
+  </p>
+
+  <div class="card" style="margin-bottom: var(--space-4);">
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap: var(--space-3);">
+      <div>
+        <div style="font-size:24px; font-weight:700;">{{ open_tasks|length }}</div>
+        <div style="color:var(--text-muted); font-size:12px;">offene Aufgaben</div>
+      </div>
+      <div>
+        <div style="font-size:24px; font-weight:700; {% if overdue_count %}color:var(--danger-light);{% endif %}">{{ overdue_count }}</div>
+        <div style="color:var(--text-muted); font-size:12px;">davon überfällig</div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-size:15px; margin-bottom: var(--space-2);">Offen</h3>
+  {% if open_tasks %}
+  <table class="data-table" style="margin-bottom: var(--space-4);">
+    <thead>
+      <tr>
+        <th>Aufgabe</th>
+        <th>Bewerbung</th>
+        <th>Zuständig</th>
+        <th>Fällig</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in open_tasks %}
+      <tr>
+        <td>
+          {% if t.overdue %}<i class="fa-solid fa-triangle-exclamation" style="color:var(--danger-light);" title="überfällig"></i> {% endif %}
+          {{ t.title }}
+        </td>
+        <td>
+          {{ t.application.applicant.firstName }} {{ t.application.applicant.lastName }}
+          <span style="color:var(--text-muted); font-size:12px;">· {{ t.application.jobPosting.title }}</span>
+        </td>
+        <td>{% if t.role %}<span class="badge">{{ t.role }}</span>{% else %}<span style="color:var(--text-muted);">alle</span>{% endif %}</td>
+        <td>
+          {% if t.dueAt %}
+            <span {% if t.overdue %}style="color:var(--danger-light); font-weight:600;"{% endif %}>{{ t.dueAt|date:"d.m.Y" }}</span>
+          {% else %}<span style="color:var(--text-muted);">–</span>{% endif %}
+        </td>
+        <td style="text-align:right;">
+          <form method="post" style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="task_id" value="{{ t.id }}">
+            <button type="submit" class="btn btn-primary" style="padding:5px 12px; font-size:12px;">
+              <i class="fa-solid fa-check"></i> Erledigt
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="card" style="margin-bottom: var(--space-4); color:var(--text-muted);">
+    Keine offenen Aufgaben. Aufgaben entstehen automatisch, wenn eine Automatik-Regel
+    mit der Aktion <code>CREATE_TASK</code> greift (Einstellungen › Prozess-Automatik).
+  </div>
+  {% endif %}
+
+  {% if done_tasks %}
+  <h3 style="font-size:15px; margin-bottom: var(--space-2);">Zuletzt erledigt</h3>
+  <table class="data-table">
+    <thead>
+      <tr><th>Aufgabe</th><th>Bewerbung</th><th>Erledigt von</th><th>Wann</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for t in done_tasks %}
+      <tr style="opacity:.7;">
+        <td><i class="fa-solid fa-check" style="color:var(--accent);"></i> {{ t.title }}</td>
+        <td>{{ t.application.applicant.firstName }} {{ t.application.applicant.lastName }}</td>
+        <td>{% if t.doneBy %}{{ t.doneBy.get_full_name|default:t.doneBy.username }}{% else %}–{% endif %}</td>
+        <td>{{ t.doneAt|date:"d.m.Y H:i" }}</td>
+        <td style="text-align:right;">
+          <form method="post" style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="task_id" value="{{ t.id }}">
+            <input type="hidden" name="op" value="reopen">
+            <button type="submit" class="btn" style="padding:4px 10px; font-size:11px;">Wieder öffnen</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

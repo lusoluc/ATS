@@ -4255,7 +4255,11 @@ class HardeningTestCase(TestCase):
         skipped = AuditLog.objects.filter(action="WORKFLOW_ACTION_SKIPPED")
         self.assertEqual(skipped.count(), 2)
         for a in skipped:
-            self.assertIn("Nicht implementiert", a.metadataJson)
+            # Kernaussage unverändert: ehrlich übersprungen, NICHTS simuliert.
+            # (Wortlaut angepasst, seit die Automatik echte Aktionstypen kennt –
+            # AUTO_INVITE_INTERVIEW/SEND_CONTRACT bleiben bewusst unbekannt.)
+            self.assertIn("uebersprungen", a.metadataJson)
+            self.assertIn("statt etwas zu simulieren", a.metadataJson)
         # Kein Mock-Link mehr irgendwo im Audit
         self.assertFalse(AuditLog.objects.filter(
             metadataJson__icontains="meet.google.com").exists())
@@ -8326,3 +8330,170 @@ class GuardrailProductionCacheTestCase(TestCase):
         self.assertIn("DatabaseCache", src)
         self.assertIn("RedisCache", src)
         self.assertIn("not DEBUG", src)
+
+
+class WorkflowActionsTestCase(TestCase):
+    """Prozess-Automatik: echte Aktionen statt 'nicht implementiert'.
+
+    Kern: AUTO_ADVANCE darf NIEMALS zu HIRED/REJECTED führen –
+    Zu-/Absagen bleiben dem Menschen vorbehalten (.agents/AGENTS.md,
+    Human-in-the-Loop). Dieser Test ist die Compliance-Wache dafür.
+    """
+
+    def setUp(self):
+        from .models import (Organization, Location, Facility, JobFamily,
+                             WorkflowState, JobPosting, Applicant, Application)
+        org = Organization.objects.create(name="O")
+        loc = Location.objects.create(name="HH")
+        fac = Facility.objects.create(name="F", organization=org)
+        fam = JobFamily.objects.create(name="WA-Fam")
+        ws = WorkflowState.objects.create(name="published")
+        self.job = JobPosting.objects.create(
+            title="Pflegefachkraft", organization=org, facility=fac,
+            location=loc, jobFamily=fam, workflowState=ws)
+        self.app = Application.objects.create(
+            applicant=Applicant.objects.create(firstName="W", lastName="A",
+                                               email="wa@x.de"),
+            jobPosting=self.job, status="IN_REVIEW")
+        self.rec = make_user("wa-rec", role="Recruiter")
+
+    def _run(self, actions):
+        from .views import execute_workflow_actions
+        execute_workflow_actions(self.app, actions)
+        self.app.refresh_from_db()
+
+    # --- AUTO_ADVANCE: die Compliance-Grenze ---
+    def test_auto_advance_moves_within_screening(self):
+        from .models import AuditLog
+        self._run([{"type": "AUTO_ADVANCE", "to": "INVITED"}])
+        self.assertEqual(self.app.status, "INVITED")
+        self.assertTrue(AuditLog.objects.filter(
+            action="AUTOMATION_AUTO_ADVANCE").exists())
+
+    def test_auto_advance_never_hires(self):
+        """Automatische ZUSAGE ist verboten (Human-in-the-Loop)."""
+        from .models import AuditLog
+        self._run([{"type": "AUTO_ADVANCE", "to": "HIRED"}])
+        self.assertEqual(self.app.status, "IN_REVIEW")     # unverändert!
+        blocked = AuditLog.objects.filter(
+            action="WORKFLOW_ACTION_BLOCKED").first()
+        self.assertIsNotNone(blocked)
+        self.assertIn("Human-in-the", blocked.metadataJson)
+
+    def test_auto_advance_never_rejects(self):
+        """Automatische ABSAGE ist verboten (Human-in-the-Loop)."""
+        self._run([{"type": "AUTO_ADVANCE", "to": "REJECTED"}])
+        self.assertEqual(self.app.status, "IN_REVIEW")     # unverändert!
+
+    def test_auto_advance_does_not_chain(self):
+        """Der Autovorlauf löst KEINE weitere Automatik aus – sonst wären
+        Endlosschleifen möglich."""
+        from .models import AppWorkflowDef, AuditLog
+        import json
+        # Regel: bei INVITED nochmal weiterschieben (würde eine Kette bilden)
+        AppWorkflowDef.objects.create(
+            name="Kette", jobIdsJson=json.dumps([str(self.job.id)]),
+            stepsJson=json.dumps([{"state": "INVITED", "actions": [
+                {"type": "AUTO_ADVANCE", "to": "NEW"}]}]))
+        self._run([{"type": "AUTO_ADVANCE", "to": "INVITED"}])
+        self.assertEqual(self.app.status, "INVITED")   # NICHT weiter zu NEW
+        self.assertEqual(AuditLog.objects.filter(
+            action="AUTOMATION_AUTO_ADVANCE").count(), 1)
+
+    # --- Interne Benachrichtigung (der vorher tote Fall) ---
+    def test_internal_email_to_address_and_role(self):
+        from django.core import mail
+        from django.contrib.auth.models import Group
+        member = make_user("wa-bl", role="Recruiter")
+        member.email = "leitung@x.de"; member.save(update_fields=["email"])
+        Group.objects.get_or_create(name="Bereichsleitung")[0].user_set.add(member)
+        mail.outbox = []
+        self._run([{"type": "EMAIL_NOTIFICATION",
+                    "recipient": "gremium@securats.de",
+                    "role": "Bereichsleitung"}])
+        # Eine Mail an alle internen Empfänger (Adresse + Rollen-Mitglieder)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(sorted(mail.outbox[0].to),
+                         ["gremium@securats.de", "leitung@x.de"])
+
+    def test_internal_email_without_recipient_is_skipped_honestly(self):
+        from django.core import mail
+        from .models import AuditLog
+        mail.outbox = []
+        self._run([{"type": "EMAIL_NOTIFICATION", "recipient": ""}])
+        self.assertEqual(len(mail.outbox), 0)
+        self.assertTrue(AuditLog.objects.filter(
+            action="WORKFLOW_ACTION_SKIPPED").exists())
+
+    # --- ADD_NOTE ---
+    def test_add_note_action_appends_note(self):
+        self._run([{"type": "ADD_NOTE", "text": "Unterlagen angefordert"}])
+        self.assertIn("Unterlagen angefordert", self.app.internalNotes)
+        self.assertIn("(Automatik)", self.app.internalNotes)
+
+    # --- CREATE_TASK ---
+    def test_create_task_with_role_and_due_date(self):
+        from .models import WorkflowTask
+        self._run([{"type": "CREATE_TASK", "title": "Referenzen einholen",
+                    "role": "Recruiter", "due_days": "3"}])
+        task = WorkflowTask.objects.get()
+        self.assertEqual(task.title, "Referenzen einholen")
+        self.assertEqual(task.role, "Recruiter")
+        self.assertIsNotNone(task.dueAt)
+        self.assertEqual(task.status, "OPEN")
+        self.assertFalse(task.overdue)
+
+    def test_task_overdue_flag(self):
+        from .models import WorkflowTask
+        self._run([{"type": "CREATE_TASK", "title": "Fristsache"}])
+        t = WorkflowTask.objects.get()
+        t.dueAt = timezone.now() - datetime.timedelta(days=1)
+        t.save(update_fields=["dueAt"])
+        self.assertTrue(t.overdue)
+
+    # --- Aufgaben-Ansicht ---
+    def test_tasks_page_shows_and_completes_task(self):
+        from .models import WorkflowTask
+        self._run([{"type": "CREATE_TASK", "title": "Zeugnis prüfen",
+                    "role": "Recruiter"}])
+        task = WorkflowTask.objects.get()
+        self.client.force_login(self.rec)
+        page = self.client.get(reverse('ats:tasks'))
+        self.assertContains(page, "Zeugnis prüfen")
+        # Erledigen
+        self.client.post(reverse('ats:tasks'), {"task_id": str(task.id)})
+        task.refresh_from_db()
+        self.assertEqual(task.status, "DONE")
+        self.assertEqual(task.doneBy, self.rec)
+
+    def test_task_only_visible_to_responsible_role(self):
+        from .models import WorkflowTask
+        self._run([{"type": "CREATE_TASK", "title": "Nur für Vorstand",
+                    "role": "Vorstand"}])
+        self.client.force_login(self.rec)          # Recruiter, nicht Vorstand
+        page = self.client.get(reverse('ats:tasks'))
+        self.assertNotContains(page, "Nur für Vorstand")
+
+    def test_task_bola_scoped(self):
+        from .models import WorkflowTask
+        from .permissions import can_access_application
+        self._run([{"type": "CREATE_TASK", "title": "Fremd"}])
+        task = WorkflowTask.objects.get()
+        outsider = make_user("wa-out", role="Recruiter")
+        if hasattr(outsider, 'scope'):
+            outsider.scope.facilities.clear()
+            outsider.scope.locations.clear()
+        if not can_access_application(outsider, self.app):
+            self.client.force_login(outsider)
+            r = self.client.post(reverse('ats:tasks'),
+                                 {"task_id": str(task.id)})
+            self.assertEqual(r.status_code, 404)
+            task.refresh_from_db()
+            self.assertEqual(task.status, "OPEN")   # unverändert
+
+    def test_unknown_action_still_skipped_honestly(self):
+        from .models import AuditLog
+        self._run([{"type": "SEND_SMS_TO_MARS"}])
+        skip = AuditLog.objects.filter(action="WORKFLOW_ACTION_SKIPPED").first()
+        self.assertIsNotNone(skip)
+        self.assertIn("Unbekannter Aktionstyp", skip.metadataJson)

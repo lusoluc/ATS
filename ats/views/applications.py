@@ -51,7 +51,7 @@ logger = logging.getLogger(__name__)
 from .common import seed_data_if_empty
 from .governance import _pending_steps_for
 
-__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "toggle_learning_sample", "reorder_board", "bulk_update_status", "application_messages", "application_vote", "talent_pool_view"]
+__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "toggle_learning_sample", "reorder_board", "bulk_update_status", "application_messages", "application_vote", "talent_pool_view", "tasks_view"]
 
 
 @ensure_csrf_cookie
@@ -244,6 +244,17 @@ def dashboard(request):
     today_focus['any'] = today_focus['any'] or bool(_panel_pending)
     context['today_focus'] = today_focus
     context['gremium_error'] = request.GET.get('gremium', '')
+
+    # Offene Aufgaben aus der Prozess-Automatik (Badge in der Navigation):
+    # nur eigene Rollen bzw. rollenlose, im eigenen Zugriffsbereich.
+    from ..models import WorkflowTask
+    from django.db.models import Q as _Q
+    _roles = set(request.user.groups.values_list('name', flat=True))
+    _tasks = WorkflowTask.objects.filter(status="OPEN",
+                                         application__in=applications)
+    if not (request.user.is_superuser or 'HR-Admin' in _roles):
+        _tasks = _tasks.filter(_Q(role="") | _Q(role__in=_roles))
+    context['open_task_count'] = _tasks.count()
 
     return render(request, 'dashboard.html', context)
 
@@ -527,13 +538,123 @@ def execute_workflow_actions(app, actions):
                              "Einladung erst nach Mehrheit." if state["required"]
                              else "Kein Gremium konfiguriert – Aktion ohne Wirkung.")}))
 
+        elif action_type == 'EMAIL_NOTIFICATION':
+            # Interne Benachrichtigung: an eine feste Adresse ODER an alle
+            # Mitglieder einer Rolle. (Der Bewerber-Fall ist oben behandelt.)
+            # Vorher fiel genau dieser Fall in den Ueberspringen-Zweig – das
+            # eigene Beispiel im UI ("recipient": "gremium@...") tat nichts.
+            from django.core.mail import send_mail
+            from django.contrib.auth.models import Group
+            recipient = (action.get('recipient') or '').strip()
+            role = (action.get('role') or '').strip()
+            targets = []
+            if '@' in recipient:
+                targets.append(recipient)
+            if role:
+                grp = Group.objects.filter(name=role).first()
+                if grp:
+                    targets += [u.email for u in grp.user_set.filter(
+                        is_active=True) if u.email]
+            targets = sorted(set(t for t in targets if t))
+            if targets:
+                name = f"{app.applicant.firstName} {app.applicant.lastName}"
+                subject = (action.get('subject')
+                           or f"Bewerbung {name} – {app.jobPosting.title}")
+                body = (action.get('body') or
+                        f"Die Bewerbung von {name} für "
+                        f"{app.jobPosting.title} hat den Status "
+                        f"{app.status} erreicht.\n"
+                        "Zum Board: /recruiter/dashboard/")
+                send_mail(subject, body, None, targets, fail_silently=True)
+                AuditLog.objects.create(
+                    action="AUTOMATION_NOTIFY_INTERNAL",
+                    applicationId=str(app.id),
+                    metadataJson=json.dumps({"recipients": len(targets),
+                                             "role": role or None}))
+            else:
+                AuditLog.objects.create(
+                    action="WORKFLOW_ACTION_SKIPPED",
+                    applicationId=str(app.id),
+                    metadataJson=json.dumps({
+                        "type": action_type,
+                        "reason": "Kein gültiger Empfänger (weder E-Mail-"
+                                  "Adresse noch Rolle mit Mitgliedern)."}))
+
+        elif action_type == 'ADD_NOTE':
+            # Automatischer Vermerk in den internen Notizen – macht
+            # nachvollziehbar, WARUM etwas passiert ist.
+            text = (action.get('text') or '').strip()
+            if text:
+                stamp = timezone.now().strftime('%d.%m.%Y %H:%M')
+                app.internalNotes = ((app.internalNotes or '')
+                                     + f"\n[{stamp}] (Automatik) {text}")
+                app.save(update_fields=['internalNotes'])
+                AuditLog.objects.create(
+                    action="AUTOMATION_NOTE", applicationId=str(app.id),
+                    metadataJson=json.dumps({"chars": len(text)}))
+
+        elif action_type == 'CREATE_TASK':
+            # Echte Arbeit anstossen statt nur zu mailen. Zuweisung an eine
+            # ROLLE (nicht an eine Person), damit Urlaub/Fluktuation die
+            # Aufgabe nicht verwaisen laesst.
+            from ..models import WorkflowTask
+            title = (action.get('title') or '').strip()
+            if title:
+                due = None
+                try:
+                    days = int(action.get('due_days', 0) or 0)
+                    if days > 0:
+                        due = timezone.now() + datetime.timedelta(days=days)
+                except (TypeError, ValueError):
+                    due = None
+                task = WorkflowTask.objects.create(
+                    application=app, title=title[:255],
+                    role=(action.get('role') or '').strip()[:100],
+                    dueAt=due, sourceState=app.status)
+                AuditLog.objects.create(
+                    action="AUTOMATION_TASK_CREATED",
+                    applicationId=str(app.id),
+                    metadataJson=json.dumps({"task": str(task.id),
+                                             "title": title[:80],
+                                             "role": task.role or None}))
+
+        elif action_type == 'AUTO_ADVANCE':
+            # Status-Autovorlauf – aber NIEMALS zu einer Entscheidung.
+            # Compliance (.agents/AGENTS.md, Human-in-the-Loop): Zu- und
+            # Absagen bleiben dem Menschen vorbehalten. Deshalb sind HIRED
+            # und REJECTED hier hart gesperrt. Ausserdem loest der
+            # Autovorlauf KEINE weitere Automatik aus (keine Ketten,
+            # keine Endlosschleifen).
+            target = (action.get('to') or '').strip().upper()
+            allowed = {'NEW', 'IN_REVIEW', 'INVITED'}
+            if target in allowed and target != app.status:
+                previous = app.status
+                app.status = target
+                app.save(update_fields=['status'])
+                AuditLog.objects.create(
+                    action="AUTOMATION_AUTO_ADVANCE",
+                    applicationId=str(app.id),
+                    metadataJson=json.dumps({
+                        "from": previous, "to": target,
+                        "note": "Automatik ohne Folge-Automatik "
+                                "(keine Ketten)."}))
+            else:
+                AuditLog.objects.create(
+                    action="WORKFLOW_ACTION_BLOCKED",
+                    applicationId=str(app.id),
+                    metadataJson=json.dumps({
+                        "type": action_type, "target": target or "?",
+                        "reason": ("Zu-/Absagen sind der menschlichen "
+                                   "Entscheidung vorbehalten (Human-in-the-"
+                                   "Loop) bzw. Ziel unbekannt/identisch.")}))
+
         else:
             AuditLog.objects.create(
                 action="WORKFLOW_ACTION_SKIPPED", applicationId=str(app.id),
                 metadataJson=json.dumps({
                     "type": action_type or "?",
-                    "reason": "Nicht implementiert – wird ehrlich uebersprungen "
-                              "statt Versand/Ausfuehrung zu simulieren."}))
+                    "reason": "Unbekannter Aktionstyp – wird ehrlich "
+                              "uebersprungen statt etwas zu simulieren."}))
 
 
 def _send_rejection_notice(request, app):
@@ -850,3 +971,52 @@ def talent_pool_view(request):
     }
     return render(request, "talent_pool.html", {"rows": rows,
                                                 "pool_stats": pool_stats})
+
+@any_staff_required
+def tasks_view(request):
+    """Aufgaben aus der Prozess-Automatik: offene Aufgaben im eigenen
+    Zugriffsbereich, gefiltert nach den eigenen Rollen (rollenlose Aufgaben
+    sieht jede/r). Erledigen per POST – auditiert."""
+    from ..models import WorkflowTask
+    my_roles = set(request.user.groups.values_list('name', flat=True))
+    is_admin = (request.user.is_superuser
+                or 'HR-Admin' in my_roles)
+
+    if request.method == 'POST':
+        task = get_object_or_404(WorkflowTask,
+                                 id=request.POST.get('task_id'))
+        if not can_access_application(request.user, task.application):
+            raise Http404("Nicht im Zugriffsbereich.")
+        # Nur zustaendige Rolle (oder Admin) darf erledigen
+        if task.role and not is_admin and task.role not in my_roles:
+            raise Http404("Nicht zuständig.")
+        if request.POST.get('op') == 'reopen':
+            task.status, task.doneBy, task.doneAt = "OPEN", None, None
+        else:
+            task.status = "DONE"
+            task.doneBy = request.user
+            task.doneAt = timezone.now()
+        task.save(update_fields=['status', 'doneBy', 'doneAt'])
+        write_audit('WORKFLOW_TASK_DONE' if task.status == "DONE"
+                    else 'WORKFLOW_TASK_REOPENED',
+                    user=request.user, application_id=str(task.application_id),
+                    task=str(task.id))
+        return redirect('ats:tasks')
+
+    scoped = scope_applications(request.user, Application.objects.all())
+    qs = (WorkflowTask.objects
+          .filter(application__in=scoped)
+          .select_related('application__applicant',
+                          'application__jobPosting', 'doneBy'))
+    if not is_admin:
+        # Eigene Rollen + rollenlose Aufgaben
+        from django.db.models import Q
+        qs = qs.filter(Q(role="") | Q(role__in=my_roles))
+    open_tasks = [t for t in qs if t.status == "OPEN"]
+    done_tasks = [t for t in qs if t.status == "DONE"][:25]
+    return render(request, 'tasks.html', {
+        'open_tasks': open_tasks,
+        'done_tasks': done_tasks,
+        'overdue_count': sum(1 for t in open_tasks if t.overdue),
+    })
+

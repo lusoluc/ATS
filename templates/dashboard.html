@@ -373,6 +373,7 @@
         <a class="sidebar-link" href="{% url 'ats:delegations' %}"><i class="fa-solid fa-user-shield"></i> Delegationen</a>
         <span class="sidebar-group-title">Termine & Menschen</span>
         <a class="sidebar-link" href="{% url 'ats:interviews' %}"><i class="fa-solid fa-calendar-days"></i> Interview-Kalender</a>
+        <a class="sidebar-link" href="{% url 'ats:tasks' %}"><i class="fa-solid fa-list-check"></i> Aufgaben{% if open_task_count %} <span class="badge" style="font-size:10px;">{{ open_task_count }}</span>{% endif %}</a>
         <a class="sidebar-link" href="{% url 'ats:talent_pool' %}"><i class="fa-solid fa-users"></i> Talent-Pool</a>
         <a class="sidebar-link" href="{% url 'ats:analytics' %}"><i class="fa-solid fa-chart-column"></i> Analytics</a>
         <a class="sidebar-link" href="{% url 'ats:source_channels' %}"><i class="fa-solid fa-signs-post"></i> Kanäle & Kampagnen</a>
@@ -734,7 +735,14 @@
                             <label class="form-label" for="app-workflow-custom-json">
                                 <i class="fa-solid fa-code" style="color: var(--accent);"></i> Erweiterte Automatisierungs-Regeln (JSON-Format, Optional)
                             </label>
-                            <textarea name="custom_actions_json" id="app-workflow-custom-json" class="form-textarea" rows="3" placeholder='[{"step": "IN_REVIEW", "actions": [{"type": "EMAIL_NOTIFICATION", "recipient": "gremium@securats.de", "template": "komitee"}]}]' style="font-family: monospace; font-size: 11px;"></textarea>
+                            <textarea name="custom_actions_json" id="app-workflow-custom-json" class="form-textarea" rows="4" placeholder='[{"step": "IN_REVIEW", "actions": [{"type": "CREATE_TASK", "title": "Referenzen einholen", "role": "Recruiter", "due_days": 3}, {"type": "EMAIL_NOTIFICATION", "role": "Bereichsleitung"}, {"type": "ADD_NOTE", "text": "Automatisch in Prüfung genommen"}, {"type": "AUTO_ADVANCE", "to": "INVITED"}]}]' style="font-family: monospace; font-size: 11px;"></textarea>
+                            <small style="color:var(--text-muted); font-size:11px; display:block; margin-top:4px;">
+                              Verfügbare Aktionen: <code>CREATE_TASK</code> (Aufgabe für eine Rolle, optional <code>due_days</code>) ·
+                              <code>EMAIL_NOTIFICATION</code> (an <code>recipient</code>-Adresse und/oder <code>role</code>; <code>"recipient": "applicant"</code> schreibt dem Bewerber) ·
+                              <code>ADD_NOTE</code> (automatischer Vermerk) ·
+                              <code>AUTO_ADVANCE</code> (Status weiterschieben – <strong>nur</strong> NEW/IN_REVIEW/INVITED; Zu- und Absagen bleiben bewusst der menschlichen Entscheidung vorbehalten) ·
+                              <code>APPROVAL_COMMITTEE</code> (Gremiums-Hinweis).
+                            </small>
                             <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Tipp: Wenn Sie dies leer lassen, befüllt SecurATS diese Pipeline automatisch mit ausgereiften Standard-Automatisierungen (z. B. Komitee-Prüfungen, E-Mail-Weiterleitungen, Gesprächs-Einladungen und Vertragsentwürfe)!</div>
                         </div>
                         

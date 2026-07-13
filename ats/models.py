@@ -544,6 +544,43 @@ class AppWorkflowDef(models.Model):
     def __str__(self):
         return self.name
 
+WORKFLOW_TASK_STATUS = [("OPEN", "Offen"), ("DONE", "Erledigt")]
+
+
+class WorkflowTask(models.Model):
+    """Aufgabe/Erinnerung aus der Prozess-Automatik (CREATE_TASK).
+
+    Zweck: Die Automatik soll nicht nur Mails verschicken, sondern echte
+    Arbeit anstossen – "Referenzen einholen", "Fuehrungszeugnis pruefen".
+    Zugewiesen wird an eine ROLLE (nicht an eine Person), damit Urlaub oder
+    Fluktuation die Aufgabe nicht verwaisen laesst; jede/r mit der Rolle im
+    Zugriffsbereich sieht und erledigt sie.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4,
+                          editable=False)
+    application = models.ForeignKey(Application, on_delete=models.CASCADE,
+                                    related_name='workflowTasks')
+    title = models.CharField(max_length=255)
+    role = models.CharField(max_length=100, blank=True, default="")
+    dueAt = models.DateTimeField(blank=True, null=True)
+    status = models.CharField(max_length=20, default="OPEN",
+                              choices=WORKFLOW_TASK_STATUS)
+    doneBy = models.ForeignKey('auth.User', on_delete=models.SET_NULL,
+                               blank=True, null=True,
+                               related_name='doneWorkflowTasks')
+    doneAt = models.DateTimeField(blank=True, null=True)
+    sourceState = models.CharField(max_length=50, blank=True, default="")
+    createdAt = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['status', 'dueAt', 'createdAt']
+
+    @property
+    def overdue(self):
+        return bool(self.status == "OPEN" and self.dueAt
+                    and self.dueAt < timezone.now())
+
+
 class AppTicket(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     application = models.OneToOneField(Application, on_delete=models.CASCADE, related_name='appTicket')

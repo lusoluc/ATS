@@ -51,6 +51,33 @@ logger = logging.getLogger(__name__)
 __all__ = ["get_ollama_url", "get_ai_model", "make_ollama_request", "evaluate_with_local_gemma", "try_parse_json_reply", "log_ai_execution", "classify_ai_error", "test_gemma", "get_ai_execution_logs", "gemma_agg_check", "gemma_agg_check_status", "gemma_translate_simple_german", "validate_ai_prompt", "validate_ai_prompt_status", "save_ai_settings", "polish_message", "apply_template_tone", "suggest_process", "analytics_ask", "healthz_ai"]
 
 
+
+def _run_in_background(worker):
+    """Startet einen Hintergrund-Thread und schliesst dessen DB-Verbindung.
+
+    WARUM: Ein Thread bekommt in Django eine EIGENE Datenbankverbindung.
+    Wird sie nicht geschlossen, bleibt sie offen – unter PostgreSQL ist die
+    Zahl der Verbindungen hart begrenzt (Standard 100), ein Betrieb mit vielen
+    KI-Pruefungen wuerde den Pool langsam leerlaufen lassen ("too many
+    clients"). SQLite verzeiht das, PostgreSQL nicht.
+    """
+    import threading
+    from django.db import connection as _conn
+
+    def _wrapped():
+        try:
+            worker()
+        finally:
+            try:
+                _conn.close()
+            except Exception:      # noqa: BLE001 - Aufraeumen darf nie werfen
+                pass
+
+    t = threading.Thread(target=_wrapped, daemon=True)
+    t.start()
+    return t
+
+
 def get_ollama_url(endpoint="api/generate"):
     """
     Dynamically determines the Ollama service URL.
@@ -562,7 +589,7 @@ Bitte antworte genau im folgenden Format, damit das System deine Antwort parsen 
                     })
                 )
 
-        threading.Thread(target=run_async_agg_check_worker).start()
+        _run_in_background(run_async_agg_check_worker)
         
         return JsonResponse({'success': True, 'async': True, 'task_id': str(task_id)})
         
@@ -796,7 +823,7 @@ def validate_ai_prompt(request):
                     })
                 )
 
-        threading.Thread(target=run_async_validate_worker).start()
+        _run_in_background(run_async_validate_worker)
         
         return JsonResponse({'success': True, 'async': True, 'task_id': str(task_id)})
         

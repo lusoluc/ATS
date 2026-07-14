@@ -527,7 +527,15 @@ class ApplicationDocumentsTestCase(TestCase):
                 self.client.force_login(rec)
                 response = self.client.get(url)
                 self.assertEqual(response.status_code, 200)
-                response.close()
+                # KEIN response.close() hier: Das feuert das Signal
+                # request_finished -> close_old_connections. Django sieht dann
+                # den vom TestCase gesetzten Transaktions-Autocommit und
+                # SCHLIESST die Verbindung. Auf SQLite ist close() bei einer
+                # In-Memory-DB ein No-Op (faellt nie auf), auf PostgreSQL ist
+                # die Verbindung danach tot. Wir lesen den Inhalt stattdessen
+                # aus – das prueft ohnehin mehr als ein blosser Statuscode.
+                content = b"".join(response.streaming_content)
+                self.assertTrue(content.startswith(b"%PDF"))
                 from .models import AuditLog
                 self.assertTrue(AuditLog.objects.filter(action="READ_DOCUMENT").exists())
                 # BOLA: eingeschränkter Recruiter auf anderen Standort -> 404
@@ -1457,8 +1465,16 @@ class EmailBlindIndexTestCase(TestCase):
         from django.db import connection
         from .models import Applicant
         a = Applicant.objects.create(firstName="Aylin", lastName="Y", email="AY@Ex.org ")
+        # DATENBANKNEUTRAL: PostgreSQL faltet unquotierte Bezeichner auf
+        # Kleinbuchstaben (emailHash -> emailhash = existiert nicht), und der
+        # Primaerschluessel ist dort ein echter uuid-Typ statt Hex-Text.
+        # Deshalb Spalten quoten und den PK ueber das Feld anpassen lassen.
+        q = connection.ops.quote_name
+        pk = Applicant._meta.pk.get_db_prep_value(a.id, connection)
         with connection.cursor() as cur:
-            cur.execute("SELECT email, emailHash FROM ats_applicant WHERE id = %s", [a.id.hex])
+            cur.execute(
+                f"SELECT {q('email')}, {q('emailHash')} FROM ats_applicant "
+                f"WHERE {q('id')} = %s", [pk])
             raw_email, raw_hash = cur.fetchone()
         self.assertNotIn("ay@ex.org", raw_email)      # DB enthält KEINEN Klartext
         self.assertTrue(raw_email.startswith("gAAAA"))  # Fernet-Ciphertext
@@ -1528,9 +1544,12 @@ class EmailBlindIndexTestCase(TestCase):
         secret = "GEHEIMES Anschreiben mit Klartext-PII"
         app = Application.objects.create(applicant=ap, jobPosting=job,
                                          status="NEW", coverLetterTxt=secret)
+        q = connection.ops.quote_name
+        pk = Application._meta.pk.get_db_prep_value(app.id, connection)
         with connection.cursor() as cur:
-            cur.execute("SELECT coverLetterTxt FROM ats_application WHERE id = %s",
-                        [app.id.hex])
+            cur.execute(
+                f"SELECT {q('coverLetterTxt')} FROM ats_application "
+                f"WHERE {q('id')} = %s", [pk])
             raw = cur.fetchone()[0]
         self.assertNotIn("GEHEIMES", raw)                 # kein Klartext in DB
         app.refresh_from_db()
@@ -7860,10 +7879,19 @@ class AiViewsCoverageTestCase(TestCase):
         self.assertFalse(r.json()["success"])
 
     def test_agg_check_creates_pending_task(self):
+        from unittest.mock import patch
         from .models import AuditLog
         self.client.force_login(self.recruiter)
-        r = self.client.post(reverse('ats:gemma_agg_check'),
-                             {"text": "Wir suchen einen jungen Mitarbeiter."})
+        # WICHTIG: Der echte Hintergrund-Thread wird unterbunden. Ein Thread
+        # hat eine EIGENE DB-Verbindung und laeuft damit AUSSERHALB der
+        # Test-Transaktion – seine Audit-Eintraege wuerden dauerhaft
+        # festgeschrieben und die Hash-Kette anderer Tests brechen. Auf SQLite
+        # fiel das nie auf (eigene In-Memory-DB je Verbindung), auf PostgreSQL
+        # schon. Getestet wird hier ohnehin nur die SOFORTIGE Antwort.
+        with patch("ats.views.ai._run_in_background") as bg:
+            r = self.client.post(reverse('ats:gemma_agg_check'),
+                                 {"text": "Wir suchen einen jungen Mitarbeiter."})
+            bg.assert_called_once()      # Hintergrundarbeit wurde angestossen
         body = r.json()
         # Endpoint gibt sofort eine task_id zurück (AI läuft im Hintergrund)
         self.assertIn("task_id", body)

@@ -9007,3 +9007,171 @@ class GuardrailPostgresOnlyInProductionTestCase(TestCase):
             os.path.dirname(os.path.dirname(__file__)),
             "docker-compose.yml"), encoding="utf-8").read()
         self.assertIn("postgres:16", compose)
+
+
+class PanelVoteByDeputyTestCase(TestCase):
+    """UC-VT-06: Vertretung im Sichtungs-Gremium – war KOMPLETT ungetestet.
+
+    Warum das wichtig ist: An dieser Logik hängen Einstellungsentscheidungen.
+    Zählt die Stimme einer Urlaubsvertretung nicht mit, blockiert Abwesenheit
+    das Verfahren. Zählt sie doppelt (Mitglied UND Vertretung), entstünde eine
+    Mehrheit, die es nie gab. Und für Betriebsrat/Audit muss nachvollziehbar
+    bleiben, FÜR WESSEN Sitz jemand gestimmt hat.
+    """
+
+    def setUp(self):
+        from .models import (Organization, Location, Facility, JobFamily,
+                             WorkflowState, JobPosting, Applicant, Application)
+        import json
+        self.m1 = make_user("pv-m1", role="Hiring-Manager")
+        self.m2 = make_user("pv-m2", role="Hiring-Manager")
+        self.m3 = make_user("pv-m3", role="Hiring-Manager")
+        self.deputy = make_user("pv-vertretung", role="Hiring-Manager")
+        self.stranger = make_user("pv-fremd", role="Hiring-Manager")
+
+        org = Organization.objects.create(name="O")
+        loc = Location.objects.create(name="HH")
+        self.fac = Facility.objects.create(name="F", organization=org)
+        fam = JobFamily.objects.create(name="PV-Fam")
+        ws = WorkflowState.objects.create(name="published")
+        self.job = JobPosting.objects.create(
+            title="Pflegefachkraft", organization=org, facility=self.fac,
+            location=loc, jobFamily=fam, workflowState=ws,
+            panelUserIdsJson=json.dumps([str(self.m1.id), str(self.m2.id),
+                                         str(self.m3.id)]))
+        self.app = Application.objects.create(
+            applicant=Applicant.objects.create(firstName="P", lastName="V",
+                                               email="pv@x.de"),
+            jobPosting=self.job, status="IN_REVIEW")
+
+    def _delegate(self, frm, to, days=7, scope="ALL", scope_id=None):
+        from .models import RoleDelegation
+        now = timezone.now()
+        return RoleDelegation.objects.create(
+            delegator=frm, delegatee=to, scopeType=scope, scopeId=scope_id,
+            validFrom=now - datetime.timedelta(days=1),
+            validUntil=now + datetime.timedelta(days=days))
+
+    def _vote(self, user, vote="FOR"):
+        self.client.force_login(user)
+        return self.client.post(reverse('ats:application_vote',
+                                        args=[self.app.id]), {"vote": vote})
+
+    def _state(self):
+        from .panel import panel_state
+        self.app.refresh_from_db()
+        return panel_state(self.app)
+
+    # --- Grundfall ---
+    def test_member_can_vote(self):
+        self._vote(self.m1)
+        self.assertEqual(self._state()["votes_for"], 1)
+
+    def test_stranger_without_delegation_is_rejected(self):
+        r = self._vote(self.stranger)
+        self.assertEqual(r.status_code, 403)
+        self.assertEqual(self._state()["votes_for"], 0)
+
+    # --- Vertretung ---
+    def test_deputy_vote_counts_for_the_absent_members_seat(self):
+        """Kern: Die Vertretung stimmt für den Sitz des abwesenden Mitglieds –
+        sonst würde Urlaub das Verfahren blockieren."""
+        self._delegate(self.m1, self.deputy)
+        r = self._vote(self.deputy)
+        self.assertNotEqual(r.status_code, 403)
+        self.assertEqual(self._state()["votes_for"], 1)
+
+    def test_deputy_vote_is_attributable_in_audit(self):
+        """Für Betriebsrat/Audit muss erkennbar sein, FÜR WEN gestimmt wurde."""
+        from .models import AuditLog
+        self._delegate(self.m1, self.deputy)
+        self._vote(self.deputy)
+        entry = AuditLog.objects.filter(action="PANEL_VOTE_CAST").first()
+        self.assertIsNotNone(entry)
+        self.assertIn("for_seat", entry.metadataJson)
+        self.assertIn(self.m1.username, entry.metadataJson)
+
+    def test_member_vote_has_no_for_seat_marker(self):
+        from .models import AuditLog
+        self._vote(self.m1)
+        entry = AuditLog.objects.filter(action="PANEL_VOTE_CAST").first()
+        self.assertNotIn("for_seat", entry.metadataJson)
+
+    def test_members_own_vote_wins_over_deputy(self):
+        """Ein Sitz = EINE Stimme. Stimmen Mitglied und Vertretung, darf der
+        Sitz nicht doppelt zählen – die eigene Stimme des Mitglieds gewinnt."""
+        self._delegate(self.m1, self.deputy)
+        self._vote(self.deputy, "AGAINST")     # Vertretung: dagegen
+        self._vote(self.m1, "FOR")             # Mitglied selbst: dafür
+        st = self._state()
+        self.assertEqual(st["votes_for"], 1)
+        self.assertEqual(st["votes_against"], 0)   # NICHT doppelt gezählt
+
+    def test_expired_delegation_cannot_vote(self):
+        from .models import RoleDelegation
+        now = timezone.now()
+        RoleDelegation.objects.create(
+            delegator=self.m1, delegatee=self.deputy, scopeType="ALL",
+            validFrom=now - datetime.timedelta(days=30),
+            validUntil=now - datetime.timedelta(days=1))   # abgelaufen
+        r = self._vote(self.deputy)
+        self.assertEqual(r.status_code, 403)
+        self.assertEqual(self._state()["votes_for"], 0)
+
+    def test_delegation_outside_scope_cannot_vote(self):
+        """Eine Vertretung nur für Einrichtung X darf nicht bei Stellen aus
+        Einrichtung Y mitentscheiden."""
+        from .models import Organization, Facility
+        other = Facility.objects.create(
+            name="Andere", organization=Organization.objects.first())
+        self._delegate(self.m1, self.deputy, scope="FACILITY",
+                       scope_id=str(other.id))
+        r = self._vote(self.deputy)
+        self.assertEqual(r.status_code, 403)
+
+    def test_majority_reached_via_deputy_allows_decision(self):
+        """Ende-zu-Ende: 2 Mitglieder + 1 Vertretung ergeben die Mehrheit –
+        die Entscheidung wird dadurch möglich."""
+        self._delegate(self.m3, self.deputy)
+        self._vote(self.m1)
+        self.assertFalse(self._state()["allowed"])   # 1 von 3: zu wenig
+        self._vote(self.m2)
+        st = self._state()
+        self.assertTrue(st["allowed"])               # 2 von 3: Mehrheit
+        # Vertretung liefert die dritte Stimme
+        self._vote(self.deputy)
+        self.assertEqual(self._state()["votes_for"], 3)
+
+
+class TextSnippetsTestCase(TestCase):
+    """UC-SB-18 / UC-UM-13: Textbausteine – war ungetestet."""
+
+    def setUp(self):
+        self.admin = make_user("ts-admin", role="HR-Admin")
+        self.recruiter = make_user("ts-rec", role="Recruiter")
+
+    def test_create_and_list_snippet(self):
+        from .models import TextSnippet
+        self.client.force_login(self.admin)
+        self.client.post(reverse('ats:snippets'),
+                         {"category": "INTRO", "content": "30 Tage Urlaub"})
+        s = TextSnippet.objects.get()
+        self.assertEqual(s.category, "INTRO")
+        page = self.client.get(reverse('ats:snippets'))
+        self.assertContains(page, "30 Tage Urlaub")
+
+    def test_delete_snippet(self):
+        from .models import TextSnippet
+        self.client.force_login(self.admin)
+        self.client.post(reverse('ats:snippets'),
+                         {"category": "TASKS", "content": "Weg damit"})
+        s = TextSnippet.objects.get()
+        self.client.post(reverse('ats:snippets'), {"delete_id": str(s.id)})
+        self.assertFalse(TextSnippet.objects.filter(id=s.id).exists())
+
+    def test_snippets_require_admin(self):
+        from .models import TextSnippet
+        self.client.force_login(self.recruiter)
+        self.client.post(reverse('ats:snippets'),
+                         {"category": "INTRO", "content": "Schmuggel"})
+        self.assertFalse(TextSnippet.objects.filter(content="Schmuggel").exists())

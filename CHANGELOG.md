@@ -5,6 +5,22 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (Anforderungsdokument)
+- **23 doppelt vergebene Use-Case-IDs bereinigt.** UC-AR-09, UC-AY-11, UC-SB-42 u. a.
+  bezeichneten jeweils ZWEI verschiedene Anforderungen. Fuer ein Dokument, das im
+  Vergabeprozess als Nachweis dient ("UC-AR-09 ist erfuellt"), ist das unbrauchbar.
+  Alle 401 IDs sind jetzt eindeutig; Inhalte unveraendert.
+
+### Hinzugefuegt (Testluecken aus dem Use-Case-Abgleich)
+- **UC-VT-06 – Vertretung im Sichtungs-Gremium (war KOMPLETT ungetestet).** An dieser
+  Logik haengen Einstellungsentscheidungen. Jetzt abgesichert: Die Stimme der
+  Urlaubsvertretung zaehlt fuer den Sitz des Abwesenden (Abwesenheit blockiert das
+  Verfahren nicht); stimmen Mitglied UND Vertretung, zaehlt der Sitz **nicht doppelt**
+  (die eigene Stimme gewinnt) - sonst entstuenden Mehrheiten, die es nie gab;
+  abgelaufene oder scope-fremde Vertretungen werden abgewiesen; das Audit haelt fest,
+  FUER WESSEN Sitz gestimmt wurde (Betriebsrat/Nachvollziehbarkeit).
+- **UC-SB-18 / UC-UM-13 – Textbausteine** (Anlegen, Loeschen, nur HR-Admin).
+
 ### Geaendert (Grundsatzentscheidung)
 - **PostgreSQL ist die einzige unterstuetzte Produktions-Datenbank.** Ein Start mit
   SQLite bei `DEBUG=False` wird **hart abgelehnt** (verstaendliche Meldung statt

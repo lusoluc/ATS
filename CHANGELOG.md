@@ -5,6 +5,20 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Geaendert (Grundsatzentscheidung)
+- **PostgreSQL ist die einzige unterstuetzte Produktions-Datenbank.** Ein Start mit
+  SQLite bei `DEBUG=False` wird **hart abgelehnt** (verstaendliche Meldung statt
+  stiller Fehlfunktion). Grund: Die Kluft "lokal SQLite / produktiv PostgreSQL" hat
+  echte Fehler versteckt, die erst die CI aufdeckte - u. a. ein **Verbindungsleck**
+  durch Hintergrund-Threads (`too many clients`), das SQLite klaglos verzeiht.
+  Zudem sperrt SQLite bei parallelen Schreibzugriffen die **ganze Datei**
+  (`database is locked`) - im Mehrbenutzerbetrieb eines Traegers untragbar.
+- **Lokal auf PostgreSQL entwickeln:** neue `docker-compose.dev.yml` startet die
+  Datenbank mit einem Befehl; Entwicklung, Tests und Produktion nutzen damit
+  dieselbe Datenbank wie die CI. SQLite bleibt nur fuer schnelle Experimente mit
+  `DEBUG=True` (Ausnahme: `ALLOW_SQLITE=1`).
+- Drei Waechter-Tests sichern die Entscheidung ab.
+
 ### Hinzugefügt
 - **Prozess-Automatik: echte Aktionen statt „nicht implementiert".** Die
   Automatik führte bisher nur Bewerber-Mails aus; alles andere – auch das

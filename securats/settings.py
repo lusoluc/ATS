@@ -1,4 +1,6 @@
 import os
+
+from django.core.exceptions import ImproperlyConfigured
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -89,12 +91,30 @@ if db_url.startswith('file:'):
 else:
     db_path = BASE_DIR / 'dev.db'
 
-# WP7 — Ziel-DB-Entscheidung (NORTHSTAR offene Frage #3):
-# PRODUKTION: PostgreSQL (Nebenläufigkeit ai_worker+Web, select_for_update/
-# skip_locked, robuste Backups via pg_dump — Backup-Skripte setzen das voraus).
-# ENTWICKLUNG/EVALUATION: SQLite (Null-Setup) bleibt Default.
-# Aktivierung: POSTGRES_HOST (+ _DB/_USER/_PASSWORD/_PORT) in der Umgebung setzen.
-if os.environ.get('POSTGRES_HOST'):
+# DATENBANK — PostgreSQL ist die einzige unterstuetzte Produktions-Datenbank.
+#
+# WARUM SO STRENG (aus Schaden gelernt):
+# Die frueher uebliche Kombination "lokal SQLite / produktiv PostgreSQL" hat
+# echte Fehler versteckt, die erst die CI auf PostgreSQL aufdeckte:
+#   * Hintergrund-Threads schlossen ihre DB-Verbindung nicht -> unter
+#     PostgreSQL laeuft der Verbindungspool leer ("too many clients");
+#     SQLite verzeiht das klaglos.
+#   * Roh-SQL mit camelCase-Spalten funktioniert nur auf SQLite (PostgreSQL
+#     faltet unquotierte Bezeichner auf Kleinbuchstaben).
+#   * Ein geschlossener Response schliesst unter PostgreSQL die Verbindung -
+#     auf einer SQLite-In-Memory-DB ist close() ein No-Op.
+# Zudem sperrt SQLite bei parallelen Schreibzugriffen die GANZE Datei: In einem
+# Mehrbenutzer-Betrieb (Recruiter + ai_worker + Cron gleichzeitig) fuehrt das zu
+# "database is locked". Fuer die Zielgruppe (Traeger mit mehreren Nutzenden)
+# ist SQLite daher ungeeignet.
+#
+# In Produktion (DEBUG=False) wird SQLite deshalb HART abgelehnt.
+# Fuer die lokale Entwicklung: `docker compose up -d db` startet PostgreSQL,
+# danach die POSTGRES_*-Variablen setzen (siehe .env.example / OPERATIONS.md).
+# Nur wer bewusst ohne PostgreSQL entwickeln will, setzt ALLOW_SQLITE=1.
+_use_postgres = bool(os.environ.get('POSTGRES_HOST'))
+
+if _use_postgres:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -107,6 +127,18 @@ if os.environ.get('POSTGRES_HOST'):
         }
     }
 else:
+    if not DEBUG and os.environ.get('ALLOW_SQLITE') != '1':
+        raise ImproperlyConfigured(
+            'SecurATS laeuft in Produktion ausschliesslich auf PostgreSQL.\n'
+            'Es ist kein POSTGRES_HOST gesetzt – SQLite ist hier nicht zulaessig:\n'
+            '  * SQLite sperrt bei parallelen Schreibzugriffen die gesamte '
+            'Datei ("database is locked") – im Mehrbenutzerbetrieb untragbar.\n'
+            '  * Die Backup-Skripte (pg_dump) und der Nebenlaeufigkeits-Schutz '
+            '(select_for_update) setzen PostgreSQL voraus.\n'
+            'Loesung: POSTGRES_HOST/_DB/_USER/_PASSWORD setzen '
+            '(docker-compose bringt PostgreSQL bereits mit).\n'
+            'Nur fuer bewusste Ausnahmen: ALLOW_SQLITE=1.'
+        )
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',

@@ -8969,3 +8969,41 @@ class ProductionNoAutoSeedTestCase(TestCase):
         self.client.get(reverse('ats:home'))
         self.assertFalse(Interview.objects.filter(
             meetingLink__icontains="meet.google.com").exists())
+
+
+class GuardrailPostgresOnlyInProductionTestCase(TestCase):
+    """SecurATS läuft in Produktion ausschließlich auf PostgreSQL.
+
+    Begründung (aus Schaden gelernt): Die Kluft „lokal SQLite / produktiv
+    PostgreSQL" hat echte Fehler versteckt, die erst die CI aufdeckte –
+    u. a. ein Verbindungsleck durch Hintergrund-Threads. Zudem sperrt SQLite
+    bei parallelen Schreibzugriffen die ganze Datei („database is locked"),
+    was im Mehrbenutzerbetrieb eines Trägers untragbar ist.
+
+    Dieser Wächter schlägt an, falls jemand den Riegel später entfernt.
+    """
+
+    def test_settings_refuse_sqlite_in_production(self):
+        import inspect
+        import securats.settings as st
+        src = inspect.getsource(st)
+        self.assertIn("ImproperlyConfigured", src)
+        self.assertIn("ALLOW_SQLITE", src)
+        # Der Riegel muss an DEBUG hängen, nicht an einem Zufallswert
+        self.assertIn("not DEBUG", src)
+
+    def test_improperly_configured_is_imported(self):
+        """Ohne Import würde der Riegel in Produktion mit NameError statt mit
+        einer verständlichen Meldung scheitern – genau dann, wenn er greifen
+        soll."""
+        import securats.settings as st
+        self.assertTrue(hasattr(st, "ImproperlyConfigured"))
+
+    def test_production_deployment_uses_postgres(self):
+        """docker-compose bringt PostgreSQL bereits mit – die Produktion soll
+        gar nicht erst in Versuchung geraten."""
+        import os
+        compose = open(os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "docker-compose.yml"), encoding="utf-8").read()
+        self.assertIn("postgres:16", compose)

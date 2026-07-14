@@ -1,0 +1,41 @@
+# SecurATS – Entwicklungs-Ergänzung zur docker-compose.yml
+#
+# ZWECK: Lokal auf DERSELBEN Datenbank entwickeln und testen wie in Produktion
+# (PostgreSQL). Die Kluft "lokal SQLite / produktiv PostgreSQL" hat in der
+# Vergangenheit echte Fehler versteckt, die erst die CI aufdeckte – u. a. ein
+# Verbindungsleck durch Hintergrund-Threads, das SQLite klaglos verzeiht,
+# PostgreSQL aber irgendwann mit "too many clients" quittiert.
+#
+# Diese Datei öffnet NUR den Datenbank-Port nach außen, damit Django auf dem
+# Host (ohne Container) die Datenbank im Container erreicht.
+# In Produktion NICHT verwenden – dort bleibt die DB bewusst gekapselt.
+#
+# VERWENDUNG
+#   1. PostgreSQL starten:
+#        docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db
+#
+#   2. Umgebungsvariablen setzen (einmal pro Terminal):
+#        export POSTGRES_HOST=127.0.0.1
+#        export POSTGRES_PORT=5432
+#        export POSTGRES_DB=securats
+#        export POSTGRES_USER=securats
+#        export POSTGRES_PASSWORD=securats
+#
+#   3. Wie gewohnt arbeiten:
+#        python manage.py migrate
+#        python manage.py test         # läuft jetzt auf PostgreSQL – wie die CI
+#        python manage.py runserver
+#
+#   4. Datenbank stoppen:
+#        docker compose -f docker-compose.yml -f docker-compose.dev.yml down
+
+services:
+  db:
+    # Port nur lokal freigeben (127.0.0.1), nicht im Netzwerk sichtbar.
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      # Entwicklungs-Zugangsdaten: bewusst simpel, NIE in Produktion nutzen.
+      - POSTGRES_DB=${POSTGRES_DB:-securats}
+      - POSTGRES_USER=${POSTGRES_USER:-securats}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-securats}

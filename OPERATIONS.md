@@ -112,3 +112,54 @@ HRIS (z. B. SAP SuccessFactors).
 - `--all` überträgt auch bereits übertragene erneut (sonst überspringt er sie).
 - **Datenschutz:** Der Export sendet personenbezogene Daten an ein Drittsystem.
   Auftragsverarbeitung klären, bevor der Endpunkt gesetzt wird.
+
+
+## Datenbank: PostgreSQL – überall
+
+**Entscheidung:** SecurATS läuft in Produktion **ausschließlich auf PostgreSQL**.
+Ein Start mit SQLite bei `DEBUG=False` wird **hart abgelehnt** (verständliche
+Fehlermeldung statt stiller Fehlfunktion).
+
+**Warum so streng – aus Schaden gelernt:**
+
+* Die Kluft „lokal SQLite / produktiv PostgreSQL" hat echte Fehler versteckt, die
+  erst die CI auf PostgreSQL aufdeckte:
+  * Hintergrund-Threads (KI-Prüfung) schlossen ihre DB-Verbindung nicht → unter
+    PostgreSQL läuft der Verbindungspool leer (`too many clients`). SQLite verzeiht
+    das klaglos – der Fehler wäre erst nach Wochen im Betrieb aufgefallen.
+  * Roh-SQL mit camelCase-Spalten funktioniert nur auf SQLite (PostgreSQL faltet
+    unquotierte Bezeichner auf Kleinbuchstaben).
+  * Ein geschlossener Response schließt unter PostgreSQL die Verbindung – auf einer
+    SQLite-In-Memory-DB ist `close()` ein No-Op.
+* **SQLite sperrt bei parallelen Schreibzugriffen die gesamte Datei**
+  (`database is locked`). Im Zielbetrieb (mehrere Recruiter + `ai_worker` + Cron
+  gleichzeitig) ist das untragbar.
+* Backups (`pg_dump`) und der Nebenläufigkeits-Schutz (`select_for_update`) setzen
+  PostgreSQL voraus.
+
+### Lokal auf PostgreSQL entwickeln (empfohlen)
+
+Damit Entwicklung, Tests und Produktion **dieselbe** Datenbank nutzen:
+
+```bash
+# 1. PostgreSQL starten (nur lokal erreichbar)
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db
+
+# 2. Umgebung setzen (einmal pro Terminal)
+export POSTGRES_HOST=127.0.0.1
+export POSTGRES_PORT=5432
+export POSTGRES_DB=securats
+export POSTGRES_USER=securats
+export POSTGRES_PASSWORD=securats
+
+# 3. Wie gewohnt arbeiten – jetzt auf derselben DB wie die CI
+python manage.py migrate
+python manage.py test
+python manage.py runserver
+```
+
+### SQLite
+
+Nur noch für schnelle lokale Experimente mit `DEBUG=True`. In Produktion
+verweigert SecurATS den Start; nur eine bewusste Ausnahme (`ALLOW_SQLITE=1`)
+umgeht das – davon wird abgeraten.

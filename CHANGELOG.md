@@ -5,6 +5,23 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (schwerwiegend – Schein-Funktion durch echte ersetzt)
+- **CV-Ingestion / "Vektordatenbank" war reine Animation.** Im Job-Wizard zaehlte ein
+  Fortschrittsbalken 0->100 % mit Texten wie "Generiere Vektor-Embeddings" und meldete
+  dann "erfolgreich in die Vektordatenbank eingespeist. Die lokale Gemma-KI wurde auf
+  Ihre Unternehmenskultur ausgerichtet!" – **es gab kein Backend**: keine Embeddings,
+  keine Speicherung, die hochgeladenen Lebenslaeufe wurden weggeworfen. Ein Kunde haette
+  in der Demo eine KI-Kernfunktion fuer echt gehalten.
+  **Jetzt echt gebaut:** Der Upload erzeugt ueber die lokale KI (Ollama) **echte
+  Embeddings** und speichert sie als `BestPerformerProfile` (Migration 0043). Ist Ollama
+  nicht erreichbar, wird **NICHTS** gespeichert und der Nutzer klar informiert (HTTP 503,
+  ehrliche Meldung) – kein Schein-Erfolg mehr. Datenschutz: Der **Roh-Lebenslauf wird
+  nicht gespeichert**, nur der nicht rueckrechenbare Vektor; jede Einspeisung wird
+  auditiert. Regressions-Wache im Test verhindert die Rueckkehr der Animation.
+- **`pypdf` fehlte in `requirements.txt`**, obwohl der Code es nutzt – in einer
+  Minimal-/CI-Installation waere der Import abgestuerzt. Ergaenzt und der Import
+  zusaetzlich gegen Fehlen abgesichert.
+
 ### Verbessert (Klickstrecke)
 - **Lebenslauf direkt im Fenster lesen** statt herunterladen zu muessen. Die
   "Lebenslauf-Vorschau" war bisher ein Platzhalter (im Code als "Previewer Frame

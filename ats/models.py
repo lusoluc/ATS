@@ -547,6 +547,45 @@ class AppWorkflowDef(models.Model):
 WORKFLOW_TASK_STATUS = [("OPEN", "Offen"), ("DONE", "Erledigt")]
 
 
+class BestPerformerProfile(models.Model):
+    """Semantisches Profil eines "Best-Performer"-Lebenslaufs.
+
+    Zweck: Das Sichtungs-Team kann anonymisierte Lebenslaeufe besonders
+    geeigneter Mitarbeitender einspeisen. Daraus wird per lokalem Ollama ein
+    Embedding (Vektor) erzeugt und gespeichert. Neue Bewerbungen lassen sich
+    dann semantisch mit diesen Profilen vergleichen (Kosinus-Aehnlichkeit).
+
+    EHRLICHKEIT: Es wird NUR gespeichert, was Ollama tatsaechlich geliefert
+    hat. Ist Ollama nicht erreichbar, entsteht KEIN Profil (kein Schein).
+
+    DATENSCHUTZ: Der Roh-Lebenslauf wird NICHT gespeichert - nur der Vektor
+    und eine kurze, vom Betreiber vergebene Bezeichnung. Der Vektor ist nicht
+    zurueckrechenbar in den Originaltext.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4,
+                          editable=False)
+    label = models.CharField(max_length=200)
+    jobFamily = models.ForeignKey(JobFamily, on_delete=models.SET_NULL,
+                                  blank=True, null=True,
+                                  related_name='bestPerformerProfiles')
+    model = models.CharField(max_length=100)
+    dim = models.IntegerField(default=0)
+    vectorJson = models.TextField()          # JSON-Liste floats (Embedding)
+    createdBy = models.ForeignKey('auth.User', on_delete=models.SET_NULL,
+                                  blank=True, null=True)
+    createdAt = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-createdAt']
+
+    def vector(self):
+        import json as _j
+        try:
+            return _j.loads(self.vectorJson)
+        except (ValueError, TypeError):
+            return []
+
+
 class WorkflowTask(models.Model):
     """Aufgabe/Erinnerung aus der Prozess-Automatik (CREATE_TASK).
 

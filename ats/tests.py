@@ -9306,3 +9306,112 @@ class ModalDecisionButtonsTestCase(TestCase):
         block = tpl[i:i + 1400]
         self.assertIn('update-status', block)
         self.assertIn('concerns_blocked', block)   # Bedenken-Gate bleibt aktiv
+
+
+class BestPerformerIngestionTestCase(TestCase):
+    """Best-Performer-Ingestion: war reine Animation, ist jetzt echt.
+
+    Befund: Ein Fortschrittsbalken zählte 0->100%, meldete „erfolgreich in die
+    Vektordatenbank eingespeist" und warf die Dateien dann weg. Es gab kein
+    Backend – keine Embeddings, keine Speicherung. Jetzt: echte Ollama-
+    Embeddings; ist Ollama nicht erreichbar, wird NICHTS gespeichert und der
+    Nutzer klar informiert (kein Schein-Erfolg).
+    """
+
+    def setUp(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        self.admin = make_user("bp-admin", role="HR-Admin")
+        self.recruiter = make_user("bp-rec", role="Recruiter")
+        self.client.force_login(self.admin)
+
+    def _make_pdf(self, text="Erfahrene Pflegefachkraft mit Teamleitung "
+                                "und zehn Jahren Berufserfahrung."):
+        import io
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from reportlab.pdfgen import canvas
+        buf = io.BytesIO()
+        c = canvas.Canvas(buf)
+        c.drawString(72, 720, text)
+        c.showPage()
+        c.save()
+        buf.seek(0)
+        return SimpleUploadedFile("best_mueller.pdf", buf.read(),
+                                  content_type="application/pdf")
+
+    def test_no_ollama_stores_nothing_and_says_so(self):
+        """Der Kern: Ohne erreichbares Ollama darf KEIN Profil entstehen und
+        die Meldung muss ehrlich sein."""
+        from unittest.mock import patch
+        from .models import BestPerformerProfile
+        import ats.views.ai as _aimod
+        with patch.object(_aimod, "_extract_pdf_text",
+                   return_value="Erfahrener Projektleiter mit 10 Jahren "
+                                "Erfahrung in der Pflegebranche."), \
+             patch.object(_aimod, "_get_embedding",
+                   side_effect=RuntimeError("Ollama nicht erreichbar")):
+            r = self.client.post(reverse('ats:ingest_best_performers'),
+                                 {"cvs": self._make_pdf()})
+        self.assertEqual(r.status_code, 503)
+        body = r.json()
+        self.assertFalse(body["success"])
+        self.assertIn("nicht erreichbar", body["error"].lower())
+        self.assertEqual(BestPerformerProfile.objects.count(), 0)  # NICHTS
+
+    def test_real_embedding_is_stored(self):
+        from unittest.mock import patch
+        from .models import BestPerformerProfile
+        fake_vec = [0.1, 0.2, 0.3, 0.4]
+        import ats.views.ai as _aimod
+        with patch.object(_aimod, "_get_embedding",
+                          return_value=(fake_vec, "gemma:2b")):
+            r = self.client.post(reverse('ats:ingest_best_performers'),
+                                 {"cvs": self._make_pdf()})
+            body = r.json()
+        self.assertTrue(body["success"], body)
+        self.assertEqual(len(body["created"]), 1, body)   # wurde angelegt
+        prof = BestPerformerProfile.objects.get()
+        self.assertEqual(prof.vector(), fake_vec)   # ECHT gespeichert
+        self.assertEqual(prof.dim, 4)
+        self.assertEqual(prof.model, "gemma:2b")
+
+    def test_ingestion_is_audited(self):
+        from unittest.mock import patch
+        from .models import AuditLog
+        import ats.views.ai as _aimod
+        with patch.object(_aimod, "_get_embedding", return_value=([0.5], "m")):
+            self.client.post(reverse('ats:ingest_best_performers'),
+                             {"cvs": self._make_pdf()})
+        self.assertTrue(AuditLog.objects.filter(
+            action="BEST_PERFORMER_INGESTED").exists())
+
+    def test_unreadable_pdf_is_skipped_not_faked(self):
+        from unittest.mock import patch
+        from .models import BestPerformerProfile
+        import ats.views.ai as _aimod
+        # PDF ohne Textinhalt -> echter Extract liefert "" -> ehrlich uebersprungen
+        r = self.client.post(reverse('ats:ingest_best_performers'),
+                             {"cvs": self._make_pdf(text=" ")})
+        body = r.json()
+        self.assertTrue(body["success"])            # kein harter Fehler
+        self.assertEqual(len(body["skipped"]), 1)   # aber ehrlich uebersprungen
+        self.assertEqual(BestPerformerProfile.objects.count(), 0)
+
+    def test_requires_hr_admin(self):
+        from .models import BestPerformerProfile
+        self.client.force_login(self.recruiter)
+        self.client.post(reverse('ats:ingest_best_performers'),
+                         {"cvs": self._make_pdf()})
+        self.assertEqual(BestPerformerProfile.objects.count(), 0)
+
+    def test_no_simulation_code_remains(self):
+        """Regressions-Wache: kein erfundener Fortschritt / Schein-Erfolg mehr."""
+        import os
+        tpl = open(os.path.join('templates', 'dashboard.html'),
+                   encoding='utf-8').read()
+        i = tpl.index('function simulateCVIngestion')
+        block = tpl[i:i+2600]
+        # Der echte Upload ruft den Endpunkt auf ...
+        self.assertIn('/recruiter/best-performers/ingest/', block)
+        # ... und zaehlt NICHT mehr kuenstlich hoch
+        self.assertNotIn('pct += 5', block)
+        self.assertNotIn('Generiere Vektor-Embeddings', block)

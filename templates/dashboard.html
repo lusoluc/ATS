@@ -1233,7 +1233,7 @@
                             <div style="border-left: 4px solid #10b981; padding-left: 20px;">
                                 <h4 style="color: #fff; margin-bottom: 16px; font-size: 16px;">3. Wissensdatenbank (Fine-Tuning)</h4>
                                 <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
-                                    Die KI vergleicht Bewerber mit historischen "Best-Performern" deines Unternehmens. Lade hier anonymisierte Lebensläufe deiner besten Mitarbeiter hoch, um das semantische Verständnis der KI auf eure Unternehmenskultur auszurichten.
+                                    Die KI vergleicht Bewerbungen semantisch mit Profilen besonders geeigneter Mitarbeitender. Laden Sie hier anonymisierte Lebensläufe (PDF) hoch – daraus erzeugt die <strong>lokale KI (Ollama)</strong> ein mathematisches Profil (Embedding). <strong>Der Lebenslauf selbst wird nicht gespeichert</strong>, nur der nicht rückrechenbare Vektor. Ohne laufende Ollama-Instanz wird nichts gespeichert – es wird dann klar gemeldet.
                                 </p>
 
                                 <div id="cv-drop-zone" style="border: 2px dashed rgba(16, 185, 129, 0.4); padding: 30px; border-radius: 8px; text-align: center; background: rgba(0,0,0,0.2); cursor: pointer; transition: all 0.3s; margin-bottom: 20px;">
@@ -3539,9 +3539,12 @@ MODALS & OVERLAYS
     }
 
     function simulateCVIngestion(event) {
+        // Name aus historischen Gruenden beibehalten; die Funktion ist jetzt
+        // ECHT: sie laedt die Dateien hoch, der Server erzeugt per Ollama
+        // echte Embeddings und speichert sie. Kein Fortschritts-Theater mehr.
         event.preventDefault();
         event.stopPropagation();
-        
+
         if (selectedCVFiles.length === 0) {
             alert("Bitte wählen Sie zuerst eine oder mehrere PDF-Dateien aus!");
             return;
@@ -3555,36 +3558,46 @@ MODALS & OVERLAYS
 
         btn.disabled = true;
         progressContainer.style.display = 'block';
-        
-        let pct = 0;
-        const interval = setInterval(() => {
-            pct += 5;
-            progressBar.style.width = pct + '%';
-            pctText.innerText = pct + '%';
-            
-            if (pct >= 20 && pct < 50) {
-                statusText.innerText = "Lese PDF-Metadaten & Anonymisiere...";
-            } else if (pct >= 50 && pct < 80) {
-                statusText.innerText = "Generiere Vektor-Embeddings...";
-            } else if (pct >= 80 && pct < 100) {
-                statusText.innerText = "Speichere in Wissensdatenbank...";
-            }
+        // Unbestimmter Fortschritt: Wir kennen die echte Dauer nicht, also
+        // zeigen wir "in Arbeit" statt eine erfundene Prozentzahl.
+        progressBar.style.width = '100%';
+        progressBar.style.opacity = '0.5';
+        pctText.innerText = '';
+        statusText.innerText = 'Erzeuge Embeddings über die lokale KI …';
 
-            if (pct >= 100) {
-                clearInterval(interval);
-                setTimeout(() => {
-                    alert(`${selectedCVFiles.length} anonymisierte Lebensläufe erfolgreich in die Vektordatenbank eingespeist. Die lokale Gemma-KI wurde auf Ihre Unternehmenskultur ausgerichtet!`);
-                    btn.disabled = false;
-                    progressContainer.style.display = 'none';
-                    progressBar.style.width = '0%';
-                    pctText.innerText = '0%';
-                    statusText.innerText = 'Verarbeite & trainiere Modell...';
+        const fd = new FormData();
+        fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        selectedCVFiles.forEach(f => fd.append('cvs', f));
+        const jf = document.getElementById('ingest-job-family');
+        if (jf && jf.value) fd.append('job_family', jf.value);
+
+        fetch('/recruiter/best-performers/ingest/', { method: 'POST', body: fd })
+            .then(r => r.json().then(d => ({ ok: r.ok, d })))
+            .then(({ ok, d }) => {
+                btn.disabled = false;
+                progressContainer.style.display = 'none';
+                progressBar.style.opacity = '1';
+                if (ok && d.success) {
+                    let msg = d.message || 'Fertig.';
+                    if (d.skipped && d.skipped.length) {
+                        msg += '\n\nÜbersprungen:\n' +
+                            d.skipped.map(x => '• ' + x.name + ' (' + x.reason + ')').join('\n');
+                    }
+                    alert(msg);
                     document.getElementById('selected-cvs-list').innerHTML = '';
                     document.getElementById('selected-cvs-list').style.display = 'none';
                     selectedCVFiles = [];
-                }, 500);
-            }
-        }, 100);
+                } else {
+                    // EHRLICH: kein Schein-Erfolg. Zeig den echten Grund.
+                    alert(d.error || 'Es wurde nichts gespeichert.');
+                }
+            })
+            .catch(() => {
+                btn.disabled = false;
+                progressContainer.style.display = 'none';
+                progressBar.style.opacity = '1';
+                alert('Upload fehlgeschlagen – es wurde nichts gespeichert.');
+            });
     }
 
     // DOMContentLoaded setup for tab preservation & drag-drop

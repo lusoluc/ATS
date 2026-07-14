@@ -48,7 +48,7 @@ from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["get_ollama_url", "get_ai_model", "make_ollama_request", "evaluate_with_local_gemma", "try_parse_json_reply", "log_ai_execution", "classify_ai_error", "test_gemma", "get_ai_execution_logs", "gemma_agg_check", "gemma_agg_check_status", "gemma_translate_simple_german", "validate_ai_prompt", "validate_ai_prompt_status", "save_ai_settings", "polish_message", "apply_template_tone", "suggest_process", "analytics_ask", "healthz_ai"]
+__all__ = ["get_ollama_url", "get_ai_model", "make_ollama_request", "evaluate_with_local_gemma", "try_parse_json_reply", "log_ai_execution", "classify_ai_error", "test_gemma", "get_ai_execution_logs", "gemma_agg_check", "gemma_agg_check_status", "gemma_translate_simple_german", "validate_ai_prompt", "validate_ai_prompt_status", "save_ai_settings", "polish_message", "apply_template_tone", "suggest_process", "analytics_ask", "healthz_ai", "ingest_best_performers", "best_performer_profiles"]
 
 
 
@@ -1086,3 +1086,129 @@ def healthz_ai(request):
     except Exception as e:
         return JsonResponse({"status": "down", "reachable": False,
                              "model": model, "error": str(e)[:200]}, status=503)
+
+
+def _get_embedding(text):
+    """Holt ein Embedding von Ollama. Gibt (vektor, modell) zurueck ODER wirft.
+
+    Kein Schein: Schlaegt der Aufruf fehl, propagiert die Ausnahme - der
+    Aufrufer entscheidet dann ehrlich (kein Profil, klare Meldung).
+    """
+    import json as _json
+    model = get_ai_model()
+    url = get_ollama_url("api/embeddings")
+    # Ollama-Embedding-API: {"model": ..., "prompt": ...} -> {"embedding": [...]}
+    resp = make_ollama_request(url, {"model": model, "prompt": text[:8000]},
+                               timeout=20.0)
+    if not resp:
+        raise RuntimeError("Ollama nicht erreichbar")
+    if isinstance(resp, str):
+        resp = _json.loads(resp)
+    vec = resp.get("embedding") if isinstance(resp, dict) else None
+    if not vec or not isinstance(vec, list):
+        raise RuntimeError("Ollama lieferte kein Embedding")
+    return vec, model
+
+
+def _extract_pdf_text(django_file):
+    """Text aus einem hochgeladenen PDF ziehen. Leerer String bei Problemen.
+
+    pypdf fehlt evtl. in einer Minimal-Installation - dann ehrlich leer
+    zurueckgeben statt mit ModuleNotFoundError abzustuerzen.
+    """
+    try:
+        from pypdf import PdfReader
+    except ImportError:
+        return ""
+    try:
+        reader = PdfReader(django_file)
+        parts = []
+        for page in reader.pages[:15]:      # genug fuer ein CV-Profil
+            parts.append(page.extract_text() or "")
+        return "\n".join(parts).strip()
+    except Exception:                        # noqa: BLE001
+        return ""
+
+
+@hr_admin_required
+def ingest_best_performers(request):
+    """Anonymisierte Best-Performer-Lebenslaeufe zu semantischen Profilen
+    verarbeiten - ECHT, nicht simuliert.
+
+    Ablauf je Datei: PDF-Text lesen -> Ollama-Embedding -> speichern.
+    Ist Ollama nicht erreichbar, wird NICHTS gespeichert und der Nutzer klar
+    informiert (frueher lief hier nur ein Fortschrittsbalken, der Erfolg
+    vortaeuschte und die Dateien wegwarf).
+    """
+    from ..models import BestPerformerProfile, JobFamily
+    if request.method != 'POST':
+        return JsonResponse({'success': False,
+                             'error': 'Nur POST.'}, status=405)
+
+    files = request.FILES.getlist('cvs')
+    if not files:
+        return JsonResponse({'success': False,
+                             'error': 'Keine Dateien empfangen.'}, status=400)
+
+    jf_id = request.POST.get('job_family') or None
+    job_family = JobFamily.objects.filter(id=jf_id).first() if jf_id else None
+
+    created, skipped = [], []
+    for f in files:
+        text = _extract_pdf_text(f)
+        if len(text) < 50:
+            skipped.append({'name': f.name,
+                            'reason': 'Kein lesbarer Text im PDF.'})
+            continue
+        try:
+            vec, model = _get_embedding(text)
+        except Exception as exc:              # noqa: BLE001
+            # EHRLICH: kein Profil, echter Grund. Nicht so tun als ob.
+            return JsonResponse({
+                'success': False,
+                'error': 'Die lokale KI (Ollama) ist nicht erreichbar – es '
+                         'wurde NICHTS gespeichert. ' + classify_ai_error(
+                             exc, get_ai_model()),
+                'created': len(created),
+            }, status=503)
+
+        label = (f.name.rsplit('.', 1)[0] or 'Profil')[:200]
+        prof = BestPerformerProfile.objects.create(
+            label=label, jobFamily=job_family, model=model,
+            dim=len(vec), vectorJson=json.dumps(vec),
+            createdBy=request.user if request.user.is_authenticated else None)
+        write_audit('BEST_PERFORMER_INGESTED', user=request.user,
+                    profile=str(prof.id), dim=len(vec))
+        created.append({'label': label, 'dim': len(vec)})
+
+    return JsonResponse({
+        'success': True,
+        'created': created,
+        'skipped': skipped,
+        'total_profiles': BestPerformerProfile.objects.count(),
+        'message': (f'{len(created)} Profil(e) aus echten Embeddings '
+                    f'gespeichert.' + (f' {len(skipped)} übersprungen.'
+                                       if skipped else '')),
+    })
+
+
+@hr_admin_required
+def best_performer_profiles(request):
+    """Verwaltung: vorhandene Profile ansehen und loeschen."""
+    from ..models import BestPerformerProfile
+    if request.method == 'POST' and request.POST.get('delete_id'):
+        prof = BestPerformerProfile.objects.filter(
+            id=request.POST['delete_id']).first()
+        if prof:
+            write_audit('BEST_PERFORMER_DELETED', user=request.user,
+                        profile=str(prof.id))
+            prof.delete()
+        return JsonResponse({'success': True,
+                             'total': BestPerformerProfile.objects.count()})
+    profs = [{'id': str(p.id), 'label': p.label, 'dim': p.dim,
+              'model': p.model,
+              'jobFamily': p.jobFamily.name if p.jobFamily else None,
+              'createdAt': p.createdAt.strftime('%d.%m.%Y')}
+             for p in BestPerformerProfile.objects.all()]
+    return JsonResponse({'profiles': profs, 'total': len(profs)})
+

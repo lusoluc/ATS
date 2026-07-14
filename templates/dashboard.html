@@ -1040,27 +1040,27 @@
         <div class="tab-content" id="sap-tab">
             <div class="glass-card">
                 <h3 style="font-size: 22px; color: #fff; margin-bottom: 6px;">SAP SuccessFactors Sync Console</h3>
-                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 24px;">Synchronisieren Sie Bewerberdaten per OData-Protokoll sicher in Ihre bestehende Enterprise HRIS-Landschaft.</p>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 24px;">Bilden Sie Ihre SecurATS-Felder auf die Felder Ihres HRIS ab. Die eigentliche Übertragung übernimmt der Server-Befehl hris_export – nur bei konfiguriertem Endpunkt.</p>
                 
                 <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 30px;">
-                    <!-- Console Logger -->
+                    <!-- Ehrlicher Status statt Fake-Konsole.
+                         Frueher lief hier ein mTLS/OAuth2-Theater mit erfundenen
+                         Log-Zeilen und "Revisionssicher uebertragen: X Profile".
+                         Es rief denselben Endpunkt wie der Feld-Mapper auf, der
+                         (korrekt) KEINE Daten uebertraegt - die Konsole log also.
+                         Der echte Weg: Zuordnung speichern -> `hris_export`. -->
                     <div>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <h4 style="color: #fff;"><i class="fa-solid fa-terminal" style="color: var(--accent);"></i> OData Schnittstellen-Verbindung</h4>
-                            <span class="badge badge-accent">Secure mTLS</span>
+                            <h4 style="color: #fff;"><i class="fa-solid fa-circle-info" style="color: var(--accent);"></i> So funktioniert die Übertragung</h4>
                         </div>
-                        <div class="odata-console" id="odataSyncConsole">
-                            <div class="odata-log-entry">> OData Gateway bereit. Warte auf Synchronisation...</div>
-                            <div class="odata-log-entry">> Port 443 verschlüsselt mit zertifizierten Partner-Keys.</div>
-                        </div>
-                        
-                        <div style="margin-top: 20px; display: flex; gap: 12px;">
-                            <button class="btn-cta" onclick="triggerODataSynchronisation()" style="height: 44px; padding: 0 24px;">
-                                <i class="fa-solid fa-arrows-rotate"></i> OData Sync ausführen
-                            </button>
-                            <button class="btn-secondary-cta" onclick="clearODataConsole()" style="height: 44px; padding: 0 24px;">
-                                Konsole leeren
-                            </button>
+                        <div style="background: rgba(11,13,25,0.4); border: 1px solid var(--glass-border); border-radius: 10px; padding: 18px; font-size: 13px; color: var(--text-muted); line-height: 1.7;">
+                            <p style="margin-bottom: 12px;"><strong style="color:#fff;">Diese Seite überträgt keine Daten.</strong> Sie legt fest, welches SecurATS-Feld auf welches HRIS-Feld abgebildet wird (rechts).</p>
+                            <ol style="margin: 0 0 12px 18px; padding: 0;">
+                                <li style="margin-bottom: 6px;">Feldzuordnung rechts prüfen und <strong style="color:#fff;">speichern</strong>.</li>
+                                <li style="margin-bottom: 6px;">Auf dem Server den Befehl <code style="background:rgba(0,0,0,0.3); padding:1px 5px; border-radius:3px;">python manage.py hris_export</code> ausführen (oder per Cron planen).</li>
+                                <li>Die Übertragung erfolgt <strong style="color:#fff;">nur</strong>, wenn <code style="background:rgba(0,0,0,0.3); padding:1px 5px; border-radius:3px;">HRIS_ENDPOINT</code> gesetzt ist – sonst bricht der Befehl ehrlich ab.</li>
+                            </ol>
+                            <p style="font-size: 12px; margin: 0;"><i class="fa-solid fa-shield-halved"></i> Jede echte Übertragung wird revisionssicher protokolliert – mit dem tatsächlichen Ergebnis, nicht mit einer erfundenen Bestätigung.</p>
                         </div>
                     </div>
                     
@@ -2855,40 +2855,6 @@ MODALS & OVERLAYS
     }
 
     // SAP SF sync console trigger
-    function triggerODataSynchronisation() {
-        const consoleEl = document.getElementById('odataSyncConsole');
-        consoleEl.innerHTML += `<div class="odata-log-entry" style="color:var(--primary-light);">> [$(date)] Starte mTLS OData OAUTH2 Authentifizierung...</div>`;
-        consoleEl.scrollTop = consoleEl.scrollHeight;
-
-        setTimeout(() => {
-            consoleEl.innerHTML += `<div class="odata-log-entry" style="color:var(--primary-light);">> Token erfolgreich ausgestellt. Sende OData Batch payload...</div>`;
-            consoleEl.scrollTop = consoleEl.scrollHeight;
-        }, 800);
-
-        setTimeout(() => {
-            const formData = new FormData();
-            formData.append('mapping_data', '{"sf_candidate_id":"Application.id","sf_first_name":"Applicant.firstName"}');
-            formData.append('sync_target', 'SAP_SF_PRODUCTION');
-
-            fetch(`/integrations/sap-sf/`, { method: 'POST', body: formData })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    consoleEl.innerHTML += `<div class="odata-log-entry" style="color:#10b981;">> SUCCESS: ${data.message}</div>`;
-                    consoleEl.innerHTML += `<div class="odata-log-entry" style="color:#10b981;">> Revisionssicher übertragen: ${data.records_exported} Bewerber-Profile.</div>`;
-                } else {
-                    consoleEl.innerHTML += `<div class="odata-log-entry" style="color:#ef4444;">> ERROR: OData-Übertragung fehlgeschlagen.</div>`;
-                }
-                consoleEl.scrollTop = consoleEl.scrollHeight;
-            });
-        }, 1600);
-    }
-
-    function clearODataConsole() {
-        document.getElementById('odataSyncConsole').innerHTML = `<div class="odata-log-entry">> OData Gateway bereit. Warte auf Synchronisation...</div>`;
-    }
-
-    // Gemma AI Connection prompt console
     function testGemmaConnection() {
         const prompt = document.getElementById('gemma-prompt').value;
         const box = document.getElementById('gemma-response-box');

@@ -5,6 +5,16 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (Prüfung abgeschlossen)
+- **OData-Sync-Tab war ein weiterer Blender.** Eine "Konsole" gab beim Laden
+  "Port 443 verschlüsselt mit zertifizierten Partner-Keys" aus und auf Knopfdruck
+  ein erfundenes mTLS/OAuth2-Protokoll samt "Revisionssicher übertragen: X Profile".
+  Der Aufruf ging an denselben Endpunkt wie der (ehrliche) Feld-Mapper, der KEINE
+  Daten überträgt – die Konsole log also. Ersetzt durch eine ehrliche Erklärung des
+  echten Wegs (Zuordnung speichern -> `hris_export`); tote JS-Funktionen entfernt.
+- Abschluss-Scan der Wizard-Knöpfe: `testGemmaConnection` (echter Ollama-Test) und
+  das Status-Polling asynchroner KI-Aufgaben sind echt – keine weiteren Blender.
+
 ### Behoben (schwerwiegend – Schein-Funktion durch echte ersetzt)
 - **CV-Ingestion / "Vektordatenbank" war reine Animation.** Im Job-Wizard zaehlte ein
   Fortschrittsbalken 0->100 % mit Texten wie "Generiere Vektor-Embeddings" und meldete

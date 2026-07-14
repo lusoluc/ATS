@@ -718,19 +718,51 @@ def _send_rejection_notice(request, app):
 # --- B1: Sicherer CV-Download (auth + Rolle + Audit-Log) --------------------
 @recruiter_required
 def download_cv(request, app_id):
+    """Lebenslauf ausliefern – wahlweise INLINE (Vorschau) oder als Download.
+
+    WARUM INLINE: Das Lesen des Lebenslaufs ist die haeufigste Handlung im
+    Recruiting. Bisher gab es nur "herunterladen": Der Recruiter verliess die
+    Anwendung, oeffnete die Datei im PDF-Programm und wechselte zurueck. Das
+    kostete nicht nur Klicks – es streute BEWERBER-PII als Dateikopien ueber
+    alle Recruiter-Laptops. In einem Produkt, das mit Datensouveraenitaet
+    wirbt, ist das ein Eigentor.
+
+    Mit ?view=1 wird die Datei im Browser angezeigt (iframe/img), ohne Kopie
+    auf der Festplatte. Der Download bleibt fuer die Faelle, in denen man ihn
+    wirklich braucht – und das Audit unterscheidet beides, damit der
+    Datenschutzbeauftragte sieht, wer eine KOPIE gezogen hat.
+    """
     app = get_object_or_404(Application, id=app_id)
     if not can_access_application(request.user, app):
         raise Http404("Nicht im Zugriffsbereich.")
     if not app.cvStorageId or not default_storage.exists(app.cvStorageId):
         raise Http404("Kein Lebenslauf hinterlegt.")
-    # Revisionssicher protokollieren, WER WESSEN CV wann gelesen hat.
-    write_audit("READ_CV", user=request.user, application_id=app.id,
-                storage=app.cvStorageId)
+
     download_name = _os.path.basename(app.cvStorageId)
     if "_" in download_name:  # UUID-Prefix aus dem Speichernamen entfernen
         download_name = download_name.split("_", 1)[1]
+
+    ext = _os.path.splitext(download_name)[1].lower()
+    # Nur Formate inline zeigen, die der Browser sicher darstellt.
+    # doc/docx koennen Browser nicht rendern -> immer Download.
+    INLINE_OK = {".pdf": "application/pdf", ".jpg": "image/jpeg",
+                 ".jpeg": "image/jpeg", ".png": "image/png"}
+    inline = request.GET.get("view") == "1" and ext in INLINE_OK
+
+    # Revisionssicher protokollieren, WER WESSEN CV wann gelesen hat –
+    # und OB eine Kopie das System verlassen hat.
+    write_audit("READ_CV", user=request.user, application_id=app.id,
+                storage=app.cvStorageId,
+                mode="inline" if inline else "download")
+
     fh = default_storage.open(app.cvStorageId, "rb")
-    return FileResponse(fh, as_attachment=True, filename=download_name or "cv")
+    resp = FileResponse(fh, as_attachment=not inline,
+                        filename=download_name or "cv")
+    if inline:
+        resp["Content-Type"] = INLINE_OK[ext]
+        # Kein MIME-Sniffing: der Browser darf den Typ nicht "erraten".
+        resp["X-Content-Type-Options"] = "nosniff"
+    return resp
 
 
 @recruiter_required

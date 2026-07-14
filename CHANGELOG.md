@@ -5,6 +5,27 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Verbessert (Klickstrecke)
+- **Lebenslauf direkt im Fenster lesen** statt herunterladen zu muessen. Die
+  "Lebenslauf-Vorschau" war bisher ein Platzhalter (im Code als "Previewer Frame
+  Mock" bezeichnet): ein PDF-Symbol mit Download-Knopf. Fuer die **haeufigste
+  Handlung im Recruiting** musste der Recruiter die Anwendung verlassen, die Datei
+  im PDF-Programm oeffnen und zurueckwechseln. Nebenwirkung: Jeder gelesene
+  Lebenslauf hinterliess eine **PII-Kopie auf dem Laptop** - in einem Produkt, das
+  mit Datensouveraenitaet wirbt, ein Eigentor. Jetzt: echte Inline-Ansicht
+  (PDF/Bild) ohne Kopie; Download bleibt fuer die Faelle, die ihn brauchen.
+  Das Audit **unterscheidet jetzt Ansicht und Download**, damit der
+  Datenschutzbeauftragte sieht, wer eine Kopie gezogen hat.
+- **Entscheiden, wo gelesen wird.** Im Bewerbungs-Fenster konnte man zwar einladen,
+  aber weder "in Pruefung nehmen" noch "absagen" - die zwei haeufigsten
+  Entscheidungen. Man musste das Fenster schliessen, die Karte im Board suchen und
+  ziehen. Jetzt: Entscheidungsleiste direkt neben dem Lebenslauf; der aktuelle
+  Status ist ausgegraut. Nutzt denselben Endpunkt und dieselben Schutzplanken wie
+  Drag&Drop - das Bedenken-Gate vor einer Einstellung bleibt aktiv (getestet).
+- Sicherheitsnachweis: Die Inline-Vorschau oeffnet **kein** Schlupfloch -
+  Zugriffskontrolle, BOLA-Scope und Audit gelten unveraendert (getestet);
+  Word-Dokumente werden ehrlich als Download geliefert statt als kaputte Vorschau.
+
 ### Behoben (Anforderungsdokument)
 - **23 doppelt vergebene Use-Case-IDs bereinigt.** UC-AR-09, UC-AY-11, UC-SB-42 u. a.
   bezeichneten jeweils ZWEI verschiedene Anforderungen. Fuer ein Dokument, das im

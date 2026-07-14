@@ -9175,3 +9175,134 @@ class TextSnippetsTestCase(TestCase):
         self.client.post(reverse('ats:snippets'),
                          {"category": "INTRO", "content": "Schmuggel"})
         self.assertFalse(TextSnippet.objects.filter(content="Schmuggel").exists())
+
+
+class CvInlinePreviewTestCase(TestCase):
+    """Klickstrecke: Lebenslauf direkt im Fenster lesen statt herunterladen.
+
+    Befund: Die "Lebenslauf-Vorschau" war ein Platzhalter (im Code als
+    "Previewer Frame Mock" bezeichnet) – sie zeigte ein PDF-Symbol und einen
+    Download-Knopf. Der Recruiter musste die Anwendung verlassen, um die
+    häufigste Handlung überhaupt zu erledigen. Zudem landete dabei eine
+    KOPIE der Bewerber-PII auf jedem Recruiter-Laptop.
+
+    Die Bequemlichkeit darf die Zugriffskontrolle NICHT aufweichen – genau
+    das prüfen diese Tests.
+    """
+
+    def setUp(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.core.files.storage import default_storage
+        from .models import (Organization, Location, Facility, JobFamily,
+                             WorkflowState, JobPosting, Applicant, Application)
+        org = Organization.objects.create(name="O")
+        self.loc = Location.objects.create(name="HH")
+        fac = Facility.objects.create(name="F", organization=org)
+        fam = JobFamily.objects.create(name="CV-Fam")
+        ws = WorkflowState.objects.create(name="published")
+        job = JobPosting.objects.create(title="Pflegekraft", organization=org,
+                                        facility=fac, location=self.loc,
+                                        jobFamily=fam, workflowState=ws)
+        self.app = Application.objects.create(
+            applicant=Applicant.objects.create(firstName="C", lastName="V",
+                                               email="cv@x.de"),
+            jobPosting=job)
+        self.app.cvStorageId = default_storage.save(
+            "cvs/abc_lebenslauf.pdf",
+            SimpleUploadedFile("lebenslauf.pdf", b"%PDF-1.4 inhalt"))
+        self.app.save(update_fields=["cvStorageId"])
+        self.rec = make_user("cv-rec", role="Recruiter")
+        self.url = reverse('ats:download_cv', args=[self.app.id])
+
+    def test_inline_view_renders_in_browser(self):
+        """?view=1 liefert die Datei zur ANZEIGE (kein Download-Zwang)."""
+        self.client.force_login(self.rec)
+        r = self.client.get(self.url + "?view=1")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r["Content-Type"], "application/pdf")
+        self.assertNotIn("attachment", r.get("Content-Disposition", ""))
+        self.assertEqual(r["X-Content-Type-Options"], "nosniff")
+        b"".join(r.streaming_content)
+
+    def test_download_still_works_as_attachment(self):
+        self.client.force_login(self.rec)
+        r = self.client.get(self.url)
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("attachment", r["Content-Disposition"])
+        b"".join(r.streaming_content)
+
+    def test_audit_distinguishes_view_from_download(self):
+        """Für den Datenschutzbeauftragten wichtig: WER hat nur gelesen und
+        wer hat eine KOPIE gezogen?"""
+        from .models import AuditLog
+        self.client.force_login(self.rec)
+        b"".join(self.client.get(self.url + "?view=1").streaming_content)
+        b"".join(self.client.get(self.url).streaming_content)
+        modes = [a.metadataJson for a in
+                 AuditLog.objects.filter(action="READ_CV")]
+        self.assertTrue(any('"mode": "inline"' in m for m in modes))
+        self.assertTrue(any('"mode": "download"' in m for m in modes))
+
+    def test_inline_does_not_bypass_access_control(self):
+        """Die Vorschau darf KEIN Schlupfloch sein: anonym -> kein Zugriff."""
+        r = self.client.get(self.url + "?view=1")
+        self.assertIn(r.status_code, (302, 403))
+
+    def test_inline_respects_bola_scope(self):
+        """Ein Recruiter mit fremdem Standort-Scope darf auch die Vorschau
+        nicht sehen."""
+        from .models import Location
+        from .permissions import can_access_application
+        other = make_user("cv-fremd", role="Recruiter")
+        if hasattr(other, 'scope'):
+            other.scope.locations.set(
+                [Location.objects.create(name="Muenchen")])
+            other.scope.save()
+        if not can_access_application(other, self.app):
+            self.client.force_login(other)
+            r = self.client.get(self.url + "?view=1")
+            self.assertEqual(r.status_code, 404)
+
+    def test_word_document_is_never_served_inline(self):
+        """doc/docx kann kein Browser rendern – ehrlich als Download liefern
+        statt eine kaputte Vorschau zu zeigen."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.core.files.storage import default_storage
+        self.app.cvStorageId = default_storage.save(
+            "cvs/xyz_lebenslauf.docx",
+            SimpleUploadedFile("lebenslauf.docx", b"PK\x03\x04"))
+        self.app.save(update_fields=["cvStorageId"])
+        self.client.force_login(self.rec)
+        r = self.client.get(self.url + "?view=1")
+        self.assertIn("attachment", r["Content-Disposition"])
+        b"".join(r.streaming_content)
+
+
+class ModalDecisionButtonsTestCase(TestCase):
+    """Klickstrecke: Entscheiden, wo gelesen wird.
+
+    Befund: Im Bewerbungs-Fenster konnte man einladen – aber weder
+    "in Prüfung nehmen" noch "absagen", also die zwei häufigsten
+    Entscheidungen. Der Recruiter musste das Fenster schließen, die Karte
+    im Board suchen und ziehen.
+    """
+
+    def test_modal_offers_the_three_decisions(self):
+        admin = make_user("md-admin", role="HR-Admin")
+        self.client.force_login(admin)
+        r = self.client.get(reverse('ats:dashboard'))
+        self.assertContains(r, 'modal-decide-review')
+        self.assertContains(r, 'modal-decide-invited')
+        self.assertContains(r, 'modal-decide-rejected')
+        self.assertContains(r, 'decideFromModal')
+
+    def test_decision_uses_the_same_guarded_endpoint(self):
+        """Die Abkürzung darf keine Schutzplanke umgehen: Sie nutzt denselben
+        update-status-Endpunkt inklusive Bedenken-Gate."""
+        import os
+        tpl = open(os.path.join('templates', 'dashboard.html'),
+                   encoding='utf-8').read()
+        i = tpl.index('function decideFromModal')
+        block = tpl[i:i + 1400]
+        self.assertIn('update-status', block)
+        self.assertIn('concerns_blocked', block)   # Bedenken-Gate bleibt aktiv

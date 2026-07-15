@@ -3440,17 +3440,22 @@ class ProcessMemoryTestCase(TestCase):
         self.fac_b = Facility.objects.create(name="Klinik B", organization=org)
         self.fam = JobFamily.objects.create(name="Pflege-" + str(_u.uuid4())[:4])
         wf = WorkflowState.objects.create(name="published")
+        from django.utils import timezone
+        import datetime
+        now = timezone.now()
         self.older_same_fac = JobPosting.objects.create(
             title="Pflegefachkraft Station 1", organization=org,
             facility=self.fac_a, location=loc, jobFamily=self.fam,
             workflowState=wf,
             screeningQuestionsJson='[{"id":"q1","question":"Examen?","type":"YES_NO","isMandatory":true,"expectedAnswer":"YES"}]',
-            tasksJson='["Grundpflege"]', requirementsJson='["Examen"]')
+            tasksJson='["Grundpflege"]', requirementsJson='["Examen"]',
+            createdAt=now - datetime.timedelta(hours=2))
         self.newer_other_fac = JobPosting.objects.create(
             title="Pflegefachkraft Klinik B", organization=org,
             facility=self.fac_b, location=loc, jobFamily=self.fam,
             workflowState=wf,
-            screeningQuestionsJson='[{"id":"q9","question":"Nachtdienst?","type":"YES_NO","isMandatory":false}]')
+            screeningQuestionsJson='[{"id":"q9","question":"Nachtdienst?","type":"YES_NO","isMandatory":false}]',
+            createdAt=now)
         self.org, self.loc, self.wf = org, loc, wf
 
     def test_endpoint_prefers_same_facility_and_requires_role(self):

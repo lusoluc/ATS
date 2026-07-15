@@ -13,7 +13,7 @@ Ansprüchen an Datensicherheit, DSGVO-/KRITIS-Compliance und lokale KI.
 SecurATS ist auf **einen** Stack konsolidiert:
 
 - **Backend & UI:** Django 6 (App `ats`, Projekt `securats`, serverseitige Templates)
-- **Datenbank:** SQLite (Entwicklung, `shared/dev.db`); PostgreSQL als Produktionsziel (offen, siehe North Star)
+- **Datenbank:** SQLite (nur Entwicklung); PostgreSQL als zwingend erforderliche Produktions-Datenbank (siehe OPERATIONS.md)
 - **Lokale KI:** Ollama / Gemma (Zero-Data-Transfer)
 - **Betrieb:** Docker + docker-compose
 

@@ -9443,3 +9443,58 @@ class BestPerformerIngestionTestCase(TestCase):
         # ... und zaehlt NICHT mehr kuenstlich hoch
         self.assertNotIn('pct += 5', block)
         self.assertNotIn('Generiere Vektor-Embeddings', block)
+
+
+class SidebarRoleFilteringTestCase(TestCase):
+    """Benutzerfuehrung: Ein Recruiter sieht nur seine taegliche Arbeit,
+    keine Admin-/IT-/Management-Werkzeuge. Ein HR-Admin sieht alles.
+
+    Ziel: kein Schritt zu viel. Der ueberladene Arbeitsplatz (8 Werkzeuge +
+    ueber 20 Verwaltungs-Links fuer JEDEN) hat einen Recruiter, der nur
+    sichten will, mit SAP-Sync und Systemeinstellungen konfrontiert.
+    """
+
+    def setUp(self):
+        self.recruiter = make_user("side-rec", role="Recruiter")
+        self.admin = make_user("side-admin", role="HR-Admin")
+
+    # Werkzeuge, die JEDER braucht (taegliche Arbeit)
+    WORK = ["kanban-tab", "jobs-tab", "Interview-Kalender", "Talent-Pool",
+            "Freigaben"]
+    # Inhaltliche Marker, die NUR im (versteckten) Admin-Bereich vorkommen.
+    # Bewusst inhaltliche Texte statt Tab-IDs: die *-tab-IDs tauchen auch im
+    # mitgelieferten JavaScript (switchTab-Aufrufe) auf und trennen daher nicht.
+    ADMIN_ONLY = ["SAP SuccessFactors", "CMS Seiten-Editor", "Feldzuordnung",
+                  "Recruiting Prozess Flow", "Globale Variablen",
+                  "HRIS / SAP-Anbindung", "Ausgleichsabgabe", "Audit-Log",
+                  "Governance", "Daten-Import"]
+
+    def test_recruiter_sees_only_daily_work(self):
+        self.client.force_login(self.recruiter)
+        html = self.client.get(reverse('ats:dashboard')).content.decode()
+        for tool in self.WORK:
+            self.assertIn(tool, html, f"Recruiter braucht '{tool}'")
+        for tool in self.ADMIN_ONLY:
+            self.assertNotIn(tool, html,
+                             f"Recruiter soll '{tool}' NICHT sehen")
+
+    def test_admin_sees_everything(self):
+        self.client.force_login(self.admin)
+        html = self.client.get(reverse('ats:dashboard')).content.decode()
+        for tool in self.WORK + self.ADMIN_ONLY:
+            self.assertIn(tool, html, f"Admin braucht Zugriff auf '{tool}'")
+
+    def test_superuser_counts_as_admin(self):
+        su = make_user("side-su", superuser=True)
+        self.client.force_login(su)
+        html = self.client.get(reverse('ats:dashboard')).content.decode()
+        self.assertIn("sap-tab", html)
+
+    def test_hiding_is_ui_only_server_still_protects(self):
+        """Wichtig: Das Ausblenden ist Benutzerfuehrung, KEINE
+        Sicherheitsmassnahme. Die Admin-Aktionen bleiben serverseitig
+        geschuetzt – ein Recruiter, der die URL kennt, wird abgewiesen."""
+        self.client.force_login(self.recruiter)
+        # Direkter Zugriff auf eine Admin-Aktion trotz verstecktem Tab
+        r = self.client.get(reverse('ats:sap_sf_mapper'))
+        self.assertIn(r.status_code, (302, 403, 404))

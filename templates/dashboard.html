@@ -338,21 +338,24 @@
         <div class="sidebar-link" onclick="switchTab(this, 'jobs-tab')">
             <i class="fa-solid fa-briefcase"></i> Stellenanzeigen
         </div>
-        
+
+        {% if is_hr_admin %}
+        <span class="sidebar-group-title" style="margin-top:16px; display:block;">Verwaltung</span>
+
+        <div class="sidebar-link" onclick="switchTab(this, 'stats-tab')">
+            <i class="fa-solid fa-chart-line"></i> KPIs & Inklusions-ROI
+        </div>
+
         <div class="sidebar-link" onclick="switchTab(this, 'process-tab')">
             <i class="fa-solid fa-arrows-spin"></i> Prozess Flow Manager
-        </div>
-        
-        <div class="sidebar-link" onclick="switchTab(this, 'cms-tab')">
-            <i class="fa-solid fa-file-signature"></i> CMS Seiten-Editor
         </div>
         
         <div class="sidebar-link" onclick="switchTab(this, 'templates-tab')">
             <i class="fa-solid fa-envelope-open-text"></i> E-Mail & Variablen
         </div>
         
-        <div class="sidebar-link" onclick="switchTab(this, 'sap-tab')">
-            <i class="fa-solid fa-cloud-arrow-up"></i> SAP SF OData Sync
+        <div class="sidebar-link" onclick="switchTab(this, 'cms-tab')">
+            <i class="fa-solid fa-file-signature"></i> CMS Seiten-Editor
         </div>
         
         <div class="sidebar-link" onclick="switchTab(this, 'gemma-tab')">
@@ -360,37 +363,40 @@
             <span class="badge {% if gemma_status == 'ONLINE' %}badge-accent{% else %}badge-primary{% endif %}" style="padding: 2px 6px; font-size: 9px; margin-left: auto;">{{ gemma_status }}</span>
         </div>
         
-        <div class="sidebar-link" onclick="switchTab(this, 'stats-tab')">
-            <i class="fa-solid fa-chart-line"></i> KPIs & Inklusions-ROI
+        <div class="sidebar-link" onclick="switchTab(this, 'sap-tab')">
+            <i class="fa-solid fa-cloud-arrow-up"></i> HRIS / SAP-Anbindung
         </div>
+        {% endif %}
 
-        <div style="margin:12px 8px 4px; font-size:11px; letter-spacing:1px; color:#64748b; text-transform:uppercase;">Verwaltung</div>
-        <span class="sidebar-group-title">Entscheiden</span>
+        <div style="margin:12px 8px 4px; font-size:11px; letter-spacing:1px; color:#64748b; text-transform:uppercase;">Termine &amp; Menschen</div>
+        <a class="sidebar-link" href="{% url 'ats:interviews' %}"><i class="fa-solid fa-calendar-days"></i> Interview-Kalender</a>
+        <a class="sidebar-link" href="{% url 'ats:tasks' %}"><i class="fa-solid fa-list-check"></i> Aufgaben{% if open_task_count %} <span class="badge" style="font-size:10px;">{{ open_task_count }}</span>{% endif %}</a>
+        <a class="sidebar-link" href="{% url 'ats:talent_pool' %}"><i class="fa-solid fa-users"></i> Talent-Pool</a>
         <a class="sidebar-link" href="{% url 'ats:approvals' %}"><i class="fa-solid fa-stamp"></i> Freigaben</a>
+
+        {% if is_hr_admin %}
+        <div style="margin:12px 8px 4px; font-size:11px; letter-spacing:1px; color:#64748b; text-transform:uppercase;">Steuern &amp; Entscheiden</div>
         <a class="sidebar-link" href="{% url 'ats:governance' %}"><i class="fa-solid fa-landmark"></i> Governance</a>
         <a class="sidebar-link" href="{% url 'ats:staffing_requests' %}"><i class="fa-solid fa-people-arrows"></i> Personalbedarf</a>
         <a class="sidebar-link" href="{% url 'ats:panel_defaults' %}"><i class="fa-solid fa-users-rectangle"></i> Gremien</a>
         <a class="sidebar-link" href="{% url 'ats:delegations' %}"><i class="fa-solid fa-user-shield"></i> Delegationen</a>
-        <span class="sidebar-group-title">Termine & Menschen</span>
-        <a class="sidebar-link" href="{% url 'ats:interviews' %}"><i class="fa-solid fa-calendar-days"></i> Interview-Kalender</a>
-        <a class="sidebar-link" href="{% url 'ats:tasks' %}"><i class="fa-solid fa-list-check"></i> Aufgaben{% if open_task_count %} <span class="badge" style="font-size:10px;">{{ open_task_count }}</span>{% endif %}</a>
-        <a class="sidebar-link" href="{% url 'ats:talent_pool' %}"><i class="fa-solid fa-users"></i> Talent-Pool</a>
         <a class="sidebar-link" href="{% url 'ats:analytics' %}"><i class="fa-solid fa-chart-column"></i> Analytics</a>
         <a class="sidebar-link" href="{% url 'ats:source_channels' %}"><i class="fa-solid fa-signs-post"></i> Kanäle & Kampagnen</a>
         <a class="sidebar-link" href="{% url 'ats:landing_pages' %}"><i class="fa-solid fa-flag"></i> Landingpages</a>
-        <span class="sidebar-group-title">Stammdaten & Inhalte</span>
+        <div style="margin:12px 8px 4px; font-size:11px; letter-spacing:1px; color:#64748b; text-transform:uppercase;">Stammdaten &amp; Inhalte</div>
         <a class="sidebar-link" href="{% url 'ats:screening_questions' %}"><i class="fa-solid fa-circle-question"></i> Screening-Fragen</a>
         <a class="sidebar-link" href="{% url 'ats:categories' %}"><i class="fa-solid fa-layer-group"></i> Kategorien</a>
         <a class="sidebar-link" href="{% url 'ats:job_templates' %}"><i class="fa-solid fa-copy"></i> Job-Vorlagen</a>
         <a class="sidebar-link" href="{% url 'ats:contacts' %}"><i class="fa-solid fa-address-book"></i> Ansprechpartner</a>
         <a class="sidebar-link" href="{% url 'ats:branding' %}"><i class="fa-solid fa-palette"></i> Erscheinungsbild</a>
-        <span class="sidebar-group-title">System & Nachweis</span>
+        <div style="margin:12px 8px 4px; font-size:11px; letter-spacing:1px; color:#64748b; text-transform:uppercase;">System & Nachweis</div>
         <a class="sidebar-link" href="{% url 'ats:data_import' %}"><i class="fa-solid fa-file-import"></i> Daten-Import</a>
         <a class="sidebar-link" href="{% url 'ats:snippets' %}"><i class="fa-solid fa-puzzle-piece"></i> Textbausteine</a>
         <a class="sidebar-link" href="{% url 'ats:locations' %}"><i class="fa-solid fa-location-dot"></i> Standorte</a>
         <a class="sidebar-link" href="{% url 'ats:pages_manage' %}"><i class="fa-solid fa-file-lines"></i> Seiten</a>
         <a class="sidebar-link" href="{% url 'ats:media_manage' %}"><i class="fa-solid fa-photo-film"></i> Medien</a>
         <a class="sidebar-link" href="{% url 'ats:audit_log' %}"><i class="fa-solid fa-clipboard-list"></i> Audit-Log</a>
+        {% endif %}
     </div>
 
     <!-- Right Content Area -->
@@ -601,6 +607,7 @@
             </div>
         </div>
 
+        {% if is_hr_admin %}
         <!-- ====================================================================
              TAB 3: PROZESS FLOW MANAGER
              ==================================================================== -->
@@ -1421,6 +1428,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
 
     </div>
 </div>
@@ -1820,17 +1828,29 @@ MODALS & OVERLAYS
 
     // Switch between dashboard tabs
     function switchTab(clickedEl, tabId) {
+        // Ein Recruiter sieht die Admin-Tabs nicht. Falls ein frueher (als
+        // Admin) gespeicherter Tab wie 'gemma-tab' nicht mehr existiert,
+        // nicht auf einen leeren Bildschirm laufen, sondern zurueck auf die
+        // taegliche Arbeit (Kanban).
+        let target = document.getElementById(tabId);
+        if (!target) {
+            tabId = 'kanban-tab';
+            target = document.getElementById(tabId);
+            clickedEl = document.querySelector(".sidebar-link[onclick*='kanban-tab']") || clickedEl;
+        }
+        if (!target) return;
+
         // Toggle active link
         document.querySelectorAll('.sidebar-link').forEach(link => {
             link.classList.remove('active');
         });
-        clickedEl.classList.add('active');
+        if (clickedEl) clickedEl.classList.add('active');
 
         // Toggle active tab content
         document.querySelectorAll('.tab-content').forEach(content => {
             content.classList.remove('active');
         });
-        document.getElementById(tabId).classList.add('active');
+        target.classList.add('active');
 
         // Save active tab for reloads
         localStorage.setItem('activeTab', tabId);
@@ -3580,6 +3600,11 @@ MODALS & OVERLAYS
             
         if (sidebarLink) {
             switchTab(sidebarLink, targetTabId);
+        } else if (targetTabId !== 'kanban-tab') {
+            // Gespeicherter Tab ist fuer diese Rolle ausgeblendet: zurueck
+            // auf die taegliche Arbeit, statt gar nichts zu aktivieren.
+            const kanbanLink = document.querySelector(".sidebar-link[onclick*='kanban-tab']");
+            if (kanbanLink) switchTab(kanbanLink, 'kanban-tab');
         }
 
         // Setup drag & drop for CV zone

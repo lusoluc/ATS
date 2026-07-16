@@ -164,6 +164,11 @@ def dashboard(request):
     applications_to_sync = Application.objects.filter(status='INVITED').select_related('applicant', 'jobPosting')
     
     context = {
+        # Rollen-Flag fuer die Benutzerfuehrung: Ein Recruiter soll nur seine
+        # taegliche Arbeit sehen (Bewerbungen, Stellen), nicht die Admin-/IT-/
+        # Management-Werkzeuge. Ein HR-Admin sieht alles, aber sauber getrennt.
+        'is_hr_admin': (request.user.is_superuser
+                        or request.user.groups.filter(name='HR-Admin').exists()),
         'columns': columns,
         'interview_kinds': get_interview_kinds(),
         'active_jobs': active_jobs,

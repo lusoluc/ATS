@@ -9331,14 +9331,37 @@ class BestPerformerIngestionTestCase(TestCase):
 
     def _make_pdf(self, text="Erfahrene Pflegefachkraft mit Teamleitung "
                                 "und zehn Jahren Berufserfahrung."):
+        # Handgebautes Minimal-PDF statt reportlab: reportlab ist NICHT in
+        # requirements.txt und fehlt daher auf frischen Installationen/CI.
+        # pypdf (das der Server nutzt) liest den Text hieraus zuverlaess aus.
         import io
         from django.core.files.uploadedfile import SimpleUploadedFile
-        from reportlab.pdfgen import canvas
+        # Text als einfacher PDF-Content-Stream (Tj), ASCII-sicher escapen.
+        safe = text.replace("\\", r"\\").replace("(", r"\(").replace(")", r"\)")
+        safe = safe.encode("latin-1", "replace").decode("latin-1")
+        stream = f"BT /F1 12 Tf 72 720 Td ({safe}) Tj ET".encode("latin-1")
+        objs = []
+        objs.append(b"<< /Type /Catalog /Pages 2 0 R >>")
+        objs.append(b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+        objs.append(b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
+                    b"/Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>")
+        objs.append(b"<< /Length " + str(len(stream)).encode() + b" >>\nstream\n"
+                    + stream + b"\nendstream")
+        objs.append(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
         buf = io.BytesIO()
-        c = canvas.Canvas(buf)
-        c.drawString(72, 720, text)
-        c.showPage()
-        c.save()
+        buf.write(b"%PDF-1.4\n")
+        offsets = []
+        for i, body in enumerate(objs, start=1):
+            offsets.append(buf.tell())
+            buf.write(f"{i} 0 obj\n".encode() + body + b"\nendobj\n")
+        xref_pos = buf.tell()
+        buf.write(f"xref\n0 {len(objs)+1}\n".encode())
+        buf.write(b"0000000000 65535 f \n")
+        for off in offsets:
+            buf.write(f"{off:010d} 00000 n \n".encode())
+        buf.write(b"trailer\n<< /Size " + str(len(objs)+1).encode()
+                  + b" /Root 1 0 R >>\nstartxref\n"
+                  + str(xref_pos).encode() + b"\n%%EOF")
         buf.seek(0)
         return SimpleUploadedFile("best_mueller.pdf", buf.read(),
                                   content_type="application/pdf")

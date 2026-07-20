@@ -115,9 +115,14 @@ def delete_page(request, page_id):
 def media_manage(request):
     if request.method == 'POST' and request.FILES.get('file'):
         f = request.FILES['file']
+        # WP8/WCAG 1.1.1: Alt-Text ist Pflicht – auch bei direkten POSTs
+        # ohne das (required-)Formular entstehen keine Bilder ohne Alt-Text.
+        alt_text = (request.POST.get('altText') or '').strip()
+        if not alt_text:
+            return redirect('ats:media_manage')
         MediaAsset.objects.create(
             name=(request.POST.get('name') or f.name)[:255],
-            altText=(request.POST.get('altText') or '')[:255],  # WP8/WCAG 1.1.1
+            altText=alt_text[:255],
             file=f,
             contentType=getattr(f, 'content_type', None),
         )

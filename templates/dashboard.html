@@ -479,6 +479,12 @@
             </div>
 
             <!-- Drag-and-Drop columns -->
+            <!-- WP8/WCAG 2.1.1+4.1.2: Tastatur-Hinweis (aria-describedby der Karten)
+                 und Live-Region, die Verschiebungen für Screenreader ansagt -->
+            <p id="kanban-keys-hint" class="sr-only">Enter öffnet die Detailansicht.
+               Pfeil nach oben oder unten verschiebt die Karte innerhalb der Spalte,
+               Pfeil nach links oder rechts verschiebt sie in die vorherige oder nächste Spalte.</p>
+            <div id="kanban-live" class="sr-only" aria-live="polite"></div>
             <div class="kanban-board">
                 <!-- Neu -->
                 <div class="kanban-column" id="col-NEW" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event, 'NEW')">
@@ -486,7 +492,7 @@
                         <span class="column-title"><i class="fa-solid fa-star-of-life" style="color: var(--primary-light);"></i> Neu</span>
                         <span class="column-count" id="count-NEW">{{ columns.NEW|length }}</span>
                     </div>
-                    <div class="kanban-cards-wrapper" id="cards-NEW">
+                    <div class="kanban-cards-wrapper" id="cards-NEW" role="list" aria-label="Bewerbungen: Neu">
                         {% for app in columns.NEW %}
                             {% include 'includes/kanban_card.html' with app=app %}
                         {% endfor %}
@@ -499,7 +505,7 @@
                         <span class="column-title"><i class="fa-solid fa-magnifying-glass" style="color: #3b82f6;"></i> In Prüfung</span>
                         <span class="column-count" id="count-IN_REVIEW">{{ columns.IN_REVIEW|length }}</span>
                     </div>
-                    <div class="kanban-cards-wrapper" id="cards-IN_REVIEW">
+                    <div class="kanban-cards-wrapper" id="cards-IN_REVIEW" role="list" aria-label="Bewerbungen: In Prüfung">
                         {% for app in columns.IN_REVIEW %}
                             {% include 'includes/kanban_card.html' with app=app %}
                         {% endfor %}
@@ -512,7 +518,7 @@
                         <span class="column-title"><i class="fa-solid fa-calendar-check" style="color: var(--accent);"></i> Eingeladen</span>
                         <span class="column-count" id="count-INVITED">{{ columns.INVITED|length }}</span>
                     </div>
-                    <div class="kanban-cards-wrapper" id="cards-INVITED">
+                    <div class="kanban-cards-wrapper" id="cards-INVITED" role="list" aria-label="Bewerbungen: Eingeladen">
                         {% for app in columns.INVITED %}
                             {% include 'includes/kanban_card.html' with app=app %}
                         {% endfor %}
@@ -525,7 +531,7 @@
                         <span class="column-title"><i class="fa-solid fa-handshake" style="color: #22c55e;"></i> Eingestellt</span>
                         <span class="column-count" id="count-HIRED">{{ columns.HIRED|length }}</span>
                     </div>
-                    <div class="kanban-cards-wrapper" id="cards-HIRED">
+                    <div class="kanban-cards-wrapper" id="cards-HIRED" role="list" aria-label="Bewerbungen: Eingestellt">
                         {% for app in columns.HIRED %}
                             {% include 'includes/kanban_card.html' with app=app %}
                         {% endfor %}
@@ -538,7 +544,7 @@
                         <span class="column-title"><i class="fa-solid fa-circle-xmark" style="color: #ef4444;"></i> Abgelehnt</span>
                         <span class="column-count" id="count-REJECTED">{{ columns.REJECTED|length }}</span>
                     </div>
-                    <div class="kanban-cards-wrapper" id="cards-REJECTED">
+                    <div class="kanban-cards-wrapper" id="cards-REJECTED" role="list" aria-label="Bewerbungen: Abgelehnt">
                         {% for app in columns.REJECTED %}
                             {% include 'includes/kanban_card.html' with app=app %}
                         {% endfor %}
@@ -1258,7 +1264,7 @@
                                     <!-- Ingestion progress simulator -->
                                     <div id="ingestion-progress-container" style="display: none; margin-top: 15px; width: 100%;">
                                         <div style="display: flex; justify-content: space-between; font-size: 11px; color: #10b981; margin-bottom: 6px;">
-                                            <span id="ingestion-status-text">Verarbeite & trainiere Modell...</span>
+                                            <span id="ingestion-status-text" aria-live="polite">Verarbeite & trainiere Modell...</span>
                                             <span id="ingestion-pct-text">0%</span>
                                         </div>
                                         <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
@@ -1294,7 +1300,7 @@
                                                 <button type="button" class="btn-secondary-cta" onclick="validateCustomPrompt('AGG')" style="height: 30px; line-height: 28px; font-size: 12px; padding: 0 14px; margin: 0; border-color: #8b5cf6; color: #a78bfa; background: rgba(139, 92, 246, 0.1);">
                                                     <i class="fa-solid fa-vial-circle-check"></i> Prompt live testen & validieren
                                                 </button>
-                                                <div id="agg-validation-status" style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                                                <div id="agg-validation-status" aria-live="polite" style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
                                                     <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #9ca3af;"></span>
                                                     <span>Noch nicht validiert</span>
                                                 </div>
@@ -1320,7 +1326,7 @@
                                                 <button type="button" class="btn-secondary-cta" onclick="validateCustomPrompt('EASY')" style="height: 30px; line-height: 28px; font-size: 12px; padding: 0 14px; margin: 0; border-color: #8b5cf6; color: #a78bfa; background: rgba(139, 92, 246, 0.1);">
                                                     <i class="fa-solid fa-vial-circle-check"></i> Prompt live testen & validieren
                                                 </button>
-                                                <div id="easy-validation-status" style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                                                <div id="easy-validation-status" aria-live="polite" style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
                                                     <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #9ca3af;"></span>
                                                     <span>Noch nicht validiert</span>
                                                 </div>
@@ -1657,7 +1663,7 @@ MODALS & OVERLAYS
                         <button type="button" class="btn-secondary-cta" style="height:32px; font-size:12px; padding:0 14px;" onclick="applyToneToDescription(this)">
                             <i class="fa-solid fa-wand-magic-sparkles" style="margin-right:6px;"></i>Mit KI umformulieren
                         </button>
-                        <span id="job-tone-status" style="font-size:11px; color: var(--text-muted);"></span>
+                        <span id="job-tone-status" aria-live="polite" style="font-size:11px; color: var(--text-muted);"></span>
                     </div>
                     
                     <!-- New Interactive Premium Suggestions Panel -->
@@ -2032,17 +2038,63 @@ MODALS & OVERLAYS
     }
 
     // WP8/WCAG 2.1.1: Karten per Tastatur/Buttons verschieben (Alternative zu Drag&Drop)
-    function moveCard(appId, dir) {
+    const KANBAN_COLUMNS = ['NEW', 'IN_REVIEW', 'INVITED', 'HIRED', 'REJECTED'];
+    const KANBAN_LABELS = { NEW: 'Neu', IN_REVIEW: 'In Prüfung', INVITED: 'Eingeladen',
+                            HIRED: 'Eingestellt', REJECTED: 'Abgelehnt' };
+
+    function announceKanban(text) {
+        const live = document.getElementById('kanban-live');
+        if (live) { live.textContent = text; }
+    }
+
+    function moveCard(appId, dir, viaKeyboard) {
         const card = document.getElementById(`card-${appId}`);
         if (!card) return;
         const wrapper = card.parentElement;
-        const sibling = dir < 0 ? card.previousElementSibling : card.nextElementSibling;
-        if (!sibling || !sibling.classList.contains('applicant-card')) return;
+        // Nachbar-Karte suchen; zwischen den Karten liegen <script>-Blöcke
+        // aus dem Include, die übersprungen werden müssen.
+        let sibling = dir < 0 ? card.previousElementSibling : card.nextElementSibling;
+        while (sibling && !sibling.classList.contains('applicant-card')) {
+            sibling = dir < 0 ? sibling.previousElementSibling : sibling.nextElementSibling;
+        }
+        if (!sibling) return;
         if (dir < 0) { wrapper.insertBefore(card, sibling); }
-        else { wrapper.insertBefore(sibling, card); }
+        else { wrapper.insertBefore(card, sibling.nextElementSibling); }
         const status = wrapper.id.replace('cards-', '');
         persistColumnOrder(status);
-        card.querySelector('.card-move')?.focus();
+        const cards = [...wrapper.querySelectorAll('.applicant-card')];
+        announceKanban(`${card.getAttribute('data-name')}: Position ${cards.indexOf(card) + 1} von ${cards.length} in „${KANBAN_LABELS[status] || status}"`);
+        if (viaKeyboard) { card.focus(); }
+        else { card.querySelector('.card-move')?.focus(); }
+    }
+
+    // Spaltenwechsel per Tastatur = Statuswechsel; nutzt denselben
+    // Server-Pfad wie Drag&Drop (inkl. HIRED-Datum und Bedenken-Dialog).
+    function moveCardColumn(appId, dir) {
+        const card = document.getElementById(`card-${appId}`);
+        if (!card) return;
+        const oldStatus = card.parentElement.id.replace('cards-', '');
+        const newStatus = KANBAN_COLUMNS[KANBAN_COLUMNS.indexOf(oldStatus) + dir];
+        if (!newStatus) return;
+        const destination = document.getElementById(`cards-${newStatus}`);
+        if (!destination) return;
+        destination.appendChild(card);
+        card.focus();
+        announceKanban(`${card.getAttribute('data-name')} nach „${KANBAN_LABELS[newStatus]}" verschoben`);
+        sendStatusUpdate(appId, newStatus, oldStatus, destination, card);
+    }
+
+    function cardKeydown(ev, appId) {
+        if (ev.target !== ev.currentTarget) return; // Bedienelemente in der Karte nicht kapern
+        const actions = {
+            'Enter':      () => openCandidateCard(ev.currentTarget),
+            ' ':          () => openCandidateCard(ev.currentTarget),
+            'ArrowUp':    () => moveCard(appId, -1, true),
+            'ArrowDown':  () => moveCard(appId, 1, true),
+            'ArrowLeft':  () => moveCardColumn(appId, -1),
+            'ArrowRight': () => moveCardColumn(appId, 1),
+        };
+        if (actions[ev.key]) { ev.preventDefault(); actions[ev.key](); }
     }
 
     // WP4/UC-UM-08/09: Mehrfachauswahl + Sammel-Statuswechsel
@@ -2150,52 +2202,55 @@ MODALS & OVERLAYS
             const after = getDragAfterElement(destination, ev.clientY);
             if (after) { destination.insertBefore(card, after); }
             else { destination.appendChild(card); }
-            
-            // Trigger database status update via AJAX POST
-            const formData = new FormData();
-            formData.append('status', newStatus);
-            if (newStatus === 'HIRED') {
-                // Einstellungsdatum manuell setzbar (leer = heute)
-                const d = prompt('Einstellungsdatum (JJJJ-MM-TT) – leer lassen für heute:', '');
-                if (d === null) { location.reload(); return; }  // abgebrochen
-                if (d.trim()) formData.append('hired_at', d.trim());
-            }
-            formData.append('order', [...destination.querySelectorAll('.applicant-card')].indexOf(card));
-            
-            fetch(`/recruiter/applications/${appId}/update-status/`, {
-                method: 'POST',
-                body: formData
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    if (data.notice) { alert(data.notice); }
-                    updateStatsCounters();
-                    persistColumnOrder(newStatus);              // Zielspalte
-                    if (oldStatus && oldStatus !== newStatus) { // Quellspalte nachziehen
-                        persistColumnOrder(oldStatus);
-                    }
-                } else if (data.concerns_blocked) {
-                    // Dokumentierte Bedenken aus Interviews: bewusst bestätigen
-                    const list = (data.concerns || []).map(c => '• ' + c).join('\n');
-                    if (confirm((data.error || 'Es liegen Bedenken vor.') +
-                                '\n\n' + list + '\n\nTrotzdem einstellen?')) {
-                        formData.append('force', '1');
-                        fetch(`/recruiter/applications/${appId}/update-status/`, {
-                            method: 'POST', body: formData
-                        }).then(r => r.json()).then(d2 => {
-                            if (d2.success) { updateStatsCounters(); persistColumnOrder(newStatus); }
-                            else { location.reload(); }
-                        });
-                    } else {
-                        location.reload();   // Zug zurücknehmen
-                    }
-                } else {
-                    console.error("Status-Update schlug fehl.");
-                }
-            })
-            .catch(err => console.error("Error updating status:", err));
+            sendStatusUpdate(appId, newStatus, oldStatus, destination, card);
         }
+    }
+
+    // Gemeinsamer Server-Pfad für Drag&Drop UND Tastatur-Spaltenwechsel
+    function sendStatusUpdate(appId, newStatus, oldStatus, destination, card) {
+        const formData = new FormData();
+        formData.append('status', newStatus);
+        if (newStatus === 'HIRED') {
+            // Einstellungsdatum manuell setzbar (leer = heute)
+            const d = prompt('Einstellungsdatum (JJJJ-MM-TT) – leer lassen für heute:', '');
+            if (d === null) { location.reload(); return; }  // abgebrochen
+            if (d.trim()) formData.append('hired_at', d.trim());
+        }
+        formData.append('order', [...destination.querySelectorAll('.applicant-card')].indexOf(card));
+
+        fetch(`/recruiter/applications/${appId}/update-status/`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                if (data.notice) { alert(data.notice); }
+                updateStatsCounters();
+                persistColumnOrder(newStatus);              // Zielspalte
+                if (oldStatus && oldStatus !== newStatus) { // Quellspalte nachziehen
+                    persistColumnOrder(oldStatus);
+                }
+            } else if (data.concerns_blocked) {
+                // Dokumentierte Bedenken aus Interviews: bewusst bestätigen
+                const list = (data.concerns || []).map(c => '• ' + c).join('\n');
+                if (confirm((data.error || 'Es liegen Bedenken vor.') +
+                            '\n\n' + list + '\n\nTrotzdem einstellen?')) {
+                    formData.append('force', '1');
+                    fetch(`/recruiter/applications/${appId}/update-status/`, {
+                        method: 'POST', body: formData
+                    }).then(r => r.json()).then(d2 => {
+                        if (d2.success) { updateStatsCounters(); persistColumnOrder(newStatus); }
+                        else { location.reload(); }
+                    });
+                } else {
+                    location.reload();   // Zug zurücknehmen
+                }
+            } else {
+                console.error("Status-Update schlug fehl.");
+            }
+        })
+        .catch(err => console.error("Error updating status:", err));
     }
 
     function updateStatsCounters() {

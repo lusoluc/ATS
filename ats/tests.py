@@ -474,11 +474,19 @@ class BacklogP3TestCase(TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             with override_settings(MEDIA_ROOT=tmp):
                 self.client.force_login(User.objects.get(username="hradmin6"))
+                from .models import MediaAsset
+                # WP8/WCAG 1.1.1: ohne Alt-Text kein Upload – auch bei
+                # direktem POST am (required-)Formular vorbei.
                 f = SimpleUploadedFile("logo.txt", b"hello", content_type="text/plain")
                 resp = self.client.post(reverse('ats:media_manage'), data={"file": f})
                 self.assertEqual(resp.status_code, 302)
-                from .models import MediaAsset
+                self.assertEqual(MediaAsset.objects.count(), 0)
+                f2 = SimpleUploadedFile("logo.txt", b"hello", content_type="text/plain")
+                resp = self.client.post(reverse('ats:media_manage'),
+                                        data={"file": f2, "altText": "Firmenlogo"})
+                self.assertEqual(resp.status_code, 302)
                 self.assertEqual(MediaAsset.objects.count(), 1)
+                self.assertEqual(MediaAsset.objects.first().altText, "Firmenlogo")
 
 
 class TemplateToneTestCase(TestCase):

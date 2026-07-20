@@ -53,7 +53,7 @@
 
   {% elif b.type == 'contact' and b.person %}
   <div class="card" style="display:flex; gap:var(--space-3); align-items:center; margin-bottom:var(--space-4);">
-    {% if b.person.photoUrl %}<img src="{{ b.person.photoUrl }}" alt="" style="width:56px; height:56px; border-radius:50%; object-fit:cover;">{% endif %}
+    {% if b.person.photoUrl %}<img src="{{ b.person.photoUrl }}" alt="Foto von {{ b.person.firstName }} {{ b.person.lastName }}, Ansprechperson" style="width:56px; height:56px; border-radius:50%; object-fit:cover;">{% endif %}
     <div>
       <strong>{{ b.person.firstName }} {{ b.person.lastName }}</strong>
       <p style="font-size:13px; color:var(--text-muted); margin:2px 0 0;">{{ b.person.globalJobTitle }}{% if b.person.phone %} · {{ b.person.phone }}{% endif %}{% if b.person.email %} · <a href="mailto:{{ b.person.email }}">{{ b.person.email }}</a>{% endif %}</p>

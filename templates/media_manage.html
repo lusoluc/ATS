@@ -9,7 +9,8 @@
       {% csrf_token %}
       <input type="file" name="file" required style="color:var(--text-main);">
       <input name="name" class="input" placeholder="Anzeigename (optional)">
-      <input name="altText" class="input" placeholder="Alt-Text für Barrierefreiheit (beschreibt das Bild)">
+      <!-- WP8/WCAG 1.1.1: Alt-Text ist Pflicht (HTML + serverseitig erzwungen) -->
+      <input name="altText" class="input" required placeholder="Alt-Text: Was ist auf dem Bild zu sehen? *">
       <button type="submit" class="btn btn-primary">Hochladen</button>
     </form>
     <table class="data-table">

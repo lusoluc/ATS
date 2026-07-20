@@ -11,10 +11,10 @@ Legende: ✅ erfüllt · ◐ teilweise · ❌ offen · n/a nicht anwendbar
 
 | Kriterium | Status | Umsetzung / Befund |
 |---|---|---|
-| 1.1.1 Nicht-Text-Inhalte (Alternativtexte) | ◐ | Icons sind dekorativ (FontAwesome, mit Textlabel daneben); Kontaktperson-Fotos brauchen `alt` – bei Medien-Uploads Alt-Text-Feld ergänzen (WP8) |
+| 1.1.1 Nicht-Text-Inhalte (Alternativtexte) | ✅ | Icons sind dekorativ (FontAwesome, mit Textlabel daneben); Alt-Text beim Medien-Upload Pflicht (HTML `required` + serverseitig erzwungen); Kontaktperson-Fotos mit sprechendem `alt` (Stellendetail, Landingpage, Content-Blöcke) |
 | 1.3.1 Info & Beziehungen (Semantik) | ✅ | Überschriftenhierarchie, `<label for>` an Formularfeldern, Tabellen mit `<thead>` |
 | 1.4.1 Farbe nicht als einziges Mittel | ✅ | Status zusätzlich als Text-Badge (nicht nur Farbe), Timeline mit Beschriftung |
-| 1.4.3 Kontrast (4,5:1) | ◐ | Haupttexte auf Dunkelgrund ok; `--text-muted` (#9ca3af) auf Glass-Flächen grenzwertig → **Kontrast-Modus** (Panel) bietet AAA-Alternative; Token-Anhebung in WP8 prüfen |
+| 1.4.3 Kontrast (4,5:1) | ✅ | `--text-muted` auf #a6aebc angehoben (WP8); Kandidaten-Portal-Token #94a3b8 auf #0b1220 rechnerisch ~7,3:1 (AA-konform); **Kontrast-Modus** (Panel) bietet zusätzlich AAA |
 | 1.4.4 Textvergrößerung 200% | ✅ | rem/relative Größen, responsive Grids (auto-fit) |
 | 1.4.10 Reflow (320px) | ✅ | Mobile-stapelnde Formulare (WP1), keine horizontalen Scroller in Kern-Flows |
 
@@ -22,11 +22,11 @@ Legende: ✅ erfüllt · ◐ teilweise · ❌ offen · n/a nicht anwendbar
 
 | Kriterium | Status | Umsetzung / Befund |
 |---|---|---|
-| 2.1.1 Tastatur | ◐ | Formulare/Links/Buttons nativ bedienbar; **Kanban-Drag&Drop hat keine Tastatur-Alternative** → Ausgleich: Statuswechsel per Modal-Dropdown möglich; dokumentierte Lücke |
+| 2.1.1 Tastatur | ✅ | Formulare/Links/Buttons nativ bedienbar; Kanban vollständig tastaturbedienbar: Karten fokussierbar, Enter/Leertaste öffnet Details, Pfeil hoch/runter sortiert in der Spalte, Pfeil links/rechts wechselt die Spalte (derselbe Server-Pfad wie Drag&Drop, inkl. Einstellungsdatum/Bedenken-Dialog); zusätzlich Hoch/Runter-Buttons an jeder Karte |
 | 2.4.1 Blöcke überspringen | ✅ | **Skip-Link „Zum Inhalt springen"** (dieses WP) |
 | 2.4.2 Seitentitel | ✅ | `{% block title %}` je Seite gepflegt |
 | 2.4.4 Linkzweck | ✅ | Sprechende Link-/Buttontexte, `aria-label` an Icon-Buttons |
-| 2.4.7 Fokus sichtbar | ◐ | Browser-Default aktiv + Input-Focus-Ring; einheitlicher :focus-visible-Stil in WP8 |
+| 2.4.7 Fokus sichtbar | ✅ | Einheitlicher globaler `:focus-visible`-Stil (Outline in Akzentfarbe, auch für `[tabindex]`-Elemente wie Kanban-Karten) |
 | 2.5.3 Beschriftung im Namen | ✅ | Sichtbare Labels = zugängliche Namen |
 
 ## 3. Verständlichkeit
@@ -42,8 +42,8 @@ Legende: ✅ erfüllt · ◐ teilweise · ❌ offen · n/a nicht anwendbar
 
 | Kriterium | Status | Umsetzung / Befund |
 |---|---|---|
-| 4.1.2 Name, Rolle, Wert | ◐ | A11y-Panel-Switches als echte Checkboxen ✅; Kanban-Karten für Screenreader als Liste auszeichnen (WP8) |
-| 4.1.3 Statusmeldungen | ◐ | Ton-/KI-Statusmeldungen sind Text; `aria-live` ergänzen (WP8) |
+| 4.1.2 Name, Rolle, Wert | ✅ | A11y-Panel-Switches als echte Checkboxen; Kanban-Spalten als `role="list"` (mit `aria-label` je Status), Karten als `role="listitem"` |
+| 4.1.3 Statusmeldungen | ✅ | `aria-live="polite"` an allen asynchronen KI-Statusregionen (Tonalität, AGG-/Leichte-Sprache-Prüfung, CV-Training, Einladungs-Politur, Analytics); Kanban-Verschiebungen und Vorlese-Status werden über eigene Live-Regionen angesagt |
 
 ## Besondere Stärken (über AA hinaus)
 
@@ -55,13 +55,14 @@ Legende: ✅ erfüllt · ◐ teilweise · ❌ offen · n/a nicht anwendbar
 
 ## Offene Punkte → WP8 (priorisiert)
 
-1. Tastatur-Alternative für Kanban-Reihenfolge (Pfeiltasten oder „nach oben/unten"-Buttons).
-2. `--text-muted`-Kontrast anheben oder auf AA-konformen Wert pinnen.
-3. Einheitlicher `:focus-visible`-Stil; `aria-live` für asynchrone Statusmeldungen.
-4. Alt-Text-Pflichtfeld beim Medien-Upload; `alt` an Kontaktperson-Fotos.
+1. ~~Tastatur-Alternative für Kanban.~~ ✅ Karten fokussierbar (`tabindex`), Enter öffnet Details, Pfeiltasten sortieren/wechseln Spalte; Hoch/Runter-Buttons; Live-Region sagt Verschiebungen an.
+2. ~~`--text-muted`-Kontrast anheben.~~ ✅ #a6aebc; Portal-Token geprüft (~7,3:1, AA).
+3. ~~Einheitlicher `:focus-visible`-Stil; `aria-live` für asynchrone Statusmeldungen.~~ ✅ globaler Stil; `aria-live` an allen KI-/Ton-Statusregionen inkl. Vorlesefunktion.
+4. ~~Alt-Text-Pflichtfeld beim Medien-Upload; `alt` an Kontaktperson-Fotos.~~ ✅ Pflicht (HTML + Server, getestet); sprechende `alt`-Texte in Landingpage und Content-Blöcken ergänzt.
 5. ~~Serverseitige Formularfehler inline am Feld.~~ ✅ umgesetzt (Nachtrag): Zusammenfassung + Feldfehler mit ARIA, Werte-Erhalt; deckt zugleich eine Robustheitslücke (direkte POSTs ohne Pflichtfelder erzeugten Datensätze mit leerer E-Mail).
 
-> Fazit: Kern-Kandidatenstrecke ist BFSG-tauglich nutzbar (inkl. assistiver Ausgleichs-
-> funktionen). **Alle fünf im Audit katalogisierten AA-Lücken sind inzwischen geschlossen**
-> (WP8 + Nachträge); verbleibende ◐-Einträge oben sind aktualisiert oder betreffen
-> laufende Pflege (z.B. Alt-Texte bei künftigen Uploads).
+> Fazit: Kern-Kandidatenstrecke und Recruiter-Oberfläche sind BFSG-tauglich nutzbar.
+> Alle im Audit katalogisierten AA-Lücken sind geschlossen und in den Tabellen oben
+> als ✅ mit Umsetzungsort dokumentiert. Laufende Pflege: Alt-Texte bei künftigen
+> Uploads (durch Pflichtfeld abgesichert), neue Views gegen die globalen
+> Fokus-/Live-Region-Muster prüfen.

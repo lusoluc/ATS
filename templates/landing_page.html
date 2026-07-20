@@ -19,7 +19,7 @@
 
   {% if lp.contactPerson %}
   <div class="card" style="display:flex; gap:var(--space-3); align-items:center; margin-bottom: var(--space-5);">
-    {% if lp.contactPerson.photoUrl %}<img src="{{ lp.contactPerson.photoUrl }}" alt="" style="width:56px; height:56px; border-radius:50%; object-fit:cover;">{% endif %}
+    {% if lp.contactPerson.photoUrl %}<img src="{{ lp.contactPerson.photoUrl }}" alt="Foto von {{ lp.contactPerson.firstName }} {{ lp.contactPerson.lastName }}, Ansprechperson" style="width:56px; height:56px; border-radius:50%; object-fit:cover;">{% endif %}
     <div>
       <strong>{{ lp.contactPerson.firstName }} {{ lp.contactPerson.lastName }}</strong>
       <p style="font-size:13px; color:var(--text-muted); margin:2px 0 0;">{{ lp.contactPerson.globalJobTitle }}{% if lp.contactPerson.phone %} · {{ lp.contactPerson.phone }}{% endif %}{% if lp.contactPerson.email %} · <a href="mailto:{{ lp.contactPerson.email }}">{{ lp.contactPerson.email }}</a>{% endif %}</p>

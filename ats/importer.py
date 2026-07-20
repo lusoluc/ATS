@@ -125,7 +125,7 @@ def parse_csv(file_bytes: bytes, overrides=None):
     try:
         dialect = csv.Sniffer().sniff(sample, delimiters=";,")
     except csv.Error:
-        class dialect:  # noqa: N801 – csv erwartet Klasse/Instanz
+        class dialect:  # type: ignore[no-redef]  # noqa: N801 – bewusster Fallback: csv akzeptiert Klasse/Instanz
             delimiter = ";"
             quotechar = '"'
 
@@ -275,7 +275,7 @@ def parse_xlsx(file_bytes: bytes, overrides=None):
         if not any(raw.values()):
             continue  # Leerzeilen ueberspringen (Excel-Klassiker)
         # mapping = {feld: quellspalte} – identisch zu parse_csv
-        row = {field: raw.get(col, "") for field, col in mapping.items()}
+        row: dict = {field: raw.get(col, "") for field, col in mapping.items()}
         row["_line"] = line
         rows.append(row)
     wb.close()

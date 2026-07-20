@@ -18,3 +18,21 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["ats", "securats"]
+
+# Schrittweise Typisierung: Basis-Checks projektweit, strenge Pflicht-
+# Annotationen nur in den bereits typisierten Kernmodulen (Overrides unten).
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main"]
+exclude = ["^legacy/", "^ats/migrations/"]
+ignore_missing_imports = true
+
+[tool.django-stubs]
+django_settings_module = "securats.settings"
+
+# Bereits voll typisierte Kernmodule: hier sind Annotationen Pflicht.
+# Neue typisierte Module in diese Liste aufnehmen.
+[[tool.mypy.overrides]]
+module = ["ats.audit"]
+disallow_untyped_defs = true
+check_untyped_defs = true

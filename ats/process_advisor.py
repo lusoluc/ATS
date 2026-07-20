@@ -56,7 +56,8 @@ LOW_BARRIER_KEYS = {"azubi", "ausbildung", "auszubildende", "reinigung", "lager"
 def rule_based_suggestions(title: str, family: str):
     """Kuratierte Fragen + Prozess-Hinweise aus Titel/Jobfamilie."""
     haystack = f"{title} {family}".lower()
-    questions, notes = [], []
+    questions: list[dict] = []
+    notes: list[str] = []
     matched = False
     for keys, qs in RULES:
         if any(k in haystack for k in keys):

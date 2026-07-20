@@ -11,6 +11,8 @@ Verifikation falschen Manipulations-Alarm schlägt.
 """
 import hashlib
 import json
+import uuid
+from typing import Any
 
 from django.db import IntegrityError, transaction
 from django.utils import timezone
@@ -18,7 +20,9 @@ from django.utils import timezone
 from .models import AuditLog
 
 
-def _entry_hash(prev, action, user_id, application_id, metadata_json, created_iso):
+def _entry_hash(prev: str | None, action: str | None, user_id: str | None,
+                application_id: str | None, metadata_json: str | None,
+                created_iso: str | None) -> str:
     payload = "|".join([
         prev or "", action or "", user_id or "", application_id or "",
         metadata_json or "", created_iso or "",
@@ -26,7 +30,9 @@ def _entry_hash(prev, action, user_id, application_id, metadata_json, created_is
     return hashlib.sha256(payload.encode("utf-8", "ignore")).hexdigest()
 
 
-def create_chained_audit(action, user_id=None, application_id=None, metadata_json="{}"):
+def create_chained_audit(action: str, user_id: str | None = None,
+                         application_id: str | None = None,
+                         metadata_json: str = "{}") -> AuditLog:
     """Legt einen Audit-Eintrag an und verkettet ihn mit dem letzten Eintrag.
 
     Die Unique-Constraint auf `seq` erzwingt eine lineare Kette auch bei
@@ -46,7 +52,8 @@ def create_chained_audit(action, user_id=None, application_id=None, metadata_jso
                     action=action, userId=user_id, applicationId=application_id,
                     metadataJson=metadata_json, createdAt=created,
                     prevHash=prev, entryHash=digest,
-                    seq=(last.seq + 1) if last else 1,
+                    # seq ist per Filter nie None; `or 0` nur fuer die Typpruefung
+                    seq=((last.seq or 0) + 1) if last else 1,
                 )
         except IntegrityError:
             continue
@@ -54,7 +61,9 @@ def create_chained_audit(action, user_id=None, application_id=None, metadata_jso
         "Audit-Kette: Sequenznummer nach 5 Versuchen weiterhin belegt.")
 
 
-def write_audit(action, user=None, application_id=None, **metadata):
+def write_audit(action: str, user: Any = None,
+                application_id: str | uuid.UUID | None = None,
+                **metadata: Any) -> AuditLog:
     """Schreibt einen verketteten Audit-Eintrag (bevorzugter Einstiegspunkt)."""
     username = None
     if user is not None and getattr(user, "is_authenticated", False):
@@ -67,7 +76,7 @@ def write_audit(action, user=None, application_id=None, **metadata):
     )
 
 
-def verify_audit_chain():
+def verify_audit_chain() -> dict:
     """Prüft die Integrität der Hash-Kette (in `seq`-Ordnung).
 
     Rückgabe: dict mit ok(bool), checked(int), unchained(int) und ggf. broken_id.

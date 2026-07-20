@@ -40,7 +40,7 @@ def draft_state() -> WorkflowState:
 def has_open_gate(job) -> bool:
     """True, wenn eine Freigabe aussteht oder verweigert wurde (Gate geschlossen)."""
     ticket = getattr(job, "approvalTicket", None)
-    return bool(ticket) and ticket.status in ("PENDING", "RETURNED", "REJECTED")
+    return ticket is not None and ticket.status in ("PENDING", "RETURNED", "REJECTED")
 
 
 def ensure_approval_gate(job):
@@ -240,7 +240,7 @@ def notify_due_requisition_steps(req) -> int:
         return 0
     roles = [st.role for st in due]
     now = _tz.now()
-    recipients = {}  # email -> Vertretungs-Hinweis (oder None)
+    recipients: dict[str, str | None] = {}  # email -> Vertretungs-Hinweis (oder None)
     for role in roles:
         grp = Group.objects.filter(name=role).first()
         if not grp:

@@ -31,12 +31,13 @@ def build_applicant_export(applicant) -> dict:
         })
 
     app_ids = [str(a.id) for a in apps]
-    audit = list(AuditLog.objects
-                 .filter(applicationId__in=app_ids)
-                 .order_by("createdAt")
-                 .values("action", "userId", "applicationId", "createdAt"))
-    for row in audit:
-        row["createdAt"] = row["createdAt"].isoformat()
+    audit = [
+        {**row, "createdAt": row["createdAt"].isoformat()}
+        for row in AuditLog.objects
+        .filter(applicationId__in=app_ids)
+        .order_by("createdAt")
+        .values("action", "userId", "applicationId", "createdAt")
+    ]
 
     return {
         "betroffene_person": {

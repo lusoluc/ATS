@@ -87,9 +87,9 @@ if db_url.startswith('file:'):
     db_path = db_url.split('file:')[-1]
     # Handle relative or absolute paths
     if not os.path.isabs(db_path):
-        db_path = BASE_DIR / db_path
+        db_path = str(BASE_DIR / db_path)
 else:
-    db_path = BASE_DIR / 'dev.db'
+    db_path = str(BASE_DIR / 'dev.db')
 
 # DATENBANK — PostgreSQL ist die einzige unterstuetzte Produktions-Datenbank.
 #

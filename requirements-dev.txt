@@ -1,0 +1,5 @@
+# Entwicklungs-/CI-Werkzeuge (nicht in Produktion installieren)
+ruff>=0.14
+pre-commit>=4.0
+mypy>=1.15
+django-stubs>=6.0

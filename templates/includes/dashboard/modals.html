@@ -191,7 +191,9 @@ MODALS & OVERLAYS
             <form method="POST" action="{% url 'ats:create_job' %}">
                 {% csrf_token %}
                 <input type="hidden" name="job_id" id="job-id-inp">
-                
+
+                <fieldset class="wizard-section">
+                <legend>Stelle</legend>
                 <div class="form-group">
                     <label class="form-label" for="job-title-inp">Stellentitel *</label>
                     <input type="text" name="title" id="job-title-inp" class="form-input" placeholder="z. B. Full Stack Django Developer (m/w/d)" required>
@@ -269,6 +271,10 @@ MODALS & OVERLAYS
                     </div>
                 </div>
 
+                </fieldset>
+
+                <fieldset class="wizard-section">
+                <legend>Aufgaben &amp; Anforderungen</legend>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     <div class="form-group">
                         <label class="form-label" for="job-tasks-inp">Aufgaben (Eine Zeile pro Aufgabe) *</label>
@@ -280,6 +286,10 @@ MODALS & OVERLAYS
                     </div>
                 </div>
 
+                </fieldset>
+
+                <fieldset class="wizard-section">
+                <legend>Einordnung</legend>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     <div class="form-group">
                         <label class="form-label" for="job-facility">Einrichtung *</label>
@@ -319,6 +329,10 @@ MODALS & OVERLAYS
                     </div>
                 </div>
 
+                </fieldset>
+
+                <fieldset class="wizard-section">
+                <legend>Vergütung</legend>
                 <div class="form-group">
                     <!-- Entgelttransparenz (EU-RL 2023/970, Art. 5): ohne Band keine Veröffentlichung -->
                     <label class="form-label" for="job-pay-band">Entgeltband (Pflicht für Veröffentlichung)</label>
@@ -331,6 +345,10 @@ MODALS & OVERLAYS
                     <p style="font-size:11px; color: var(--text-muted); margin-top:4px;">Die Spanne erscheint öffentlich in der Anzeige (Entgelttransparenz). Bänder pflegt HR-Admin unter „Entgeltbänder".</p>
                 </div>
 
+                </fieldset>
+
+                <fieldset class="wizard-section">
+                <legend>Darstellung</legend>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     <div class="form-group">
                         <label class="form-label" for="job-contact">Ansprechpartner</label>
@@ -362,6 +380,31 @@ MODALS & OVERLAYS
                     </div>
                 </div>
 
+                </fieldset>
+
+                <fieldset class="wizard-section">
+                <legend>Auswahlprozess</legend>
+                <!-- Steuerungs-Felder des Auswahlprozesses: gehoerten faelschlich
+                     zum CMS-Formular und wurden beim Wizard-Submit nie mitgesendet -->
+                <div style="display:flex; gap:16px; flex-wrap:wrap;">
+                    <div class="form-group" style="max-width:200px;">
+                        <label class="form-label" for="headcount">Zu besetzende Stellen</label>
+                        <input type="number" id="headcount" name="headcount" class="form-input" min="1" max="99" value="1">
+                    </div>
+                    <div class="form-group" style="max-width:220px;">
+                        <label class="form-label" for="panel_quorum">Gremium-Quorum (leer = Mehrheit)</label>
+                        <input type="number" id="panel_quorum" name="panel_quorum" class="form-input" min="1" max="15" placeholder="z. B. 2">
+                    </div>
+                    <div class="form-group" style="max-width:220px;">
+                        <label class="form-label" for="panel_deadline_days">Abstimmungs-Frist (Tage, leer = keine)</label>
+                        <input type="number" id="panel_deadline_days" name="panel_deadline_days" class="form-input" min="1" max="60" placeholder="z. B. 7">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="interview_rounds">Gesprächsrunden (kommasepariert, leer = keine Rundenpflicht)</label>
+                    <input type="text" id="interview_rounds" name="interview_rounds" class="form-input" placeholder="z. B. Erstgespräch, Fachgespräch, Probearbeit">
+                </div>
+
                 <div class="form-group">
                     <label class="form-label" for="job-screening">Screening K.O. Fragen (JSON-Format)</label>
                     <div style="display:flex; gap:8px; align-items:center; margin:6px 0;">
@@ -383,6 +426,10 @@ MODALS & OVERLAYS
                     <p id="panel-hint" style="font-size:11px; color: var(--text-muted); margin-top:4px;"><span id="panel-preview" style="display:block; color:var(--accent-light); margin-bottom:2px;"></span>Leer = erbt den Default (Abteilung › Einrichtung › Standort › Jobfamilie › Organisation, Pflege unter „Gremien"). Wenn besetzt: Einladungen erst nach absoluter Mehrheit „dafür" (Override nur mit Audit). Abstimmung unter Freigaben.</p>
                 </div>
 
+                </fieldset>
+
+                <fieldset class="wizard-section">
+                <legend>Veröffentlichung</legend>
                 <div class="form-group">
                     <label class="form-label" for="job-state">Workflow-Veröffentlichungsstatus</label>
                     <select name="workflow_state" id="job-state" class="filter-select">
@@ -392,9 +439,10 @@ MODALS & OVERLAYS
                     </select>
                 </div>
 
-                <button type="submit" class="btn-apply-now" style="width: 100%; margin-top: 16px; height: 46px;">
+                <button type="submit" class="btn-apply-now" style="width: 100%; margin: 4px 0 12px; height: 46px;">
                     <i class="fa-solid fa-circle-check"></i> Stellenangebot veröffentlichen
                 </button>
+                </fieldset>
             </form>
         </div>
     </div>

@@ -279,6 +279,25 @@
     .modal-close:hover { color: #fff; }
     .modal-body { padding: 40px; }
 
+    /* Wizard-Abschnitte: Gruppierung + Weissraum (fieldset = semantisch,
+       Screenreader lesen die legend als Kontext der Felder vor) */
+    .wizard-section {
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-md);
+        padding: 20px 20px 8px;
+        margin: 0 0 28px;
+        min-width: 0;
+    }
+    .wizard-section legend {
+        padding: 0 10px;
+        font-family: 'Outfit', sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--primary-light);
+    }
+
     /* ROI Calculator Slider Cards */
     .roi-grid {
         display: grid;

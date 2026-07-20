@@ -391,6 +391,7 @@ def gemma_agg_check(request):
             prompt = f"""Du bist der SecurATS AGG-Konformitätsprüfer (basierend auf Gemma).
 Analysiere den folgenden Stellentext (Stellentitel und Beschreibung) auf mögliche Diskriminierungen (AGG-Verstöße) bezüglich Alter (z. B. 'Junior', 'Senior', 'jung'), Geschlecht (z. B. fehlendes m/w/d), Religion, Rasse oder Behinderung.
 Halte gezielt nach 'Junior' oder 'Senior' Ausschau, da dies im deutschen Arbeitsrecht als verdeckte Alterskriterien ausgelegt werden kann! Empfiehl stattdessen neutrale Bezeichnungen mit Angabe der benötigten Berufserfahrung in Jahren.
+Prüfe zusätzlich auf Entgelttransparenz (EU-RL 2023/970, Art. 5): Aufforderungen, das aktuelle oder frühere Gehalt zu nennen oder Gehaltsnachweise einzureichen, sind unzulässig und müssen als Verstoß gemeldet werden (die Frage nach der Gehaltsvorstellung ist zulässig).
 
 Ausschreibungstext:
 {text}
@@ -560,6 +561,17 @@ Bitte antworte genau im folgenden Format, damit das System deine Antwort parsen 
                 if "belastbar" in text_lower:
                     violations.append("Formulierung 'belastbar' kann chronisch kranke oder behinderte Menschen abschrecken. Empfohlen: 'zuverlässig' oder 'engagiert'.")
                     optimized_text = re.sub(r'\bbelastbar\b', 'engagiert', optimized_text, flags=re.IGNORECASE)
+
+                # Entgelttransparenz (EU-RL 2023/970, Art. 5 Abs. 2):
+                # Gehaltshistorie-Aufforderungen im Anzeigentext melden
+                from ..pay_transparency import salary_history_violation
+                _pay_hit = salary_history_violation(text)
+                if _pay_hit:
+                    violations.append(
+                        f"Unzulässige Gehaltshistorie-Abfrage ('{_pay_hit}'): Nach "
+                        "EU-RL 2023/970 Art. 5 Abs. 2 darf nicht nach aktuellem oder "
+                        "früherem Gehalt gefragt werden. Zulässig: Frage nach der "
+                        "Gehaltsvorstellung.")
 
                 AuditLog.objects.create(
                     action="AI_TASK_COMPLETED",

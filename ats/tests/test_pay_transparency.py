@@ -175,3 +175,128 @@ class GuardrailPayTransparencyTestCase(TestCase):
         self.assertIn("pay_blocked_reason", src)
         src_toggle = inspect.getsource(jobs_module.toggle_job_active)
         self.assertIn("pay_blocked_reason", src_toggle)
+
+    def test_question_paths_wire_history_guard(self):
+        """E2: Alle Wege, auf denen Fragen ins System kommen, prüfen die
+        Gehaltshistorie — Editor, Registry/Mindeststandards, KI-Validierung."""
+        import inspect
+
+        from .. import process_advisor
+        from ..views import jobs as jobs_module
+        from ..views import settings_admin
+        self.assertIn("strip_salary_history_questions",
+                      inspect.getsource(jobs_module.create_job))
+        self.assertIn("salary_history_violation",
+                      inspect.getsource(settings_admin.screening_questions_view))
+        self.assertIn("salary_history_violation",
+                      inspect.getsource(process_advisor._validate_ai_questions))
+
+
+class SalaryHistoryDetectionTestCase(TestCase):
+    """E2/Art. 5 Abs. 2: Erkennung — Historie verboten, Vorstellung erlaubt."""
+
+    def test_detects_history_questions(self):
+        from ..pay_transparency import salary_history_violation
+        verboten = [
+            "Was war Ihr letztes Gehalt?",
+            "Wie hoch ist Ihre aktuelle Vergütung?",
+            "Bitte nennen Sie Ihren derzeitigen Verdienst.",
+            "Reichen Sie Ihre letzten drei Gehaltsabrechnungen ein.",
+            "Bitte fügen Sie einen Gehaltsnachweis bei.",
+            "Ihr bisheriges Bruttojahresgehalt?",
+            "Was verdienen Sie momentan?",
+            "What is your current salary?",
+            "Please provide your salary history.",
+        ]
+        for frage in verboten:
+            self.assertIsNotNone(salary_history_violation(frage),
+                                 f"Nicht erkannt: {frage}")
+
+    def test_allows_salary_expectation(self):
+        from ..pay_transparency import salary_history_violation
+        erlaubt = [
+            "Was ist Ihre Gehaltsvorstellung?",
+            "Welches Wunschgehalt schwebt Ihnen vor?",
+            "Ab wann können Sie anfangen?",
+            "Wir zahlen faire Vergütung nach Tarif.",
+            "Die Gehaltsspanne finden Sie in der Anzeige.",
+        ]
+        for frage in erlaubt:
+            self.assertIsNone(salary_history_violation(frage),
+                              f"Fälschlich blockiert: {frage}")
+
+
+class SalaryHistoryEnforcementTestCase(TestCase):
+    """E2: Durchsetzung an allen vier Eingangswegen."""
+
+    def setUp(self):
+        self.org, self.fac, self.loc, self.fam, self.published, self.band = _world()
+
+    def test_create_job_strips_history_question_keeps_legit(self):
+        import json as _json
+        self.client.force_login(make_user("e2-rec", role="Recruiter"))
+        self.client.post(reverse("ats:create_job"), data={
+            "title": "E2-Stelle", "description": "Text",
+            "facility": str(self.fac.id), "location": str(self.loc.id),
+            "job_family": str(self.fam.id),
+            "workflow_state": str(self.published.id),
+            "pay_band": str(self.band.id),
+            "screening_questions": _json.dumps([
+                {"id": "q1", "question": "Was war Ihr letztes Gehalt?",
+                 "type": "TEXT", "isMandatory": False},
+                {"id": "q2", "question": "Haben Sie ein Examen?",
+                 "type": "YES_NO", "isMandatory": True,
+                 "expectedAnswer": "YES"},
+                {"id": "q3", "question": "Was ist Ihre Gehaltsvorstellung?",
+                 "type": "TEXT", "isMandatory": False},
+            ])})
+        job = JobPosting.objects.get(title="E2-Stelle")
+        fragen = [q["question"] for q in _json.loads(job.screeningQuestionsJson)]
+        self.assertNotIn("Was war Ihr letztes Gehalt?", fragen)
+        self.assertIn("Haben Sie ein Examen?", fragen)          # bleibt
+        self.assertIn("Was ist Ihre Gehaltsvorstellung?", fragen)  # zulässig
+        self.assertTrue(AuditLog.objects.filter(
+            action="PAY_HISTORY_QUESTION_BLOCKED").exists())
+
+    def test_registry_rejects_history_question(self):
+        from ..models import ScreeningQuestion
+        self.client.force_login(make_user("e2-admin", role="HR-Admin"))
+        self.client.post(reverse("ats:screening_questions"), data={
+            "question": "Bitte nennen Sie Ihr aktuelles Gehalt."})
+        self.assertFalse(ScreeningQuestion.objects.filter(
+            question__icontains="Gehalt").exists())
+        self.assertTrue(AuditLog.objects.filter(
+            action="PAY_HISTORY_QUESTION_BLOCKED").exists())
+        # Zulässige Frage geht weiterhin durch
+        self.client.post(reverse("ats:screening_questions"), data={
+            "question": "Was ist Ihre Gehaltsvorstellung?"})
+        self.assertTrue(ScreeningQuestion.objects.filter(
+            question="Was ist Ihre Gehaltsvorstellung?").exists())
+
+    def test_minimum_standards_filtered(self):
+        import json as _json
+        self.client.force_login(make_user("e2-admin2", role="HR-Admin"))
+        self.client.post(reverse("ats:screening_questions"), data={
+            "form": "minimum", "family_id": str(self.fam.id),
+            "minimum_json": _json.dumps([
+                {"id": "m1", "question": "Was haben Sie zuletzt verdient?",
+                 "type": "TEXT", "isMandatory": True},
+                {"id": "m2", "question": "Führerschein Klasse B?",
+                 "type": "YES_NO", "isMandatory": True},
+            ])})
+        self.fam.refresh_from_db()
+        fragen = [q["question"] for q in _json.loads(self.fam.minimumQuestionsJson)]
+        self.assertEqual(fragen, ["Führerschein Klasse B?"])
+
+    def test_ai_validator_filters_history_question(self):
+        import json as _json
+
+        from ..process_advisor import _validate_ai_questions
+        raw = _json.dumps([
+            {"question": "Wie hoch war Ihr bisheriges Gehalt im letzten Job?"},
+            {"question": "Mit welchen Dokumentationssystemen haben Sie gearbeitet?"},
+        ])
+        out = _validate_ai_questions(raw, set())
+        texte = [q["question"] for q in out]
+        self.assertEqual(
+            texte, ["Mit welchen Dokumentationssystemen haben Sie gearbeitet?"])

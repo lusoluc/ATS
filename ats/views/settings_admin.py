@@ -9,6 +9,7 @@ import datetime
 import json
 import logging
 
+from django.contrib import messages
 from django.db import transaction
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -277,6 +278,16 @@ def screening_questions_view(request):
             qs[idx + 1], qs[idx] = qs[idx], qs[idx + 1]
         elif action == "delete" and idx is not None and idx < len(qs):
             qs.pop(idx)
+        # Entgelttransparenz (Art. 5 Abs. 2): Gehaltshistorie-Fragen fliegen
+        # raus, bevor sie als Mindeststandard in jede Stelle wandern.
+        from ..pay_transparency import PAY_HISTORY_MESSAGE, salary_history_violation
+        blocked = [q for q in qs if salary_history_violation(str(q.get("question", "")))]
+        if blocked:
+            qs = [q for q in qs if q not in blocked]
+            write_audit("PAY_HISTORY_QUESTION_BLOCKED", user=request.user,
+                        family=fam.name,
+                        removed=[q.get("question") for q in blocked])
+            messages.warning(request, PAY_HISTORY_MESSAGE)
         fam.minimumQuestionsJson = json.dumps(qs, ensure_ascii=False)
         fam.save(update_fields=["minimumQuestionsJson"])
         write_audit("MINIMUM_STANDARD_CHANGED", user=request.user,
@@ -296,6 +307,15 @@ def screening_questions_view(request):
                           {"questions": questions,
                            "families": JobFamily.objects.filter(archived=False).order_by("name"),
                            "minimum_error": f"Ungültiges JSON für {fam.name} – nichts gespeichert."})
+        from ..pay_transparency import PAY_HISTORY_MESSAGE, salary_history_violation
+        blocked = [q for q in parsed if isinstance(q, dict)
+                   and salary_history_violation(str(q.get("question", "")))]
+        if blocked:
+            parsed = [q for q in parsed if q not in blocked]
+            write_audit("PAY_HISTORY_QUESTION_BLOCKED", user=request.user,
+                        family=fam.name,
+                        removed=[q.get("question") for q in blocked])
+            messages.warning(request, PAY_HISTORY_MESSAGE)
         fam.minimumQuestionsJson = json.dumps(parsed, ensure_ascii=False)
         fam.save(update_fields=["minimumQuestionsJson"])
         write_audit("MINIMUM_STANDARD_CHANGED", user=request.user,
@@ -303,7 +323,12 @@ def screening_questions_view(request):
         return redirect("ats:screening_questions")
     if request.method == "POST":
         text = (request.POST.get("question") or "").strip()
-        if text:
+        from ..pay_transparency import PAY_HISTORY_MESSAGE, salary_history_violation
+        if text and salary_history_violation(text):
+            write_audit("PAY_HISTORY_QUESTION_BLOCKED", user=request.user,
+                        removed=[text])
+            messages.error(request, PAY_HISTORY_MESSAGE)
+        elif text:
             ScreeningQuestion.objects.create(question=text)
             write_audit("SCREENING_Q_ADDED", user=request.user)
         return redirect("ats:screening_questions")

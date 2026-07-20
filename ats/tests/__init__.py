@@ -137,6 +137,8 @@ from .test_pay_transparency import (
     PayBandModelTestCase,
     PayPublicDisplayTestCase,
     PayPublishGateTestCase,
+    SalaryHistoryDetectionTestCase,
+    SalaryHistoryEnforcementTestCase,
 )
 from .test_portal import (
     ApplicationConfirmationMailTestCase,

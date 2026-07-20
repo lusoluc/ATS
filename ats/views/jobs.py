@@ -170,6 +170,16 @@ def create_job(request):
                 job.save(update_fields=['screeningQuestionsJson'])
                 write_audit('MINIMUM_STANDARD_APPLIED', user=request.user,
                             job=job.title, corrections=enforced)
+            # Entgelttransparenz (Art. 5 Abs. 2): Gehaltshistorie-Fragen sind
+            # unzulässig — serverseitig entfernt, egal woher die Fragen kamen
+            # (Wizard, Vorlage, Import, KI).
+            from ..pay_transparency import PAY_HISTORY_MESSAGE, strip_salary_history_questions
+            removed_pay_qs = strip_salary_history_questions(job)
+            if removed_pay_qs:
+                job.save(update_fields=['screeningQuestionsJson'])
+                write_audit('PAY_HISTORY_QUESTION_BLOCKED', user=request.user,
+                            job=job.title, removed=removed_pay_qs)
+                messages.warning(request, PAY_HISTORY_MESSAGE)
             from ..approvals import ensure_approval_gate
             ticket = ensure_approval_gate(job)
             if ticket and ticket.status == "PENDING":

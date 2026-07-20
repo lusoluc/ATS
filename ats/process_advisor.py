@@ -106,6 +106,11 @@ def _validate_ai_questions(raw_text: str, existing_ids: set):
         q = str(item.get("question", "")).strip() if isinstance(item, dict) else ""
         if not (10 <= len(q) <= 200):
             continue
+        # Entgelttransparenz (Art. 5 Abs. 2): auch die KI darf keine
+        # Gehaltshistorie-Fragen vorschlagen.
+        from .pay_transparency import salary_history_violation
+        if salary_history_violation(q):
+            continue
         qid = f"ki_{i+1}"
         if qid in existing_ids:
             continue

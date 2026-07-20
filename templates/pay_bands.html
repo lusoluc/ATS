@@ -23,7 +23,7 @@
       <button type="submit" class="btn btn-primary">Hinzufügen</button>
     </form>
     <table class="data-table">
-      <thead><tr><th>Band</th><th>Tarifwerk</th><th>Spanne</th><th>Tarifhinweis</th><th></th></tr></thead>
+      <thead><tr><th>Band</th><th>Tarifwerk</th><th>Spanne</th><th>Tarifhinweis</th><th>Bewertung (Art. 4)</th><th></th></tr></thead>
       <tbody>
       {% for b in bands %}
         <tr>
@@ -31,9 +31,33 @@
           <td style="color:var(--text-muted);">{{ b.get_tariffSystem_display }}</td>
           <td>{{ b.range_label }}</td>
           <td style="color:var(--text-muted);">{{ b.collectiveAgreement|default:"–" }}</td>
+          <td>{% if b.has_evaluation %}<span class="badge badge-accent">✓ bewertet</span>{% else %}<span class="badge" style="color:var(--text-muted);">offen</span>{% endif %}</td>
           <td style="text-align:right;"><form method="post" action="{% url 'ats:archive_pay_band' b.id %}" onsubmit="return confirm('Band archivieren? Bestehende Stellen behalten ihre Zuordnung.');">{% csrf_token %}<button type="submit" class="btn-icon danger" title="Archivieren"><i class="fa-solid fa-box-archive"></i></button></form></td>
         </tr>
-      {% empty %}<tr><td colspan="5" class="empty-state">Noch keine Entgeltbänder. Ohne Band kann keine Stelle veröffentlicht werden.</td></tr>{% endfor %}
+        <tr>
+          <td colspan="6" style="padding-top:0;">
+            <!-- E3 / Art. 4: Tätigkeitsbewertung — vier objektive, geschlechtsneutrale
+                 Kriterien; gilt einheitlich für alle Stellen in diesem Band -->
+            <details {% if not b.has_evaluation %}{% endif %}>
+              <summary style="cursor:pointer; color:var(--text-muted); font-size:13px;">Tätigkeitsbewertung {{ b.name }} {% if not b.has_evaluation %}(unvollständig){% endif %}</summary>
+              <form method="post" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="evaluate">
+                <input type="hidden" name="band_id" value="{{ b.id }}">
+                <label style="font-size:12px;">Kompetenzen &amp; Qualifikation
+                  <textarea name="criteriaSkills" class="input" rows="2" placeholder="z. B. 3-jähriges Examen, Fachweiterbildung">{{ b.criteriaSkills }}</textarea></label>
+                <label style="font-size:12px;">Belastungen
+                  <textarea name="criteriaEffort" class="input" rows="2" placeholder="z. B. Schichtdienst, körperliche Pflege, emotionale Belastung">{{ b.criteriaEffort }}</textarea></label>
+                <label style="font-size:12px;">Verantwortung
+                  <textarea name="criteriaResponsibility" class="input" rows="2" placeholder="z. B. Medikamentengabe, Schichtleitung, Dokumentationspflicht">{{ b.criteriaResponsibility }}</textarea></label>
+                <label style="font-size:12px;">Arbeitsbedingungen
+                  <textarea name="criteriaWorkingConditions" class="input" rows="2" placeholder="z. B. Nacht-/Wochenenddienste, Stationsumgebung">{{ b.criteriaWorkingConditions }}</textarea></label>
+                <button type="submit" class="btn btn-primary" style="grid-column:1/-1; justify-self:start;">Bewertung speichern</button>
+              </form>
+            </details>
+          </td>
+        </tr>
+      {% empty %}<tr><td colspan="6" class="empty-state">Noch keine Entgeltbänder. Ohne Band kann keine Stelle veröffentlicht werden.</td></tr>{% endfor %}
       </tbody>
     </table>
   </div>

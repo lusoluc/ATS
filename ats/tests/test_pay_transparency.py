@@ -192,6 +192,100 @@ class GuardrailPayTransparencyTestCase(TestCase):
                       inspect.getsource(process_advisor._validate_ai_questions))
 
 
+class PayRangeAuditAnchorTestCase(TestCase):
+    """E3: Jede veröffentlichte Spanne wird in der Audit-HASH-KETTE verankert —
+    manipulationssicherer Nachweis, welche Spanne wann öffentlich war."""
+
+    def setUp(self):
+        self.org, self.fac, self.loc, self.fam, self.published, self.band = _world()
+
+    def _job(self, state=None, band=None, title="Anker-Stelle"):
+        return JobPosting.objects.create(
+            title=title, organization=self.org, facility=self.fac,
+            location=self.loc, jobFamily=self.fam,
+            workflowState=state or self.published, payBand=band)
+
+    def test_publish_creates_chained_entry_with_metadata(self):
+        import json as _json
+
+        from ..audit import verify_audit_chain
+        self._job(band=self.band)
+        entry = AuditLog.objects.get(action="PAY_RANGE_PUBLISHED")
+        self.assertTrue(entry.entryHash)                       # Teil der Kette
+        meta = _json.loads(entry.metadataJson)
+        self.assertEqual(meta["band"], "TVöD-P 7 (Stufe 2–6)")
+        self.assertEqual(meta["min"], "3304")
+        self.assertEqual(meta["max"], "4106")
+        self.assertEqual(meta["event"], "PUBLISHED")
+        self.assertTrue(verify_audit_chain()["ok"])
+
+    def test_unrelated_resave_does_not_duplicate(self):
+        job = self._job(band=self.band)
+        job.title = "Anker-Stelle (geändert)"
+        job.save()
+        self.assertEqual(
+            AuditLog.objects.filter(action="PAY_RANGE_PUBLISHED").count(), 1)
+
+    def test_band_change_while_published_is_anchored_again(self):
+        job = self._job(band=self.band)
+        other = PayBand.objects.create(name="P8", minAmount=3490, maxAmount=4410)
+        job.payBand = other
+        job.save()
+        events = [e for e in AuditLog.objects.filter(
+            action="PAY_RANGE_PUBLISHED").order_by("seq")]
+        self.assertEqual(len(events), 2)
+        import json as _json
+        self.assertEqual(_json.loads(events[1].metadataJson)["event"],
+                         "BAND_CHANGED")
+
+    def test_draft_job_is_not_anchored(self):
+        draft, _ = WorkflowState.objects.get_or_create(
+            name="draft", defaults={"description": "Entwurf"})
+        self._job(state=draft, band=self.band)
+        self.assertFalse(
+            AuditLog.objects.filter(action="PAY_RANGE_PUBLISHED").exists())
+
+    def test_toggle_activation_is_anchored(self):
+        draft, _ = WorkflowState.objects.get_or_create(
+            name="draft", defaults={"description": "Entwurf"})
+        job = self._job(state=draft, band=self.band)
+        self.client.force_login(make_user("e3-rec", role="Recruiter"))
+        self.client.post(reverse("ats:toggle_job_active", args=[job.id]))
+        self.assertTrue(
+            AuditLog.objects.filter(action="PAY_RANGE_PUBLISHED").exists())
+
+
+class PayBandEvaluationTestCase(TestCase):
+    """E3 / Art. 4: Tätigkeitsbewertung je Band (vier Kriterien)."""
+
+    def setUp(self):
+        _, _, _, _, _, self.band = _world()
+
+    def test_has_evaluation_requires_all_four(self):
+        self.assertFalse(self.band.has_evaluation)
+        self.band.criteriaSkills = "Examen"
+        self.band.criteriaEffort = "Schichtdienst"
+        self.band.criteriaResponsibility = "Medikamentengabe"
+        self.assertFalse(self.band.has_evaluation)             # 3 von 4
+        self.band.criteriaWorkingConditions = "Stationsdienst"
+        self.assertTrue(self.band.has_evaluation)
+
+    def test_evaluate_via_view_saves_and_audits(self):
+        self.client.force_login(make_user("e3-admin", role="HR-Admin"))
+        self.client.post(reverse("ats:pay_bands"), data={
+            "action": "evaluate", "band_id": str(self.band.id),
+            "criteriaSkills": "3-jähriges Examen",
+            "criteriaEffort": "Wechselschicht, Grundpflege",
+            "criteriaResponsibility": "Medikamentengabe, Doku",
+            "criteriaWorkingConditions": "Station, Patientenkontakt"})
+        self.band.refresh_from_db()
+        self.assertTrue(self.band.has_evaluation)
+        self.assertTrue(AuditLog.objects.filter(
+            action="PAY_BAND_EVALUATED").exists())
+        page = self.client.get(reverse("ats:pay_bands"))
+        self.assertContains(page, "✓ bewertet")
+
+
 class SalaryHistoryDetectionTestCase(TestCase):
     """E2/Art. 5 Abs. 2: Erkennung — Historie verboten, Vorstellung erlaubt."""
 

@@ -167,7 +167,12 @@ class Command(BaseCommand):
             name="TVöD-P 7 (Stufe 2–6)", defaults=dict(
                 tariffSystem="TVOED", minAmount=3304, maxAmount=4106,
                 period="MONTH", collectiveAgreement="TVöD-P, Entgeltgruppe P7",
-                note="zzgl. Schichtzulagen und Jahressonderzahlung"))
+                note="zzgl. Schichtzulagen und Jahressonderzahlung",
+                # Art.-4-Tätigkeitsbewertung (E3): vier Kriterien der Richtlinie
+                criteriaSkills="3-jährige Ausbildung mit Examen (Pflegefachkraft), Berufszulassung",
+                criteriaEffort="Wechselschicht inkl. Nächte/Wochenenden, körperliche Grundpflege, emotionale Belastung",
+                criteriaResponsibility="Eigenverantwortliche Medikamentengabe, Pflegedokumentation, Anleitung von Hilfskräften",
+                criteriaWorkingConditions="Stationsdienst, Hygienebereich, Patientenkontakt"))
         band_p5, _ = PayBand.objects.get_or_create(
             name="TVöD-P 5 (Stufe 2–6)", defaults=dict(
                 tariffSystem="TVOED", minAmount=2932, maxAmount=3507,

@@ -383,8 +383,22 @@ class PayBand(models.Model):
     # Art. 5 Abs. 1 lit. b: Hinweis auf einschlägige Tarifvertrags-Bestimmungen
     collectiveAgreement = models.CharField(max_length=255, blank=True, default="")
     note = models.CharField(max_length=255, blank=True, default="")  # z. B. "zzgl. Schichtzulagen"
+    # E3 / Art. 4: Tätigkeitsbewertung je Band — die vier objektiven,
+    # geschlechtsneutralen Kriterien der Richtlinie. Am BAND (nicht an der
+    # einzelnen Stelle): das Band bündelt gleichwertige Tätigkeiten, die
+    # Begründung gilt damit einheitlich für alle Stellen im Band.
+    criteriaSkills = models.TextField(blank=True, default="")           # Kompetenzen & Qualifikation
+    criteriaEffort = models.TextField(blank=True, default="")           # Belastungen
+    criteriaResponsibility = models.TextField(blank=True, default="")   # Verantwortung
+    criteriaWorkingConditions = models.TextField(blank=True, default="")  # Arbeitsbedingungen
     archived = models.BooleanField(default=False)
     createdAt = models.DateTimeField(default=timezone.now)
+
+    @property
+    def has_evaluation(self):
+        return bool(self.criteriaSkills.strip() and self.criteriaEffort.strip()
+                    and self.criteriaResponsibility.strip()
+                    and self.criteriaWorkingConditions.strip())
 
     @property
     def range_label(self):
@@ -398,6 +412,10 @@ class PayBand(models.Model):
 
 
 class JobPosting(models.Model):
+    # Transienter Zustand der Entgelttransparenz-Signale (ats/signals.py):
+    # (war_publiziert, altes_band_id) vor dem aktuellen save().
+    _pre_pay_state: "tuple[bool, uuid.UUID | None]"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)

@@ -134,9 +134,11 @@ from .test_misc import (
 from .test_pay_transparency import (
     GuardrailPayTransparencyTestCase,
     PayBandAdminTestCase,
+    PayBandEvaluationTestCase,
     PayBandModelTestCase,
     PayPublicDisplayTestCase,
     PayPublishGateTestCase,
+    PayRangeAuditAnchorTestCase,
     SalaryHistoryDetectionTestCase,
     SalaryHistoryEnforcementTestCase,
 )

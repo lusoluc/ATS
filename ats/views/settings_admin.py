@@ -385,6 +385,18 @@ def pay_bands_view(request):
     from decimal import Decimal, InvalidOperation
 
     from ..models import PayBand
+    if request.method == "POST" and request.POST.get("action") == "evaluate":
+        # E3 / Art. 4: Tätigkeitsbewertung je Band (vier Kriterien)
+        band = get_object_or_404(PayBand, id=request.POST.get("band_id"))
+        band.criteriaSkills = (request.POST.get("criteriaSkills") or "").strip()
+        band.criteriaEffort = (request.POST.get("criteriaEffort") or "").strip()
+        band.criteriaResponsibility = (request.POST.get("criteriaResponsibility") or "").strip()
+        band.criteriaWorkingConditions = (request.POST.get("criteriaWorkingConditions") or "").strip()
+        band.save(update_fields=["criteriaSkills", "criteriaEffort",
+                                 "criteriaResponsibility", "criteriaWorkingConditions"])
+        write_audit("PAY_BAND_EVALUATED", user=request.user, name=band.name,
+                    complete=band.has_evaluation)
+        return redirect("ats:pay_bands")
     if request.method == "POST":
         name = (request.POST.get("name") or "").strip()[:120]
         try:

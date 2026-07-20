@@ -5,46 +5,27 @@ Oeffentliche Namen werden in ats/views/__init__.py re-exportiert, damit
 urls.py und bestehende Importe (`from ats.views import X`) unveraendert
 funktionieren.
 """
-import os
 import json
-import uuid
 import logging
-import datetime
-from django.shortcuts import render, get_object_or_404, redirect
-from django.utils.http import url_has_allowed_host_and_scheme
-from django.views.decorators.csrf import ensure_csrf_cookie
-from ..permissions import any_staff_required, recruiter_required, hr_admin_required
-from ..permissions import scope_applications, scope_jobs, can_access_application
+
 from django.contrib import messages
-from django.http import HttpResponse, JsonResponse
-from django.conf import settings
-from django.utils import timezone
 from django.db import transaction
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
-from django.views.decorators.csrf import csrf_exempt
-from ..models import (
-    Organization, Facility, FacilityProfile, Department, Location,
-    JobFamily, ContactPerson, WorkflowState, JobTemplate, Benefit,
-    JobPosting, Applicant, Application, Interview, InterviewSlot,
-    Message, Page, AuditLog, AILearningSample, SystemSetting, AppWorkflowDef
-, get_interview_kinds)
-import os as _os
-from django.http import FileResponse, Http404
-from django.urls import reverse
+from django.http import Http404, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+
 from ..audit import write_audit
 from ..models import (
-    AuditLog, TalentPoolSubscription, ScreeningQuestion, RoleDelegation,
-    ApplicantToken, ApplicationDocument,
+    AuditLog,
+    Benefit,
+    Facility,
+    JobFamily,
+    JobPosting,
+    JobTemplate,
+    Location,
+    Organization,
+    WorkflowState,
 )
-from ..models import JobFamily, Location
-from ..models import Interview, Message
-from ..permissions import has_full_access
-from ..models import JobTemplate
-from django.utils.text import slugify
-from ..models import MediaAsset
-from django.contrib.auth.views import LoginView as AuthLoginView
-from django.core.cache import cache
+from ..permissions import hr_admin_required, recruiter_required, scope_jobs
 
 logger = logging.getLogger(__name__)
 
@@ -80,15 +61,15 @@ def create_job(request):
              request.POST.get('interview_rounds', '').split(',')
              if r.strip()][:6], ensure_ascii=False)
         description = request.POST.get('description', '').strip()
-        
+
         tasks_raw = request.POST.get('tasks', '')
         requirements_raw = request.POST.get('requirements', '')
-        
+
         tasks = [t.strip() for t in tasks_raw.split('\n') if t.strip()]
         requirements = [r.strip() for r in requirements_raw.split('\n') if r.strip()]
-        
+
         screening_raw = request.POST.get('screening_questions', '[]')
-        
+
         facility_id = request.POST.get('facility')
         dept_id = request.POST.get('department')
         location_id = request.POST.get('location')
@@ -97,23 +78,23 @@ def create_job(request):
         template_id = request.POST.get('job_template')
         benefits_selected = request.POST.getlist('benefits')
         workflow_state_id = request.POST.get('workflow_state')
-        
+
         with transaction.atomic():
             org = Organization.objects.first()
             if not org:
                 org = Organization.objects.create(name="SecurATS GmbH")
-                
+
             facility = get_object_or_404(Facility, id=facility_id) if facility_id else Facility.objects.first()
             location = get_object_or_404(Location, id=location_id) if location_id else Location.objects.first()
             job_family = get_object_or_404(JobFamily, id=job_family_id) if job_family_id else JobFamily.objects.first()
-            
+
             if workflow_state_id:
                 workflow_state = get_object_or_404(WorkflowState, id=workflow_state_id)
             else:
                 workflow_state = WorkflowState.objects.filter(name="published").first()
                 if not workflow_state:
                     workflow_state = WorkflowState.objects.create(name="published", description="Veröffentlicht")
-            
+
             if job_id:
                 job = get_object_or_404(JobPosting, id=job_id)
                 job.title = title
@@ -159,12 +140,12 @@ def create_job(request):
                     jobTemplate_id=template_id if template_id else None
                 )
                 action = "CREATE_JOB"
-            
+
             # Update benefits relation
             job.benefits.clear()
             if benefits_selected:
                 job.benefits.set(Benefit.objects.filter(id__in=benefits_selected))
-                
+
             AuditLog.objects.create(
                 action=action,
                 metadataJson=json.dumps({"jobId": str(job.id), "title": job.title})
@@ -193,7 +174,7 @@ def create_job(request):
                             job=job.title, ticket=str(ticket.id))
             # Stellenfreigabe (optional, dann Pflicht): ohne genehmigten
             # Bedarf bleibt die Stelle Entwurf statt online zu gehen.
-            from ..approvals import requisition_blocked_reason, draft_state
+            from ..approvals import draft_state, requisition_blocked_reason
             _rq_reason = requisition_blocked_reason(job)
             if _rq_reason and job.workflowState and \
                     job.workflowState.name == 'published':
@@ -202,9 +183,9 @@ def create_job(request):
                 write_audit('REQUISITION_GATE_BLOCKED', user=request.user,
                             job=job.title)
                 messages.warning(request, _rq_reason)
-            
+
         return redirect('ats:dashboard')
-        
+
     return redirect('ats:dashboard')
 
 
@@ -276,7 +257,7 @@ def job_template_detail(request, tpl_id):
     # Alle Versionen dieses Titels absteigend sortiert
     all_versions = JobTemplate.objects.filter(title__iexact=template.title).order_by('-version')
     latest_version = all_versions.first()
-    
+
     history_data = []
     for v in all_versions:
         # Stellen ermitteln, die diese spezielle Version nutzen
@@ -288,7 +269,7 @@ def job_template_detail(request, tpl_id):
                 'location': job.location.city if job.location else '—',
                 'state': job.workflowState.name if job.workflowState else 'draft'
             })
-            
+
         # Diff gegen die aktuellste Version ermitteln
         diff_html = ""
         if v.id != latest_version.id:
@@ -308,7 +289,7 @@ def job_template_detail(request, tpl_id):
             diff_html = '\n'.join(diff_lines)
         else:
             diff_html = '<div style="color:var(--text-muted); font-style:italic; padding:4px;">Dies ist die aktuellste Version. Keine Änderungen.</div>'
-            
+
         history_data.append({
             'id': str(v.id),
             'version': v.version,
@@ -319,7 +300,7 @@ def job_template_detail(request, tpl_id):
             'is_latest': (v.id == latest_version.id),
             'diff_html': diff_html
         })
-        
+
     return JsonResponse({
         'success': True,
         'title': template.title,
@@ -364,13 +345,13 @@ def update_job_posting_template(request, job_id):
         return JsonResponse({'success': False, 'error': 'Kein Zugriff'}, status=403)
     if not job.jobTemplate:
         return JsonResponse({'success': False, 'error': 'Keine Vorlage verknüpft'}, status=400)
-        
+
     latest = JobTemplate.objects.filter(title__iexact=job.jobTemplate.title).order_by('-version').first()
     if latest and latest.id != job.jobTemplate.id:
         old_tpl_version = job.jobTemplate.version
         job.jobTemplate = latest
         job.save(update_fields=['jobTemplate', 'updatedAt'])
-        
+
         from ..models import AuditLog
         AuditLog.objects.create(
             action="UPDATE_JOB_TEMPLATE_VERSION",
@@ -383,5 +364,5 @@ def update_job_posting_template(request, job_id):
             })
         )
         return JsonResponse({'success': True, 'new_version': latest.version})
-        
+
     return JsonResponse({'success': False, 'error': 'Bereits auf der neuesten Version'})

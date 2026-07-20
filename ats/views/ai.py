@@ -5,46 +5,28 @@ Oeffentliche Namen werden in ats/views/__init__.py re-exportiert, damit
 urls.py und bestehende Importe (`from ats.views import X`) unveraendert
 funktionieren.
 """
-import os
 import json
-import uuid
 import logging
-import datetime
-from django.shortcuts import render, get_object_or_404, redirect
-from django.utils.http import url_has_allowed_host_and_scheme
-from django.views.decorators.csrf import ensure_csrf_cookie
-from ..permissions import any_staff_required, recruiter_required, hr_admin_required
-from ..permissions import scope_applications, scope_jobs, can_access_application
-from django.contrib import messages
-from django.http import HttpResponse, JsonResponse
-from django.conf import settings
-from django.utils import timezone
+import os
+
 from django.db import transaction
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
-from django.views.decorators.csrf import csrf_exempt
-from ..models import (
-    Organization, Facility, FacilityProfile, Department, Location,
-    JobFamily, ContactPerson, WorkflowState, JobTemplate, Benefit,
-    JobPosting, Applicant, Application, Interview, InterviewSlot,
-    Message, Page, AuditLog, AILearningSample, SystemSetting, AppWorkflowDef
-, get_interview_kinds)
-import os as _os
-from django.http import FileResponse, Http404
-from django.urls import reverse
+from django.http import JsonResponse
+from django.shortcuts import redirect
+
 from ..audit import write_audit
 from ..models import (
-    AuditLog, TalentPoolSubscription, ScreeningQuestion, RoleDelegation,
-    ApplicantToken, ApplicationDocument,
+    Application,
+    AuditLog,
+    Facility,
+    JobFamily,
+    SystemSetting,
 )
-from ..models import JobFamily, Location
-from ..models import Interview, Message
-from ..permissions import has_full_access
-from ..models import JobTemplate
-from django.utils.text import slugify
-from ..models import MediaAsset
-from django.contrib.auth.views import LoginView as AuthLoginView
-from django.core.cache import cache
+from ..permissions import (
+    any_staff_required,
+    hr_admin_required,
+    recruiter_required,
+    scope_applications,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +44,7 @@ def _run_in_background(worker):
     clients"). SQLite verzeiht das, PostgreSQL nicht.
     """
     import threading
+
     from django.db import connection as _conn
 
     def _wrapped():
@@ -85,13 +68,12 @@ def get_ollama_url(endpoint="api/generate"):
     then falls back to 127.0.0.1 (local execution).
     """
     import socket
-    import os
-    
+
     # Allow override via environment variable
     env_host = os.environ.get("OLLAMA_HOST")
     if env_host:
         return f"http://{env_host}:11434/{endpoint}"
-        
+
     for host in ["host.docker.internal", "127.0.0.1"]:
         try:
             s = socket.create_connection((host, 11434), timeout=2.0)
@@ -99,7 +81,7 @@ def get_ollama_url(endpoint="api/generate"):
             return f"http://{host}:11434/{endpoint}"
         except Exception:
             pass
-            
+
     # Intelligent default fallback: inside a container, host.docker.internal is the host
     try:
         socket.gethostbyname("host.docker.internal")
@@ -125,10 +107,10 @@ def make_ollama_request(url, payload, timeout=8.0):
     Makes a POST request to Ollama using python's built-in urllib.
     Completely eliminates third-party dependencies like 'requests'.
     """
-    import urllib.request
-    import urllib.error
     import json
-    
+    import urllib.error
+    import urllib.request
+
     data = json.dumps(payload).encode('utf-8')
     req = urllib.request.Request(
         url,
@@ -155,8 +137,14 @@ def evaluate_with_local_gemma(cover_letter, requirements_list, application_id=No
     If the local Gemma service (Ollama on port 11434) is offline, it falls back to high-fidelity rule matching.
     """
     import json
-    from ..ai_safety import (build_evaluation_payload, build_repair_payload,
-                            coerce_score, PROMPT_VERSION, default_options)
+
+    from ..ai_safety import (
+        PROMPT_VERSION,
+        build_evaluation_payload,
+        build_repair_payload,
+        coerce_score,
+        default_options,
+    )
 
     def _setting(key, default=""):
         try:
@@ -210,7 +198,7 @@ def evaluate_with_local_gemma(cover_letter, requirements_list, application_id=No
         log_ai_execution("Bewerbungs-Scoring", get_ai_model(), None, False, True, str(e), False,
                          prompt_used=cover_letter, prompt_version=PROMPT_VERSION,
                          application_id=str(application_id) if application_id else None)
-        
+
     # Fallback to high-fidelity rule-based parsing
     text_lower = cover_letter.lower()
     matches = 0
@@ -218,7 +206,7 @@ def evaluate_with_local_gemma(cover_letter, requirements_list, application_id=No
     for kw in keywords:
         if kw in text_lower:
             matches += 1
-            
+
     if matches >= 4:
         return 'A', "Hervorragende Passgenauigkeit (Fallback). Anschreiben enthält exzellente Übereinstimmungen mit den geforderten Kompetenzen."
     elif matches >= 2:
@@ -236,7 +224,7 @@ def try_parse_json_reply(reply):
     """
     import json
     import re
-    
+
     cleaned = reply.strip()
     if "```" in cleaned:
         parts = cleaned.split("```")
@@ -247,7 +235,7 @@ def try_parse_json_reply(reply):
             if (part_str.startswith("{") and part_str.endswith("}")) or (part_str.startswith("[") and part_str.endswith("]")):
                 cleaned = part_str
                 break
-                
+
     try:
         return json.loads(cleaned), True
     except Exception:
@@ -263,7 +251,6 @@ def try_parse_json_reply(reply):
 def log_ai_execution(action_name, model_used, latency, success, fallback_mode, error_msg, custom_prompt_active, prompt_used="", **extra):
     import json
     try:
-        from ..models import AuditLog
         from ..ai_safety import redact_for_log
         metadata = {
             'model': model_used,
@@ -290,7 +277,7 @@ def log_ai_execution(action_name, model_used, latency, success, fallback_mode, e
 def classify_ai_error(error_str, model_name):
     """Classifies AI/Ollama connection issues and returns a highly detailed diagnostic message in German."""
     err_lower = str(error_str).lower()
-    
+
     if "timed out" in err_lower or "timeout" in err_lower:
         return (
             "⏳ Zeitüberschreitung bei der KI-Antwort (Timeout)\n\n"
@@ -325,13 +312,13 @@ def test_gemma(request):
     if request.method == 'POST':
         prompt = request.POST.get('prompt', 'Hallo Gemma, bist du bereit?').strip()
         import time
-        
+
         payload = {
             "model": get_ai_model(),
             "prompt": prompt,
             "stream": False
         }
-        
+
         start_time = time.time()
         try:
             success, res_data = make_ollama_request(get_ollama_url(), payload, timeout=20.0)
@@ -347,7 +334,7 @@ def test_gemma(request):
             latency = round(time.time() - start_time, 2)
             log_ai_execution("Verbindungstest", get_ai_model(), latency, False, False, str(e), False, prompt)
             return JsonResponse({'success': False, 'error': str(e)})
-            
+
     return JsonResponse({'success': False, 'error': 'Invalid request method.'})
 
 
@@ -359,15 +346,15 @@ def get_ai_execution_logs(request):
         from ..models import AuditLog
         logs = AuditLog.objects.filter(action="AI_EXECUTION").order_by('-createdAt')[:10]
         data = []
-        for l in logs:
+        for log in logs:
             try:
-                meta = json.loads(l.metadataJson)
+                meta = json.loads(log.metadataJson)
             except Exception:
                 meta = {}
             data.append({
-                'id': str(l.id),
-                'action_name': l.userId or "KI-Aktion",
-                'createdAt': l.createdAt.strftime('%Y-%m-%d %H:%M:%S'),
+                'id': str(log.id),
+                'action_name': log.userId or "KI-Aktion",
+                'createdAt': log.createdAt.strftime('%Y-%m-%d %H:%M:%S'),
                 'model': meta.get('model', 'gemma:2b'),
                 'latency': meta.get('latency', 0),
                 'success': meta.get('success', False),
@@ -388,7 +375,7 @@ def gemma_agg_check(request):
         text = request.POST.get('text', '').strip()
         if not text:
             return JsonResponse({'success': False, 'error': 'Kein Text übermittelt.'})
-            
+
         # Get custom prompt from DB
         custom_prompt = ""
         try:
@@ -397,7 +384,7 @@ def gemma_agg_check(request):
                 custom_prompt = setting.value.strip()
         except Exception:
             pass
-            
+
         if custom_prompt:
             prompt = f"{custom_prompt}\n\nAusschreibungstext zum Prüfen:\n{text}"
         else:
@@ -416,21 +403,21 @@ Bitte antworte genau im folgenden Format, damit das System deine Antwort parsen 
 === OPTIMIERTER TEXT ===
 (Gib hier den vollständigen, korrigierten, AGG-konformen Ausschreibungstext aus. Keine weiteren Kommentare vor oder nach diesem Block.)"""
 
-        import uuid
         import json
+        import uuid
+
         from ..models import AuditLog
-        
+
         task_id = uuid.uuid4()
-        
+
         # Save a pending task status
         AuditLog.objects.create(
             action="AI_TASK_PENDING",
             userId=str(task_id),
             metadataJson=json.dumps({"status": "pending", "type": "AGG_CHECK"})
         )
-        
-        import threading
-        
+
+
         def run_async_agg_check_worker():
             payload = {
                 "model": get_ai_model(),
@@ -443,7 +430,7 @@ Bitte antworte genau im folgenden Format, damit das System deine Antwort parsen 
                     "top_p": 0.5
                 }
             }
-            
+
             import time
             start_time = time.time()
             try:
@@ -452,15 +439,15 @@ Bitte antworte genau im folgenden Format, damit das System deine Antwort parsen 
                 latency = round(time.time() - start_time, 2)
                 if success:
                     reply = res_data.get("response", "").strip()
-                    
+
                     violations = []
                     optimized_text = text
-                    
+
                     parsed_json, is_json = try_parse_json_reply(reply)
                     if is_json:
                         status_val = str(parsed_json.get("status", "")).strip().lower()
                         is_green = status_val in ["grün", "gruen", "green", "konform", "safe", "ok", "compliant"]
-                        
+
                         if is_green:
                             violations = []
                         else:
@@ -471,18 +458,18 @@ Bitte antworte genau im folgenden Format, damit das System deine Antwort parsen 
                                 violations = [v.strip() for v in viols.split("\n") if v.strip()]
                             else:
                                 violations = [str(viols).strip()] if viols else []
-                                
+
                         opt_text = parsed_json.get("optimized_text") or parsed_json.get("optimized") or parsed_json.get("text")
                         if opt_text:
                             optimized_text = str(opt_text).strip()
                     else:
                         reply_lower = reply.lower()
                         import re
-                        
+
                         opt_headers = [
-                            "=== optimierter text ===", 
-                            "optimierter text-vorschlag:", 
-                            "optimierter text:", 
+                            "=== optimierter text ===",
+                            "optimierter text-vorschlag:",
+                            "optimierter text:",
                             "optimierter text vorschlag:"
                         ]
                         opt_header_found = None
@@ -490,15 +477,15 @@ Bitte antworte genau im folgenden Format, damit das System deine Antwort parsen 
                             if h in reply_lower:
                                 opt_header_found = h
                                 break
-                                
+
                         if opt_header_found:
                             idx = reply_lower.find(opt_header_found)
                             opt_part = reply[idx + len(opt_header_found):].strip()
                             violation_part = reply[:idx].strip()
-                            
+
                             for h_val in ["=== verstösse ===", "=== verstoesse ===", "=== verstöße ===", "identifizierte risiken:", "ki agg-check ergebnis:"]:
                                 violation_part = re.sub(h_val, "", violation_part, flags=re.IGNORECASE)
-                                
+
                             violations = [v.strip().lstrip("-*•# ") for v in violation_part.split("\n") if v.strip()]
                             optimized_text = opt_part
                         elif "=== OPTIMIERTER TEXT ===" in reply:
@@ -510,11 +497,11 @@ Bitte antworte genau im folgenden Format, damit das System deine Antwort parsen 
                         else:
                             violations = [reply]
                             optimized_text = text
-                    
+
                     violations = [v for v in violations if v and "keine verstöße" not in v.lower() and "keine offensichtlichen" not in v.lower() and "keine risiken" not in v.lower()]
-                    
+
                     log_ai_execution("AGG-Check", get_ai_model(), latency, True, False, "", bool(custom_prompt), prompt)
-                    
+
                     AuditLog.objects.create(
                         action="AI_TASK_COMPLETED",
                         userId=str(task_id),
@@ -535,12 +522,12 @@ Bitte antworte genau im folgenden Format, damit das System deine Antwort parsen 
                 # Log execution as failure, and trigger regex fallback
                 latency = round(time.time() - start_time, 2)
                 log_ai_execution("AGG-Check", get_ai_model(), latency, False, True, str(e), bool(custom_prompt), prompt)
-                
+
                 violations = []
                 optimized_text = text
                 text_lower = text.lower()
                 import re
-                
+
                 custom_lower = custom_prompt.lower()
                 junior_whitelisted = "junior" in custom_lower and ("ok" in custom_lower or "erlaubt" in custom_lower or "bag" in custom_lower or "keine änderung" in custom_lower or "keine aenderung" in custom_lower or "nicht das alter" in custom_lower)
                 senior_whitelisted = "senior" in custom_lower and ("ok" in custom_lower or "erlaubt" in custom_lower or "bag" in custom_lower or "keine änderung" in custom_lower or "keine aenderung" in custom_lower or "nicht das alter" in custom_lower)
@@ -551,7 +538,7 @@ Bitte antworte genau im folgenden Format, damit das System deine Antwort parsen 
                     optimized_text = re.sub(r'\bjunge\b', 'dynamische', optimized_text, flags=re.IGNORECASE)
                     optimized_text = re.sub(r'\bjung\b', 'dynamisch', optimized_text, flags=re.IGNORECASE)
                     optimized_text = re.sub(r'\bjungen\b', 'dynamischen', optimized_text, flags=re.IGNORECASE)
-                    
+
                 if "junior" in text_lower and not junior_whitelisted:
                     violations.append("Formulierung 'Junior' im Stellentitel oder Text kann als Altersdiskriminierung (Bevorzugung jüngerer Bewerber) ausgelegt werden. Empfehlung: Angabe konkreter Berufserfahrung (z. B. 'mit erste Praxiserfahrung / Berufseinsteiger') statt Altersbegriffen.")
                     optimized_text = re.sub(r'\bJunior\b', '', optimized_text)
@@ -561,19 +548,19 @@ Bitte antworte genau im folgenden Format, damit das System deine Antwort parsen 
                     violations.append("Formulierung 'Senior' im Stellentitel oder Text kann als Altersdiskriminierung (Benachteiligung jüngerer Bewerber) ausgelegt werden. Empfehlung: Angabe konkreter Berufserfahrung (z. B. 'mit mehrjähriger Berufserfahrung') statt Altersbegriffen.")
                     optimized_text = re.sub(r'\bSenior\b', '', optimized_text)
                     optimized_text = re.sub(r'\bsenior\b', 'mit mehrjähriger Berufserfahrung', optimized_text, flags=re.IGNORECASE)
-                    
+
                 if "arzt" in text_lower and "ärztin" not in text_lower and "m/w/d" not in text_lower:
                     violations.append("Geschlechtsspezifische Formulierung 'Arzt'. Empfohlen: 'Arzt/Ärztin (m/w/d)'.")
                     optimized_text = re.sub(r'\barzt\b', 'Arzt/Ärztin (m/w/d)', optimized_text, flags=re.IGNORECASE)
-                    
+
                 if "gesund" in text_lower:
                     violations.append("Formulierung 'gesund' diskriminiert potenziell Bewerber mit chronischen Erkrankungen oder körperlichen Einschränkungen.")
                     optimized_text = re.sub(r'\bgesund\b', 'qualifiziert', optimized_text, flags=re.IGNORECASE)
-                    
+
                 if "belastbar" in text_lower:
                     violations.append("Formulierung 'belastbar' kann chronisch kranke oder behinderte Menschen abschrecken. Empfohlen: 'zuverlässig' oder 'engagiert'.")
                     optimized_text = re.sub(r'\bbelastbar\b', 'engagiert', optimized_text, flags=re.IGNORECASE)
-                    
+
                 AuditLog.objects.create(
                     action="AI_TASK_COMPLETED",
                     userId=str(task_id),
@@ -590,9 +577,9 @@ Bitte antworte genau im folgenden Format, damit das System deine Antwort parsen 
                 )
 
         _run_in_background(run_async_agg_check_worker)
-        
+
         return JsonResponse({'success': True, 'async': True, 'task_id': str(task_id)})
-        
+
     return JsonResponse({'success': False, 'error': 'Invalid request method.'})
 
 
@@ -600,18 +587,19 @@ Bitte antworte genau im folgenden Format, damit das System deine Antwort parsen 
 def gemma_agg_check_status(request, task_id):
     """Checks the status of an asynchronous AGG checker background task."""
     import json
+
     from ..models import AuditLog
-    
+
     try:
         task = AuditLog.objects.filter(action="AI_TASK_COMPLETED", userId=str(task_id)).first()
         if task:
             res_data = json.loads(task.metadataJson)
             return JsonResponse({'success': True, 'status': 'completed', **res_data})
-            
+
         pending = AuditLog.objects.filter(action="AI_TASK_PENDING", userId=str(task_id)).first()
         if pending:
             return JsonResponse({'success': True, 'status': 'pending'})
-            
+
         return JsonResponse({'success': False, 'error': 'Task nicht gefunden.'})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
@@ -624,24 +612,24 @@ def gemma_translate_simple_german(request):
         text = request.POST.get('text', '').strip()
         if not text:
             return JsonResponse({'success': False, 'error': 'Kein Text übermittelt.'})
-            
+
         prompt = f"""
         Du bist der SecurATS Übersetzer für Leichte Sprache (basierend auf Gemma).
         Übersetze den folgenden Text in Leichte Sprache (barrierefrei, WCAG/BFSG compliant).
         Verwende kurze Sätze, einfache Wörter, erkläre schwierige Begriffe und verzichte auf Metaphern.
-        
+
         Text zum Übersetzen:
         {text}
-        
+
         NUR die Übersetzung ausgeben.
         """
-        
+
         payload = {
             "model": get_ai_model(),
             "prompt": prompt,
             "stream": False
         }
-        
+
         import time
         start_time = time.time()
         try:
@@ -656,7 +644,7 @@ def gemma_translate_simple_german(request):
         except Exception as e:
             latency = round(time.time() - start_time, 2)
             log_ai_execution("Leichte Sprache", get_ai_model(), latency, False, True, str(e), False, prompt)
-            
+
         # Fallback
         sentences = text.split(".")
         short_sentences = []
@@ -665,7 +653,7 @@ def gemma_translate_simple_german(request):
                 short_sentences.append(s.strip() + ".")
         reply = "📖 Leichte Sprache Übersetzung (Fallback-Modus):\n\n" + " ".join(short_sentences)
         return JsonResponse({'success': True, 'result': reply})
-        
+
     return JsonResponse({'success': False, 'error': 'Invalid request method.'})
 
 
@@ -675,33 +663,33 @@ def validate_ai_prompt(request):
     if request.method == 'POST':
         prompt_type = request.POST.get('type', 'AGG').strip()
         custom_prompt = request.POST.get('prompt', '').strip()
-        
+
         if not custom_prompt:
             return JsonResponse({'success': False, 'error': 'Kein Prompt übermittelt.'})
-            
+
         # Realistic, non-faked test text matching user expectations
         test_text = "Wir suchen ab sofort einen belastbaren Junior-Softwareentwickler (m/w/d) zur Verstärkung des Teams."
-        
+
         if prompt_type == 'AGG':
             prompt = f"{custom_prompt}\n\nAusschreibungstext zum Prüfen:\n{test_text}"
         else:
             prompt = f"{custom_prompt}\n\nText zum Übersetzen:\n{test_text}"
-            
-        import uuid
+
         import json
+        import uuid
+
         from ..models import AuditLog
-        
+
         task_id = uuid.uuid4()
-        
+
         # Save a pending task status
         AuditLog.objects.create(
             action="AI_TASK_PENDING",
             userId=str(task_id),
             metadataJson=json.dumps({"status": "pending", "type": f"VALIDATE_{prompt_type}"})
         )
-        
-        import threading
-        
+
+
         def run_async_validate_worker():
             payload = {
                 "model": get_ai_model(),
@@ -714,7 +702,7 @@ def validate_ai_prompt(request):
                     "top_p": 0.5
                 }
             }
-            
+
             import time
             start_time = time.time()
             try:
@@ -724,19 +712,19 @@ def validate_ai_prompt(request):
                 if success:
                     reply = res_data.get("response", "").strip()
                     reply_lower = reply.lower()
-                    
+
                     if prompt_type == 'AGG':
                         parsed_json, is_json = try_parse_json_reply(reply)
                         if is_json:
                             log_ai_execution("Prompt-Validierung (AGG-JSON)", get_ai_model(), latency, True, False, "", True, prompt)
                             status_val = str(parsed_json.get("status", "")).strip().lower()
                             is_green = status_val in ["grün", "gruen", "green", "konform", "safe", "ok", "compliant"]
-                            
+
                             if is_green:
                                 msg = 'Der Prompt wurde erfolgreich im JSON-Format ausgeführt und die Stellenausschreibung wurde als AGG-konform ("GRÜN") eingestuft.'
                             else:
                                 msg = 'Der Prompt wurde erfolgreich im JSON-Format ausgeführt. Es wurden AGG-Risiken ("ROT") identifiziert.'
-                                
+
                             result = {
                                 'valid': True,
                                 'reply_preview': reply[:300] + "...",
@@ -744,9 +732,9 @@ def validate_ai_prompt(request):
                             }
                         else:
                             opt_headers = [
-                                "=== optimierter text ===", 
-                                "optimierter text-vorschlag:", 
-                                "optimierter text:", 
+                                "=== optimierter text ===",
+                                "optimierter text-vorschlag:",
+                                "optimierter text:",
                                 "optimierter text vorschlag:"
                             ]
                             opt_header_found = None
@@ -754,9 +742,9 @@ def validate_ai_prompt(request):
                                 if h in reply_lower:
                                     opt_header_found = h
                                     break
-                            
+
                             has_delimiters = opt_header_found is not None or "=== OPTIMIERTER TEXT ===" in reply
-                            
+
                             if has_delimiters:
                                 log_ai_execution("Prompt-Validierung (AGG)", get_ai_model(), latency, True, False, "", True, prompt)
                                 result = {
@@ -786,7 +774,7 @@ def validate_ai_prompt(request):
                                 'reply_preview': reply[:200] + "...",
                                 'message': 'Der Antworttext der KI ist leer oder identisch mit dem Ausgangstext.'
                             }
-                    
+
                     AuditLog.objects.create(
                         action="AI_TASK_COMPLETED",
                         userId=str(task_id),
@@ -824,9 +812,9 @@ def validate_ai_prompt(request):
                 )
 
         _run_in_background(run_async_validate_worker)
-        
+
         return JsonResponse({'success': True, 'async': True, 'task_id': str(task_id)})
-        
+
     return JsonResponse({'success': False, 'error': 'Invalid request method.'})
 
 
@@ -834,18 +822,19 @@ def validate_ai_prompt(request):
 def validate_ai_prompt_status(request, task_id):
     """Checks the status of an asynchronous custom prompt validation background task."""
     import json
+
     from ..models import AuditLog
-    
+
     try:
         task = AuditLog.objects.filter(action="AI_TASK_COMPLETED", userId=str(task_id)).first()
         if task:
             res_data = json.loads(task.metadataJson)
             return JsonResponse({'success': True, 'status': 'completed', **res_data})
-            
+
         pending = AuditLog.objects.filter(action="AI_TASK_PENDING", userId=str(task_id)).first()
         if pending:
             return JsonResponse({'success': True, 'status': 'pending'})
-            
+
         return JsonResponse({'success': False, 'error': 'Task nicht gefunden.'})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
@@ -913,7 +902,7 @@ def polish_message(request):
     if not text:
         return JsonResponse({'error': 'Kein Text.'}, status=400)
 
-    from ..ai_safety import wrap_untrusted, compose_system_prompt, PROMPT_VERSION
+    from ..ai_safety import PROMPT_VERSION, compose_system_prompt, wrap_untrusted
     payload = {
         "model": get_ai_model(),
         "system": compose_system_prompt() + (
@@ -987,8 +976,7 @@ def suggest_process(request):
     """
     if request.method != 'POST':
         return JsonResponse({'error': 'POST erforderlich'}, status=405)
-    from ..process_advisor import (rule_based_suggestions, gate_info,
-                                  ai_extra_questions)
+    from ..process_advisor import ai_extra_questions, gate_info, rule_based_suggestions
     title = (request.POST.get('title') or '').strip()[:200]
     family_id = request.POST.get('job_family') or ''
     facility_id = request.POST.get('facility') or ''
@@ -1028,8 +1016,8 @@ def analytics_ask(request):
     if not question:
         return JsonResponse({'error': 'Bitte eine Frage stellen.'}, status=400)
 
+    from ..ai_safety import PROMPT_VERSION, compose_system_prompt, wrap_untrusted
     from ..analytics import build_data_summary
-    from ..ai_safety import wrap_untrusted, compose_system_prompt, PROMPT_VERSION
     apps = scope_applications(request.user, Application.objects.all())
     summary = build_data_summary(apps)
 

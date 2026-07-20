@@ -64,12 +64,13 @@ def panel_state(app):
     # Vorrang; fehlt sie, zaehlt die Stimme einer aktiven Vertretung (im
     # passenden Scope) fuer diesen Sitz. So blockiert Abwesenheit nicht.
     from django.utils import timezone as _tz
+
     from .models import RoleDelegation
     now = _tz.now()
     seat_of_delegate = {}
     for d in RoleDelegation.objects.filter(
             delegator_id__in=[int(m) for m in members if m.isdigit()],
-            validFrom__lte=now, validUntil__gte=now):
+            validFrom__lte=now, validUntil__gt=now):
         from .permissions import delegation_covers
         if delegation_covers(d, app.jobPosting):
             seat_of_delegate.setdefault(str(d.delegatee_id), str(d.delegator_id))
@@ -152,8 +153,7 @@ def resolve_panel_preview(job_family_id=None, facility_id=None,
     (die Stelle existiert ja noch nicht). Organisation wird ueber die
     Einrichtung aufgeloest (on-prem typischerweise Ein-Traeger-Installation:
     Fallback erste Organisation)."""
-    from .models import (Department, Facility, JobFamily, Location,
-                         Organization)
+    from .models import Department, Facility, JobFamily, Location, Organization
     facility = Facility.objects.filter(id=facility_id).first() if facility_id else None
     org = facility.organization if facility else Organization.objects.first()
     ladder = [

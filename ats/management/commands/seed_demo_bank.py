@@ -20,10 +20,21 @@ from django.core.management.base import CommandError
 from django.utils import timezone
 
 from ats.management.commands.seed_demo import Command as PflegeSeed
-from ats.models import (Organization, Location, Facility, Department,
-                        JobFamily, WorkflowState, JobPosting, ContactPerson,
-                        Applicant, Application, ApplicationVote,
-                        SourceChannel, LandingPage)
+from ats.models import (
+    Applicant,
+    Application,
+    ApplicationVote,
+    ContactPerson,
+    Department,
+    Facility,
+    JobFamily,
+    JobPosting,
+    LandingPage,
+    Location,
+    Organization,
+    SourceChannel,
+    WorkflowState,
+)
 
 
 class Command(PflegeSeed):
@@ -61,7 +72,7 @@ class Command(PflegeSeed):
 
         # ---------- Standorte (DACH + Remote)
         wien = Location.objects.create(name="Wien", city="Wien")
-        hamburg = Location.objects.create(name="Hamburg", city="Hamburg")
+        Location.objects.create(name="Hamburg", city="Hamburg")
         linz = Location.objects.create(name="Linz", city="Linz")
         remote = Location.objects.create(name="Remote (DACH)", city="Remote")
 
@@ -72,10 +83,10 @@ class Command(PflegeSeed):
                                              organization=org)
         dep_it = Department.objects.create(name="IT & Digital Banking",
                                            facility=zentrale)
-        dep_risk = Department.objects.create(name="Risikomanagement",
-                                             facility=zentrale)
-        dep_central = Department.objects.create(name="Central Functions",
-                                                facility=zentrale)
+        Department.objects.create(name="Risikomanagement",
+                                  facility=zentrale)
+        Department.objects.create(name="Central Functions",
+                                  facility=zentrale)
         dep_vertrieb = Department.objects.create(name="Filialnetz & Vertrieb",
                                                  facility=filialnetz)
 

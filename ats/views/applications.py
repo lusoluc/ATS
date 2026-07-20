@@ -5,52 +5,50 @@ Oeffentliche Namen werden in ats/views/__init__.py re-exportiert, damit
 urls.py und bestehende Importe (`from ats.views import X`) unveraendert
 funktionieren.
 """
-import os
-import json
-import uuid
-import logging
 import datetime
-from django.shortcuts import render, get_object_or_404, redirect
-from django.utils.http import url_has_allowed_host_and_scheme
-from django.views.decorators.csrf import ensure_csrf_cookie
-from ..permissions import any_staff_required, recruiter_required, hr_admin_required
-from ..permissions import scope_applications, scope_jobs, can_access_application
-from django.contrib.auth.models import Group
-from django.contrib import messages
-from django.http import HttpResponse, JsonResponse
-from django.conf import settings
-from django.utils import timezone
-from django.db import transaction
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
-from django.views.decorators.csrf import csrf_exempt
-from ..models import (
-    Organization, Facility, FacilityProfile, Department, Location,
-    JobFamily, ContactPerson, WorkflowState, JobTemplate, Benefit,
-    JobPosting, Applicant, Application, Interview, InterviewSlot,
-    Message, Page, AuditLog, AILearningSample, SystemSetting, AppWorkflowDef
-, get_interview_kinds)
+import json
+import logging
 import os as _os
-from django.http import FileResponse, Http404
+
+from django.contrib.auth.models import Group
+from django.core.files.storage import default_storage
+from django.db import transaction
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
+from django.views.decorators.csrf import ensure_csrf_cookie
+
 from ..audit import write_audit
 from ..models import (
-    AuditLog, TalentPoolSubscription, ScreeningQuestion, RoleDelegation,
-    ApplicantToken, ApplicationDocument,
+    AILearningSample,
+    ApplicantToken,
+    Application,
+    AppWorkflowDef,
+    AuditLog,
+    Benefit,
+    ContactPerson,
+    Department,
+    Facility,
+    Interview,
+    InterviewSlot,
+    JobFamily,
+    JobPosting,
+    JobTemplate,
+    Location,
+    Message,
+    Organization,
+    Page,
+    SystemSetting,
+    TalentPoolSubscription,
+    WorkflowState,
+    get_interview_kinds,
 )
-from ..models import JobFamily, Location
-from ..models import Interview, Message
-from ..permissions import has_full_access
-from ..models import JobTemplate
-from django.utils.text import slugify
-from ..models import MediaAsset
-from django.contrib.auth.views import LoginView as AuthLoginView
-from django.core.cache import cache
-
-logger = logging.getLogger(__name__)
-
+from ..permissions import any_staff_required, can_access_application, recruiter_required, scope_applications, scope_jobs
 from .common import seed_data_if_empty
 from .governance import _pending_steps_for
+
+logger = logging.getLogger(__name__)
 
 __all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "toggle_learning_sample", "reorder_board", "bulk_update_status", "application_messages", "application_vote", "talent_pool_view", "tasks_view"]
 
@@ -61,7 +59,7 @@ def dashboard(request):
     """Renders the recruiter Kanban ATS dashboard with stage columns and interactive modals."""
     seed_data_if_empty()
     applications = scope_applications(request.user, Application.objects.select_related('applicant', 'jobPosting', 'jobPosting__location').order_by('boardOrder', '-createdAt'))
-    
+
     # Categorize applications into Kanban columns
     columns = {
         'NEW': [],
@@ -70,7 +68,7 @@ def dashboard(request):
         'HIRED': [],
         'REJECTED': [],
     }
-    
+
     for app in applications:
         status = app.status
         # Handle unmapped fallback
@@ -84,10 +82,10 @@ def dashboard(request):
     _fb = feedback_summaries([a.id for a in applications])
     for a in applications:
         a.fb_summary = _fb.get(a.id)
-        
+
     # Extra data for interactive modals
     active_jobs = scope_jobs(request.user, JobPosting.objects.all().select_related('location', 'facility', 'department', 'workflowState', 'contactPerson', 'jobTemplate').order_by('-createdAt'))
-    from ..models import TextSnippet, EmailTemplate
+    from ..models import EmailTemplate, TextSnippet
     text_snippets = TextSnippet.objects.select_related('jobFamily').order_by('category')[:50]
     # Einlade-Vorlage (UC-SB-10): HTML der zentralen Vorlage -> Klartext fuers Modal
     import re as _re
@@ -102,7 +100,7 @@ def dashboard(request):
     company_name = (Organization.objects.first().name if Organization.objects.exists()
                     else 'SecurATS')
     interview_slots = InterviewSlot.objects.filter(isBooked=False)
-    
+
     # Calculate some fast stats
     stats = {
         'total': applications.count(),
@@ -111,17 +109,17 @@ def dashboard(request):
         'invited': len(columns['INVITED']),
         'rejected': len(columns['REJECTED']),
     }
-    
+
     # CMS Pages, Workflows, Email Templates and global SystemSettings/Variables
     all_pages = Page.objects.all().order_by('navOrder')
     all_workflows = WorkflowState.objects.all().order_by('name')
     app_workflows = AppWorkflowDef.objects.all().select_related('facility').order_by('name')
-    
+
     from ..models import EmailTemplate
     all_email_templates = EmailTemplate.objects.all().order_by('name')
     all_system_settings = SystemSetting.objects.all().order_by('key')
     ai_settings = {s.key: s.value for s in all_system_settings}
-    
+
     # Selections for Job Postings creator
     facilities = Facility.objects.all()
     departments = Department.objects.all()
@@ -133,13 +131,13 @@ def dashboard(request):
     for t in JobTemplate.objects.order_by('-version', '-createdAt'):
         latest_tpl_ids.setdefault(t.title.lower(), t.id)
     job_templates = JobTemplate.objects.filter(id__in=latest_tpl_ids.values()).order_by('title')
-    
+
     # Learning samples and spambot counts
     ai_learning_samples = AILearningSample.objects.select_related('application', 'application__applicant', 'application__jobPosting')
     honeypot_spam_count = AuditLog.objects.filter(action="SUBMIT_APPLICATION", metadataJson__contains="website_url").count()
     if honeypot_spam_count == 0:
         honeypot_spam_count = 14  # High-fidelity metrics fallback
-        
+
     # Check if local Gemma AI is reachable via socket check on 11434 (testing both host.docker.internal and 127.0.0.1)
     gemma_status = 'OFFLINE'
     import socket
@@ -162,7 +160,7 @@ def dashboard(request):
         {'id': 'sf_score_rating', 'label': 'AI Screening Rating', 'type': 'String'},
     ]
     applications_to_sync = Application.objects.filter(status='INVITED').select_related('applicant', 'jobPosting')
-    
+
     context = {
         # Rollen-Flag fuer die Benutzerfuehrung: Ein Recruiter soll nur seine
         # taegliche Arbeit sehen (Bewerbungen, Stellen), nicht die Admin-/IT-/
@@ -181,7 +179,7 @@ def dashboard(request):
         'interview_slots': interview_slots,
         'stats': stats,
         'slug': 'dashboard',
-        
+
         # New Context Variables for Command Center
         'all_pages': all_pages,
         'all_workflows': all_workflows,
@@ -202,7 +200,7 @@ def dashboard(request):
         'ai_learning_samples': ai_learning_samples,
         'honeypot_spam_count': honeypot_spam_count,
         'gemma_status': gemma_status,
-        
+
         # SAP SuccessFactors consolidated mapper vars
         'sap_applications': applications_to_sync,
         'sap_schema_fields': sap_schema_fields,
@@ -235,7 +233,6 @@ def dashboard(request):
     today_focus['any'] = any(v for k, v in today_focus.items()
                              if k != 'unread_preview')
     from ..models import ApplicationVote as _AV
-    from ..panel import panel_member_ids as _pmi
     _uid = str(request.user.id)
     _voted = set(_AV.objects.filter(user=request.user)
                  .values_list('application_id', flat=True))
@@ -256,8 +253,9 @@ def dashboard(request):
 
     # Offene Aufgaben aus der Prozess-Automatik (Badge in der Navigation):
     # nur eigene Rollen bzw. rollenlose, im eigenen Zugriffsbereich.
-    from ..models import WorkflowTask
     from django.db.models import Q as _Q
+
+    from ..models import WorkflowTask
     _roles = set(request.user.groups.values_list('name', flat=True))
     _tasks = WorkflowTask.objects.filter(status="OPEN",
                                          application__in=applications)
@@ -276,7 +274,7 @@ def update_status(request, app_id):
         if not can_access_application(request.user, app):
             raise Http404("Nicht im Zugriffsbereich.")
         new_status = request.POST.get('status', '').strip().upper()
-        
+
         valid_statuses = ['NEW', 'IN_REVIEW', 'INVITED', 'REJECTED', 'HIRED']
         if new_status in valid_statuses:
             # Einstellung nur aus "Eingeladen": das Ereignis setzt Time-to-Fill
@@ -385,11 +383,11 @@ def update_status(request, app_id):
             if order is not None and str(order).lstrip('-').isdigit():
                 app.boardOrder = int(order)
             app.save()
-            
+
             # Log action (inkl. Benutzer)
             write_audit("STATUS_CHANGE", user=request.user, application_id=app.id,
                         oldStatus=old_status, newStatus=new_status)
-            
+
             # Run Automated Workflow Actions in parallel!
             wf = get_matching_workflow(app)
             if wf and wf.stepsJson:
@@ -403,13 +401,13 @@ def update_status(request, app_id):
                             step_actions = step.get('actions', [])
                         elif isinstance(step, str):
                             step_state = step.upper()
-                            
+
                         # If this step matches the new status, execute the actions!
                         if step_state == new_status:
                             execute_workflow_actions(app, step_actions)
                 except Exception:
                     logger.exception("Workflow-Automation für Application %s fehlgeschlagen", app.id)
-            
+
             # Handle automatic responses/rejection reasons if needed
             if new_status == 'REJECTED':
                 app.withdrawReason = request.POST.get('reason', 'Durch Recruiter abgelehnt.')
@@ -421,10 +419,10 @@ def update_status(request, app_id):
                 # (kontrollierter Masseneingriff, s. bulk_update_status).
                 if old_status != 'REJECTED':
                     _send_rejection_notice(request, app)
-                
+
             return JsonResponse({'success': True, 'old_status': old_status, 'new_status': new_status,
                                   'notice': getattr(request, '_filled_notice', None)})
-            
+
     return JsonResponse({'success': False, 'error': 'Invalid status or request method.'})
 
 
@@ -436,22 +434,22 @@ def add_note(request, app_id):
         if not can_access_application(request.user, app):
             raise Http404("Nicht im Zugriffsbereich.")
         note = request.POST.get('note', '').strip()
-        
+
         if note:
             timestamp = timezone.now().strftime('%d.%m.%Y %H:%M')
             formatted_note = f"\n[{timestamp}] Recruiter: {note}"
             app.internalNotes = (app.internalNotes or "") + formatted_note
             app.save()
-            
+
             # Log action
             AuditLog.objects.create(
                 action="ADD_NOTE",
                 applicationId=str(app.id),
                 metadataJson=json.dumps({"note_added": note})
             )
-            
+
             return JsonResponse({'success': True, 'notes': app.internalNotes})
-            
+
     return JsonResponse({'success': False, 'error': 'Invalid note or request method.'})
 
 
@@ -461,25 +459,25 @@ def get_matching_workflow(app):
     wf = AppWorkflowDef.objects.filter(jobIdsJson__contains=str(app.jobPosting.id)).first()
     if wf:
         return wf
-        
+
     # 2. Check Location specificity
     if app.jobPosting.location:
         wf = AppWorkflowDef.objects.filter(locationIdsJson__contains=str(app.jobPosting.location.id)).first()
         if wf:
             return wf
-            
+
     # 3. Check Category (Job Family) specificity
     if app.jobPosting.jobFamily:
         wf = AppWorkflowDef.objects.filter(categoryIdsJson__contains=str(app.jobPosting.jobFamily.id)).first()
         if wf:
             return wf
-            
+
     # 4. Check Facility specificity
     if app.jobPosting.facility:
         wf = AppWorkflowDef.objects.filter(facility=app.jobPosting.facility).first()
         if wf:
             return wf
-            
+
     # 5. Global Fallback
     return AppWorkflowDef.objects.first()
 
@@ -498,7 +496,8 @@ def execute_workflow_actions(app, actions):
     - Alles andere (AUTO_INVITE_INTERVIEW, SEND_CONTRACT, ...):
       WORKFLOW_ACTION_SKIPPED mit Grund – keine Simulation.
     """
-    from ..models import EmailTemplate, Message as _Msg
+    from ..models import EmailTemplate
+    from ..models import Message as _Msg
     for action in actions:
         action_type = action.get('type')
 
@@ -552,8 +551,8 @@ def execute_workflow_actions(app, actions):
             # Mitglieder einer Rolle. (Der Bewerber-Fall ist oben behandelt.)
             # Vorher fiel genau dieser Fall in den Ueberspringen-Zweig – das
             # eigene Beispiel im UI ("recipient": "gremium@...") tat nichts.
-            from django.core.mail import send_mail
             from django.contrib.auth.models import Group
+            from django.core.mail import send_mail
             recipient = (action.get('recipient') or '').strip()
             role = (action.get('role') or '').strip()
             targets = []
@@ -674,7 +673,8 @@ def _send_rejection_notice(request, app):
     (Platzhalter {name}, {stelle}, {firma}); sonst wuerdevoller Standardtext.
     Genau eine Zustellung je Bewerbung (REJECTION_NOTICE_SENT-Audit als Marker).
     """
-    from ..models import EmailTemplate, ApplicantToken, Message as _Msg
+    from ..models import EmailTemplate
+    from ..models import Message as _Msg
     if AuditLog.objects.filter(action='REJECTION_NOTICE_SENT',
                                applicationId=str(app.id)).exists():
         return
@@ -778,7 +778,7 @@ def toggle_learning_sample(request, app_id):
         if not can_access_application(request.user, app):
             raise Http404("Nicht im Zugriffsbereich.")
         feedback_type = request.POST.get('feedback_type', 'POSITIVE').upper()
-        
+
         with transaction.atomic():
             sample, created = AILearningSample.objects.get_or_create(
                 application=app,
@@ -793,17 +793,17 @@ def toggle_learning_sample(request, app_id):
                     })
                 }
             )
-            
+
             if not created:
                 sample.feedbackType = feedback_type
                 sample.save()
-                
+
             AuditLog.objects.create(
                 action="AI_FEEDBACK",
                 applicationId=str(app.id),
                 metadataJson=json.dumps({"feedbackType": feedback_type})
             )
-            
+
         return JsonResponse({'success': True, 'feedback_type': feedback_type})
     return JsonResponse({'success': False, 'error': 'Invalid request method.'})
 
@@ -892,8 +892,8 @@ def application_vote(request, app_id):
     """
     if request.method != 'POST':
         return redirect('ats:approvals')
-    from ..panel import panel_member_ids
     from ..models import ApplicationVote
+    from ..panel import panel_member_ids
     from ..permissions import active_delegations_to, delegation_covers
     app = get_object_or_404(Application, id=app_id)
     members = panel_member_ids(app.jobPosting)

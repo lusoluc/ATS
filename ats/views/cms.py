@@ -5,50 +5,32 @@ Oeffentliche Namen werden in ats/views/__init__.py re-exportiert, damit
 urls.py und bestehende Importe (`from ats.views import X`) unveraendert
 funktionieren.
 """
-import os
-import json
-import uuid
-import logging
 import datetime
-from django.shortcuts import render, get_object_or_404, redirect
-from django.utils.http import url_has_allowed_host_and_scheme
-from django.views.decorators.csrf import ensure_csrf_cookie
-from ..permissions import any_staff_required, recruiter_required, hr_admin_required
-from ..permissions import scope_applications, scope_jobs, can_access_application
-from django.contrib import messages
-from django.http import HttpResponse, JsonResponse
-from django.conf import settings
-from django.utils import timezone
+import json
+import logging
+
 from django.db import transaction
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
-from django.views.decorators.csrf import csrf_exempt
-from ..models import (
-    Organization, Facility, FacilityProfile, Department, Location,
-    JobFamily, ContactPerson, WorkflowState, JobTemplate, Benefit,
-    JobPosting, Applicant, Application, Interview, InterviewSlot,
-    Message, Page, AuditLog, AILearningSample, SystemSetting, AppWorkflowDef
-, get_interview_kinds)
-import os as _os
-from django.http import FileResponse, Http404
-from django.urls import reverse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.utils.text import slugify
+
 from ..audit import write_audit
 from ..models import (
-    AuditLog, TalentPoolSubscription, ScreeningQuestion, RoleDelegation,
-    ApplicantToken, ApplicationDocument,
+    Application,
+    AuditLog,
+    ContactPerson,
+    Department,
+    Facility,
+    JobFamily,
+    Location,
+    MediaAsset,
+    Organization,
+    Page,
 )
-from ..models import JobFamily, Location
-from ..models import Interview, Message
-from ..permissions import has_full_access
-from ..models import JobTemplate
-from django.utils.text import slugify
-from ..models import MediaAsset
-from django.contrib.auth.views import LoginView as AuthLoginView
-from django.core.cache import cache
+from ..permissions import any_staff_required, hr_admin_required
+from .common import campaign_expired
 
 logger = logging.getLogger(__name__)
-
-from .common import campaign_expired
 
 __all__ = ["save_page", "pages_manage", "delete_page", "media_manage", "delete_media", "blocks_editor", "branding_view", "landing_pages_manage", "snippets_manage"]
 
@@ -66,7 +48,7 @@ def save_page(request):
         nav_label = request.POST.get('nav_label', '').strip()
         nav_order = int(request.POST.get('nav_order', '0'))
         meta_desc = request.POST.get('meta_desc', '').strip()
-        
+
         with transaction.atomic():
             if page_id:
                 page = get_object_or_404(Page, id=page_id)
@@ -92,12 +74,12 @@ def save_page(request):
                     metaDesc=meta_desc
                 )
                 action = "CREATE_PAGE"
-                
+
             AuditLog.objects.create(
                 action=action,
                 metadataJson=json.dumps({"pageId": str(page.id), "slug": page.slug})
             )
-            
+
         return redirect('ats:dashboard')
     return redirect('ats:dashboard')
 
@@ -166,9 +148,10 @@ def blocks_editor(request, kind, obj_id):
     Rechte folgen der jeweiligen Verwaltung: CMS-Seiten nur HR-Admin.
     """
     import json as _json
-    from ..blocks import (BLOCK_TYPES, load_blocks, normalize_block,
-                         enrich_blocks)
+
     from django.http import HttpResponseForbidden
+
+    from ..blocks import BLOCK_TYPES, enrich_blocks, load_blocks, normalize_block
     from ..models import LandingPage
     if kind == 'page':
         if not (request.user.is_superuser
@@ -240,8 +223,7 @@ def branding_view(request):
     bestaetigt), (b) manuelle Pflege. Kontrastfarben werden automatisch
     berechnet (WCAG) – niemand muss wissen, ob auf Magenta Weiss gehoert.
     """
-    from ..branding import (brand_context, fetch_branding_suggestions,
-                           normalize_hex)
+    from ..branding import brand_context, fetch_branding_suggestions, normalize_hex
     org = Organization.objects.first()
     if org is None:
         return render(request, 'branding.html', {'org': None})
@@ -278,7 +260,8 @@ def branding_view(request):
 def landing_pages_manage(request):
     """Landingpages verwalten: anlegen/bearbeiten, Link+QR, Kennzahlen."""
     from django.utils.text import slugify
-    from ..models import LandingPage, Department
+
+    from ..models import LandingPage
     if request.method == 'POST' and request.POST.get('form') == 'expiry':
         # Kampagnen-Ablaufdatum: leer = laeuft unbegrenzt; Datum wirkt bis
         # einschliesslich Tagesende (QR bleibt bis 23:59 des Tages gueltig).
@@ -331,7 +314,6 @@ def landing_pages_manage(request):
         return redirect('ats:landing_pages')
 
     import segno
-    from ..models import LandingPage, Department
     rows = []
     for lp in LandingPage.objects.select_related(
             'facility', 'department', 'jobFamily', 'location',

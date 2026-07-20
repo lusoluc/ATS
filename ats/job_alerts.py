@@ -78,7 +78,7 @@ def subscription_matches_job(sub, job, location_by_id) -> bool:
 def match_subscribers_for_job(job):
     """Alle Abos, die auf diese Stelle passen (für den Versand)."""
     from .models import JobAlertSubscription, Location
-    location_by_id = {str(l.id): l for l in Location.objects.all()}
+    location_by_id = {str(loc.id): loc for loc in Location.objects.all()}
     return [sub for sub in JobAlertSubscription.objects.filter(status="ACTIVE")
             .select_related("facility")
             if subscription_matches_job(sub, job, location_by_id)]

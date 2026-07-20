@@ -115,8 +115,8 @@ def _validate_ai_questions(raw_text: str, existing_ids: set):
 
 def ai_extra_questions(title: str, family: str, existing_ids: set):
     """Optional: 1–3 stellenbezogene Zusatzfragen von der lokalen KI. Fällt still aus."""
-    from .ai_safety import wrap_untrusted, compose_system_prompt
-    from .views import make_ollama_request, get_ollama_url, get_ai_model
+    from .ai_safety import compose_system_prompt, wrap_untrusted
+    from .views import get_ai_model, get_ollama_url, make_ollama_request
     payload = {
         "model": get_ai_model(),
         "system": compose_system_prompt() + (
@@ -162,9 +162,6 @@ def ensure_minimum_standards(job):
             current = []
     except ValueError:
         current = []
-    by_id = {str(q.get('id')) for q in current if isinstance(q, dict)}
-    by_text = {str(q.get('question', '')).strip().lower()
-               for q in current if isinstance(q, dict)}
     changes = 0
     for req in minimum:
         if not isinstance(req, dict) or not req.get('question'):

@@ -14,13 +14,14 @@ Verhalten:
   verteilten Teams geht ein morgen anstehendes Gespräch sonst leicht unter.
 - Abgesagte/zurückgezogene Bewerbungen werden nie erinnert.
 """
+import datetime
+
 from django.core.mail import send_mail
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-import datetime
 
-from ats.models import Interview, Message
 from ats.audit import write_audit
+from ats.models import Interview, Message
 
 
 class Command(BaseCommand):

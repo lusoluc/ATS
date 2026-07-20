@@ -9,7 +9,7 @@ import urllib.request
 
 from django.core.management.base import BaseCommand
 
-from ats.views import get_ollama_url, get_ai_model
+from ats.views import get_ai_model, get_ollama_url
 
 
 class Command(BaseCommand):

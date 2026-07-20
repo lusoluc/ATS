@@ -14,8 +14,8 @@ import datetime
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from ats.models import TalentPoolSubscription
 from ats.audit import write_audit
+from ats.models import TalentPoolSubscription
 
 
 class Command(BaseCommand):

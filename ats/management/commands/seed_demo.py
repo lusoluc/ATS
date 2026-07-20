@@ -19,11 +19,34 @@ from django.contrib.auth.models import Group
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
-from ats.models import (Applicant, Application, ApprovalTicket, ApprovalStep,
-                        AuditLog, Benefit, ContactPerson, Department, Facility,
-                        FacilityContactPerson, FacilityProfile, JobAlertSubscription,
-                        JobFamily, JobPosting, JobTemplate, Location, Organization,
-                        TextSnippet, UserScope, WorkflowState, RoleDelegation, StaffingRequest, TalentPoolSubscription, TalentPoolContact, EmailTemplate, ApplicationVote)
+from ats.models import (
+    Applicant,
+    Application,
+    ApplicationVote,
+    ApprovalStep,
+    ApprovalTicket,
+    AuditLog,
+    Benefit,
+    ContactPerson,
+    Department,
+    EmailTemplate,
+    Facility,
+    FacilityContactPerson,
+    FacilityProfile,
+    JobAlertSubscription,
+    JobFamily,
+    JobPosting,
+    JobTemplate,
+    Location,
+    Organization,
+    RoleDelegation,
+    StaffingRequest,
+    TalentPoolContact,
+    TalentPoolSubscription,
+    TextSnippet,
+    UserScope,
+    WorkflowState,
+)
 
 MARKER_ORG = "Elbtal Gesundheitsgruppe (DEMO)"
 rng = random.Random(2026)  # deterministisch: jede Demo sieht gleich aus
@@ -41,8 +64,10 @@ class Command(BaseCommand):
         # Reihenfolge beachtet FK-Abhaengigkeiten; die Governance-Objekte
         # (Gremium-Stimmen, Vertretungen, Bedarf, Pool) gehoeren MIT zum
         # Demo-Reset – sonst kollidieren unique-Felder beim Neuaufbau.
-        from ats.models import (SourceChannel as _SC, LandingPage as _LP,
-                                RequisitionRule as _RQ, RequisitionStep as _RS)
+        from ats.models import LandingPage as _LP
+        from ats.models import RequisitionRule as _RQ
+        from ats.models import RequisitionStep as _RS
+        from ats.models import SourceChannel as _SC
         for model in (_SC, _LP, _RS, _RQ,
                       ApplicationVote, RoleDelegation, StaffingRequest,
                       TalentPoolContact, TalentPoolSubscription,

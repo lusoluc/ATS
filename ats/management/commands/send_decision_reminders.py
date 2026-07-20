@@ -13,7 +13,6 @@ Freigabe-Schritte, Gremien-Stimmen und Stellenfreigabe-Ketten (jeweils
 eigener Marker, damit keine Vermischung).
 """
 import datetime
-import json
 
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
@@ -21,8 +20,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from ats.audit import write_audit
-from ats.models import (Application, ApplicationVote, ApprovalStep, AuditLog,
-                        RoleDelegation)
+from ats.models import Application, ApplicationVote, ApprovalStep, AuditLog, RoleDelegation
 from ats.panel import panel_member_ids
 
 
@@ -48,7 +46,7 @@ class Command(BaseCommand):
         out = {}
         for d in (RoleDelegation.objects
                   .filter(delegator_id__in=user_ids,
-                          validFrom__lte=now, validUntil__gte=now)
+                          validFrom__lte=now, validUntil__gt=now)
                   .select_related("delegatee")):
             out.setdefault(d.delegator_id, []).append(d.delegatee)
         return out
@@ -149,9 +147,8 @@ class Command(BaseCommand):
         # 3) Stellenfreigabe-Ketten: faellige Stufe zu lange offen. Faellig-ab
         #    ist der Abschluss der Vorstufe (nicht Antragseingang), damit die
         #    Wartezeit fair je Stufe zaehlt und nicht die ganze Kette bestraft.
+        from ats.approvals import due_requisition_steps, may_decide_requisition_step
         from ats.models import StaffingRequest
-        from ats.approvals import (due_requisition_steps,
-                                    may_decide_requisition_step)
         for req in (StaffingRequest.objects.filter(status="IN_APPROVAL")
                     .select_related("facility", "requestedBy")
                     .prefetch_related("steps")):

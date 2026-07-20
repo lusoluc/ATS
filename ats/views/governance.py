@@ -5,46 +5,31 @@ Oeffentliche Namen werden in ats/views/__init__.py re-exportiert, damit
 urls.py und bestehende Importe (`from ats.views import X`) unveraendert
 funktionieren.
 """
-import os
-import json
-import uuid
-import logging
 import datetime
-from django.shortcuts import render, get_object_or_404, redirect
-from django.utils.http import url_has_allowed_host_and_scheme
-from django.views.decorators.csrf import ensure_csrf_cookie
-from ..permissions import any_staff_required, recruiter_required, hr_admin_required
-from ..permissions import scope_applications, scope_jobs, can_access_application
+import json
+import logging
+
 from django.contrib import messages
-from django.http import HttpResponse, JsonResponse
-from django.conf import settings
+from django.http import Http404, HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.db import transaction
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
-from django.views.decorators.csrf import csrf_exempt
-from ..models import (
-    Organization, Facility, FacilityProfile, Department, Location,
-    JobFamily, ContactPerson, WorkflowState, JobTemplate, Benefit,
-    JobPosting, Applicant, Application, Interview, InterviewSlot,
-    Message, Page, AuditLog, AILearningSample, SystemSetting, AppWorkflowDef
-, get_interview_kinds)
-import os as _os
-from django.http import FileResponse, Http404
-from django.urls import reverse
+
 from ..audit import write_audit
 from ..models import (
-    AuditLog, TalentPoolSubscription, ScreeningQuestion, RoleDelegation,
-    ApplicantToken, ApplicationDocument,
+    Application,
+    AuditLog,
+    Department,
+    Facility,
+    JobFamily,
+    JobPosting,
+    Location,
+    Organization,
+    RoleDelegation,
+    SystemSetting,
+    TalentPoolSubscription,
+    WorkflowState,
 )
-from ..models import JobFamily, Location
-from ..models import Interview, Message
-from ..permissions import has_full_access
-from ..models import JobTemplate
-from django.utils.text import slugify
-from ..models import MediaAsset
-from django.contrib.auth.views import LoginView as AuthLoginView
-from django.core.cache import cache
+from ..permissions import any_staff_required, has_full_access, hr_admin_required, recruiter_required
 
 logger = logging.getLogger(__name__)
 
@@ -179,11 +164,10 @@ def approvals_inbox(request):
             'overdue': age > sla_days,
         })
     # Sichtungs-Gremium: Bewerbungen, bei denen MEINE Stimme aussteht
-    from ..panel import panel_state, panel_member_ids
     from ..models import ApplicationVote
+    from ..panel import panel_state
     # Vererbung beachten: Mitgliedschaft entsteht auch aus Defaults hoeherer
     # Ebenen -> in Python ueber die Leiter aufloesen statt SQL-contains.
-    uid = str(request.user.id)
     candidates = (Application.objects
                   .filter(status__in=['NEW', 'IN_REVIEW'])
                   .select_related('applicant', 'jobPosting__department',
@@ -215,8 +199,8 @@ def governance_view(request):
     Mitbestimmung braucht Prozess-Transparenz, nicht Personendaten.
     """
     from django.db.models import Count
+
     from ..audit import verify_audit_chain
-    from ..models import TalentPoolSubscription
 
     apps = Application.objects.all()  # bewusst ungescoped: Aggregat über alles
     total = apps.count()
@@ -301,8 +285,9 @@ def panel_defaults_view(request):
 @recruiter_required
 def panel_preview(request):
     """Live-Vorschau im Stellen-Wizard: wirksames Gremium ohne eigene Auswahl."""
-    from ..panel import resolve_panel_preview
     from django.contrib.auth.models import User as _User
+
+    from ..panel import resolve_panel_preview
     ids, source = resolve_panel_preview(
         job_family_id=request.GET.get('job_family') or None,
         facility_id=request.GET.get('facility') or None,
@@ -401,6 +386,7 @@ def audit_export(request):
     bewusst aggregiert und namenfrei).
     """
     import csv as _csv
+
     from ..audit import verify_audit_chain
 
     qs = AuditLog.objects.order_by('createdAt')
@@ -503,7 +489,7 @@ def staffing_requests_view(request):
             write_audit('STAFFING_REQUEST_CREATED', user=request.user,
                         request_id=str(req.id), facility=facility.name,
                         headcount=headcount)
-            from ..approvals import requisition_required, open_requisition_steps
+            from ..approvals import open_requisition_steps, requisition_required
             if requisition_required() or rule:
                 open_requisition_steps(req)
                 from ..approvals import notify_due_requisition_steps
@@ -571,8 +557,7 @@ def staffing_requests_view(request):
         step = get_object_or_404(RequisitionStep,
                                  id=request.POST.get('step_id'))
         req = step.request
-        from ..approvals import (may_decide_requisition_step,
-                                 due_requisition_steps)
+        from ..approvals import due_requisition_steps, may_decide_requisition_step
         due = due_requisition_steps(req)
         allowed_role, deputizing_for = may_decide_requisition_step(
             request.user, step)
@@ -621,8 +606,8 @@ def staffing_requests_view(request):
             # Gruppe abgeschlossen -> naechste Stufe ist jetzt faellig:
             # deren Rollen (und Vertretungen) sofort benachrichtigen.
             if decision == 'approve' and req.status == 'IN_APPROVAL':
-                from ..approvals import (due_requisition_steps as _dueq,
-                                        notify_due_requisition_steps)
+                from ..approvals import due_requisition_steps as _dueq
+                from ..approvals import notify_due_requisition_steps
                 nxt = _dueq(req)
                 if nxt and nxt[0].order != step.order:
                     notify_due_requisition_steps(req)
@@ -757,7 +742,6 @@ def staffing_requests_view(request):
     if is_decider:
         facilities_scope = Facility.objects.all()
         if not has_full_access(request.user):
-            loc_ids = list(request.user.scope.locations.values_list('id', flat=True))
             fac_ids = list(request.user.scope.facilities.values_list('id', flat=True))
             facilities_scope = facilities_scope.filter(id__in=fac_ids) if fac_ids else facilities_scope
         inbox = (StaffingRequest.objects.filter(facility__in=facilities_scope)
@@ -788,12 +772,11 @@ def staffing_requests_view(request):
         .order_by('-createdAt')[:50])
     inbox = list(inbox) + chain_inbox + decided_by_me
 
-    from ..approvals import (requisition_required as _rreq,
-                            requisition_chain as _rchain,
-                            resolve_requisition_rule as _rrule,
-                            may_decide_requisition_step as may_dec)
-    from ..questions import (QUESTION_TYPES as _QT,
-                            normalize_questions as _nq2)
+    from ..approvals import may_decide_requisition_step as may_dec
+    from ..approvals import requisition_required as _rreq
+    from ..approvals import resolve_requisition_rule as _rrule
+    from ..questions import QUESTION_TYPES as _QT
+    from ..questions import normalize_questions as _nq2
     sel_fac = Facility.objects.filter(id=request.GET.get('facility')).first()
     sel_dep = Department.objects.filter(
         id=request.GET.get('department')).first()
@@ -820,7 +803,6 @@ def staffing_requests_view(request):
     from ..models import SystemSetting as _SS
     req_active = _rreq()
     chain_setting = _SS.objects.filter(key='REQUISITION_CHAIN').first()
-    user_groups = set(request.user.groups.values_list('name', flat=True))
     def _decorate(reqs):
         rows = []
         for r in reqs:

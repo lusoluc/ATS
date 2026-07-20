@@ -3,11 +3,16 @@
 Jeder Eintrag hasht seinen Vorgänger (Hash-Kette). Nachträgliche Änderung oder
 Löschung eines Eintrags bricht die Kette und ist per `verify_audit_chain()`
 erkennbar (UC-MB-12, UC-NS-02).
+
+Die Kettenordnung ist die monotone Sequenz `seq` – NICHT createdAt: auf
+schnellen Systemen kollidieren Timestamps (Uhr-Auflösung), und die zufällige
+UUID würde die Reihenfolge dann nichtdeterministisch machen, sodass die
+Verifikation falschen Manipulations-Alarm schlägt.
 """
 import hashlib
 import json
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from .models import AuditLog
@@ -22,18 +27,31 @@ def _entry_hash(prev, action, user_id, application_id, metadata_json, created_is
 
 
 def create_chained_audit(action, user_id=None, application_id=None, metadata_json="{}"):
-    """Legt einen Audit-Eintrag an und verkettet ihn mit dem letzten Eintrag."""
-    with transaction.atomic():
-        last = AuditLog.objects.select_for_update().order_by("-createdAt", "-id").first()
-        prev = last.entryHash if last and last.entryHash else ""
-        created = timezone.now()
-        digest = _entry_hash(prev, action, user_id, application_id,
-                             metadata_json, created.isoformat())
-        return AuditLog.objects.create(
-            action=action, userId=user_id, applicationId=application_id,
-            metadataJson=metadata_json, createdAt=created,
-            prevHash=prev, entryHash=digest,
-        )
+    """Legt einen Audit-Eintrag an und verkettet ihn mit dem letzten Eintrag.
+
+    Die Unique-Constraint auf `seq` erzwingt eine lineare Kette auch bei
+    parallelen Schreibern (kein Fork mit zwei gleichen Vorgängern);
+    Kollisionen werden per Retry aufgelöst.
+    """
+    for _attempt in range(5):
+        try:
+            with transaction.atomic():
+                last = (AuditLog.objects.select_for_update()
+                        .filter(seq__isnull=False).order_by("-seq").first())
+                prev = last.entryHash if last and last.entryHash else ""
+                created = timezone.now()
+                digest = _entry_hash(prev, action, user_id, application_id,
+                                     metadata_json, created.isoformat())
+                return AuditLog.objects.create(
+                    action=action, userId=user_id, applicationId=application_id,
+                    metadataJson=metadata_json, createdAt=created,
+                    prevHash=prev, entryHash=digest,
+                    seq=(last.seq + 1) if last else 1,
+                )
+        except IntegrityError:
+            continue
+    raise IntegrityError(
+        "Audit-Kette: Sequenznummer nach 5 Versuchen weiterhin belegt.")
 
 
 def write_audit(action, user=None, application_id=None, **metadata):
@@ -50,7 +68,7 @@ def write_audit(action, user=None, application_id=None, **metadata):
 
 
 def verify_audit_chain():
-    """Prüft die Integrität der Hash-Kette.
+    """Prüft die Integrität der Hash-Kette (in `seq`-Ordnung).
 
     Rückgabe: dict mit ok(bool), checked(int), unchained(int) und ggf. broken_id.
     - unchained: Alt-/Fremd-Einträge ohne Hash (vor Einführung der Kette) werden
@@ -58,11 +76,11 @@ def verify_audit_chain():
     """
     prev = ""
     checked = 0
-    unchained = 0
-    for e in AuditLog.objects.order_by("createdAt", "id").iterator():
-        if not e.entryHash:
-            unchained += 1
-            continue
+    unchained = (AuditLog.objects.filter(entryHash__isnull=True).count()
+                 + AuditLog.objects.filter(entryHash="").count())
+    chain = (AuditLog.objects.exclude(entryHash__isnull=True)
+             .exclude(entryHash="").order_by("seq"))
+    for e in chain.iterator():
         expected = _entry_hash(prev, e.action, e.userId, e.applicationId,
                                e.metadataJson, e.createdAt.isoformat())
         if expected != e.entryHash or (e.prevHash or "") != prev:

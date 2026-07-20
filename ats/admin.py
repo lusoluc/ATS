@@ -1,15 +1,51 @@
 from django.contrib import admin
+
 from .models import (
-    Organization, Facility, FacilityProfile, Department, Location,
-    JobFamily, CareerPath, ContactPerson, FacilityContactPerson, DepartmentContactPerson,
-    WorkflowState, PrivacyNoticeVersion, Role, User, UserFacility,
-    JobTemplate, Benefit, TextSnippet, JobPosting, WorkflowDefinition,
-    ApprovalTicket, ApprovalStep, Applicant, ApplicantToken, Application,
-    AppWorkflowDef, AppTicket, AppStep, Interview, InterviewSlot,
-    Message, TalentPoolSubscription, Page, JobAlertSubscription, JobAlertLog,
-    SystemSetting, EmailTemplate, ScreeningQuestion, RoleDelegation,
-    AuditLog, AILearningSample
+    AILearningSample,
+    Applicant,
+    ApplicantToken,
+    Application,
+    ApplicationDocument,
+    ApprovalStep,
+    ApprovalTicket,
+    AppStep,
+    AppTicket,
+    AppWorkflowDef,
+    AuditLog,
+    Benefit,
+    CareerPath,
+    ContactPerson,
+    Department,
+    DepartmentContactPerson,
+    EmailTemplate,
+    Facility,
+    FacilityContactPerson,
+    FacilityProfile,
+    Interview,
+    InterviewSlot,
+    JobAlertLog,
+    JobAlertSubscription,
+    JobFamily,
+    JobPosting,
+    JobTemplate,
+    Location,
+    Message,
+    Organization,
+    Page,
+    PrivacyNoticeVersion,
+    Role,
+    RoleDelegation,
+    ScreeningQuestion,
+    SystemSetting,
+    TalentPoolSubscription,
+    TextSnippet,
+    User,
+    UserFacility,
+    UserScope,
+    WorkflowDefinition,
+    WorkflowState,
 )
+
 
 # 1. Organization & Facilities
 @admin.register(Organization)
@@ -110,8 +146,6 @@ admin.site.register(AILearningSample)
 
 
 # BOLA UserScope – Zuweisung erlaubter Standorte/Einrichtungen je Auth-User
-from .models import UserScope
-
 @admin.register(UserScope)
 class UserScopeAdmin(admin.ModelAdmin):
     list_display = ('user', 'full_access', 'createdAt')
@@ -119,8 +153,6 @@ class UserScopeAdmin(admin.ModelAdmin):
     search_fields = ('user__username',)
     filter_horizontal = ('locations', 'facilities')
 
-
-from .models import ApplicationDocument
 
 @admin.register(ApplicationDocument)
 class ApplicationDocumentAdmin(admin.ModelAdmin):

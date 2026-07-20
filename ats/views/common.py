@@ -5,46 +5,40 @@ Oeffentliche Namen werden in ats/views/__init__.py re-exportiert, damit
 urls.py und bestehende Importe (`from ats.views import X`) unveraendert
 funktionieren.
 """
-import os
-import json
-import uuid
-import logging
 import datetime
-from django.shortcuts import render, get_object_or_404, redirect
-from django.utils.http import url_has_allowed_host_and_scheme
-from django.views.decorators.csrf import ensure_csrf_cookie
-from ..permissions import any_staff_required, recruiter_required, hr_admin_required
-from ..permissions import scope_applications, scope_jobs, can_access_application
-from django.contrib import messages
-from django.http import HttpResponse, JsonResponse
+import json
+import logging
+
 from django.conf import settings
-from django.utils import timezone
-from django.db import transaction
 from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
-from django.views.decorators.csrf import csrf_exempt
-from ..models import (
-    Organization, Facility, FacilityProfile, Department, Location,
-    JobFamily, ContactPerson, WorkflowState, JobTemplate, Benefit,
-    JobPosting, Applicant, Application, Interview, InterviewSlot,
-    Message, Page, AuditLog, AILearningSample, SystemSetting, AppWorkflowDef
-, get_interview_kinds)
-import os as _os
+from django.db import transaction
 from django.http import FileResponse, Http404
-from django.urls import reverse
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
+
 from ..audit import write_audit
 from ..models import (
-    AuditLog, TalentPoolSubscription, ScreeningQuestion, RoleDelegation,
-    ApplicantToken, ApplicationDocument,
+    Applicant,
+    Application,
+    ApplicationDocument,
+    Benefit,
+    ContactPerson,
+    Department,
+    Facility,
+    FacilityProfile,
+    Interview,
+    InterviewSlot,
+    JobFamily,
+    JobPosting,
+    JobTemplate,
+    Location,
+    Organization,
+    Page,
+    SystemSetting,
+    WorkflowState,
 )
-from ..models import JobFamily, Location
-from ..models import Interview, Message
-from ..permissions import has_full_access
-from ..models import JobTemplate
-from django.utils.text import slugify
-from ..models import MediaAsset
-from django.contrib.auth.views import LoginView as AuthLoginView
-from django.core.cache import cache
+from ..permissions import can_access_application, recruiter_required
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +131,7 @@ def seed_data_if_empty():
 
         # 4. Departments
         dept_eng = Department.objects.create(name="Engineering & IT", facility=fac_berlin, slug="engineering-it")
-        dept_hr = Department.objects.create(name="Human Resources & Recruiting", facility=fac_berlin, slug="hr-recruiting")
+        Department.objects.create(name="Human Resources & Recruiting", facility=fac_berlin, slug="hr-recruiting")
         dept_sales = Department.objects.create(name="Sales & Consulting", facility=fac_munich, slug="sales-consulting")
 
         # 5. Locations
@@ -151,7 +145,7 @@ def seed_data_if_empty():
         # 6. Job Families
         jf_tech = JobFamily.objects.create(name="Technology & Development")
         jf_hr = JobFamily.objects.create(name="HR & Recruiting")
-        jf_sales = JobFamily.objects.create(name="Sales & Accounts")
+        JobFamily.objects.create(name="Sales & Accounts")
 
         # 7. Contact Persons
         contact_carla = ContactPerson.objects.create(
@@ -174,11 +168,11 @@ def seed_data_if_empty():
         )
 
         # 8. Workflow States
-        ws_draft = WorkflowState.objects.create(name="draft", description="Entwurf")
-        ws_in_review = WorkflowState.objects.create(name="in_review", description="In Freigabe")
-        ws_approved = WorkflowState.objects.create(name="approved", description="Freigegeben")
+        WorkflowState.objects.create(name="draft", description="Entwurf")
+        WorkflowState.objects.create(name="in_review", description="In Freigabe")
+        WorkflowState.objects.create(name="approved", description="Freigegeben")
         ws_published = WorkflowState.objects.create(name="published", description="Veröffentlicht")
-        ws_archived = WorkflowState.objects.create(name="archived", description="Archiviert")
+        WorkflowState.objects.create(name="archived", description="Archiviert")
 
         # 9. Job Templates
         template_standard = JobTemplate.objects.create(
@@ -337,7 +331,7 @@ Gegründet im Herzen von Berlin, ist SecurATS ein führender Anbieter von datens
             aiRationale="Hervorragende HR-Vorerfahrung, sehr sympathischer Auftritt im Anschreiben.",
             status="INVITED"
         )
-        
+
         # Schedule a mock interview
         Interview.objects.create(
             application=appl_invited,
@@ -402,7 +396,7 @@ def exclude_filled(jobs_qs):
     """Oeffentliche Listen: voll besetzte Stellen (HIRED >= headcount)
     ausblenden. Direktlinks bleiben erreichbar (Banner statt Blockade) –
     Initiativbewerbungen sind erwuenscht, irrefuehrende Werbung nicht."""
-    from django.db.models import Count, Q, F
+    from django.db.models import Count, F, Q
     return (jobs_qs
             .annotate(_hired=Count('applications',
                                    filter=Q(applications__status='HIRED')))

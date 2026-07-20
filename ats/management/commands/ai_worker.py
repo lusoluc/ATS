@@ -3,7 +3,7 @@ import time
 
 from django.core.management.base import BaseCommand
 
-from ats.queue import run_pending, queue_depth
+from ats.queue import queue_depth, run_pending
 
 
 class Command(BaseCommand):

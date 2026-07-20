@@ -5,51 +5,42 @@ Oeffentliche Namen werden in ats/views/__init__.py re-exportiert, damit
 urls.py und bestehende Importe (`from ats.views import X`) unveraendert
 funktionieren.
 """
-import os
-import json
-import uuid
-import logging
 import datetime
-from django.shortcuts import render, get_object_or_404, redirect
-from django.utils.http import url_has_allowed_host_and_scheme
-from django.views.decorators.csrf import ensure_csrf_cookie
-from ..permissions import any_staff_required, recruiter_required, hr_admin_required
-from ..permissions import scope_applications, scope_jobs, can_access_application
-from django.contrib import messages
-from django.http import HttpResponse, JsonResponse
-from django.conf import settings
-from django.utils import timezone
-from django.db import transaction
-from django.core.files.storage import default_storage
+import json
+import logging
+import uuid
+
 from django.core.files.base import ContentFile
-from django.views.decorators.csrf import csrf_exempt
-from ..models import (
-    Organization, Facility, FacilityProfile, Department, Location,
-    JobFamily, ContactPerson, WorkflowState, JobTemplate, Benefit,
-    JobPosting, Applicant, Application, Interview, InterviewSlot,
-    Message, Page, AuditLog, AILearningSample, SystemSetting, AppWorkflowDef
-, get_interview_kinds)
-import os as _os
-from django.http import FileResponse, Http404
+from django.core.files.storage import default_storage
+from django.db import transaction
+from django.http import Http404, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
+
 from ..audit import write_audit
 from ..models import (
-    AuditLog, TalentPoolSubscription, ScreeningQuestion, RoleDelegation,
-    ApplicantToken, ApplicationDocument,
+    Applicant,
+    ApplicantToken,
+    Application,
+    ApplicationDocument,
+    AuditLog,
+    Department,
+    Facility,
+    FacilityProfile,
+    Interview,
+    InterviewSlot,
+    JobFamily,
+    JobPosting,
+    Location,
+    Message,
+    Page,
+    SystemSetting,
 )
-from ..models import JobFamily, Location
-from ..models import Interview, Message
-from ..permissions import has_full_access
-from ..models import JobTemplate
-from django.utils.text import slugify
-from ..models import MediaAsset
-from django.contrib.auth.views import LoginView as AuthLoginView
-from django.core.cache import cache
-
-logger = logging.getLogger(__name__)
-
 from .ai import evaluate_with_local_gemma, get_ollama_url
 from .common import _remember_campaign_src, campaign_expired, exclude_filled, seed_data_if_empty
+
+logger = logging.getLogger(__name__)
 
 __all__ = ["home", "job_list", "job_detail", "bewerben", "candidate_portal", "page_detail", "facility_profile", "landing_page", "job_alert_subscribe", "job_alert_confirm", "job_alert_manage", "pricing_view", "healthz"]
 
@@ -57,15 +48,15 @@ __all__ = ["home", "job_list", "job_detail", "bewerben", "candidate_portal", "pa
 def home(request):
     """Renders the career landing page, seeding data automatically if database is empty."""
     seed_data_if_empty()
-    
+
     # Get navigation elements
     nav_pages = Page.objects.filter(status="published", navEnabled=True).order_by('navOrder')
     home_page = Page.objects.filter(slug="home", status="published").first()
-    
+
     # Active Job postings count for the hero section
     jobs_count = JobPosting.objects.filter(workflowState__name="published").count()
     featured_jobs = JobPosting.objects.filter(workflowState__name="published").order_by('-createdAt')[:3]
-    
+
     context = {
         'nav_pages': nav_pages,
         'home_page': home_page,
@@ -83,15 +74,15 @@ def job_list(request):
         # sonst geht sie beim ersten Klick von der Liste zur Stelle verloren.
         _remember_campaign_src(request, request.GET['src'])
     nav_pages = Page.objects.filter(status="published", navEnabled=True).order_by('navOrder')
-    
+
     # Filter only published jobs
     jobs = exclude_filled(JobPosting.objects.filter(workflowState__name="published")).select_related('location', 'facility', 'department')
-    
+
     # Search and filter inputs
     search_query = request.GET.get('q', '').strip()
     location_filter = request.GET.get('location', '').strip()
     dept_filter = request.GET.get('department', '').strip()
-    
+
     family_filter = request.GET.get('family', '').strip()
 
     if search_query:
@@ -105,11 +96,11 @@ def job_list(request):
         jobs = jobs.filter(department__id=dept_filter)
     if family_filter:
         jobs = jobs.filter(jobFamily__id=family_filter)
-        
+
     locations = Location.objects.filter(archived=False)
     departments = Department.objects.all()
     families = JobFamily.objects.order_by('name')
-    
+
     context = {
         'nav_pages': nav_pages,
         'jobs': jobs,
@@ -133,23 +124,23 @@ def job_detail(request, job_id):
         _remember_campaign_src(request, request.GET['src'])
     nav_pages = Page.objects.filter(status="published", navEnabled=True).order_by('navOrder')
     job = get_object_or_404(JobPosting.objects.select_related('location', 'facility', 'department', 'contactPerson'), id=job_id)
-    
+
     # Parse modular components
     tasks = []
     requirements = []
-    
+
     if job.tasksJson:
         try:
             tasks = json.loads(job.tasksJson)
         except Exception:
             tasks = []
-            
+
     if job.requirementsJson:
         try:
             requirements = json.loads(job.requirementsJson)
         except Exception:
             requirements = []
-            
+
     context = {
         'nav_pages': nav_pages,
         'job': job,
@@ -168,7 +159,7 @@ def bewerben(request, job_id):
     """Handles applicant submissions with bot honeypots and dynamic K.O. questions."""
     nav_pages = Page.objects.filter(status="published", navEnabled=True).order_by('navOrder')
     job = get_object_or_404(JobPosting, id=job_id)
-    
+
     # Parse screening questions
     screening_questions = []
     if job.screeningQuestionsJson:
@@ -176,14 +167,14 @@ def bewerben(request, job_id):
             screening_questions = json.loads(job.screeningQuestionsJson)
         except Exception:
             screening_questions = []
-            
+
     if request.method == 'POST':
         # 1. Honey Pot Spam Protection
         honeypot = request.POST.get('website_url', '').strip()
         if honeypot:
             # Silent discard for bots
             return render(request, 'bewerbung_success.html', {'job': job, 'nav_pages': nav_pages})
-            
+
         # 2. Extract inputs
         first_name = request.POST.get('first_name', '').strip()
         last_name = request.POST.get('last_name', '').strip()
@@ -259,11 +250,11 @@ def bewerben(request, job_id):
                 'screening_questions': screening_questions, 'slug': 'jobs',
                 'errors': errors, 'form_data': request.POST,
             })
-        
+
         # 3. Evaluate screening questions
         ko_failed = False
         answers_dict = {}
-        
+
         for q in screening_questions:
             q_id = q['id']
             if q.get('type') == 'FILE':
@@ -272,13 +263,13 @@ def bewerben(request, job_id):
                 continue
             ans = request.POST.get(f'question_{q_id}', '').strip()
             answers_dict[q['question']] = ans
-            
+
             # K.O. nur, wenn eine erwartete Antwort definiert ist
             # (TEXT-/SELECT-Pflichtfragen ohne expectedAnswer sind kein K.O.)
             if (q.get('isMandatory') and q.get('expectedAnswer')
                     and ans != q.get('expectedAnswer')):
                 ko_failed = True
-                
+
         # 4. Handle CV File Upload
         cv_file = request.FILES.get('cv_file')
         cv_storage_path = None
@@ -286,7 +277,7 @@ def bewerben(request, job_id):
             # Save file locally under media/cvs/ with custom secure name
             safe_name = f"{uuid.uuid4()}_{cv_file.name}"
             cv_storage_path = default_storage.save(f"cvs/{safe_name}", ContentFile(cv_file.read()))
-            
+
         with transaction.atomic():
             # 5. Look up or create Applicant
             # E-Mail ist verschlüsselt at-rest; Eindeutigkeit/Lookup via Blind-Index
@@ -304,14 +295,14 @@ def bewerben(request, job_id):
                 applicant.lastName = last_name
                 applicant.phone = phone
                 applicant.save()
-                
+
             # 6. Set initial status
             initial_status = 'NEW'
             withdraw_reason = None
             if ko_failed:
                 initial_status = 'REJECTED'
                 withdraw_reason = 'Automatische Ablehnung: K.O. Kriterien nicht erfüllt.'
-                
+
             # 7. KI-Screening – NUR wenn ausdrücklich aktiviert (ROADMAP P0.2 / AI Act):
             # SystemSetting AI_SCORING_ENABLED="1" schaltet das A–D-Scoring als
             # Opt-in-Modul frei; Default ist AUS ("KI-Assistenz, keine automatische
@@ -376,7 +367,7 @@ def bewerben(request, job_id):
                     file=path,
                     docType='REQUIRED',
                 )
-            
+
             # Log audit trail
             AuditLog.objects.create(
                 action="SUBMIT_APPLICATION",
@@ -409,6 +400,7 @@ def bewerben(request, job_id):
             # Ein Mailfehler darf die Bewerbung NIE scheitern lassen.
             try:
                 from django.core.mail import send_mail
+
                 from ..models import EmailTemplate
                 _fs = SystemSetting.objects.filter(key='FIRMA').first()
                 company = (_fs.value if _fs else '') or 'SecurATS'
@@ -452,7 +444,7 @@ def bewerben(request, job_id):
                           {'job': job, 'nav_pages': nav_pages, 'portal_url': portal_url})
 
         return render(request, 'bewerbung_success.html', {'job': job, 'nav_pages': nav_pages})
-        
+
     context = {
         'nav_pages': nav_pages,
         'job': job,
@@ -801,7 +793,7 @@ def page_detail(request, slug):
     from django.db.models import F as _F
     Page.objects.filter(id=page.id).update(views=_F('views') + 1)
     nav_pages = Page.objects.filter(navEnabled=True, status='published').order_by('navOrder')
-    from ..blocks import load_blocks, enrich_blocks
+    from ..blocks import enrich_blocks, load_blocks
     return render(request, 'page.html',
                   {'page': page, 'nav_pages': nav_pages, 'slug': slug,
                    'content_blocks': enrich_blocks(load_blocks(page))})
@@ -810,7 +802,6 @@ def page_detail(request, slug):
 # --- WP8: Öffentliche Einrichtungs-/Standortseite (Karriere-Branding) ---------
 def facility_profile(request, slug):
     """Karriereseite je Einrichtung: Profil, Bilder, offene Stellen (WP8)."""
-    from ..models import FacilityProfile
     profile = get_object_or_404(FacilityProfile.objects.select_related('facility'), slug=slug)
     jobs = (JobPosting.objects
             .filter(facility=profile.facility, workflowState__name='published')
@@ -829,6 +820,7 @@ def facility_profile(request, slug):
 def landing_page(request, slug):
     """Oeffentliche Kampagnen-Landingpage /k/<slug>/ – misst sich selbst."""
     from django.db.models import F
+
     from ..models import LandingPage
     lp = get_object_or_404(LandingPage, slug=slug, active=True)
     if campaign_expired(lp):
@@ -853,7 +845,7 @@ def landing_page(request, slug):
         jobs = jobs.filter(location_id=lp.location_id)
     nav_pages = Page.objects.filter(status="published",
                                     navEnabled=True).order_by('navOrder')
-    from ..blocks import load_blocks, enrich_blocks
+    from ..blocks import enrich_blocks, load_blocks
     return render(request, 'landing_page.html',
                   {'lp': lp, 'jobs': jobs.order_by('-createdAt'),
                    'content_blocks': enrich_blocks(load_blocks(lp)),
@@ -862,8 +854,9 @@ def landing_page(request, slug):
 
 # --- B5: Öffentliches Job-Alert-Abo -----------------------------------------
 def job_alert_subscribe(request):
-    from ..models import JobAlertSubscription, JobAlertLog, Location, Facility
     import secrets as _secrets
+
+    from ..models import JobAlertLog, JobAlertSubscription, Location
     submitted, updated = False, False
     error = None
     if request.method == 'POST':
@@ -934,7 +927,7 @@ def job_alert_subscribe(request):
 
 def job_alert_confirm(request, token):
     """Double-Opt-in: aktiviert das Abo und setzt den Verfalls-Anker neu."""
-    from ..models import JobAlertSubscription, JobAlertLog
+    from ..models import JobAlertLog, JobAlertSubscription
     sub = get_object_or_404(JobAlertSubscription, confirmationToken=token)
     sub.status = 'ACTIVE'
     sub.lastConfirmedAt = timezone.now()
@@ -947,7 +940,7 @@ def job_alert_confirm(request, token):
 
 def job_alert_manage(request, token):
     """Verwalten/Abmelden über den Management-Link (DSGVO: jederzeit, ohne Konto)."""
-    from ..models import JobAlertSubscription, JobAlertLog
+    from ..models import JobAlertLog, JobAlertSubscription
     sub = get_object_or_404(JobAlertSubscription, managementToken=token)
     message = None
     if request.method == 'POST':
@@ -982,6 +975,7 @@ def healthz(request):
     """WP7/UC-SO-06: Gesamt-Health (App, DB, Media, KI-Anbindung, Queue)."""
     import json as _json
     import urllib.request
+
     from ..queue import queue_depth
 
     checks = {}

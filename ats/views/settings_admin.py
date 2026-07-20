@@ -5,50 +5,35 @@ Oeffentliche Namen werden in ats/views/__init__.py re-exportiert, damit
 urls.py und bestehende Importe (`from ats.views import X`) unveraendert
 funktionieren.
 """
-import os
-import json
-import uuid
-import logging
 import datetime
-from django.shortcuts import render, get_object_or_404, redirect
-from django.utils.http import url_has_allowed_host_and_scheme
-from django.views.decorators.csrf import ensure_csrf_cookie
-from ..permissions import any_staff_required, recruiter_required, hr_admin_required
-from ..permissions import scope_applications, scope_jobs, can_access_application
-from django.contrib import messages
-from django.http import HttpResponse, JsonResponse
-from django.conf import settings
-from django.utils import timezone
+import json
+import logging
+
 from django.db import transaction
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
-from django.views.decorators.csrf import csrf_exempt
-from ..models import (
-    Organization, Facility, FacilityProfile, Department, Location,
-    JobFamily, ContactPerson, WorkflowState, JobTemplate, Benefit,
-    JobPosting, Applicant, Application, Interview, InterviewSlot,
-    Message, Page, AuditLog, AILearningSample, SystemSetting, AppWorkflowDef
-, get_interview_kinds)
-import os as _os
-from django.http import FileResponse, Http404
-from django.urls import reverse
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.utils.text import slugify
+
 from ..audit import write_audit
 from ..models import (
-    AuditLog, TalentPoolSubscription, ScreeningQuestion, RoleDelegation,
-    ApplicantToken, ApplicationDocument,
+    Application,
+    AppWorkflowDef,
+    AuditLog,
+    ContactPerson,
+    Department,
+    Facility,
+    JobFamily,
+    JobPosting,
+    Location,
+    ScreeningQuestion,
+    SystemSetting,
+    WorkflowState,
 )
-from ..models import JobFamily, Location
-from ..models import Interview, Message
-from ..permissions import has_full_access
-from ..models import JobTemplate
-from django.utils.text import slugify
-from ..models import MediaAsset
-from django.contrib.auth.views import LoginView as AuthLoginView
-from django.core.cache import cache
+from ..permissions import any_staff_required, hr_admin_required
+from .common import campaign_expired
 
 logger = logging.getLogger(__name__)
-
-from .common import campaign_expired
 
 __all__ = ["save_app_workflow", "save_workflow_state", "save_email_template", "save_system_setting", "screening_questions_view", "archive_screening_question", "categories_view", "archive_category", "locations_view", "archive_location", "contacts_manage", "import_view", "import_template_csv", "source_channels_view"]
 
@@ -60,20 +45,20 @@ def save_app_workflow(request):
         workflow_id = request.POST.get('workflow_id')
         name = request.POST.get('name', '').strip()
         facility_id = request.POST.get('facility')
-        
+
         location_ids = request.POST.getlist('locations')
         category_ids = request.POST.getlist('categories')
         job_ids = request.POST.getlist('jobs')
         steps = request.POST.getlist('steps')
         custom_actions_raw = request.POST.get('custom_actions_json', '').strip()
-        
+
         custom_actions = []
         if custom_actions_raw:
             try:
                 custom_actions = json.loads(custom_actions_raw)
             except Exception:
                 custom_actions = []
-                
+
         # Construct structured step objects containing automation actions
         structured_steps = []
         for step in steps:
@@ -83,7 +68,7 @@ def save_app_workflow(request):
                 if isinstance(item, dict) and item.get('step', '').upper() == step.upper():
                     step_actions = item.get('actions', [])
                     break
-                    
+
             # Ohne ausdrueckliche Aktion: sinnvolle, WIRKSAME Vorbelegung.
             # (Frueher standen hier Phantasie-Aktionen wie AUTO_INVITE_INTERVIEW,
             # TRIGGER_PROCESS oder SEND_CONTRACT – die gab es nie, sie wurden
@@ -109,16 +94,16 @@ def save_app_workflow(request):
                     ]
                 # NEW/andere: bewusst KEINE Vorbelegung – lieber nichts als
                 # etwas, das nur so aussieht, als täte es etwas.
-                    
+
             structured_steps.append({
                 "name": step,
                 "state": step.upper(),
                 "actions": step_actions
             })
-        
+
         with transaction.atomic():
             facility = Facility.objects.filter(id=facility_id).first() if facility_id else None
-            
+
             if workflow_id:
                 wf = get_object_or_404(AppWorkflowDef, id=workflow_id)
                 wf.name = name
@@ -139,12 +124,12 @@ def save_app_workflow(request):
                     stepsJson=json.dumps(structured_steps)
                 )
                 action = "CREATE_APP_WORKFLOW"
-                
+
             AuditLog.objects.create(
                 action=action,
                 metadataJson=json.dumps({"workflowId": str(wf.id), "name": wf.name})
             )
-            
+
         return redirect('ats:dashboard')
     return redirect('ats:dashboard')
 
@@ -156,7 +141,7 @@ def save_workflow_state(request):
         state_id = request.POST.get('state_id')
         name = request.POST.get('name', '').strip().lower()
         description = request.POST.get('description', '').strip()
-        
+
         with transaction.atomic():
             if state_id:
                 state = get_object_or_404(WorkflowState, id=state_id)
@@ -170,12 +155,12 @@ def save_workflow_state(request):
                 state = WorkflowState.objects.create(name=name, description=description)
                 action = "CREATE_WORKFLOW_STATE"
                 metadata = {"name": name}
-                
+
             AuditLog.objects.create(
                 action=action,
                 metadataJson=json.dumps(metadata)
             )
-            
+
         return redirect('ats:dashboard')
     return redirect('ats:dashboard')
 
@@ -190,7 +175,7 @@ def save_email_template(request):
         subject = request.POST.get('subject', '').strip()
         html_content = request.POST.get('html_content', '').strip()
         text_content = request.POST.get('text_content', '').strip()
-        
+
         with transaction.atomic():
             if template_id:
                 template = get_object_or_404(EmailTemplate, id=template_id)
@@ -208,12 +193,12 @@ def save_email_template(request):
                     textContent=text_content
                 )
                 action = "CREATE_EMAIL_TEMPLATE"
-                
+
             AuditLog.objects.create(
                 action=action,
                 metadataJson=json.dumps({"templateId": str(template.id), "name": template.name})
             )
-            
+
         return redirect('ats:dashboard')
     return redirect('ats:dashboard')
 
@@ -225,7 +210,7 @@ def save_system_setting(request):
         setting_id = request.POST.get('setting_id')
         key = request.POST.get('key', '').strip().upper()
         value = request.POST.get('value', '').strip()
-        
+
         with transaction.atomic():
             if setting_id:
                 setting = get_object_or_404(SystemSetting, id=setting_id)
@@ -239,12 +224,12 @@ def save_system_setting(request):
                 setting = SystemSetting.objects.create(key=key, value=value)
                 action = "CREATE_SYSTEM_SETTING"
                 metadata = {"key": key}
-                
+
             AuditLog.objects.create(
                 action=action,
                 metadataJson=json.dumps(metadata)
             )
-            
+
         return redirect('ats:dashboard')
     return redirect('ats:dashboard')
 
@@ -323,7 +308,8 @@ def screening_questions_view(request):
             write_audit("SCREENING_Q_ADDED", user=request.user)
         return redirect("ats:screening_questions")
     questions = ScreeningQuestion.objects.filter(archived=False).order_by("-createdAt")
-    from ..questions import QUESTION_TYPES, normalize_questions as _nq
+    from ..questions import QUESTION_TYPES
+    from ..questions import normalize_questions as _nq
     family_rows = []
     for f in JobFamily.objects.filter(archived=False).order_by("name"):
         try:
@@ -402,14 +388,14 @@ def contacts_manage(request):
     - Zuordnung je Einrichtung/Abteilung (Vorauswahl-Hilfe),
     - „Überall ersetzen": Person A → B in allen Anzeigen (Urlaub/Ausscheiden).
     """
-    from ..models import (ContactPerson, FacilityContactPerson,
-                         DepartmentContactPerson, Department)
+    from ..models import DepartmentContactPerson, FacilityContactPerson
 
     if request.method == 'POST':
         action = request.POST.get('action', 'save')
 
         if action == 'replace_everywhere':
-            old_id = request.POST.get('old_id'); new_id = request.POST.get('new_id')
+            old_id = request.POST.get('old_id')
+            new_id = request.POST.get('new_id')
             old = ContactPerson.objects.filter(id=old_id).first()
             new = ContactPerson.objects.filter(id=new_id).first()
             if old and new and old.id != new.id:
@@ -462,11 +448,10 @@ def contacts_manage(request):
     for cp in ContactPerson.objects.order_by('lastName', 'firstName'):
         contacts.append({
             'obj': cp,
-            'facilities': [l.facility.name for l in cp.facility_links.select_related('facility')],
-            'departments': [l.department.name for l in cp.department_links.select_related('department')],
+            'facilities': [link.facility.name for link in cp.facility_links.select_related('facility')],
+            'departments': [link.department.name for link in cp.department_links.select_related('department')],
             'jobs_count': JobPosting.objects.filter(contactPerson=cp).count(),
         })
-    from ..models import Department
     return render(request, 'contacts.html', {
         'contacts': contacts,
         'facilities': Facility.objects.order_by('name'),
@@ -512,7 +497,7 @@ def import_view(request):
         elif f.size > 5 * 1024 * 1024:
             fatal = "Datei größer als 5 MB – bitte aufteilen."
         elif f.name.lower().endswith(('.xlsx', '.xlsm')):
-            from ..importer import parse_xlsx, detect_headers, HEADER_ALIASES, _map_headers
+            from ..importer import HEADER_ALIASES, _map_headers, detect_headers, parse_xlsx
             data = f.read()
             overrides = {field: request.POST[f'map_{field}']
                          for field in HEADER_ALIASES
@@ -521,7 +506,7 @@ def import_view(request):
             detected_headers = detect_headers(data, is_xlsx=True)
             mapping_now = _map_headers(detected_headers, overrides)
         else:
-            from ..importer import detect_headers, HEADER_ALIASES, _map_headers
+            from ..importer import HEADER_ALIASES, _map_headers, detect_headers
             data = f.read()
             overrides = {field: request.POST[f'map_{field}']
                          for field in HEADER_ALIASES
@@ -588,7 +573,6 @@ def source_channels_view(request):
     davon in Sichtung+, eingeladen, Einladungsquote. "Erfolgreich" heisst
     nicht viele Bewerbungen, sondern Bewerbungen, die weiterkommen.
     """
-    from django.utils.text import slugify
     from ..models import SourceChannel
     if request.method == 'POST' and request.POST.get('form') == 'cost':
         # Strukturierte Kampagnenkosten: speist "Kosten je Einstellung" direkt

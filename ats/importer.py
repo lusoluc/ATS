@@ -153,6 +153,7 @@ def parse_csv(file_bytes: bytes, overrides=None):
 def run_import(rows, default_job=None, dry_run=True):
     """Importiert (oder simuliert) die Zeilen. Gibt einen ehrlichen Bericht zurück."""
     from django.db import transaction
+
     from .models import Applicant, Application, JobPosting, email_blind_index
 
     jobs_by_title = {j.title.strip().lower(): j for j in JobPosting.objects.all()}
@@ -293,10 +294,11 @@ def match_cv_files(zip_bytes, dry_run=True, max_file_mb=10):
     import io as _io
     import os
     import zipfile
+
     from django.core.files.base import ContentFile
     from django.core.files.storage import default_storage
-    from .models import Applicant, Application, ApplicationDocument, \
-        email_blind_index
+
+    from .models import Applicant, Application, ApplicationDocument, email_blind_index
 
     ALLOWED = {".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png"}
     report = {"total": 0, "matched": [], "unmatched": [], "errors": [],

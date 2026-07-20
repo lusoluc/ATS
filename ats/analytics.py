@@ -8,7 +8,6 @@ from datetime import timedelta
 from django.db.models import Count
 from django.utils import timezone
 
-
 # --- Predictive: Time-to-Fill-Prognose ---------------------------------------
 
 def time_to_fill_forecast(apps_qs, open_jobs_qs):
@@ -202,9 +201,11 @@ def build_data_summary(apps_qs):
     except Exception:
         pass
     try:
-        from django.utils import timezone as _tz
         import datetime as _dt
-        from .models import TalentPoolSubscription, TalentPoolContact
+
+        from django.utils import timezone as _tz
+
+        from .models import TalentPoolContact, TalentPoolSubscription
         _now = _tz.now()
         active = TalentPoolSubscription.objects.filter(expiresAt__gte=_now).count()
         hints_90 = TalentPoolContact.objects.filter(
@@ -225,10 +226,11 @@ def appointment_stats(apps_qs, jobs_qs, days=90):
     _CANCELLED, CHANGE_REQUEST, INVITE_SENT, SCHEDULE_INTERVIEW) plus
     Interview/InterviewSlot – die Interaktionen werten sich selbst aus.
     """
-    from django.utils import timezone
     import datetime as _dt
-    import json as _json
     import statistics
+
+    from django.utils import timezone
+
     from .models import AuditLog, Interview, InterviewSlot, interview_kind_label
 
     now = timezone.now()

@@ -5,46 +5,23 @@ Oeffentliche Namen werden in ats/views/__init__.py re-exportiert, damit
 urls.py und bestehende Importe (`from ats.views import X`) unveraendert
 funktionieren.
 """
-import os
 import json
-import uuid
 import logging
-import datetime
-from django.shortcuts import render, get_object_or_404, redirect
-from django.utils.http import url_has_allowed_host_and_scheme
-from django.views.decorators.csrf import ensure_csrf_cookie
-from ..permissions import any_staff_required, recruiter_required, hr_admin_required
-from ..permissions import scope_applications, scope_jobs, can_access_application
-from django.contrib import messages
-from django.http import HttpResponse, JsonResponse
+import os
+
 from django.conf import settings
-from django.utils import timezone
-from django.db import transaction
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
-from django.views.decorators.csrf import csrf_exempt
-from ..models import (
-    Organization, Facility, FacilityProfile, Department, Location,
-    JobFamily, ContactPerson, WorkflowState, JobTemplate, Benefit,
-    JobPosting, Applicant, Application, Interview, InterviewSlot,
-    Message, Page, AuditLog, AILearningSample, SystemSetting, AppWorkflowDef
-, get_interview_kinds)
-import os as _os
-from django.http import FileResponse, Http404
-from django.urls import reverse
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import render
+
 from ..audit import write_audit
 from ..models import (
-    AuditLog, TalentPoolSubscription, ScreeningQuestion, RoleDelegation,
-    ApplicantToken, ApplicationDocument,
+    Application,
+    JobPosting,
+    SystemSetting,
 )
-from ..models import JobFamily, Location
-from ..models import Interview, Message
-from ..permissions import has_full_access
-from ..models import JobTemplate
-from django.utils.text import slugify
-from ..models import MediaAsset
-from django.contrib.auth.views import LoginView as AuthLoginView
-from django.core.cache import cache
+from ..permissions import (
+    hr_admin_required,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +32,6 @@ def feed_token_required(view):
     """WP2/UC-NS-06: Erzwingt ein Feed-Token, sobald FEED_ACCESS_TOKEN gesetzt ist."""
     import hmac
     from functools import wraps
-    from django.conf import settings
 
     @wraps(view)
     def _wrapped(request, *args, **kwargs):
@@ -74,7 +50,7 @@ def feed_token_required(view):
 def stepstone_feed(request):
     """Generates the multiposter StepStone XML feed of active job postings."""
     jobs = JobPosting.objects.filter(workflowState__name="published").select_related('location', 'facility', 'organization')
-    
+
     xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n<stepstone_jobs>\n'
     for job in jobs:
         xml_content += f"  <job id=\"{job.id}\">\n"
@@ -85,7 +61,7 @@ def stepstone_feed(request):
         xml_content += f"    <created_at>{job.createdAt.isoformat()}</created_at>\n"
         xml_content += "  </job>\n"
     xml_content += "</stepstone_jobs>"
-    
+
     return HttpResponse(xml_content, content_type="application/xml")
 
 
@@ -93,21 +69,21 @@ def stepstone_feed(request):
 def hr_ba_xml_feed(request):
     """Generates the official HR-BA-XML feed (Bundesagentur für Arbeit) for automatic syndication."""
     jobs = JobPosting.objects.filter(workflowState__name="published").select_related('location', 'facility', 'organization')
-    
+
     xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n<ba_stellenangebote>\n'
     for job in jobs:
         xml_content += f"  <stellenangebot id=\"{job.id}\">\n"
         xml_content += f"    <arbeitgeber><![CDATA[{job.organization.name}]]></arbeitgeber>\n"
         xml_content += f"    <beruf><![CDATA[{job.title}]]></beruf>\n"
-        xml_content += f"    <arbeitsort>\n"
+        xml_content += "    <arbeitsort>\n"
         xml_content += f"      <ort><![CDATA[{job.location.city}]]></ort>\n"
         xml_content += f"      <plz>{job.location.postalCode or ''}</plz>\n"
         xml_content += f"      <strasse><![CDATA[{job.location.address or ''}]]></strasse>\n"
-        xml_content += f"    </arbeitsort>\n"
+        xml_content += "    </arbeitsort>\n"
         xml_content += f"    <veroeffentlichungsdatum>{job.createdAt.strftime('%Y-%m-%d')}</veroeffentlichungsdatum>\n"
         xml_content += "  </stellenangebot>\n"
     xml_content += "</ba_stellenangebote>"
-    
+
     return HttpResponse(xml_content, content_type="application/xml")
 
 
@@ -126,7 +102,6 @@ def sap_sf_mapper(request):
     `hris_export` – und nur, wenn ein echter Endpunkt (HRIS_ENDPOINT)
     konfiguriert ist.
     """
-    from ..models import SystemSetting
 
     if request.method == 'POST':
         mapping_raw = request.POST.get('mapping_data', '{}')

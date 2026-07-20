@@ -8,8 +8,8 @@ import json
 
 from django.core.management.base import BaseCommand
 
-from ats.views import get_ollama_url, get_ai_model, make_ollama_request
-from ats.ai_safety import build_evaluation_payload, coerce_score, PROMPT_VERSION
+from ats.ai_safety import PROMPT_VERSION, build_evaluation_payload, coerce_score
+from ats.views import get_ai_model, get_ollama_url, make_ollama_request
 
 REQUIREMENTS = "Python, Django, PostgreSQL, 3+ Jahre Berufserfahrung"
 

@@ -1,5 +1,6 @@
-from django.urls import path
 from django.contrib.auth import views as auth_views
+from django.urls import path
+
 from . import views
 
 app_name = 'ats'
@@ -16,7 +17,7 @@ urlpatterns = [
     path('jobs/<uuid:job_id>/', views.job_detail, name='job_detail'),
     path('jobs/<uuid:job_id>/bewerben/', views.bewerben, name='bewerben'),
     path('bewerber/<str:token>/', views.candidate_portal, name='candidate_portal'),  # B4 Magic-Link
-    
+
     # Recruiter ATS Dashboard URLs
     path('recruiter/dashboard/', views.dashboard, name='dashboard'),
     path('recruiter/applications/<uuid:app_id>/update-status/', views.update_status, name='update_status'),
@@ -36,7 +37,7 @@ urlpatterns = [
     path('recruiter/landingpages/', views.landing_pages_manage, name='landing_pages'),
     path('recruiter/baukasten/<str:kind>/<uuid:obj_id>/', views.blocks_editor, name='blocks_editor'),
     path('recruiter/interview-formate/', views.interview_formats_manage, name='interview_formats'),
-    
+
     # API Feeds & Integrations
     path('healthz/', views.healthz, name='healthz'),  # WP7
     path('healthz/ai/', views.healthz_ai, name='healthz_ai'),

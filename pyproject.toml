@@ -1,0 +1,20 @@
+# Zentrale Werkzeug-Konfiguration (Ruff-Linter).
+# Regelauswahl bewusst schlank: Fehlerklassen (F), Stil-Basics (E/W),
+# Bugbear-Fallen (B), Modernisierung (UP), Import-Sortierung (I).
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["ats/migrations", "legacy"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "UP", "I"]
+ignore = [
+    "E501", # Zeilenlänge: Bestandscode hat lange Strings/Queries; kein Umbruch-Zwang
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Paket-Fassaden re-exportieren bewusst (z. B. ats/views/__init__.py für URL-Auflösung)
+"**/__init__.py" = ["F401"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["ats", "securats"]

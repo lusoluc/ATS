@@ -5,50 +5,37 @@ Oeffentliche Namen werden in ats/views/__init__.py re-exportiert, damit
 urls.py und bestehende Importe (`from ats.views import X`) unveraendert
 funktionieren.
 """
-import os
-import json
-import uuid
-import logging
 import datetime
-from django.shortcuts import render, get_object_or_404, redirect
-from django.utils.http import url_has_allowed_host_and_scheme
-from django.views.decorators.csrf import ensure_csrf_cookie
-from ..permissions import any_staff_required, recruiter_required, hr_admin_required
-from ..permissions import scope_applications, scope_jobs, can_access_application
-from django.contrib import messages
-from django.http import HttpResponse, JsonResponse
-from django.conf import settings
-from django.utils import timezone
+import json
+import logging
+
 from django.db import transaction
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
-from django.views.decorators.csrf import csrf_exempt
-from ..models import (
-    Organization, Facility, FacilityProfile, Department, Location,
-    JobFamily, ContactPerson, WorkflowState, JobTemplate, Benefit,
-    JobPosting, Applicant, Application, Interview, InterviewSlot,
-    Message, Page, AuditLog, AILearningSample, SystemSetting, AppWorkflowDef
-, get_interview_kinds)
-import os as _os
-from django.http import FileResponse, Http404
+from django.http import Http404, HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
+
 from ..audit import write_audit
 from ..models import (
-    AuditLog, TalentPoolSubscription, ScreeningQuestion, RoleDelegation,
-    ApplicantToken, ApplicationDocument,
+    Application,
+    AuditLog,
+    Interview,
+    InterviewSlot,
+    JobPosting,
+    Message,
+    SystemSetting,
+    get_interview_kinds,
 )
-from ..models import JobFamily, Location
-from ..models import Interview, Message
-from ..permissions import has_full_access
-from ..models import JobTemplate
-from django.utils.text import slugify
-from ..models import MediaAsset
-from django.contrib.auth.views import LoginView as AuthLoginView
-from django.core.cache import cache
+from ..permissions import (
+    can_access_application,
+    hr_admin_required,
+    recruiter_required,
+    scope_applications,
+    scope_jobs,
+)
+from .common import _safe_next_url
 
 logger = logging.getLogger(__name__)
-
-from .common import _safe_next_url
 
 __all__ = ["schedule_interview", "interviews_view", "slot_create", "slot_delete", "interviews_ics", "interview_outcome", "interview_formats_manage", "save_interview_feedback", "advance_interview_round", "application_feedback_json"]
 
@@ -61,7 +48,7 @@ def schedule_interview(request):
         slot_id = request.POST.get('slot_id')
         location_type = request.POST.get('location_type', 'REMOTE')
         meeting_link = request.POST.get('meeting_link', '')
-        
+
         app = get_object_or_404(Application, id=app_id)
         if not can_access_application(request.user, app):
             raise Http404("Nicht im Zugriffsbereich.")
@@ -77,7 +64,6 @@ def schedule_interview(request):
             # Kein Interview jetzt – Status INVITED + Nachricht mit Hinweis;
             # die Buchung passiert atomar im Portal (candidate_portal).
             if slot_id == 'CANDIDATE_CHOICE':
-                old_status = app.status
                 app.status = 'INVITED'
                 app.save()
                 message_text = (request.POST.get('message_text') or '').strip()[:4000]
@@ -140,7 +126,6 @@ def schedule_interview(request):
                     logger.exception('Team-Benachrichtigung fehlgeschlagen')
 
             # Advance application status to INVITED
-            old_status = app.status
             app.status = 'INVITED'
             app.save()
 
@@ -172,7 +157,7 @@ def schedule_interview(request):
             )
 
         return redirect('ats:dashboard')
-        
+
     return redirect('ats:dashboard')
 
 
@@ -186,7 +171,8 @@ def interviews_view(request):
     fuer Outlook & Co. (ehrlich: Download/Import, kein Abo-Feed).
     """
     import calendar as _cal
-    from datetime import date, datetime as _dt
+    from datetime import date
+    from datetime import datetime as _dt
 
     # Monat aus ?monat=YYYY-MM (Default: aktueller Monat)
     today = timezone.localdate()
@@ -258,13 +244,11 @@ def interviews_view(request):
 
     month_names = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli',
                    'August', 'September', 'Oktober', 'November', 'Dezember']
-    from ..models import get_interview_kinds
     can_manage_formats = (request.user.is_superuser or
                           request.user.groups.filter(name='HR-Admin').exists())
     # P1-11: Bewerbungen mit definierten Gespraechsrunden – formaler
     # Fortschritt je Runde, abschliessbar direkt hier.
-    from ..models import (rounds_state, feedback_for_application,
-                         DEFAULT_FEEDBACK_CRITERIA, INTERVIEW_RECOMMENDATIONS)
+    from ..models import DEFAULT_FEEDBACK_CRITERIA, INTERVIEW_RECOMMENDATIONS, feedback_for_application, rounds_state
     round_rows = []
     for app in (scoped_apps.filter(status__in=['IN_REVIEW', 'INVITED'])
                 .select_related('applicant', 'jobPosting')
@@ -314,7 +298,6 @@ def slot_create(request):
     if start < timezone.now():
         return redirect('ats:interviews')
     kind = request.POST.get('kind', '')
-    from ..models import get_interview_kinds
     if kind not in dict(get_interview_kinds()):
         kind = ''
     for week in range(repeat):
@@ -361,7 +344,7 @@ def interviews_ics(request):
         .select_related('application__applicant', 'application__jobPosting'))
     lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//SecurATS//Kalender//DE']
     for iv in ivs:
-        start = iv.scheduledAt.astimezone(datetime.timezone.utc)
+        start = iv.scheduledAt.astimezone(datetime.UTC)
         end = start + datetime.timedelta(minutes=45)
         who = f"{iv.application.applicant.firstName} {iv.application.applicant.lastName}"
         lines += ['BEGIN:VEVENT', f'UID:securats-{iv.id}',
@@ -407,7 +390,7 @@ def interview_outcome(request, interview_id):
     # echtem Zustandswechsel (nicht bei erneutem Speichern desselben
     # Ergebnisses), und nur wenn die Stelle überhaupt Runden definiert –
     # sonst bleibt alles beim manuellen Vorrücken auf der Termine-Seite.
-    from ..models import rounds_state, pending_feedback_participants
+    from ..models import pending_feedback_participants, rounds_state
     app = iv.application
     rst = rounds_state(app)
     completed_round = app.interviewRound   # Runde, die dieses Gespräch betraf
@@ -459,7 +442,6 @@ def interview_formats_manage(request):
     Code-Fallback), auch wenn ein Format entfernt wird.
     """
     import json as _json
-    from ..models import SystemSetting, get_interview_kinds
     kinds = get_interview_kinds()
     action = request.POST.get('action', '')
     if request.method == 'POST':
@@ -476,15 +458,15 @@ def interview_formats_manage(request):
             code = request.POST.get('code', '')
             label = (request.POST.get('label') or '').strip()[:80]
             if label:
-                kinds = [(c, label if c == code else l) for c, l in kinds]
+                kinds = [(c, label if c == code else lbl) for c, lbl in kinds]
         elif action == 'delete':
             code = request.POST.get('code', '')
             if len(kinds) > 1:  # mindestens ein Format bleibt
-                kinds = [(c, l) for c, l in kinds if c != code]
+                kinds = [(c, lbl) for c, lbl in kinds if c != code]
         SystemSetting.objects.update_or_create(
             key='INTERVIEW_KINDS_JSON',
             defaults={'value': _json.dumps(
-                [{'code': c, 'label': l} for c, l in kinds])})
+                [{'code': c, 'label': lbl} for c, lbl in kinds])})
         write_audit('INTERVIEW_FORMATS_CHANGED', user=request.user,
                     op=action, count=len(kinds))
     return redirect('ats:interviews')
@@ -498,9 +480,13 @@ def save_interview_feedback(request, app_id):
     aktualisiert die eigene (Korrektur erlaubt, auditiert). Runde wird aus
     dem aktuellen Stand der Bewerbung abgeleitet, kann aber mitgegeben
     werden (Feedback zu einer bereits abgeschlossenen Runde)."""
-    from ..models import (InterviewFeedback, INTERVIEW_RECOMMENDATIONS,
-                         DEFAULT_FEEDBACK_CRITERIA, rounds_state,
-                         derive_recommendation)
+    from ..models import (
+        DEFAULT_FEEDBACK_CRITERIA,
+        INTERVIEW_RECOMMENDATIONS,
+        InterviewFeedback,
+        derive_recommendation,
+        rounds_state,
+    )
     if request.method != 'POST':
         return redirect('ats:interviews')
     app = get_object_or_404(Application, id=app_id)

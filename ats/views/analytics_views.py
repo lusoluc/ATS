@@ -5,46 +5,15 @@ Oeffentliche Namen werden in ats/views/__init__.py re-exportiert, damit
 urls.py und bestehende Importe (`from ats.views import X`) unveraendert
 funktionieren.
 """
-import os
-import json
-import uuid
 import logging
-import datetime
-from django.shortcuts import render, get_object_or_404, redirect
-from django.utils.http import url_has_allowed_host_and_scheme
-from django.views.decorators.csrf import ensure_csrf_cookie
-from ..permissions import any_staff_required, recruiter_required, hr_admin_required
-from ..permissions import scope_applications, scope_jobs, can_access_application
-from django.contrib import messages
-from django.http import HttpResponse, JsonResponse
-from django.conf import settings
+
+from django.http import HttpResponse
+from django.shortcuts import render
 from django.utils import timezone
-from django.db import transaction
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
-from django.views.decorators.csrf import csrf_exempt
-from ..models import (
-    Organization, Facility, FacilityProfile, Department, Location,
-    JobFamily, ContactPerson, WorkflowState, JobTemplate, Benefit,
-    JobPosting, Applicant, Application, Interview, InterviewSlot,
-    Message, Page, AuditLog, AILearningSample, SystemSetting, AppWorkflowDef
-, get_interview_kinds)
-import os as _os
-from django.http import FileResponse, Http404
-from django.urls import reverse
+
 from ..audit import write_audit
-from ..models import (
-    AuditLog, TalentPoolSubscription, ScreeningQuestion, RoleDelegation,
-    ApplicantToken, ApplicationDocument,
-)
-from ..models import JobFamily, Location
-from ..models import Interview, Message
-from ..permissions import has_full_access
-from ..models import JobTemplate
-from django.utils.text import slugify
-from ..models import MediaAsset
-from django.contrib.auth.views import LoginView as AuthLoginView
-from django.core.cache import cache
+from ..models import Application, JobPosting, Page, SystemSetting
+from ..permissions import any_staff_required, has_full_access, recruiter_required, scope_applications, scope_jobs
 
 logger = logging.getLogger(__name__)
 
@@ -54,9 +23,10 @@ __all__ = ["analytics_view", "analytics_export"]
 # --- B7: Analytics-/Insight-Dashboard (Ausbau, BOLA-gescopt) ----------------
 @recruiter_required
 def analytics_view(request):
-    from django.db.models import Count, Avg, F
-    from django.db.models.functions import TruncMonth
     from datetime import timedelta
+
+    from django.db.models import Count
+    from django.db.models.functions import TruncMonth
 
     apps = scope_applications(request.user, Application.objects.all())
     total = apps.count()
@@ -96,9 +66,14 @@ def analytics_view(request):
     max_status = max([c for _, c in by_status], default=1)
 
     # --- WP5: vertiefte Analytics (§4.3) --------------------------------------
-    from ..analytics import (time_to_fill_forecast, detect_anomalies,
-                            fairness_overview, location_benchmark, cost_per_hire,
-                            appointment_stats)
+    from ..analytics import (
+        appointment_stats,
+        cost_per_hire,
+        detect_anomalies,
+        fairness_overview,
+        location_benchmark,
+        time_to_fill_forecast,
+    )
     open_jobs = scope_jobs(request.user,
                            JobPosting.objects.filter(workflowState__name='published'))
     forecast = time_to_fill_forecast(apps, open_jobs)

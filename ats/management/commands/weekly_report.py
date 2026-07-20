@@ -10,9 +10,8 @@ from django.core.management.base import BaseCommand
 from django.db.models import Count
 from django.utils import timezone
 
+from ats.analytics import detect_anomalies, fairness_overview, location_benchmark, time_to_fill_forecast
 from ats.models import Application, JobPosting
-from ats.analytics import (detect_anomalies, fairness_overview,
-                           location_benchmark, time_to_fill_forecast)
 
 
 class Command(BaseCommand):

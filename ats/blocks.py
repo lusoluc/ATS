@@ -96,7 +96,7 @@ def normalize_block(raw):
             except (TypeError, ValueError):
                 out[name] = 5
         elif ftype == "lines":
-            lines = [l.strip() for l in str(val or "").splitlines() if l.strip()]
+            lines = [line.strip() for line in str(val or "").splitlines() if line.strip()]
             out[name] = lines[:20]
         else:
             out[name] = str(val or "").strip()[:MAX_TEXT]

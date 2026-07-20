@@ -1,10 +1,12 @@
-import uuid
 import base64
 import hashlib
-from django.db import models
-from django.conf import settings
-from django.utils import timezone
+import uuid
+
 from cryptography.fernet import Fernet
+from django.conf import settings
+from django.db import models
+from django.utils import timezone
+
 
 # Helper to get a secure Fernet cipher using the settings key
 def get_fernet_cipher():
@@ -361,7 +363,7 @@ class JobPosting(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     descriptionEasy = models.TextField(blank=True, null=True)  # WP1: Leichte-Sprache-Variante
-    
+
     tasksJson = models.TextField(default="[]")
     requirementsJson = models.TextField(default="[]")
     screeningQuestionsJson = models.TextField(default="[]")
@@ -506,21 +508,21 @@ class Application(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     applicant = models.ForeignKey(Applicant, on_delete=models.CASCADE, related_name='applications')
     jobPosting = models.ForeignKey(JobPosting, on_delete=models.CASCADE, related_name='applications')
-    
+
     cvStorageId = models.CharField(max_length=255, blank=True, null=True)
     coverLetterTxt = EncryptedTextField(blank=True, null=True)
     screeningAnswersJson = models.TextField(default="{}")
 
     aiScore = models.CharField(max_length=10, blank=True, null=True)  # A, B, C, D
     aiRationale = models.TextField(blank=True, null=True)
-    
+
     status = models.CharField(max_length=50, default="NEW")
     interviewRound = models.PositiveSmallIntegerField(default=0)  # abgeschlossen  # NEW, IN_REVIEW, MISSING_DOCS, INVITED, REJECTED, WITHDRAWN
     hiredAt = models.DateTimeField(blank=True, null=True)  # Einstellungs-Ereignis (Time-to-Fill)
     source = models.CharField(max_length=50, default="DIRECT")  # DIRECT, STEPSTONE, BA, GOOGLE, REFERRAL, …
     boardOrder = models.IntegerField(default=0)  # B10: Position innerhalb der Kanban-Spalte
     withdrawReason = models.TextField(blank=True, null=True)
-    
+
     privacyNoticeVersion = models.ForeignKey(PrivacyNoticeVersion, on_delete=models.SET_NULL, blank=True, null=True, related_name='applications')
     consentTalentPool = models.BooleanField(default=False)
     internalNotes = models.TextField(default="", blank=True)
@@ -728,11 +730,6 @@ INTERVIEW_OUTCOMES = [
 
 def interview_outcome_label(value):
     return dict(INTERVIEW_OUTCOMES).get(value or "", value or "offen")
-
-
-def interview_kind_label(value):
-    value = _LEGACY_KINDS.get(value or "", value or "")
-    return dict(INTERVIEW_KINDS).get(value, value or "Gespräch")
 
 
 class Interview(models.Model):
@@ -1330,6 +1327,11 @@ class AuditLog(models.Model):
     # WP2/UC-MB-12: Integritäts-Hashkette (Append-Only-Nachweis, Manipulationserkennung)
     prevHash = models.CharField(max_length=64, blank=True, null=True)
     entryHash = models.CharField(max_length=64, blank=True, null=True)
+    # Verbindliche Kettenordnung. createdAt taugt nicht als Ordnung: bei
+    # Timestamp-Kollision (Uhr-Auflösung) entscheidet sonst die zufällige
+    # UUID – die Verifikation meldet dann falschen Manipulations-Alarm.
+    # unique=True erzwingt zudem eine lineare Kette bei parallelen Schreibern.
+    seq = models.BigIntegerField(unique=True, blank=True, null=True, editable=False)
 
     def __str__(self):
         return f"{self.action} at {self.createdAt}"

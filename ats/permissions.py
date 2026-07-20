@@ -10,6 +10,7 @@ from functools import wraps
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.db.models import Q
 
 # Rollen (= Django-Group-Namen)
 HR_ADMIN = "HR-Admin"
@@ -49,9 +50,6 @@ hr_admin_required = role_required(HR_ADMIN)              # Konfiguration/Adminis
 # ============================================================================
 # BOLA-Scoping: begrenzt Datenzugriff auf erlaubte Standorte/Einrichtungen
 # ============================================================================
-from django.db.models import Q
-
-
 def has_full_access(user):
     """HR-Admin/Superuser oder Nutzer ohne Einschränkung sehen alles."""
     if user.is_superuser or user.groups.filter(name=HR_ADMIN).exists():
@@ -93,13 +91,17 @@ def active_delegations_to(user):
     """Aktive Vertretungen, bei denen `user` die Vertretung IST (delegatee).
 
     Zeitfenster wird serverseitig geprueft – eine abgelaufene Vertretung
-    wirkt nirgends mehr, egal was die UI zeigt.
+    wirkt nirgends mehr, egal was die UI zeigt. Halb-offenes Intervall
+    [validFrom, validUntil): das Ende ist exklusiv, damit „vorzeitig
+    beenden" (validUntil = jetzt) auch bei grober Uhr-Aufloesung sofort
+    wirkt und nicht bis zum naechsten Uhrtick weiterlebt.
     """
     from django.utils import timezone
+
     from .models import RoleDelegation
     now = timezone.now()
     return list(RoleDelegation.objects
-                .filter(delegatee=user, validFrom__lte=now, validUntil__gte=now)
+                .filter(delegatee=user, validFrom__lte=now, validUntil__gt=now)
                 .select_related('delegator'))
 
 

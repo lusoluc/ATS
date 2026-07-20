@@ -10,7 +10,7 @@ Prinzip:
   Nachbesserungs-Loop: erneutes Speichern reicht das Ticket neu ein (UC-JF-07).
 - Der Schnell-Toggle darf das Gate nicht umgehen (views.toggle_job_active).
 """
-from .models import ApprovalTicket, ApprovalStep, SystemSetting, WorkflowState
+from .models import ApprovalStep, ApprovalTicket, SystemSetting, WorkflowState
 
 
 def approval_chain(facility=None) -> list[str]:
@@ -228,11 +228,12 @@ def notify_due_requisition_steps(req) -> int:
     (Scope ALL oder passende Einrichtung; stellenscharfe Vertretungen
     decken Bedarf nicht). Ereignisgetrieben beim Faelligwerden einer
     Stufe – kein Cron, kein Doppellauf. Liefert die Empfaengerzahl."""
-    from django.core.mail import send_mail
     from django.contrib.auth.models import Group
+    from django.core.mail import send_mail
     from django.utils import timezone as _tz
-    from .models import RoleDelegation
+
     from .audit import write_audit
+    from .models import RoleDelegation
 
     due = due_requisition_steps(req)
     if not due:
@@ -249,7 +250,7 @@ def notify_due_requisition_steps(req) -> int:
                 recipients.setdefault(member.email, None)
         deleg = (RoleDelegation.objects
                  .filter(delegator__groups__name=role,
-                         validFrom__lte=now, validUntil__gte=now)
+                         validFrom__lte=now, validUntil__gt=now)
                  .select_related('delegator', 'delegatee'))
         for d in deleg:
             covers = (d.scopeType == 'ALL'

@@ -1,22 +1,55 @@
 import os
-import json
 import sqlite3
+
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from django.utils.timezone import make_aware
 from django.utils.dateparse import parse_datetime
+from django.utils.timezone import make_aware
 
 from ats.models import (
-    Organization, Facility, FacilityProfile, Department, Location,
-    JobFamily, CareerPath, ContactPerson, FacilityContactPerson, DepartmentContactPerson,
-    WorkflowState, PrivacyNoticeVersion, Role, User, UserFacility,
-    JobTemplate, Benefit, TextSnippet, JobPosting, WorkflowDefinition,
-    ApprovalTicket, ApprovalStep, Applicant, ApplicantToken, Application,
-    AppWorkflowDef, AppTicket, AppStep, Interview, InterviewSlot,
-    Message, TalentPoolSubscription, Page, JobAlertSubscription, JobAlertLog,
-    SystemSetting, EmailTemplate, ScreeningQuestion, RoleDelegation,
-    AuditLog, AILearningSample
+    AILearningSample,
+    Applicant,
+    ApplicantToken,
+    Application,
+    ApprovalStep,
+    ApprovalTicket,
+    AppStep,
+    AppTicket,
+    AppWorkflowDef,
+    AuditLog,
+    Benefit,
+    CareerPath,
+    ContactPerson,
+    Department,
+    DepartmentContactPerson,
+    EmailTemplate,
+    Facility,
+    FacilityContactPerson,
+    FacilityProfile,
+    Interview,
+    InterviewSlot,
+    JobAlertLog,
+    JobAlertSubscription,
+    JobFamily,
+    JobPosting,
+    JobTemplate,
+    Location,
+    Message,
+    Organization,
+    Page,
+    PrivacyNoticeVersion,
+    Role,
+    RoleDelegation,
+    ScreeningQuestion,
+    SystemSetting,
+    TalentPoolSubscription,
+    TextSnippet,
+    User,
+    UserFacility,
+    WorkflowDefinition,
+    WorkflowState,
 )
+
 
 class Command(BaseCommand):
     help = "Migrates all existing data securely from the old Prisma SQLite database to the new Django schema."
@@ -120,11 +153,11 @@ class Command(BaseCommand):
 
                 # --- 1. MIGRATION LEVEL 1: Independent Tables ---
                 self.stdout.write("Migriere Level 1: Unabhängige Stammdaten...")
-                
+
                 # Organization
                 for r in get_rows('Organization'):
                     Organization.objects.create(id=r['id'], name=r['name'], createdAt=self.parse_date(r['createdAt']), updatedAt=self.parse_date(r['updatedAt']))
-                
+
                 # Location
                 for r in get_rows('Location'):
                     Location.objects.create(

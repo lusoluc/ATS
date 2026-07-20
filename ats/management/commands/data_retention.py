@@ -1,11 +1,12 @@
-import json
 import datetime
-from django.core.management.base import BaseCommand
-from django.utils import timezone
-from django.core.files.storage import default_storage
-from django.db import transaction
 
-from ats.models import Application, Applicant, AuditLog
+from django.core.files.storage import default_storage
+from django.core.management.base import BaseCommand
+from django.db import transaction
+from django.utils import timezone
+
+from ats.models import Application
+
 
 class Command(BaseCommand):
     help = "Performs GDPR-compliant (DSGVO) anonymization of rejected candidates older than 6 months who did not opt-in to the talent pool."
@@ -55,7 +56,7 @@ class Command(BaseCommand):
         with transaction.atomic():
             for app in apps_to_anonymize:
                 applicant = app.applicant
-                
+
                 # Delete uploaded CV from local storage
                 if app.cvStorageId:
                     try:

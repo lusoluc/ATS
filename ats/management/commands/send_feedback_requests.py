@@ -17,8 +17,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from ats.audit import write_audit
-from ats.models import (Interview, AuditLog, InterviewFeedback,
-                        pending_feedback_participants)
+from ats.models import AuditLog, Interview, pending_feedback_participants
 
 
 class Command(BaseCommand):

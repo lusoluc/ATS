@@ -17,8 +17,8 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from ats.audit import write_audit
-from ats.job_alerts import match_subscribers_for_job, is_expired
-from ats.models import JobAlertSubscription, JobAlertLog, JobPosting
+from ats.job_alerts import is_expired, match_subscribers_for_job
+from ats.models import JobAlertLog, JobAlertSubscription, JobPosting
 
 
 class Command(BaseCommand):

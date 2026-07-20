@@ -1,0 +1,232 @@
+        <!-- ====================================================================
+             TAB 3: PROZESS FLOW MANAGER
+             ==================================================================== -->
+        <div class="tab-content" id="process-tab">
+            <div class="glass-card">
+                <h3 style="font-size: 22px; color: #fff; margin-bottom: 12px;">Recruiting Prozess Flow</h3>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 24px;">Legen Sie fest, welche Phasen eine Bewerbung bei Ihnen durchläuft. Erstellen Sie Workflow-Status-Phasen.</p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 30px;">
+                    <!-- Left: Create/Edit State Form -->
+                    <form method="POST" action="{% url 'ats:save_workflow_state' %}" class="glass-card" style="background: rgba(11, 13, 25, 0.4);">
+                        {% csrf_token %}
+                        <input type="hidden" name="state_id" id="workflow-state-id">
+                        <h4 style="color: #fff; margin-bottom: 16px;" id="workflow-state-form-title">Status-Phase hinzufügen</h4>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="state-name">Phase / Status-Name (Kleinbuchstaben, z.B. approved)</label>
+                            <input type="text" name="name" id="state-name" class="form-input" placeholder="z. B. approved" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="state-desc">Beschreibung</label>
+                            <textarea name="description" id="state-desc" class="form-textarea" rows="3" placeholder="Erkläre kurz, was in dieser Phase geschieht..."></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn-cta" style="width: 100%;">
+                            <i class="fa-solid fa-save"></i> Workflow-Phase speichern
+                        </button>
+                    </form>
+                    
+                    <!-- Right: States Table -->
+                    <div>
+                        <h4 style="color: #fff; margin-bottom: 16px;">Aktive Prozess-Zustände</h4>
+                        <table class="premium-table">
+                            <thead>
+                                <tr>
+                                    <th>Statusname</th>
+                                    <th>Beschreibung</th>
+                                    <th>Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for state in all_workflows %}
+                                    <tr>
+                                        <td><span class="badge badge-primary">{{ state.name }}</span></td>
+                                        <td>{{ state.description|default:"-" }}</td>
+                                        <td>
+                                            <button class="btn-search" style="padding: 4px 8px; font-size: 11px; height: 26px;" 
+                                                onclick="editWorkflowState('{{ state.id }}', '{{ state.name }}', '{{ state.description }}')">
+                                                <i class="fa-solid fa-pen"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <hr style="border: 0; border-top: 1px solid var(--glass-border); margin: 40px 0;">
+                
+                <h3 style="font-size: 22px; color: #fff; margin-bottom: 12px;"><i class="fa-solid fa-route" style="color: var(--accent);"></i> Spezialisierte Recruiting-Flows (Pipelines)</h3>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 24px;">Erstellen Sie maßgeschneiderte Pipelines für bestimmte Stellen, Standorte, Abteilungen oder Kategorien (Berufsgruppen).</p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 30px;">
+                    <!-- Left: Create/Edit specialized flow -->
+                    <form method="POST" action="{% url 'ats:save_app_workflow' %}" class="glass-card" style="background: rgba(11, 13, 25, 0.4);" id="app-workflow-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="workflow_id" id="app-workflow-id">
+                        <h4 style="color: #fff; margin-bottom: 16px;" id="app-workflow-form-title">Spezialisierten Flow hinzufügen</h4>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="app-workflow-name">Name des Custom Flows *</label>
+                            <input type="text" name="name" id="app-workflow-name" class="form-input" placeholder="z. B. Berlin IT-Entwickler Pipeline" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="app-workflow-facility">Einrichtung / Mandant (Optional)</label>
+                            <select name="facility" id="app-workflow-facility" class="filter-select">
+                                <option value="">-- Keine Mandantenbeschränkung --</option>
+                                {% for fac in facilities %}
+                                    <option value="{{ fac.id }}">{{ fac.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Gültig für Standorte (Optional)</label>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 6px; background: rgba(11, 13, 25, 0.3); padding: 8px; border-radius: var(--border-radius-sm); border: 1px solid var(--glass-border); max-height: 120px; overflow-y: auto;">
+                                {% for loc in locations %}
+                                    <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #fff; cursor: pointer;">
+                                        <input type="checkbox" name="locations" value="{{ loc.id }}" style="accent-color: var(--accent);"> {{ loc.city }}
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Gültig für Stellengruppen / Kategorien (Optional)</label>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 6px; background: rgba(11, 13, 25, 0.3); padding: 8px; border-radius: var(--border-radius-sm); border: 1px solid var(--glass-border); max-height: 120px; overflow-y: auto;">
+                                {% for jf in job_families %}
+                                    <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #fff; cursor: pointer;">
+                                        <input type="checkbox" name="categories" value="{{ jf.id }}" style="accent-color: var(--accent);"> {{ jf.name }}
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Gültig für spezifische Stellen (Optional)</label>
+                            <div style="display: grid; grid-template-columns: 1fr; gap: 6px; background: rgba(11, 13, 25, 0.3); padding: 8px; border-radius: var(--border-radius-sm); border: 1px solid var(--glass-border); max-height: 120px; overflow-y: auto;">
+                                {% for job in active_jobs %}
+                                    <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #fff; cursor: pointer;">
+                                        <input type="checkbox" name="jobs" value="{{ job.id }}" style="accent-color: var(--accent);"> {{ job.title }}
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Phasen / Schritte in diesem Flow (Mehrfachauswahl) *</label>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 6px; background: rgba(11, 13, 25, 0.3); padding: 8px; border-radius: var(--border-radius-sm); border: 1px solid var(--glass-border);">
+                                {% for state in all_workflows %}
+                                    <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #fff; cursor: pointer;">
+                                        <input type="checkbox" name="steps" value="{{ state.name }}" style="accent-color: var(--accent);" {% if state.name == 'NEW' or state.name == 'IN_REVIEW' or state.name == 'INVITED' or state.name == 'REJECTED' %}checked{% endif %}> {{ state.name }}
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 16px;">
+                            <label class="form-label">
+                                <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent);"></i> Automatik: Was soll passieren?
+                            </label>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">
+                                Legen Sie fest, was automatisch geschieht, wenn eine Bewerbung eine Phase erreicht.
+                                Ohne Eintrag nutzt SecurATS eine schlanke Standard-Vorbelegung.
+                            </div>
+
+                            <div id="automation-rows"></div>
+                            {{ all_roles|json_script:"automation-roles-data" }}
+
+                            <button type="button" class="btn" id="automation-add"
+                                    style="margin-top: 8px; font-size: 12px; padding: 6px 12px;">
+                                <i class="fa-solid fa-plus"></i> Aktion hinzufügen
+                            </button>
+
+                            <details style="margin-top: 12px;">
+                                <summary style="font-size: 11px; color: var(--text-muted); cursor: pointer;">
+                                    Für Fortgeschrittene: JSON ansehen/bearbeiten
+                                </summary>
+                                <textarea name="custom_actions_json" id="app-workflow-custom-json"
+                                          class="form-textarea" rows="4"
+                                          style="font-family: monospace; font-size: 11px; margin-top: 6px;"></textarea>
+                                <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">
+                                    Wird automatisch aus den Feldern oben erzeugt. Manuelle Änderungen hier
+                                    überschreiben den Baukasten beim Speichern.
+                                </div>
+                            </details>
+
+                            <div style="font-size: 10px; color: var(--text-muted); margin-top: 8px;">
+                                <i class="fa-solid fa-shield-halved"></i>
+                                <strong>Bewusste Grenze:</strong> Der Status-Autovorlauf kann Bewerbungen nur
+                                innerhalb der Sichtung weiterschieben (Neu / In Prüfung / Eingeladen).
+                                <strong>Zusagen und Absagen trifft immer ein Mensch</strong> – die Automatik kann das nicht.
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn-cta" style="width: 100%;">
+                            <i class="fa-solid fa-save"></i> Custom Pipeline speichern
+                        </button>
+                    </form>
+
+                    <!-- Right: Custom Pipelines List -->
+                    <div>
+                        <h4 style="color: #fff; margin-bottom: 16px;">Definierte Custom Pipelines</h4>
+                        <div style="overflow-x: auto;">
+                            <table class="premium-table">
+                                <thead>
+                                    <tr>
+                                        <th>Flow Name</th>
+                                        <th>Filter / Regeln</th>
+                                        <th>Phasen</th>
+                                        <th>Aktionen</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for wf in app_workflows %}
+                                        <tr>
+                                            <td><strong>{{ wf.name }}</strong></td>
+                                            <td style="font-size: 11px; line-height: 1.4; color: var(--text-muted);">
+                                                {% if wf.facility %}
+                                                    <div style="color: #fff;">🏢 Mandant: {{ wf.facility.name }}</div>
+                                                {% endif %}
+                                                {% if wf.locationIdsJson != '[]' and wf.locationIdsJson != '""' %}
+                                                    <div>📍 Standorte aktiv</div>
+                                                {% endif %}
+                                                {% if wf.categoryIdsJson != '[]' and wf.categoryIdsJson != '""' %}
+                                                    <div>🏷️ Kategorien aktiv</div>
+                                                {% endif %}
+                                                {% if wf.jobIdsJson != '[]' and wf.jobIdsJson != '""' %}
+                                                    <div>💼 Spezifische Jobs</div>
+                                                {% endif %}
+                                                {% if not wf.facility and wf.locationIdsJson == '[]' and wf.categoryIdsJson == '[]' and wf.jobIdsJson == '[]' %}
+                                                    <span style="color: var(--accent);">Globaler Fallback</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div style="font-family: monospace; font-size: 11px; color: var(--accent);">
+                                                    {{ wf.stepsJson }}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <button class="btn-search" style="padding: 4px 8px; font-size: 11px; height: 26px;" 
+                                                    onclick="editAppWorkflow('{{ wf.id|escapejs }}', '{{ wf.name|escapejs }}', '{{ wf.facility.id|default:''|escapejs }}', '{{ wf.locationIdsJson|escapejs }}', '{{ wf.categoryIdsJson|escapejs }}', '{{ wf.jobIdsJson|escapejs }}', '{{ wf.stepsJson|escapejs }}')">
+                                                    <i class="fa-solid fa-pen"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="4" style="text-align: center; color: var(--text-muted); font-size: 13px;">Keine spezialisierten Pipelines hinterlegt. Es gelten die Standard-Zustände.</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+

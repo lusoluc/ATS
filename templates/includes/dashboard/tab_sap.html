@@ -1,0 +1,48 @@
+        <!-- ====================================================================
+             TAB 6: SAP SUCCESSFACTORS SYNC CONSOLE
+             ==================================================================== -->
+        <div class="tab-content" id="sap-tab">
+            <div class="glass-card">
+                <h3 style="font-size: 22px; color: #fff; margin-bottom: 6px;">SAP SuccessFactors Sync Console</h3>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 24px;">Bilden Sie Ihre SecurATS-Felder auf die Felder Ihres HRIS ab. Die eigentliche Übertragung übernimmt der Server-Befehl hris_export – nur bei konfiguriertem Endpunkt.</p>
+                
+                <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 30px;">
+                    <!-- Ehrlicher Status statt Fake-Konsole.
+                         Frueher lief hier ein mTLS/OAuth2-Theater mit erfundenen
+                         Log-Zeilen und "Revisionssicher uebertragen: X Profile".
+                         Es rief denselben Endpunkt wie der Feld-Mapper auf, der
+                         (korrekt) KEINE Daten uebertraegt - die Konsole log also.
+                         Der echte Weg: Zuordnung speichern -> `hris_export`. -->
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h4 style="color: #fff;"><i class="fa-solid fa-circle-info" style="color: var(--accent);"></i> So funktioniert die Übertragung</h4>
+                        </div>
+                        <div style="background: rgba(11,13,25,0.4); border: 1px solid var(--glass-border); border-radius: 10px; padding: 18px; font-size: 13px; color: var(--text-muted); line-height: 1.7;">
+                            <p style="margin-bottom: 12px;"><strong style="color:#fff;">Diese Seite überträgt keine Daten.</strong> Sie legt fest, welches SecurATS-Feld auf welches HRIS-Feld abgebildet wird (rechts).</p>
+                            <ol style="margin: 0 0 12px 18px; padding: 0;">
+                                <li style="margin-bottom: 6px;">Feldzuordnung rechts prüfen und <strong style="color:#fff;">speichern</strong>.</li>
+                                <li style="margin-bottom: 6px;">Auf dem Server den Befehl <code style="background:rgba(0,0,0,0.3); padding:1px 5px; border-radius:3px;">python manage.py hris_export</code> ausführen (oder per Cron planen).</li>
+                                <li>Die Übertragung erfolgt <strong style="color:#fff;">nur</strong>, wenn <code style="background:rgba(0,0,0,0.3); padding:1px 5px; border-radius:3px;">HRIS_ENDPOINT</code> gesetzt ist – sonst bricht der Befehl ehrlich ab.</li>
+                            </ol>
+                            <p style="font-size: 12px; margin: 0;"><i class="fa-solid fa-shield-halved"></i> Jede echte Übertragung wird revisionssicher protokolliert – mit dem tatsächlichen Ergebnis, nicht mit einer erfundenen Bestätigung.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Schema Mapping Fields -->
+                    <div class="glass-card" style="background: rgba(11, 13, 25, 0.4);">
+                        <h4 style="color: #fff; margin-bottom: 16px;"><i class="fa-solid fa-map-location-dot" style="color: var(--primary-light);"></i> Feldzuordnung (OData Schema)</h4>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            {% for field in sap_schema_fields %}
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(255,255,255,0.03); border-radius: var(--border-radius-sm); border: 1px solid var(--glass-border);">
+                                    <span style="font-size: 13px; font-weight: 600; color: #fff;">{{ field.label }}</span>
+                                    <i class="fa-solid fa-circle-arrow-right" style="color: var(--accent);"></i>
+                                    <code style="font-size: 12px; color: var(--primary-light);">{{ field.id }} ({{ field.type }})</code>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+

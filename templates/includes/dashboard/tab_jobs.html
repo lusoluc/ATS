@@ -1,0 +1,59 @@
+        <!-- ====================================================================
+             TAB 2: STELLENANZEIGEN (JOB MANAGER)
+             ==================================================================== -->
+        <div class="tab-content" id="jobs-tab">
+            <div class="glass-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h3 style="font-size: 22px; color: #fff;">Stellenangebote verwalten</h3>
+                        <p style="color: var(--text-muted); font-size: 13px;">Sehen Sie alle Ausschreibungen und erstellen Sie neue Ausschreibungen live.</p>
+                    </div>
+                    <button class="btn-cta" onclick="openNewJobCreatorModal()">
+                        <i class="fa-solid fa-circle-plus"></i> Neue Stelle ausschreiben
+                    </button>
+                </div>
+                
+                <table class="premium-table">
+                    <thead>
+                        <tr>
+                            <th>Titel</th>
+                            <th>Standort</th>
+                            <th>Abteilung</th>
+                            <th>Status</th>
+                            <th>Erstellt am</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for job in active_jobs %}
+                            <tr>
+                                <td>
+                                    <strong>{{ job.title }}</strong>
+                                    {% if job.is_template_outdated %}
+                                        <span class="badge" id="job-tpl-outdated-badge-{{ job.id }}" style="background: rgba(245,158,11,0.15); color:#fbbf24; font-size:10px; margin-left: 8px;" title="Vorlage veraltet! Eine neuere Version ist verfügbar.">v{{ job.jobTemplate.version }} veraltet!</span>
+                                        <button type="button" class="btn" id="job-tpl-update-btn-{{ job.id }}" style="padding: 2px 6px; font-size: 10px; margin-left:4px; vertical-align:middle; background:rgba(139,92,246,0.15); color:#c084fc; border:1px solid rgba(139,92,246,0.3); border-radius:3px; cursor:pointer;" onclick="updateJobTemplate('{{ job.id }}')" title="Auf die neueste Vorlagenversion aktualisieren"><i class="fa-solid fa-arrows-rotate"></i> Update</button>
+                                    {% endif %}
+                                </td>
+                                <td>{{ job.location.city }}</td>
+                                <td>{{ job.department.name|default:"-" }}</td>
+                                <td><span class="badge {% if job.workflowState.name == 'published' %}badge-accent{% endif %}" id="job-state-{{ job.id }}">{{ job.workflowState.name }}</span></td>
+                                <td>{{ job.createdAt|date:"d.m.Y" }}</td>
+                                <td style="white-space:nowrap;">
+                                    <!-- Schnell-Aktion: Anzeige mit einem Klick (de)aktivieren -->
+                                    <button class="btn-search" id="job-toggle-{{ job.id }}" style="padding: 4px 10px; height: auto; font-size: 11px; margin: 0 6px 0 0; border-radius: var(--border-radius-sm); {% if job.workflowState.name != 'published' %}background: var(--danger);{% endif %}" onclick="toggleJob('{{ job.id }}')">
+                                        <i class="fa-solid fa-power-off"></i> <span>{% if job.workflowState.name == 'published' %}Deaktivieren{% else %}Aktivieren{% endif %}</span>
+                                    </button>
+                                    <button class="btn-search" style="padding: 4px 10px; height: auto; font-size: 11px; margin: 0; border-radius: var(--border-radius-sm);" onclick="editJobPosting('{{ job.id|escapejs }}', '{{ job.title|escapejs }}', '{{ job.description|escapejs }}', '{{ job.tasksJson|escapejs }}', '{{ job.requirementsJson|escapejs }}', '{{ job.screeningQuestionsJson|escapejs }}', '{{ job.facility.id|escapejs }}', '{{ job.department.id|default:''|escapejs }}', '{{ job.location.id|escapejs }}', '{{ job.jobFamily.id|escapejs }}', '{{ job.contactPerson.id|default:''|escapejs }}', '{{ job.jobTemplate.id|default:''|escapejs }}', '{{ job.workflowState.id|escapejs }}', '{% for b in job.benefits.all %}{{ b.id }},{% endfor %}', '{{ job.panelUserIdsJson|escapejs }}', '{{ job.panelQuorum|default_if_none:''|escapejs }}', '{{ job.panelDeadlineDays|default_if_none:''|escapejs }}', '{{ job.interview_rounds_csv|escapejs }}')">
+                                        <i class="fa-solid fa-pen-to-square"></i> Bearbeiten
+                                    </button>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: var(--text-muted);">Keine Stellenanzeigen vorhanden.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>

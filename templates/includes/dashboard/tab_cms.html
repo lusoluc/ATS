@@ -1,0 +1,113 @@
+        <!-- ====================================================================
+             TAB 4: CMS SEITEN-EDITOR
+             ==================================================================== -->
+        <div class="tab-content" id="cms-tab">
+            <div class="glass-card">
+                <h3 style="font-size: 22px; color: #fff; margin-bottom: 12px;">Karriere-Landingpages & CMS-Seiten</h3>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 24px;">Erstellen Sie eigenständige Kampagnen-Landingpages (z. B. für LinkedIn Ads) oder pflegen Sie die Hauptseiten.</p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 30px;">
+                    <!-- Left Form Editor -->
+                    <form method="POST" action="{% url 'ats:save_page' %}" class="glass-card" style="background: rgba(11, 13, 25, 0.4);" id="cms-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="page_id" id="cms-page-id">
+                        <h4 style="color: #fff; margin-bottom: 16px;" id="cms-form-title">Neue Seite erstellen</h4>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="page-title">Titel der Seite</label>
+                            <input type="text" name="title" id="page-title" class="form-input" placeholder="z. B. IT-Karriere Portal" required>
+                <div class="form-group" style="max-width:260px;">
+                    <label class="form-label" for="headcount">Zu besetzende Stellen</label>
+                    <input type="number" id="headcount" name="headcount" class="form-input" min="1" max="99" value="1">
+                </div>
+                <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                    <div class="form-group" style="max-width:220px;">
+                        <label class="form-label" for="panel_quorum">Gremium-Quorum (leer = Mehrheit)</label>
+                        <input type="number" id="panel_quorum" name="panel_quorum" class="form-input" min="1" max="15" placeholder="z. B. 2">
+                    </div>
+                    <div class="form-group" style="max-width:220px;">
+                        <label class="form-label" for="panel_deadline_days">Abstimmungs-Frist (Tage, leer = keine)</label>
+                        <input type="number" id="panel_deadline_days" name="panel_deadline_days" class="form-input" min="1" max="60" placeholder="z. B. 7">
+                    </div>
+                    <div class="form-group" style="flex:1; min-width:280px;">
+                        <label class="form-label" for="interview_rounds">Gesprächsrunden (kommasepariert, leer = keine Rundenpflicht)</label>
+                        <input type="text" id="interview_rounds" name="interview_rounds" class="form-input" placeholder="z. B. Erstgespräch, Fachgespräch, Probearbeit">
+                    </div>
+                </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="page-slug">Slug (URL-Pfad, z. B. it-karriere)</label>
+                            <input type="text" name="slug" id="page-slug" class="form-input" placeholder="z. B. it-karriere" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <label class="form-label" style="margin-bottom: 0;">Seiten-Inhalt (Markdown / HTML)</label>
+                                <button type="button" id="btn-translate-cms" class="btn-search" style="height: 26px; font-size: 11px; padding: 0 10px;" onclick="translateSimpleGermanCMS()">
+                                    <i class="fa-solid fa-wheelchair"></i> Leichte Sprache (KI)
+                                </button>
+                            </div>
+                            <textarea name="content" id="page-content" class="form-textarea" rows="8" placeholder="Verfasse den Inhalt..." required></textarea>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div class="form-group">
+                                <label class="form-label" for="page-nav-label">Navigations-Label</label>
+                                <input type="text" name="nav_label" id="page-nav-label" class="form-input" placeholder="z. B. IT-Jobs">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="page-nav-order">Navigations-Reihenfolge</label>
+                                <input type="number" name="nav_order" id="page-nav-order" class="form-input" value="0">
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                            <label class="form-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" name="nav_enabled" id="page-nav-enabled" checked style="accent-color: var(--accent);"> In Navbar anzeigen?
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="page-meta-desc">SEO Meta-Beschreibung (für Google)</label>
+                            <input type="text" name="meta_desc" id="page-meta-desc" class="form-input" placeholder="Kurze SEO-Beschreibung...">
+                        </div>
+                        
+                        <button type="submit" class="btn-cta" style="width: 100%;">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> CMS-Seite veröffentlichen
+                        </button>
+                    </form>
+                    
+                    <!-- Right List Table -->
+                    <div>
+                        <h4 style="color: #fff; margin-bottom: 16px;">CMS Seitenübersicht</h4>
+                        <table class="premium-table">
+                            <thead>
+                                <tr>
+                                    <th>Seitenname</th>
+                                    <th>URL Slug</th>
+                                    <th>Navbar</th>
+                                    <th>Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for page in all_pages %}
+                                    <tr>
+                                        <td><strong>{{ page.title }}</strong></td>
+                                        <td><code>/pages/{{ page.slug }}</code></td>
+                                        <td>{% if page.navEnabled %}<span style="color: var(--accent); font-weight: bold;">Ja (Pos. {{ page.navOrder }})</span>{% else %}Nein{% endif %}</td>
+                                        <td>
+                                            <button class="btn-search" style="padding: 4px 8px; font-size: 11px; height: 26px;" 
+                                                onclick="editCMSPage('{{ page.id }}', '{{ page.title }}', '{{ page.slug }}', `{{ page.content|escapejs }}`, '{{ page.navLabel|default:"" }}', '{{ page.navOrder }}', {% if page.navEnabled %}true{% else %}false{% endif %}, '{{ page.metaDesc|default:"" }}')">
+                                                <i class="fa-solid fa-pen"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+

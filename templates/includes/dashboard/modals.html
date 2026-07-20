@@ -1,0 +1,390 @@
+<!-- ============================================================================
+MODALS & OVERLAYS
+============================================================================ -->
+
+<!-- Modal 1: Candidate Details View -->
+<div class="modal" id="candidateModal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeCandidateModal()"><i class="fa-solid fa-xmark"></i></button>
+        <div class="modal-body">
+            <div class="candidate-modal-grid">
+                
+                <!-- Left half: Personal details, CV PDF mock, dynamic screening, and cover letter -->
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap;">
+                        <div>
+                            <h2 id="modal-name" style="color: #fff; font-size: 26px; margin-bottom: 6px;">Name</h2>
+                            <p id="modal-job" style="color: var(--accent-light); font-size: 14px; font-weight: 600; text-transform: uppercase; margin-bottom: 20px;">Job Title</p>
+                        </div>
+                        <!-- RAG feedback loop trigger -->
+                        <div style="display: flex; gap: 8px;">
+                            <button onclick="trainLearningSample('POSITIVE')" class="btn-secondary-cta" style="border-color: var(--accent); color: var(--accent-light); font-size: 11px; padding: 4px 10px; height: 28px; display: inline-flex; align-items: center; gap: 4px;">
+                                <i class="fa-solid fa-thumbs-up"></i> POSITIV (RAG)
+                            </button>
+                            <button onclick="trainLearningSample('NEGATIVE')" class="btn-secondary-cta" style="border-color: #ef4444; color: #f87171; font-size: 11px; padding: 4px 10px; height: 28px; display: inline-flex; align-items: center; gap: 4px;">
+                                <i class="fa-solid fa-thumbs-down"></i> NEGATIV (RAG)
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; font-size: 14px;">
+                        <div style="display: flex; gap: 8px; align-items: center; color: var(--text-muted);">
+                            <i class="fa-solid fa-envelope" style="width: 16px;"></i> <span id="modal-email" style="color: #fff;"></span>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center; color: var(--text-muted);">
+                            <i class="fa-solid fa-phone" style="width: 16px;"></i> <span id="modal-phone" style="color: #fff;"></span>
+                        </div>
+                    </div>
+
+                    <h3 style="color: #fff; font-size: 16px; margin-bottom: 12px;"><i class="fa-solid fa-file-invoice"></i> Anschreiben</h3>
+                    <p id="modal-coverletter" style="font-size: 14px; color: #d1d5db; background: rgba(0, 0, 0, 0.2); padding: 16px; border-radius: var(--border-radius-sm); max-height: 180px; overflow-y: auto; margin-bottom: 24px; white-space: pre-line; border: 1px solid var(--glass-border);"></p>
+                    
+                    <h3 style="color: #fff; font-size: 16px; margin-bottom: 12px;"><i class="fa-solid fa-clipboard-question"></i> Screening-Ergebnisse</h3>
+                    <div id="modal-screening" style="font-size: 13px; color: #d1d5db; background: rgba(0,0,0,0.15); border: 1px solid var(--glass-border); padding: 16px; border-radius: var(--border-radius-sm);"></div>
+
+                    <h3 style="color: #fff; font-size: 16px; margin-top: 24px; margin-bottom: 12px;"><i class="fa-solid fa-comment-dots"></i> Interview-Feedback <span id="modal-fb-count" style="font-size:12px; color:var(--text-muted); font-weight:400;"></span></h3>
+                    <div id="modal-feedback" style="font-size: 13px; color: #d1d5db;">Lädt…</div>
+                </div>
+
+                <!-- Right half: AI Rating, CV Document preview mock, Recruiter Notes, and trigger scheduler -->
+                <div>
+                    <!-- AI rating glowing container -->
+                    <div class="ai-score-block">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h3 style="color: #fff; font-size: 16px; display: flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-robot"></i> KI-Voranalyse (Gemma)
+                            </h3>
+                            <span class="ai-score-badge" id="modal-ai-score" style="transform: scale(1.2);">A</span>
+                        </div>
+                        <p id="modal-ai-rationale" style="font-size: 13px; color: #e5e7eb; line-height: 1.5;"></p>
+                    </div>
+
+                    <!-- CV Document Previewer Frame Mock -->
+                    <h3 style="color: #fff; font-size: 16px; margin-bottom: 10px;"><i class="fa-solid fa-file-pdf"></i> Lebenslauf-Vorschau</h3>
+                    <div class="cv-preview-box" id="modal-cv-preview">
+                        <i class="fa-solid fa-file-pdf" style="font-size: 52px; color: #ef4444; margin-bottom: 12px;"></i>
+                        <span>Kein Dokument hochgeladen</span>
+                    </div>
+
+                    <!-- Internal Notes & input -->
+                    <h3 style="color: #fff; font-size: 16px; margin-top: 24px; margin-bottom: 10px;"><i class="fa-solid fa-comment-medical"></i> Interne Notizen</h3>
+                    <div class="recruiter-notes-area" id="modal-notes">
+                        Keine Notizen vorhanden.
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="note-input" class="form-input" placeholder="Neue Notiz hinzufügen..." style="height: 38px; font-size: 13px; flex-grow: 1;">
+                        <button onclick="submitRecruiterNote()" class="btn-search" style="height: 38px; padding: 0 16px; font-size: 13px;">Speichern</button>
+                    </div>
+                    
+                    <!-- ENTSCHEIDEN, WO GELESEN WIRD.
+                         Vorher konnte man im Modal zwar einladen, aber weder
+                         "in Prüfung nehmen" noch "absagen" – also die zwei
+                         häufigsten Entscheidungen. Der Recruiter musste das
+                         Fenster schließen, die Karte suchen und ziehen.
+                         Jetzt: eine Bewegung, direkt neben dem Lebenslauf. -->
+                    <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--glass-border);">
+                        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">
+                            Entscheidung
+                        </div>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <button id="modal-decide-review" onclick="decideFromModal('IN_REVIEW')" class="btn-secondary-cta" style="flex:1; min-width:130px; height:36px; font-size:12px;">
+                                <i class="fa-solid fa-magnifying-glass" style="margin-right:6px;"></i> In Prüfung
+                            </button>
+                            <button id="modal-decide-invited" onclick="decideFromModal('INVITED')" class="btn-secondary-cta" style="flex:1; min-width:130px; height:36px; font-size:12px;">
+                                <i class="fa-solid fa-envelope-open-text" style="margin-right:6px;"></i> Einladen
+                            </button>
+                            <button id="modal-decide-rejected" onclick="decideFromModal('REJECTED')" class="btn-secondary-cta" style="flex:1; min-width:130px; height:36px; font-size:12px; border-color:#ef4444; color:#fca5a5;">
+                                <i class="fa-solid fa-circle-xmark" style="margin-right:6px;"></i> Absagen
+                            </button>
+                        </div>
+                        <div style="font-size:10px; color:var(--text-muted); margin-top:6px;">
+                            Der aktuelle Status ist ausgegraut. Absagen verschickt die hinterlegte Absage-Vorlage.
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 16px; display: flex; gap: 10px;">
+                        <button id="modal-btn-schedule" class="btn-cta" style="width: 100%; height: 42px; display: flex; align-items: center; justify-content: center; font-size: 14px;">
+                            <i class="fa-solid fa-calendar-plus" style="margin-right: 6px;"></i> Interview planen
+                        </button>
+                        <a id="modal-btn-messages" href="#" class="btn-secondary-cta" style="width: 100%; height: 42px; display: flex; align-items: center; justify-content: center; font-size: 14px; margin-top: 10px; box-sizing: border-box;">
+                            <i class="fa-solid fa-comments" style="margin-right: 6px;"></i> Nachrichten
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 2: Interview Appointment Scheduler -->
+<div class="modal" id="interviewModal">
+    <div class="modal-content" style="max-width: 500px;">
+        <button class="modal-close" onclick="closeInterviewModal()"><i class="fa-solid fa-xmark"></i></button>
+        <div class="modal-body">
+            <h2 style="color: #fff; font-size: 24px; margin-bottom: 8px;"><i class="fa-solid fa-calendar-plus" style="color: var(--accent);"></i> Fachinterview planen</h2>
+            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;">Wählen Sie einen freien Slot aus oder weisen Sie ein Direktinterview zu.</p>
+            
+            <form method="POST" action="{% url 'ats:schedule_interview' %}">
+                {% csrf_token %}
+                <input type="hidden" id="schedule-app-id" name="application_id">
+                
+                <div class="form-group">
+                    <label class="form-label" for="slot_id">Verfügbare Timeslots *</label>
+                    <select id="slot_id" name="slot_id" class="filter-select">
+                        <option value="">Direkt-Termin (in 2 Tagen, manuell abstimmen)</option>
+                        <option value="CANDIDATE_CHOICE">✨ Bewerber:in wählt selbst aus freien Slots (Portal)</option>
+                        {% for slot in interview_slots %}
+                            <option value="{{ slot.id }}">{{ slot.jobPosting.title }} - {{ slot.startTime|date:"d.m.Y H:i" }} Uhr</option>
+                        {% empty %}
+                            <option value="">(Keine vordefinierten Slots frei - manueller Direkt-Slot wird erstellt)</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="location_type">Gesprächsformat *</label>
+                    <select id="location_type" name="location_type" class="filter-select">
+                        {% for code, label in interview_kinds %}<option value="{{ code }}" {% if code == 'VIDEO' %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="participants">Interview-Team (interne Teilnehmende)</label>
+                    <select id="participants" name="participants" class="filter-select" multiple size="4" aria-describedby="participants-hint">
+                        {% for m in team_members %}<option value="{{ m.id }}">{{ m.get_full_name|default:m.username }}</option>{% endfor %}
+                    </select>
+                    <p id="participants-hint" style="font-size:11px; color: var(--text-muted); margin-top:4px;">Mehrfachauswahl mit Strg/Cmd. Alle Ausgewählten werden sofort per E-Mail informiert und in die Termin-Erinnerung einbezogen.</p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="meeting_link">Meeting Link / Konferenzraum</label>
+                    <input type="text" id="meeting_link" name="meeting_link" class="form-input" placeholder="z. B. https://meet.example.de/raum-3 oder 'Haus B, Raum 214'">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="invite-message">Nachricht an die Bewerberin / den Bewerber</label>
+                    <textarea id="invite-message" name="message_text" class="form-textarea" rows="6" style="width:100%;"></textarea>
+                    <div style="display:flex; gap:8px; align-items:center; margin-top:6px;">
+                        <button type="button" class="btn-search" style="padding:4px 10px; height:auto; font-size:11px; margin:0; border-radius: var(--border-radius-sm);" onclick="polishInvite(this)"><i class="fa-solid fa-wand-magic-sparkles"></i> KI-Feinschliff (lokal)</button>
+                        <span id="invite-polish-status" aria-live="polite" style="font-size:11px; color: var(--text-muted);"></span>
+                    </div>
+                    <p style="font-size:11px; color: var(--text-muted); margin-top:6px;">Wird beim Buchen als Portal-Nachricht hinterlegt und per E-Mail versendet (Termin &amp; Ort werden automatisch angehängt). Leer lassen = nur Termin ohne Nachricht.</p>
+                </div>
+
+                <button type="submit" class="btn-apply-now" style="width: 100%; margin-top: 16px; height: 46px;">
+                    <i class="fa-solid fa-circle-check"></i> Einladen: Termin buchen &amp; Nachricht senden
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 3: Job Creator Wizard -->
+<div class="modal" id="jobCreatorModal">
+    <div class="modal-content" style="max-width: 650px;">
+        <button class="modal-close" onclick="closeJobCreatorModal()"><i class="fa-solid fa-xmark"></i></button>
+        <div class="modal-body">
+            <h2 style="color: #fff; font-size: 24px; margin-bottom: 8px;"><i class="fa-solid fa-circle-plus" style="color: var(--accent);"></i> Neue Stelle ausschreiben</h2>
+            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;">Erstellen Sie eine vollqualifizierte, multiposting-konforme Stellenanzeige.</p>
+            
+            <form method="POST" action="{% url 'ats:create_job' %}">
+                {% csrf_token %}
+                <input type="hidden" name="job_id" id="job-id-inp">
+                
+                <div class="form-group">
+                    <label class="form-label" for="job-title-inp">Stellentitel *</label>
+                    <input type="text" name="title" id="job-title-inp" class="form-input" placeholder="z. B. Full Stack Django Developer (m/w/d)" required>
+                </div>
+
+                <div class="form-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label class="form-label" style="margin-bottom: 0;">Kurzbeschreibung / Einleitung *</label>
+                        <button type="button" class="btn-search" style="height: 26px; font-size: 11px; padding: 0 10px;" onclick="runAGGCheckOnJob()">
+                            <i class="fa-solid fa-shield-halved"></i> AGG prüfen (KI)
+                        </button>
+                    </div>
+                    <textarea name="description" id="job-desc-inp" class="form-textarea" rows="2" placeholder="Kurze Einleitung der Stelle..." required></textarea>
+                    <!-- B12/L4: Tonalitäts-Overlay – formuliert den Text um, ohne Fakten zu ändern -->
+                    <div style="display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap;">
+                        <select onchange="insertSnippet(this)" class="filter-select" style="max-width:230px;" aria-label="Textbaustein einfügen">
+                            <option value="">+ Textbaustein einfügen…</option>
+                            {% for sn in text_snippets %}
+                            <option value="{{ sn.content|escapejs }}">{{ sn.category }}{% if sn.jobFamily %} · {{ sn.jobFamily.name }}{% endif %}: {{ sn.content|truncatechars:40 }}</option>
+                            {% endfor %}
+                        </select>
+                        <select id="job-tone" class="filter-select" style="max-width:200px;">
+                            <option value="SIE">Ton: Sie (professionell)</option>
+                            <option value="DU">Ton: Du (locker)</option>
+                            <option value="HERZLICH">Ton: herzlich</option>
+                            <option value="NUECHTERN">Ton: nüchtern</option>
+                        </select>
+                        <button type="button" class="btn-secondary-cta" style="height:32px; font-size:12px; padding:0 14px;" onclick="applyToneToDescription(this)">
+                            <i class="fa-solid fa-wand-magic-sparkles" style="margin-right:6px;"></i>Mit KI umformulieren
+                        </button>
+                        <span id="job-tone-status" aria-live="polite" style="font-size:11px; color: var(--text-muted);"></span>
+                    </div>
+                    
+                    <!-- New Interactive Premium Suggestions Panel -->
+                    <div id="agg-suggestions-box" class="glass-card" style="display: none; margin-top: 12px; padding: 16px; border: 1px solid rgba(139, 92, 246, 0.4); background: rgba(15, 12, 30, 0.85); box-shadow: 0 8px 32px 0 rgba(139, 92, 246, 0.2); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 8px; transition: all 0.3s ease;">
+                        <div id="agg-suggestions-loading" style="display: none; align-items: center; gap: 10px; color: var(--accent);">
+                            <i class="fa-solid fa-spinner fa-spin" style="font-size: 16px;"></i>
+                            <span style="font-size: 13px; font-weight: 500;">Lokale Gemma-KI analysiert den Text auf AGG-Konformität...</span>
+                        </div>
+                        <div id="agg-suggestions-content" style="display: none;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                                <h4 style="margin: 0; font-size: 14px; color: #fff; display: flex; align-items: center; gap: 6px;">
+                                    <i class="fa-solid fa-scale-balanced" style="color: var(--accent);"></i> KI AGG-Check Ergebnis
+                                </h4>
+                                <span id="agg-badge" class="badge" style="font-size: 10px; padding: 2px 6px; border-radius: 20px; font-weight: 600;"></span>
+                            </div>
+                            
+                            <!-- Warnings List -->
+                            <div id="agg-warnings-container" style="margin-bottom: 12px; display: none;">
+                                <div style="font-size: 11px; font-weight: 600; color: #ef4444; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Identifizierte Risiken:</div>
+                                <ul id="agg-warnings-list" style="margin: 0; padding-left: 16px; font-size: 12px; color: #fca5a5; display: flex; flex-direction: column; gap: 4px;"></ul>
+                            </div>
+                            
+                            <!-- Safe Text Indicator -->
+                            <div id="agg-safe-message" style="margin-bottom: 12px; display: none; color: #10b981; font-size: 13px; font-weight: 500;">
+                                <i class="fa-solid fa-circle-check"></i> Hervorragend! Keine offensichtlichen AGG-Verstöße gefunden.
+                            </div>
+                            
+                            <!-- Optimized Text Box -->
+                            <div id="agg-optimized-container" style="margin-top: 10px;">
+                                <div style="font-size: 11px; font-weight: 600; color: var(--accent); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Optimierter Text-Vorschlag:</div>
+                                <div id="agg-optimized-text" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; font-size: 13px; color: #e5e7eb; white-space: pre-wrap; font-family: sans-serif; line-height: 1.4;"></div>
+                            </div>
+                            
+                            <!-- Actions -->
+                            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px;">
+                                <button type="button" class="btn-search" style="height: 28px; font-size: 11px; padding: 0 12px; background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: #fff !important;" onclick="dismissAGGSuggestions()">
+                                    Verwerfen
+                                </button>
+                                <button type="button" id="btn-apply-agg" class="btn-cta" style="height: 28px; font-size: 11px; padding: 0 12px; display: none;" onclick="applyAGGSuggestions()">
+                                    <i class="fa-solid fa-check"></i> Vorschlag übernehmen
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="job-tasks-inp">Aufgaben (Eine Zeile pro Aufgabe) *</label>
+                        <textarea name="tasks" id="job-tasks-inp" class="form-textarea" rows="3" placeholder="Entwicklung von Django Backends&#10;Gestaltung von CSS Frontends" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="job-reqs-inp">Anforderungen (Eine Zeile pro Anforderung) *</label>
+                        <textarea name="requirements" id="job-reqs-inp" class="form-textarea" rows="3" placeholder="3+ Jahre Django Erfahrung&#10;Kenntnisse in HTML und CSS" required></textarea>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="job-facility">Einrichtung *</label>
+                        <select name="facility" id="job-facility" class="filter-select" required>
+                            {% for fac in facilities %}
+                                <option value="{{ fac.id }}">{{ fac.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="job-department">Abteilung</label>
+                        <select name="department" id="job-department" class="filter-select">
+                            <option value="">-- Keine Abteilung --</option>
+                            {% for dept in departments %}
+                                <option value="{{ dept.id }}">{{ dept.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="job-location">Standort *</label>
+                        <select name="location" id="job-location" class="filter-select" required>
+                            {% for loc in locations %}
+                                <option value="{{ loc.id }}">{{ loc.name }} ({{ loc.city }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="job-family">Stellengruppe *</label>
+                        <select name="job_family" id="job-family" class="filter-select" required>
+                            {% for jf in job_families %}
+                                <option value="{{ jf.id }}">{{ jf.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="job-contact">Ansprechpartner</label>
+                        <select name="contact_person" id="job-contact" class="filter-select">
+                            <option value="">-- Keiner --</option>
+                            {% for cp in contact_persons %}
+                                <option value="{{ cp.id }}">{{ cp.firstName }} {{ cp.lastName }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="job-template">Seiten-Template</label>
+                        <select name="job_template" id="job-template" class="filter-select">
+                            {% for t in job_templates %}
+                                <option value="{{ t.id }}">{{ t.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Angebotene Corporate Benefits</label>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px;">
+                        {% for benefit in all_benefits %}
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #fff; cursor: pointer;">
+                                <input type="checkbox" name="benefits" value="{{ benefit.id }}" style="accent-color: var(--accent);"> {{ benefit.icon }} {{ benefit.name }}
+                            </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="job-screening">Screening K.O. Fragen (JSON-Format)</label>
+                    <div style="display:flex; gap:8px; align-items:center; margin:6px 0;">
+                        <button type="button" class="btn-search" style="padding:4px 10px; height:auto; font-size:11px; margin:0; border-radius: var(--border-radius-sm);" onclick="usePreviousProcess(this)" title="Screening-Fragen, Aufgaben und Anforderungen der jüngsten Stelle gleicher Jobfamilie (bevorzugt gleiche Einrichtung) übernehmen"><i class="fa-solid fa-clock-rotate-left"></i> Bewährten Prozess übernehmen</button>
+                        <button type="button" class="btn-search" style="padding:4px 10px; height:auto; font-size:11px; margin:0; border-radius: var(--border-radius-sm);" onclick="suggestProcess(this, false)"><i class="fa-solid fa-lightbulb"></i> Prozess vorschlagen</button>
+                        <button type="button" class="btn-search" style="padding:4px 10px; height:auto; font-size:11px; margin:0; border-radius: var(--border-radius-sm);" onclick="suggestProcess(this, true)"><i class="fa-solid fa-wand-magic-sparkles"></i> + KI-Zusatzfragen</button>
+                        <span id="process-suggest-status" aria-live="polite" style="font-size:11px; color: var(--text-muted);"></span>
+                    </div>
+                    <div id="process-suggest-notes" aria-live="polite" style="display:none; font-size:12px; color: var(--text-muted); border:1px solid var(--border-color); border-radius: var(--border-radius-sm); padding:10px; margin-bottom:8px;"></div>
+                    <textarea name="screening_questions" id="job-screening" class="form-textarea" rows="3" placeholder='[{"id": "q1", "question": "Haben Sie Erfahrung?", "type": "YES_NO", "isMandatory": true, "expectedAnswer": "YES"}]'></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="job-panel">Sichtungs-Gremium (höhere Positionen, optional)</label>
+                    <input type="hidden" name="panel_members_present" value="1">
+                    <select id="job-panel" name="panel_members" class="filter-select" multiple size="3" aria-describedby="panel-hint">
+                        {% for m in team_members %}<option value="{{ m.id }}">{{ m.get_full_name|default:m.username }}</option>{% endfor %}
+                    </select>
+                    <p id="panel-hint" style="font-size:11px; color: var(--text-muted); margin-top:4px;"><span id="panel-preview" style="display:block; color:var(--accent-light); margin-bottom:2px;"></span>Leer = erbt den Default (Abteilung › Einrichtung › Standort › Jobfamilie › Organisation, Pflege unter „Gremien"). Wenn besetzt: Einladungen erst nach absoluter Mehrheit „dafür" (Override nur mit Audit). Abstimmung unter Freigaben.</p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="job-state">Workflow-Veröffentlichungsstatus</label>
+                    <select name="workflow_state" id="job-state" class="filter-select">
+                        {% for state in all_workflows %}
+                            <option value="{{ state.id }}" {% if state.name == 'published' %}selected{% endif %}>{{ state.name }} ({{ state.description }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-apply-now" style="width: 100%; margin-top: 16px; height: 46px;">
+                    <i class="fa-solid fa-circle-check"></i> Stellenangebot veröffentlichen
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+

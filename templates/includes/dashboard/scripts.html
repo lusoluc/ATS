@@ -1,0 +1,1862 @@
+<script>
+    let activeApplicationId = null;
+
+    // Switch between dashboard tabs
+    function switchTab(clickedEl, tabId) {
+        // Ein Recruiter sieht die Admin-Tabs nicht. Falls ein frueher (als
+        // Admin) gespeicherter Tab wie 'gemma-tab' nicht mehr existiert,
+        // nicht auf einen leeren Bildschirm laufen, sondern zurueck auf die
+        // taegliche Arbeit (Kanban).
+        let target = document.getElementById(tabId);
+        if (!target) {
+            tabId = 'kanban-tab';
+            target = document.getElementById(tabId);
+            clickedEl = document.querySelector(".sidebar-link[onclick*='kanban-tab']") || clickedEl;
+        }
+        if (!target) return;
+
+        // Toggle active link
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+            link.classList.remove('active');
+        });
+        if (clickedEl) clickedEl.classList.add('active');
+
+        // Toggle active tab content
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        target.classList.add('active');
+
+        // Save active tab for reloads
+        localStorage.setItem('activeTab', tabId);
+
+        // Run specific loaders if needed
+        if (tabId === 'stats-tab') {
+            calculateInclusionROI();
+        } else if (tabId === 'gemma-tab') {
+            refreshAILogs();
+        }
+    }
+
+    // Drag-and-Drop implementation
+    function allowDrop(ev) {
+        ev.preventDefault();
+        const col = ev.currentTarget;
+        col.classList.add('drag-over');
+    }
+
+    function dragLeave(ev) {
+        const col = ev.currentTarget;
+        col.classList.remove('drag-over');
+    }
+
+    function dragCard(ev, appId) {
+        ev.dataTransfer.setData("application_id", appId);
+        ev.target.classList.add('dragging');
+        ev.target.addEventListener('dragend', () => ev.target.classList.remove('dragging'), { once: true });
+    }
+
+    // B10: Karte positionsgenau einfügen (nächstes Element unterhalb der Mausposition)
+    // Stammdaten: Anzeige per Ein-Klick (de)aktivieren
+    function toggleJob(jobId) {
+        fetch(`/recruiter/jobs/${jobId}/toggle/`, { method: 'POST' })
+            .then(r => r.json())
+            .then(d => {
+                if (!d.success) return;
+                const badge = document.getElementById(`job-state-${jobId}`);
+                const btn = document.getElementById(`job-toggle-${jobId}`);
+                if (badge) {
+                    badge.innerText = d.active ? 'published' : 'draft';
+                    badge.classList.toggle('badge-accent', d.active);
+                }
+                if (btn) {
+                    btn.querySelector('span').innerText = d.active ? 'Deaktivieren' : 'Aktivieren';
+                    btn.style.background = d.active ? '' : 'var(--danger)';
+                }
+            });
+    }
+
+    function updateJobTemplate(jobId) {
+        if (!confirm("Möchten Sie diese Stelle auf die neueste Version der verknüpften Vorlage aktualisieren?")) return;
+        fetch(`/recruiter/jobs/${jobId}/update-template/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.success) {
+                alert("Stellenvorlage erfolgreich auf Version v" + d.new_version + " aktualisiert!");
+                location.reload();
+            } else {
+                alert("Fehler beim Aktualisieren: " + d.error);
+            }
+        })
+        .catch(err => {
+            alert("Verbindungsfehler.");
+        });
+    }
+
+    // Stammdaten: Textbaustein in die Stellenbeschreibung einfügen
+    function insertSnippet(sel) {
+        const ta = document.getElementById('job-desc-inp');
+        if (!sel.value || !ta) return;
+        ta.value = (ta.value ? ta.value.trimEnd() + "\n\n" : "") + sel.value;
+        sel.selectedIndex = 0;
+    }
+
+    // Prozess-Gedaechtnis (Weg A): juengste Stelle gleicher Familie liefert den
+    // bewaehrten Prozess. Fuellt nur das Formular; belegte Felder werden nur
+    // nach Rueckfrage ueberschrieben – der Mensch speichert.
+    function refreshPanelPreview() {
+        const el = document.getElementById('panel-preview');
+        if (!el) return;
+        const v = id => { const n = document.getElementById(id); return n ? n.value : ''; };
+        const q = `job_family=${encodeURIComponent(v('job-family'))}&facility=${encodeURIComponent(v('job-facility'))}&department=${encodeURIComponent(v('job-department'))}&location=${encodeURIComponent(v('job-location'))}`;
+        fetch(`/recruiter/panel/preview/?${q}`).then(r => r.json()).then(d => {
+            if (d.none) { el.textContent = `Ohne eigene Auswahl: bewusst KEIN Gremium (${d.source}).`; }
+            else if (d.members && d.members.length) { el.textContent = `Ohne eigene Auswahl wirkt: ${d.source} – ${d.members.join(', ')}.`; }
+            else { el.textContent = 'Ohne eigene Auswahl: kein Gremium (keine Ebene besetzt).'; }
+        }).catch(() => { el.textContent = ''; });
+    }
+    ['job-family', 'job-facility', 'job-department', 'job-location'].forEach(id => {
+        document.addEventListener('DOMContentLoaded', () => {
+            const n = document.getElementById(id);
+            if (n) n.addEventListener('change', refreshPanelPreview);
+        });
+    });
+
+    function usePreviousProcess(btn) {
+        const fam = document.getElementById('job-family').value;
+        const fac = document.getElementById('job-facility') ? document.getElementById('job-facility').value : '';
+        const dept = document.getElementById('job-department') ? document.getElementById('job-department').value : '';
+        const loc = document.getElementById('job-location') ? document.getElementById('job-location').value : '';
+        const title = document.getElementById('job-title-inp') ? document.getElementById('job-title-inp').value : '';
+        const jobId = document.querySelector('#job-form [name="job_id"]') ? document.querySelector('#job-form [name="job_id"]').value : '';
+        if (!fam) { alert('Bitte zuerst die Jobfamilie wählen.'); return; }
+        btn.disabled = true;
+        fetch(`/recruiter/process/previous/?job_family=${encodeURIComponent(fam)}&facility=${encodeURIComponent(fac)}&department=${encodeURIComponent(dept)}&location=${encodeURIComponent(loc)}&title=${encodeURIComponent(title)}&exclude=${encodeURIComponent(jobId)}`)
+            .then(r => r.json())
+            .then(d => {
+                btn.disabled = false;
+                if (!d.found) { alert('Noch keine frühere Stelle dieser Jobfamilie vorhanden.'); return; }
+                const scr = document.getElementById('job-screening');
+                const tasks = document.getElementById('job-tasks-inp');
+                const reqs = document.getElementById('job-reqs-inp');
+                const filled = (scr.value.trim() && scr.value.trim() !== '[]') || tasks.value.trim() || reqs.value.trim();
+                if (filled && !confirm(`Felder sind bereits befüllt – mit dem Prozess von „${d.source_title}" (${d.source_date}) überschreiben?`)) return;
+                scr.value = JSON.stringify(d.screening_questions, null, 0);
+                try { tasks.value = JSON.parse(d.tasks).join('\n'); } catch (e) {}
+                try { reqs.value = JSON.parse(d.requirements).join('\n'); } catch (e) {}
+                alert(`Übernommen: ${d.source_title}${d.source_date ? ' (' + d.source_date + ')' : ''} – Herkunft: ${d.scope}. Bitte prüfen und anpassen.`);
+            })
+            .catch(() => { btn.disabled = false; alert('Abruf fehlgeschlagen.'); });
+    }
+
+    // Prozess-Berater: Vorschlaege fuellen nur das Formular – Mensch speichert.
+    function suggestProcess(btn, withAi) {
+        const status = document.getElementById('process-suggest-status');
+        const notesBox = document.getElementById('process-suggest-notes');
+        const titleEl = document.getElementById('job-title-inp');
+        const famEl = document.getElementById('job-family');
+        const facEl = document.getElementById('job-facility');
+        btn.disabled = true; status.innerText = withAi ? 'Regeln + lokale KI …' : 'Regeln werden geprüft …';
+        const fd = new FormData();
+        fd.append('title', titleEl ? titleEl.value : '');
+        fd.append('job_family', famEl ? famEl.value : '');
+        fd.append('facility', facEl ? facEl.value : '');
+        fd.append('with_ai', withAi ? '1' : '0');
+        fetch("{% url 'ats:suggest_process' %}", { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                if (d.questions && d.questions.length) {
+                    document.getElementById('job-screening').value = JSON.stringify(d.questions, null, 2);
+                }
+                const parts = [];
+                if (d.gate && d.gate.text) parts.push((d.gate.active ? '🔒 ' : '') + d.gate.text);
+                (d.notes || []).forEach(n => parts.push('• ' + n));
+                notesBox.innerText = parts.join('\n');
+                notesBox.style.display = parts.length ? 'block' : 'none';
+                status.innerText = d.questions.length
+                    ? `${d.questions.length} Frage(n) vorgeschlagen – bitte prüfen, wirksam erst nach Speichern.`
+                    : 'Keine Fragen vorgeschlagen (Hinweise beachten).';
+            })
+            .catch(() => { status.innerText = 'Vorschlag fehlgeschlagen.'; })
+            .finally(() => { btn.disabled = false; });
+    }
+
+    // Einladen: zentrale Vorlage + lokaler KI-Feinschliff
+    const INVITE_TEMPLATE_TEXT = "{{ invite_template|escapejs }}";
+    const COMPANY_NAME = "{{ company_name|escapejs }}";
+    function polishInvite(btn) {
+        const box = document.getElementById('invite-message');
+        const status = document.getElementById('invite-polish-status');
+        if (!box || !box.value.trim()) return;
+        btn.disabled = true; status.innerText = 'Lokale KI formuliert …';
+        const fd = new FormData();
+        fd.append('text', box.value);
+        fetch("{% url 'ats:polish_message' %}", { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                if (d.polished) { box.value = d.polished; box.dataset.touched = '1'; }
+                status.innerText = d.note || (d.used_ai ? 'Überarbeitet – bitte prüfen.' : '');
+            })
+            .catch(() => { status.innerText = 'KI nicht erreichbar – Text unverändert.'; })
+            .finally(() => { btn.disabled = false; });
+    }
+
+    // WP8/WCAG 2.1.1: Karten per Tastatur/Buttons verschieben (Alternative zu Drag&Drop)
+    const KANBAN_COLUMNS = ['NEW', 'IN_REVIEW', 'INVITED', 'HIRED', 'REJECTED'];
+    const KANBAN_LABELS = { NEW: 'Neu', IN_REVIEW: 'In Prüfung', INVITED: 'Eingeladen',
+                            HIRED: 'Eingestellt', REJECTED: 'Abgelehnt' };
+
+    function announceKanban(text) {
+        const live = document.getElementById('kanban-live');
+        if (live) { live.textContent = text; }
+    }
+
+    function moveCard(appId, dir, viaKeyboard) {
+        const card = document.getElementById(`card-${appId}`);
+        if (!card) return;
+        const wrapper = card.parentElement;
+        // Nachbar-Karte suchen; zwischen den Karten liegen <script>-Blöcke
+        // aus dem Include, die übersprungen werden müssen.
+        let sibling = dir < 0 ? card.previousElementSibling : card.nextElementSibling;
+        while (sibling && !sibling.classList.contains('applicant-card')) {
+            sibling = dir < 0 ? sibling.previousElementSibling : sibling.nextElementSibling;
+        }
+        if (!sibling) return;
+        if (dir < 0) { wrapper.insertBefore(card, sibling); }
+        else { wrapper.insertBefore(card, sibling.nextElementSibling); }
+        const status = wrapper.id.replace('cards-', '');
+        persistColumnOrder(status);
+        const cards = [...wrapper.querySelectorAll('.applicant-card')];
+        announceKanban(`${card.getAttribute('data-name')}: Position ${cards.indexOf(card) + 1} von ${cards.length} in „${KANBAN_LABELS[status] || status}"`);
+        if (viaKeyboard) { card.focus(); }
+        else { card.querySelector('.card-move')?.focus(); }
+    }
+
+    // Spaltenwechsel per Tastatur = Statuswechsel; nutzt denselben
+    // Server-Pfad wie Drag&Drop (inkl. HIRED-Datum und Bedenken-Dialog).
+    function moveCardColumn(appId, dir) {
+        const card = document.getElementById(`card-${appId}`);
+        if (!card) return;
+        const oldStatus = card.parentElement.id.replace('cards-', '');
+        const newStatus = KANBAN_COLUMNS[KANBAN_COLUMNS.indexOf(oldStatus) + dir];
+        if (!newStatus) return;
+        const destination = document.getElementById(`cards-${newStatus}`);
+        if (!destination) return;
+        destination.appendChild(card);
+        card.focus();
+        announceKanban(`${card.getAttribute('data-name')} nach „${KANBAN_LABELS[newStatus]}" verschoben`);
+        sendStatusUpdate(appId, newStatus, oldStatus, destination, card);
+    }
+
+    function cardKeydown(ev, appId) {
+        if (ev.target !== ev.currentTarget) return; // Bedienelemente in der Karte nicht kapern
+        const actions = {
+            'Enter':      () => openCandidateCard(ev.currentTarget),
+            ' ':          () => openCandidateCard(ev.currentTarget),
+            'ArrowUp':    () => moveCard(appId, -1, true),
+            'ArrowDown':  () => moveCard(appId, 1, true),
+            'ArrowLeft':  () => moveCardColumn(appId, -1),
+            'ArrowRight': () => moveCardColumn(appId, 1),
+        };
+        if (actions[ev.key]) { ev.preventDefault(); actions[ev.key](); }
+    }
+
+    // WP4/UC-UM-08/09: Mehrfachauswahl + Sammel-Statuswechsel
+    let bulkMode = false;
+    function toggleBulkMode() {
+        bulkMode = !bulkMode;
+        document.querySelectorAll('.bulk-box').forEach(cb => {
+            cb.style.display = bulkMode ? 'inline-block' : 'none';
+            if (!bulkMode) cb.checked = false;
+        });
+        document.getElementById('bulk-bar').style.display = bulkMode ? 'flex' : 'none';
+        document.getElementById('bulk-toggle').classList.toggle('active', bulkMode);
+        updateBulkCount();
+    }
+    function updateBulkCount() {
+        const n = document.querySelectorAll('.bulk-box:checked').length;
+        const el = document.getElementById('bulk-count');
+        if (el) el.innerText = n;
+    }
+    document.addEventListener('change', (e) => {
+        if (e.target.classList && e.target.classList.contains('bulk-box')) updateBulkCount();
+    });
+    function applyBulkStatus(btn) {
+        const boxes = [...document.querySelectorAll('.bulk-box:checked')];
+        if (!boxes.length) return;
+        const status = document.getElementById('bulk-status').value;
+        if (!confirm(`${boxes.length} Bewerbung(en) auf "${status}" setzen?`)) return;
+        btn.disabled = true;
+        const fd = new FormData();
+        fd.append('status', status);
+        boxes.forEach(b => fd.append('ids[]', b.value));
+        fetch('/recruiter/board/bulk-status/', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                if (d.success) {
+                    boxes.forEach(b => {
+                        const card = b.closest('.applicant-card');
+                        const dest = document.getElementById(`cards-${status}`);
+                        if (card && dest) dest.appendChild(card);
+                        b.checked = false;
+                    });
+                    updateStatsCounters(); updateBulkCount();
+                    persistColumnOrder(status);
+                }
+            })
+            .finally(() => { btn.disabled = false; });
+    }
+
+    // B12/L4: Beschreibung per Tonalitäts-Overlay umformulieren (Fakten bleiben)
+    function applyToneToDescription(btn) {
+        const ta = document.getElementById('job-desc-inp');
+        const status = document.getElementById('job-tone-status');
+        const tone = document.getElementById('job-tone').value;
+        if (!ta.value.trim()) { status.innerText = 'Bitte zuerst eine Beschreibung eingeben.'; return; }
+        btn.disabled = true; status.innerText = 'KI formuliert um…';
+        const fd = new FormData();
+        fd.append('content', ta.value);
+        fd.append('tone', tone);
+        fetch('/recruiter/job-templates/tone/', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                if (d.reformulated) { ta.value = d.reformulated; }
+                status.innerText = d.used_ai ? 'Umformuliert (KI).' : 'KI nicht erreichbar – Text unverändert.';
+            })
+            .catch(() => { status.innerText = 'Fehler – Text unverändert.'; })
+            .finally(() => { btn.disabled = false; });
+    }
+
+    function getDragAfterElement(container, y) {
+        const cards = [...container.querySelectorAll('.applicant-card:not(.dragging)')];
+        return cards.reduce((closest, el) => {
+            const box = el.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) return { offset, element: el };
+            return closest;
+        }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
+    }
+
+    // B10: aktuelle Reihenfolge einer Spalte an den Server melden
+    function persistColumnOrder(status) {
+        const wrapper = document.getElementById(`cards-${status}`);
+        if (!wrapper) return;
+        const formData = new FormData();
+        formData.append('status', status);
+        [...wrapper.querySelectorAll('.applicant-card')].forEach(c =>
+            formData.append('ids[]', c.getAttribute('data-id')));
+        fetch('/recruiter/board/reorder/', { method: 'POST', body: formData })
+            .catch(err => console.error('Reorder fehlgeschlagen:', err));
+    }
+
+    function handleDrop(ev, newStatus) {
+        ev.preventDefault();
+        const col = ev.currentTarget;
+        col.classList.remove('drag-over');
+        
+        const appId = ev.dataTransfer.getData("application_id");
+        if (!appId) return;
+
+        // Move card visually — an der Mausposition einfügen (B10)
+        const card = document.getElementById(`card-${appId}`);
+        const destination = document.getElementById(`cards-${newStatus}`);
+        if (card && destination) {
+            const sourceWrapper = card.parentElement;
+            const oldStatus = sourceWrapper && sourceWrapper.id ? sourceWrapper.id.replace('cards-', '') : null;
+            const after = getDragAfterElement(destination, ev.clientY);
+            if (after) { destination.insertBefore(card, after); }
+            else { destination.appendChild(card); }
+            sendStatusUpdate(appId, newStatus, oldStatus, destination, card);
+        }
+    }
+
+    // Gemeinsamer Server-Pfad für Drag&Drop UND Tastatur-Spaltenwechsel
+    function sendStatusUpdate(appId, newStatus, oldStatus, destination, card) {
+        const formData = new FormData();
+        formData.append('status', newStatus);
+        if (newStatus === 'HIRED') {
+            // Einstellungsdatum manuell setzbar (leer = heute)
+            const d = prompt('Einstellungsdatum (JJJJ-MM-TT) – leer lassen für heute:', '');
+            if (d === null) { location.reload(); return; }  // abgebrochen
+            if (d.trim()) formData.append('hired_at', d.trim());
+        }
+        formData.append('order', [...destination.querySelectorAll('.applicant-card')].indexOf(card));
+
+        fetch(`/recruiter/applications/${appId}/update-status/`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                if (data.notice) { alert(data.notice); }
+                updateStatsCounters();
+                persistColumnOrder(newStatus);              // Zielspalte
+                if (oldStatus && oldStatus !== newStatus) { // Quellspalte nachziehen
+                    persistColumnOrder(oldStatus);
+                }
+            } else if (data.concerns_blocked) {
+                // Dokumentierte Bedenken aus Interviews: bewusst bestätigen
+                const list = (data.concerns || []).map(c => '• ' + c).join('\n');
+                if (confirm((data.error || 'Es liegen Bedenken vor.') +
+                            '\n\n' + list + '\n\nTrotzdem einstellen?')) {
+                    formData.append('force', '1');
+                    fetch(`/recruiter/applications/${appId}/update-status/`, {
+                        method: 'POST', body: formData
+                    }).then(r => r.json()).then(d2 => {
+                        if (d2.success) { updateStatsCounters(); persistColumnOrder(newStatus); }
+                        else { location.reload(); }
+                    });
+                } else {
+                    location.reload();   // Zug zurücknehmen
+                }
+            } else {
+                console.error("Status-Update schlug fehl.");
+            }
+        })
+        .catch(err => console.error("Error updating status:", err));
+    }
+
+    function updateStatsCounters() {
+        const columns = ['NEW', 'IN_REVIEW', 'INVITED', 'REJECTED'];
+        columns.forEach(col => {
+            const count = document.getElementById(`cards-${col}`).children.length;
+            document.getElementById(`count-${col}`).innerText = count;
+            
+            let statId = '';
+            if (col === 'NEW') statId = 'stats-new';
+            if (col === 'IN_REVIEW') statId = 'stats-review';
+            if (col === 'INVITED') statId = 'stats-invited';
+            if (col === 'REJECTED') statId = 'stats-rejected';
+            
+            if (statId) {
+                document.getElementById(statId).innerText = count;
+            }
+        });
+    }
+
+    // Modal controls for Candidate Details
+    /* Entscheidung direkt aus dem Bewerbungs-Fenster.
+       Nutzt denselben Endpunkt und dieselben Schutzplanken wie Drag&Drop –
+       inklusive des Bedenken-Gates vor einer Einstellung. */
+    function decideFromModal(newStatus) {
+        const appId = activeApplicationId;
+        if (!appId) return;
+
+        const send = (force) => {
+            const fd = new FormData();
+            fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+            fd.append('status', newStatus);
+            if (force) fd.append('force', '1');
+            return fetch(`/recruiter/applications/${appId}/update-status/`, {
+                method: 'POST', body: fd
+            }).then(r => r.json());
+        };
+
+        send(false).then(data => {
+            if (data.success) {
+                if (data.notice) alert(data.notice);
+                location.reload();          // Board zieht nach
+            } else if (data.concerns_blocked) {
+                const list = (data.concerns || []).map(c => '• ' + c).join('\n');
+                if (confirm((data.error || 'Es liegen Bedenken vor.') +
+                            '\n\n' + list + '\n\nTrotzdem fortfahren?')) {
+                    send(true).then(() => location.reload());
+                }
+            } else {
+                alert(data.error || 'Statuswechsel nicht möglich.');
+            }
+        }).catch(() => alert('Statuswechsel fehlgeschlagen.'));
+    }
+
+    function openCandidateModal(appId, name, job, email, phone, coverLetter, aiScore, aiRationale, cvStorageId, internalNotes, screeningJson) {
+        activeApplicationId = appId;
+
+        // Aktuellen Status aus der Spalte ableiten und den zugehoerigen
+        // Entscheidungs-Knopf ausgrauen: Man soll nicht auf "In Pruefung"
+        // klicken koennen, wenn die Bewerbung bereits dort liegt.
+        (function markCurrentStatus() {
+            const card = document.getElementById(`card-${appId}`);
+            const wrap = card && card.parentElement;
+            const current = wrap && wrap.id ? wrap.id.replace('cards-', '') : null;
+            const map = {IN_REVIEW: 'modal-decide-review',
+                         INVITED: 'modal-decide-invited',
+                         REJECTED: 'modal-decide-rejected'};
+            Object.entries(map).forEach(([st, id]) => {
+                const b = document.getElementById(id);
+                if (!b) return;
+                const isCurrent = (st === current);
+                b.disabled = isCurrent;
+                b.style.opacity = isCurrent ? '0.4' : '1';
+                b.style.cursor = isCurrent ? 'default' : 'pointer';
+                b.title = isCurrent ? 'Bewerbung ist bereits in diesem Status' : '';
+            });
+        })();
+        
+        document.getElementById('modal-name').innerText = name;
+        document.getElementById('modal-job').innerText = job;
+        document.getElementById('modal-email').innerText = email;
+        document.getElementById('modal-phone').innerText = phone || '(Keine Angabe)';
+        document.getElementById('modal-coverletter').innerText = coverLetter || '(Kein Anschreiben übermittelt)';
+        
+        const scoreBadge = document.getElementById('modal-ai-score');
+        scoreBadge.innerText = aiScore || '–';
+        scoreBadge.className = `ai-score-badge ai-score-${aiScore || 'none'}`;
+        scoreBadge.title = aiScore ? '' : 'Keine KI-Bewertung (Scoring deaktiviert oder ausstehend)';
+        document.getElementById('modal-ai-rationale').innerText = aiRationale || 'Keine Bewertung vorhanden.';
+        
+        const cvBox = document.getElementById('modal-cv-preview');
+        if (cvStorageId && cvStorageId !== 'None' && cvStorageId !== '') {
+            // ECHTE Vorschau statt Download-Zwang: Der Lebenslauf ist das,
+            // was der Recruiter am haeufigsten liest. Ihn erst herunterladen
+            // zu muessen kostete Klicks UND streute Bewerber-PII als Kopien
+            // ueber alle Laptops. Jetzt direkt im Fenster - ohne Kopie.
+            const viewUrl = `/recruiter/applications/${appId}/cv/?view=1`;
+            const ext = (cvStorageId.split('.').pop() || '').toLowerCase();
+            let viewer;
+            if (ext === 'pdf') {
+                viewer = `<iframe src="${viewUrl}" style="width:100%; height:420px; border:0; border-radius:8px; background:#fff;" title="Lebenslauf"></iframe>`;
+            } else if (['jpg', 'jpeg', 'png'].includes(ext)) {
+                viewer = `<img src="${viewUrl}" alt="Lebenslauf" style="width:100%; max-height:420px; object-fit:contain; border-radius:8px; background:#fff;">`;
+            } else {
+                // doc/docx kann kein Browser rendern - ehrlich sagen statt so tun.
+                viewer = `<div style="text-align:center; padding:24px;">
+                    <i class="fa-solid fa-file-word" style="font-size:44px; color:#2b7cd3;"></i>
+                    <p style="font-size:13px; color:var(--text-muted); margin-top:10px;">Word-Dokument – im Browser nicht darstellbar.</p>
+                </div>`;
+            }
+            cvBox.innerHTML = `
+                <div>
+                    ${viewer}
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px; gap:8px; flex-wrap:wrap;">
+                        <span style="font-size:10px; color: var(--text-muted);">
+                            <i class="fa-solid fa-shield-halved"></i> Jeder Zugriff wird protokolliert – die Ansicht erzeugt keine Kopie.
+                        </span>
+                        <a href="/recruiter/applications/${appId}/cv/" target="_blank" class="btn-secondary-cta" style="height:30px; font-size:11px; display:inline-flex; align-items:center; padding:0 12px;"><i class="fa-solid fa-download" style="margin-right:6px;"></i>Herunterladen</a>
+                    </div>
+                    <p style="font-size: 10px; color: var(--text-muted); margin-top: 8px;">Zugriff wird revisionssicher protokolliert.</p>
+                </div>`;
+        } else {
+            cvBox.innerHTML = `
+                <div style="text-align: center;">
+                    <i class="fa-solid fa-file-circle-question" style="font-size: 52px; color: var(--text-muted); margin-bottom: 12px;"></i>
+                    <p>Kein Lebenslauf hochgeladen</p>
+                </div>`;
+        }
+        
+        const notesBox = document.getElementById('modal-notes');
+        notesBox.innerText = internalNotes || 'Keine internen Notizen vorhanden.';
+        
+        const screeningBox = document.getElementById('modal-screening');
+        if (screeningJson && screeningJson !== '{}') {
+            try {
+                const questions = JSON.parse(screeningJson);
+                const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+                let html = '<ul style="list-style: none; display: flex; flex-direction: column; gap: 8px;">';
+                for (const [q, a] of Object.entries(questions)) {
+                    const icon = a === 'YES' ? '<i class="fa-solid fa-circle-check" style="color: var(--accent);"></i>' : '<i class="fa-solid fa-circle-xmark" style="color: #ef4444;"></i>';
+                    html += `<li style="display: flex; justify-content: space-between; gap: 10px;">
+                        <span>${escapeHtml(q)}</span>
+                        <strong style="display: inline-flex; align-items: center; gap: 4px;">${icon} ${a === 'YES' ? 'Ja' : (a === 'NO' ? 'Nein' : escapeHtml(a || '–'))}</strong>
+                    </li>`;
+                }
+                html += '</ul>';
+                screeningBox.innerHTML = html;
+            } catch (e) {
+                screeningBox.innerHTML = 'Fehler beim Parsen der Screening-Antworten.';
+            }
+        } else {
+            screeningBox.innerHTML = 'Keine Screening-Fragen für diesen Job definiert.';
+        }
+
+        document.getElementById('modal-btn-schedule').onclick = function() {
+            closeCandidateModal();
+            openInterviewModal(appId, name, job);
+        };
+
+        // WP3: Nachrichten-Verlauf zur Bewerbung (UC-TK-10)
+        const msgBtn = document.getElementById('modal-btn-messages');
+        if (msgBtn) { msgBtn.href = `/recruiter/applications/${appId}/messages/`; }
+        
+        loadCandidateFeedback(appId);
+        document.getElementById('candidateModal').style.display = 'flex';
+    }
+
+    function loadCandidateFeedback(appId) {
+        const box = document.getElementById('modal-feedback');
+        const cnt = document.getElementById('modal-fb-count');
+        if (!box) return;
+        box.innerHTML = 'Lädt…'; if (cnt) cnt.textContent = '';
+        const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        fetch(`/recruiter/applications/${appId}/feedback.json`)
+          .then(r => r.json())
+          .then(data => {
+            if (!data.total) {
+                box.innerHTML = '<span style="color:var(--text-muted);">Noch kein Interview-Feedback erfasst.</span>';
+                return;
+            }
+            if (cnt) cnt.textContent = '(' + data.total + (data.open_concerns ? ' · ' + data.open_concerns + ' mit Bedenken' : '') + ')';
+            let html = '';
+            data.rounds.forEach(rd => {
+                html += `<div style="margin-bottom:10px;"><strong style="color:var(--text-muted); font-size:12px;">Runde ${rd.round}</strong>`;
+                rd.items.forEach(f => {
+                    const col = f.positive ? '#22c55e' : (f.recommendation.indexOf('dagegen') >= 0 ? '#ef4444' : '#f59e0b');
+                    html += `<div style="border-left:3px solid ${col}; padding:6px 10px; margin:6px 0; background:rgba(0,0,0,0.15); border-radius:4px;">
+                        <div><strong style="color:#fff;">${esc(f.author)}</strong> · ${esc(f.recommendation)}${f.score != null ? ' · <strong>' + f.score + ' %</strong>' : ''}</div>`;
+                    const rk = Object.keys(f.ratings || {});
+                    if (rk.length) {
+                        html += '<div style="margin-top:3px;">' + rk.map(k => `<span style="display:inline-block; background:rgba(255,255,255,.08); border-radius:3px; padding:1px 6px; margin:2px 3px 0 0; font-size:11px;">${esc(k)}: ${f.ratings[k]} %</span>`).join('') + '</div>';
+                    }
+                    if (f.strengths) html += `<div style="margin-top:3px;"><i class="fa-solid fa-plus" style="color:#22c55e;"></i> ${esc(f.strengths)}</div>`;
+                    if (f.concerns) html += `<div style="margin-top:3px; color:#f87171;"><i class="fa-solid fa-triangle-exclamation"></i> <strong>Bedenken:</strong> ${esc(f.concerns)}</div>`;
+                    if (f.comment) html += `<div style="margin-top:3px; color:var(--text-muted);">${esc(f.comment)}</div>`;
+                    html += '</div>';
+                });
+                html += '</div>';
+            });
+            box.innerHTML = html;
+          })
+          .catch(() => { box.innerHTML = '<span style="color:var(--text-muted);">Feedback konnte nicht geladen werden.</span>'; });
+    }
+
+    function closeCandidateModal() {
+        document.getElementById('candidateModal').style.display = 'none';
+        activeApplicationId = null;
+    }
+
+    function submitRecruiterNote() {
+        if (!activeApplicationId) return;
+        const input = document.getElementById('note-input');
+        const noteText = input.value.trim();
+        if (!noteText) return;
+
+        const formData = new FormData();
+        formData.append('note', noteText);
+
+        fetch(`/recruiter/applications/${activeApplicationId}/add-note/`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('modal-notes').innerText = data.notes;
+                input.value = '';
+                
+                const originalCard = document.getElementById(`card-${activeApplicationId}`);
+                if (originalCard) {
+                    originalCard.setAttribute('data-notes', data.notes);
+                }
+            }
+        })
+        .catch(err => console.error("Error adding note:", err));
+    }
+
+    // Modal controls for scheduler
+    function openInterviewModal(appId, candidateName, jobTitle) {
+        if (appId) {
+            document.getElementById('schedule-app-id').value = appId;
+        } else if (activeApplicationId) {
+            document.getElementById('schedule-app-id').value = activeApplicationId;
+        }
+        // Einladungstext aus der zentralen Vorlage (UC-SB-10) vorbefuellen
+        const inviteBox = document.getElementById('invite-message');
+        if (inviteBox && !inviteBox.dataset.touched) {
+            let text = INVITE_TEMPLATE_TEXT;
+            const first = (candidateName || '').split(' ')[0] || '';
+            const last = (candidateName || '').split(' ').slice(1).join(' ');
+            text = text.replaceAll('[[FIRST_NAME]]', first).replaceAll('[[LAST_NAME]]', last)
+                       .replaceAll('[[JOB_TITLE]]', jobTitle || '').replaceAll('[[COMPANY_NAME]]', COMPANY_NAME);
+            inviteBox.value = text.trim();
+        }
+        if (inviteBox) { inviteBox.oninput = () => { inviteBox.dataset.touched = '1'; }; }
+        document.getElementById('interviewModal').style.display = 'flex';
+    }
+
+    function closeInterviewModal() {
+        document.getElementById('interviewModal').style.display = 'none';
+    }
+
+    // Job Creator modal
+    function openJobCreatorModal() {
+        document.getElementById('jobCreatorModal').style.display = 'flex';
+        document.getElementById('agg-suggestions-box').style.display = 'none';
+    }
+
+    function closeJobCreatorModal() {
+        document.getElementById('jobCreatorModal').style.display = 'none';
+    }
+
+    function openNewJobCreatorModal() {
+        // Reset hidden job_id
+        document.getElementById('job-id-inp').value = '';
+        
+        // Reset text fields
+        document.getElementById('job-title-inp').value = '';
+        document.getElementById('job-desc-inp').value = '';
+        document.getElementById('job-tasks-inp').value = '';
+        document.getElementById('job-reqs-inp').value = '';
+        document.getElementById('job-screening').value = '';
+        document.getElementById('panel_quorum').value = '';
+        document.getElementById('panel_deadline_days').value = '';
+        document.getElementById('interview_rounds').value = '';
+        
+        // Reset selections to first option
+        document.getElementById('job-facility').selectedIndex = 0;
+        document.getElementById('job-department').value = '';
+        document.getElementById('job-location').selectedIndex = 0;
+        document.getElementById('job-family').selectedIndex = 0;
+        document.getElementById('job-contact').value = '';
+        document.getElementById('job-template').selectedIndex = 0;
+        document.getElementById('job-state').value = document.querySelector('#job-state option[selected]') ? document.querySelector('#job-state option[selected]').value : document.getElementById('job-state').options[0].value;
+        
+        // Reset benefits checkboxes
+        const benefitsForm = document.getElementById('jobCreatorModal');
+        const checkboxes = benefitsForm.querySelectorAll('input[name="benefits"]');
+        checkboxes.forEach(cb => {
+            cb.checked = false;
+        });
+
+        // Set titles back
+        document.querySelector('#jobCreatorModal h2').innerHTML = '<i class="fa-solid fa-circle-plus" style="color: var(--accent);"></i> Neue Stelle ausschreiben';
+        document.querySelector('#jobCreatorModal button[type="submit"]').innerHTML = '<i class="fa-solid fa-circle-check"></i> Stellenangebot veröffentlichen';
+        
+        openJobCreatorModal();
+    }
+
+    function editJobPosting(id, title, description, tasksJson, requirementsJson, screeningQuestionsJson, facilityId, departmentId, locationId, jobFamilyId, contactPersonId, jobTemplateId, workflowStateId, benefitsSelectedCsv, panelUserIdsJson, panelQuorum, panelDeadlineDays, interviewRoundsCsv) {
+        document.getElementById('panel_quorum').value = panelQuorum || '';
+        document.getElementById('panel_deadline_days').value = panelDeadlineDays || '';
+        document.getElementById('interview_rounds').value = interviewRoundsCsv || '';
+        // Gremium der Stelle vorbefuellen – sonst wuerde jedes Bearbeiten die
+        // Auswahl stillschweigend loeschen (panel_members_present wird immer gesendet).
+        try {
+            const panelIds = new Set(JSON.parse(panelUserIdsJson || '[]').map(String));
+            document.querySelectorAll('#job-panel option').forEach(o => { o.selected = panelIds.has(o.value); });
+        } catch (e) {}
+        setTimeout(refreshPanelPreview, 0);
+        // Set hidden input
+        document.getElementById('job-id-inp').value = id;
+        
+        // Pre-fill texts
+        document.getElementById('job-title-inp').value = title;
+        document.getElementById('job-desc-inp').value = description;
+        
+        // Pre-fill tasks and requirements from JSON
+        let tasksList = [];
+        try {
+            tasksList = JSON.parse(tasksJson);
+        } catch(e) {
+            tasksList = [];
+        }
+        document.getElementById('job-tasks-inp').value = Array.isArray(tasksList) ? tasksList.join('\n') : '';
+
+        let reqsList = [];
+        try {
+            reqsList = JSON.parse(requirementsJson);
+        } catch(e) {
+            reqsList = [];
+        }
+        document.getElementById('job-reqs-inp').value = Array.isArray(reqsList) ? reqsList.join('\n') : '';
+
+        // Selects
+        document.getElementById('job-facility').value = facilityId;
+        document.getElementById('job-department').value = departmentId || '';
+        document.getElementById('job-location').value = locationId;
+        document.getElementById('job-family').value = jobFamilyId;
+        document.getElementById('job-contact').value = contactPersonId || '';
+        document.getElementById('job-template').value = jobTemplateId || '';
+        document.getElementById('job-state').value = workflowStateId;
+
+        // Benefits (Checkboxes)
+        // Reset all benefits checkboxes first
+        const benefitsForm = document.getElementById('jobCreatorModal');
+        const checkboxes = benefitsForm.querySelectorAll('input[name="benefits"]');
+        checkboxes.forEach(cb => {
+            cb.checked = false;
+        });
+
+        // Check the ones selected
+        if (benefitsSelectedCsv) {
+            const selectedIds = benefitsSelectedCsv.split(',').filter(x => x.trim());
+            checkboxes.forEach(cb => {
+                if (selectedIds.includes(cb.value)) {
+                    cb.checked = true;
+                }
+            });
+        }
+
+        // Screening questions
+        document.getElementById('job-screening').value = screeningQuestionsJson;
+
+        // Change modal title and button text
+        document.querySelector('#jobCreatorModal h2').innerHTML = '<i class="fa-solid fa-pen-to-square" style="color: var(--accent);"></i> Stellenangebot bearbeiten';
+        document.querySelector('#jobCreatorModal button[type="submit"]').innerHTML = '<i class="fa-solid fa-circle-check"></i> Änderungen speichern';
+
+        openJobCreatorModal();
+    }
+
+    /* =====================================================================
+       Automatik-Baukasten (No-Code)
+       Ersetzt das frühere rohe JSON-Feld: Aktionen werden über Auswahllisten
+       zusammengeklickt; das JSON entsteht daraus beim Speichern automatisch.
+       Beim Bearbeiten einer Regel werden die Felder aus stepsJson zurückbefüllt.
+       ===================================================================== */
+    const AUTOMATION_STATES = [
+        ['NEW', 'Neu'], ['IN_REVIEW', 'In Prüfung'], ['INVITED', 'Eingeladen'],
+        ['REJECTED', 'Abgesagt'], ['HIRED', 'Eingestellt']
+    ];
+    // Nur diese Ziele erlaubt der Server beim Autovorlauf (Human-in-the-Loop):
+    const ADVANCE_TARGETS = [['NEW', 'Neu'], ['IN_REVIEW', 'In Prüfung'], ['INVITED', 'Eingeladen']];
+    const AUTOMATION_ROLES = JSON.parse(document.getElementById('automation-roles-data')?.textContent || '[]');
+
+    const ACTION_TYPES = [
+        ['CREATE_TASK', 'Aufgabe anlegen'],
+        ['EMAIL_NOTIFICATION', 'E-Mail senden'],
+        ['ADD_NOTE', 'Vermerk hinzufügen'],
+        ['AUTO_ADVANCE', 'Status weiterschieben'],
+        ['APPROVAL_COMMITTEE', 'Gremiums-Hinweis']
+    ];
+
+    function optionsHtml(pairs, selected) {
+        return pairs.map(([v, l]) =>
+            `<option value="${v}"${v === selected ? ' selected' : ''}>${l}</option>`).join('');
+    }
+
+    function automationFieldsHtml(type, a) {
+        a = a || {};
+        const roleOpts = optionsHtml([['', '– alle –']].concat(AUTOMATION_ROLES.map(r => [r, r])), a.role || '');
+        if (type === 'CREATE_TASK') {
+            return `<input type="text" class="form-input af-title" placeholder="Aufgabe, z. B. Referenzen einholen"
+                           value="${(a.title || '').replace(/"/g, '&quot;')}" style="flex:2; min-width:180px;">
+                    <select class="filter-select af-role" style="flex:1;">${roleOpts}</select>
+                    <input type="number" class="form-input af-due" min="0" placeholder="Frist (Tage)"
+                           value="${a.due_days || ''}" style="width:110px;">`;
+        }
+        if (type === 'EMAIL_NOTIFICATION') {
+            const isApplicant = a.recipient === 'applicant';
+            return `<select class="filter-select af-mode" style="flex:1;">
+                        <option value="applicant"${isApplicant ? ' selected' : ''}>an Bewerber:in</option>
+                        <option value="internal"${!isApplicant ? ' selected' : ''}>intern (Adresse / Rolle)</option>
+                    </select>
+                    <input type="text" class="form-input af-addr" placeholder="E-Mail-Adresse (optional)"
+                           value="${isApplicant ? '' : (a.recipient || '').replace(/"/g, '&quot;')}"
+                           style="flex:2; min-width:160px;${isApplicant ? 'display:none;' : ''}">
+                    <select class="filter-select af-role" style="flex:1;${isApplicant ? 'display:none;' : ''}">${roleOpts}</select>`;
+        }
+        if (type === 'ADD_NOTE') {
+            return `<input type="text" class="form-input af-text" placeholder="Vermerk, z. B. Unterlagen angefordert"
+                           value="${(a.text || '').replace(/"/g, '&quot;')}" style="flex:3;">`;
+        }
+        if (type === 'AUTO_ADVANCE') {
+            return `<select class="filter-select af-to" style="flex:2;">${optionsHtml(ADVANCE_TARGETS, a.to || '')}</select>
+                    <span style="font-size:10px; color:var(--text-muted); flex:1;">Zu-/Absagen nicht möglich (Mensch entscheidet)</span>`;
+        }
+        return `<span style="font-size:11px; color:var(--text-muted); flex:3;">Keine weiteren Angaben nötig.</span>`;
+    }
+
+    function addAutomationRow(step, action) {
+        action = action || {};
+        const type = action.type || 'CREATE_TASK';
+        const row = document.createElement('div');
+        row.className = 'automation-row';
+        row.style.cssText = 'display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-bottom:6px; padding:8px; background:rgba(11,13,25,0.3); border:1px solid var(--glass-border); border-radius:var(--border-radius-sm);';
+        row.innerHTML = `
+            <span style="font-size:11px; color:var(--text-muted);">Wenn</span>
+            <select class="filter-select af-step" style="flex:1; min-width:120px;">${optionsHtml(AUTOMATION_STATES, step || 'IN_REVIEW')}</select>
+            <span style="font-size:11px; color:var(--text-muted);">dann</span>
+            <select class="filter-select af-type" style="flex:1; min-width:150px;">${optionsHtml(ACTION_TYPES, type)}</select>
+            <span class="af-fields" style="display:flex; gap:6px; flex:3; flex-wrap:wrap;">${automationFieldsHtml(type, action)}</span>
+            <button type="button" class="btn af-del" title="Entfernen" style="padding:4px 9px;">
+                <i class="fa-solid fa-trash"></i></button>`;
+        // Typwechsel -> passende Felder nachladen
+        row.querySelector('.af-type').addEventListener('change', e => {
+            row.querySelector('.af-fields').innerHTML = automationFieldsHtml(e.target.value, {});
+            bindEmailMode(row);
+        });
+        row.querySelector('.af-del').addEventListener('click', () => row.remove());
+        bindEmailMode(row);
+        document.getElementById('automation-rows').appendChild(row);
+    }
+
+    function bindEmailMode(row) {
+        const mode = row.querySelector('.af-mode');
+        if (!mode) return;
+        const toggle = () => {
+            const internal = mode.value === 'internal';
+            const addr = row.querySelector('.af-addr');
+            const role = row.querySelector('.af-role');
+            if (addr) addr.style.display = internal ? '' : 'none';
+            if (role) role.style.display = internal ? '' : 'none';
+        };
+        mode.addEventListener('change', toggle);
+        toggle();
+    }
+
+    /* Formularfelder -> JSON (Format, das der Server erwartet) */
+    function serializeAutomation() {
+        const byStep = {};
+        document.querySelectorAll('#automation-rows .automation-row').forEach(row => {
+            const step = row.querySelector('.af-step').value;
+            const type = row.querySelector('.af-type').value;
+            const a = { type: type };
+            if (type === 'CREATE_TASK') {
+                const title = (row.querySelector('.af-title')?.value || '').trim();
+                if (!title) return;                       // ohne Titel keine Aufgabe
+                a.title = title;
+                const role = row.querySelector('.af-role')?.value;
+                if (role) a.role = role;
+                const due = row.querySelector('.af-due')?.value;
+                if (due) a.due_days = parseInt(due, 10);
+            } else if (type === 'EMAIL_NOTIFICATION') {
+                if (row.querySelector('.af-mode')?.value === 'applicant') {
+                    a.recipient = 'applicant';
+                } else {
+                    const addr = (row.querySelector('.af-addr')?.value || '').trim();
+                    const role = row.querySelector('.af-role')?.value;
+                    if (!addr && !role) return;           // ohne Empfänger sinnlos
+                    if (addr) a.recipient = addr;
+                    if (role) a.role = role;
+                }
+            } else if (type === 'ADD_NOTE') {
+                const text = (row.querySelector('.af-text')?.value || '').trim();
+                if (!text) return;
+                a.text = text;
+            } else if (type === 'AUTO_ADVANCE') {
+                const to = row.querySelector('.af-to')?.value;
+                if (!to) return;
+                a.to = to;
+            }
+            (byStep[step] = byStep[step] || []).push(a);
+        });
+        return Object.keys(byStep).map(s => ({ step: s, actions: byStep[s] }));
+    }
+
+    /* JSON -> Formularfelder (beim Bearbeiten einer bestehenden Regel) */
+    function loadAutomationFromSteps(stepsJson) {
+        const box = document.getElementById('automation-rows');
+        box.innerHTML = '';
+        let steps = [];
+        try { steps = JSON.parse(stepsJson || '[]'); } catch (e) { steps = []; }
+        (Array.isArray(steps) ? steps : []).forEach(st => {
+            if (!st || typeof st !== 'object') return;
+            const state = (st.state || st.name || '').toUpperCase();
+            (st.actions || []).forEach(a => addAutomationRow(state, a));
+        });
+    }
+
+    document.getElementById('automation-add')?.addEventListener('click', () => addAutomationRow());
+
+    // Beim Absenden: Baukasten -> verstecktes JSON-Feld.
+    // Hat jemand das JSON von Hand bearbeitet, gewinnt die Handarbeit.
+    document.getElementById('app-workflow-form')?.addEventListener('submit', () => {
+        const ta = document.getElementById('app-workflow-custom-json');
+        const built = serializeAutomation();
+        const manual = (ta.value || '').trim();
+        let manualIsCustom = false;
+        if (manual) {
+            try { manualIsCustom = JSON.stringify(JSON.parse(manual)) !== JSON.stringify(built); }
+            catch (e) { manualIsCustom = true; }   // ungültiges JSON: nicht überschreiben
+        }
+        if (!manualIsCustom) ta.value = built.length ? JSON.stringify(built) : '';
+    });
+
+    function editAppWorkflow(id, name, facilityId, locationIdsJson, categoryIdsJson, jobIdsJson, stepsJson) {
+        loadAutomationFromSteps(stepsJson);
+        document.getElementById('app-workflow-id').value = id;
+        document.getElementById('app-workflow-name').value = name;
+        document.getElementById('app-workflow-facility').value = facilityId || '';
+        
+        // Form
+        const form = document.getElementById('app-workflow-form');
+        
+        // Reset all locations checkboxes
+        form.querySelectorAll('input[name="locations"]').forEach(cb => {
+            cb.checked = false;
+        });
+        try {
+            const locs = JSON.parse(locationIdsJson);
+            if (Array.isArray(locs)) {
+                form.querySelectorAll('input[name="locations"]').forEach(cb => {
+                    if (locs.includes(cb.value)) cb.checked = true;
+                });
+            }
+        } catch(e) {}
+
+        // Reset categories checkboxes
+        form.querySelectorAll('input[name="categories"]').forEach(cb => {
+            cb.checked = false;
+        });
+        try {
+            const cats = JSON.parse(categoryIdsJson);
+            if (Array.isArray(cats)) {
+                form.querySelectorAll('input[name="categories"]').forEach(cb => {
+                    if (cats.includes(cb.value)) cb.checked = true;
+                });
+            }
+        } catch(e) {}
+
+        // Reset jobs checkboxes
+        form.querySelectorAll('input[name="jobs"]').forEach(cb => {
+            cb.checked = false;
+        });
+        try {
+            const jobs = JSON.parse(jobIdsJson);
+            if (Array.isArray(jobs)) {
+                form.querySelectorAll('input[name="jobs"]').forEach(cb => {
+                    if (jobs.includes(cb.value)) cb.checked = true;
+                });
+            }
+        } catch(e) {}
+
+        // Reset steps checkboxes
+        form.querySelectorAll('input[name="steps"]').forEach(cb => {
+            cb.checked = false;
+        });
+        try {
+            const steps = JSON.parse(stepsJson);
+            if (Array.isArray(steps)) {
+                form.querySelectorAll('input[name="steps"]').forEach(cb => {
+                    if (steps.includes(cb.value)) cb.checked = true;
+                });
+            }
+        } catch(e) {}
+
+        // Set custom actions JSON value
+        document.getElementById('app-workflow-custom-json').value = stepsJson;
+
+        // Set title
+        document.getElementById('app-workflow-form-title').innerText = 'Custom Pipeline bearbeiten';
+    }
+
+    // CMS Page editor loading
+    function editCMSPage(id, title, slug, content, navLabel, navOrder, navEnabled, metaDesc) {
+        document.getElementById('cms-page-id').value = id;
+        document.getElementById('page-title').value = title;
+        document.getElementById('page-slug').value = slug;
+        document.getElementById('page-content').value = content;
+        document.getElementById('page-nav-label').value = navLabel;
+        document.getElementById('page-nav-order').value = navOrder;
+        document.getElementById('page-nav-enabled').checked = navEnabled;
+        document.getElementById('page-meta-desc').value = metaDesc;
+        document.getElementById('cms-form-title').innerText = 'CMS-Seite bearbeiten';
+    }
+
+    // Process State editor loading
+    function editWorkflowState(id, name, description) {
+        document.getElementById('workflow-state-id').value = id;
+        document.getElementById('state-name').value = name;
+        document.getElementById('state-desc').value = description;
+        document.getElementById('workflow-state-form-title').innerText = 'Workflow-Phase bearbeiten';
+    }
+
+    // Variables editor loading
+    function editSystemSetting(id, key, value) {
+        document.getElementById('setting-id').value = id;
+        document.getElementById('setting-key').value = key;
+        document.getElementById('setting-value').value = value;
+    }
+
+    // Email template auto loader
+    function loadEmailTemplateToForm() {
+        const select = document.getElementById('email-select');
+        const selectedOpt = select.options[select.selectedIndex];
+        if (select.value === '') {
+            document.getElementById('email-template-id').value = '';
+            document.getElementById('email-name').value = '';
+            document.getElementById('email-subject').value = '';
+            document.getElementById('email-html').value = '';
+        } else {
+            document.getElementById('email-template-id').value = select.value;
+            document.getElementById('email-name').value = selectedOpt.getAttribute('data-name');
+            document.getElementById('email-subject').value = selectedOpt.getAttribute('data-subject');
+            document.getElementById('email-html').value = selectedOpt.getAttribute('data-html');
+        }
+    }
+
+    // RAG Learning Sample Feedback trigger
+    function trainLearningSample(type) {
+        if (!activeApplicationId) return;
+        const formData = new FormData();
+        formData.append('feedback_type', type);
+        
+        fetch(`/recruiter/applications/${activeApplicationId}/toggle-learning/`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert(`✅ RAG-Feedback erfolgreich als ${type} übermittelt!`);
+            }
+        })
+        .catch(err => console.error("Error updating RAG learning:", err));
+    }
+
+    // SAP SF sync console trigger
+    function testGemmaConnection() {
+        const prompt = document.getElementById('gemma-prompt').value;
+        const box = document.getElementById('gemma-response-box');
+        box.innerText = "⏳ Verbindung wird aufgebaut. Gemma antwortet...";
+        
+        const formData = new FormData();
+        formData.append('prompt', prompt);
+
+        fetch(`/recruiter/ki/test/`, { method: 'POST', body: formData })
+        .then(res => {
+            if (!res.ok) throw new Error("HTTP-Fehler " + res.status);
+            return res.json();
+        })
+        .then(data => {
+            if (data.success) {
+                box.innerHTML = `<span style="color:var(--accent-light);">[Gemma 4 - Latenz: ${data.latency}s]:</span>\n${data.reply}`;
+            } else {
+                box.innerHTML = `<span style="color:#ef4444;">[Verbindungsfehler]:</span>\nDer lokale Ollama-Daemon konnte nicht erreicht werden. Fallback-Modus aktiv.\nFehler: ${data.error}`;
+            }
+            refreshAILogs();
+        })
+        .catch(err => {
+            box.innerHTML = `<span style="color:#ef4444;">[Fehler]:</span>\n${err.message || err}`;
+            refreshAILogs();
+        });
+    }
+
+    function pollAITask(taskId, type, onComplete, onError, onProgress) {
+        const url = type === 'AGG' || type === 'AGG_CHECK' 
+            ? `/recruiter/ki/agg-check/status/${taskId}/` 
+            : `/recruiter/ki/validate-prompt/status/${taskId}/`;
+            
+        let attempts = 0;
+        const maxAttempts = 60; // up to 120 seconds
+        
+        const interval = setInterval(() => {
+            attempts++;
+            if (attempts > maxAttempts) {
+                clearInterval(interval);
+                onError(new Error("Zeitüberschreitung: Der Server hat nicht rechtzeitig geantwortet."));
+                return;
+            }
+            
+            if (onProgress) onProgress(attempts * 2);
+            
+            fetch(url)
+            .then(res => {
+                if (!res.ok) throw new Error("HTTP-Fehler " + res.status);
+                return res.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    if (data.status === 'completed') {
+                        clearInterval(interval);
+                        onComplete(data);
+                    } else {
+                        // still pending
+                    }
+                } else {
+                    clearInterval(interval);
+                    onError(new Error(data.error || "Unbekannter Fehler bei der Task-Ausführung."));
+                }
+            })
+            .catch(err => {
+                clearInterval(interval);
+                onError(err);
+            });
+        }, 2000);
+    }
+
+    function validateCustomPrompt(type) {
+        const promptInput = type === 'AGG' ? document.getElementById('ai-agg-prompt-input') : document.getElementById('ai-easy-prompt-input');
+        const statusEl = type === 'AGG' ? document.getElementById('agg-validation-status') : document.getElementById('easy-validation-status');
+        const detailsEl = type === 'AGG' ? document.getElementById('agg-validation-details') : document.getElementById('easy-validation-details');
+        
+        if (!promptInput) return;
+        
+        statusEl.innerHTML = `
+            <span class="pulse-indicator" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #fbbf24; box-shadow: 0 0 8px #fbbf24;"></span>
+            <span style="color: #fbbf24;">Prüfe mit lokaler KI...</span>
+        `;
+        detailsEl.style.display = 'block';
+        detailsEl.innerHTML = `
+            <div style="color: #fbbf24;">
+                ⏳ Die lokale KI analysiert den Prompt (im Hintergrund)...<br>
+                <span style="color: #9ca3af; font-size: 11px; display: block; margin-top: 4px;">• Da es sich um ein lokales CPU-System handelt, kann die Erstberechnung eines langen, komplexen Prompts bis zu 45 Sekunden dauern. Bitte habe kurz Geduld!</span>
+                <span id="validation-progress-text" style="color: var(--accent); font-weight: bold; display: block; margin-top: 6px;">Status: Wird gestartet...</span>
+            </div>
+        `;
+        
+        const formData = new FormData();
+        formData.append('type', type);
+        formData.append('prompt', promptInput.value);
+        
+        fetch('/recruiter/ki/validate-prompt/', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("Netzwerkfehler: HTTP " + res.status);
+            return res.json();
+        })
+        .then(data => {
+            if (data.success && data.async) {
+                // Start async polling
+                pollAITask(data.task_id, 'VALIDATE', (completedData) => {
+                    if (completedData.success) {
+                        if (completedData.valid) {
+                            statusEl.innerHTML = `
+                                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;"></span>
+                                <span style="color: #34d399; font-weight: 600;">Erfolgreich Aktiv</span>
+                            `;
+                            detailsEl.innerHTML = `
+                                <div style="color: #34d399; font-weight: 600; margin-bottom: 4px;"><i class="fa-solid fa-circle-check"></i> ${completedData.message}</div>
+                                <div style="color: #9ca3af; margin-bottom: 6px;">Latenz: <strong>${completedData.latency}s</strong> | Modell: <strong>gemma:2b</strong></div>
+                                <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); overflow: hidden; max-height: 80px; text-overflow: ellipsis; white-space: nowrap;">
+                                    <span style="color: #6b7280; font-family: monospace;">Antwort-Vorschau:</span> <span style="font-family: monospace;">${completedData.reply_preview}</span>
+                                </div>
+                            `;
+                        } else {
+                            statusEl.innerHTML = `
+                                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; box-shadow: 0 0 8px #f59e0b;"></span>
+                                <span style="color: #fbbf24; font-weight: 600;">Format-Warnung</span>
+                            `;
+                            detailsEl.innerHTML = `
+                                <div style="color: #fbbf24; font-weight: 600; margin-bottom: 4px;"><i class="fa-solid fa-triangle-exclamation"></i> Warnung: Format inkompatibel</div>
+                                <div style="color: #e5e7eb; margin-bottom: 8px; line-height: 1.4;">${completedData.message}</div>
+                                <div style="color: #9ca3af; margin-bottom: 6px;">Latenz: <strong>${completedData.latency}s</strong></div>
+                                <div style="background: rgba(245, 158, 11, 0.08); padding: 10px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.2); max-height: 100px; overflow-y: auto;">
+                                    <span style="color: #fbbf24; font-weight: bold;">Gemma Antwort:</span><br>
+                                    <pre style="margin: 4px 0 0 0; font-size: 11px; white-space: pre-wrap;">${completedData.reply_preview}</pre>
+                                </div>
+                            `;
+                        }
+                    } else {
+                        // Task failed
+                        statusEl.innerHTML = `
+                            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 8px #ef4444;"></span>
+                            <span style="color: #f87171; font-weight: 600;">Fehlgeschlagen</span>
+                        `;
+                        detailsEl.innerHTML = `
+                            <div style="color: #f87171; font-weight: 600; margin-bottom: 4px;"><i class="fa-solid fa-circle-xmark"></i> Validierungsfehler</div>
+                            <div style="color: #e5e7eb; white-space: pre-wrap; font-family: sans-serif; line-height: 1.4;">${completedData.error}</div>
+                        `;
+                    }
+                    refreshAILogs();
+                }, (error) => {
+                    statusEl.innerHTML = `
+                        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 8px #ef4444;"></span>
+                        <span style="color: #f87171; font-weight: 600;">Fehlgeschlagen</span>
+                    `;
+                    detailsEl.innerHTML = `
+                        <div style="color: #f87171; font-weight: 600; margin-bottom: 4px;"><i class="fa-solid fa-circle-xmark"></i> Validierungsfehler</div>
+                        <div style="color: #e5e7eb; white-space: pre-wrap; font-family: sans-serif; line-height: 1.4;">${error.message}</div>
+                    `;
+                    refreshAILogs();
+                }, (seconds) => {
+                    const progText = document.getElementById('validation-progress-text');
+                    if (progText) {
+                        progText.innerText = `Status: Berechne... (Laufzeit: ${seconds}s)`;
+                    }
+                });
+            } else {
+                throw new Error("Fehler beim Starten der Asynchronen Prüfung.");
+            }
+        })
+        .catch(err => {
+            statusEl.innerHTML = `
+                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ef4444;"></span>
+                <span style="color: #f87171; font-weight: 600;">Fehlgeschlagen</span>
+            `;
+            detailsEl.innerHTML = `
+                <div style="color: #f87171; font-weight: 600; margin-bottom: 4px;"><i class="fa-solid fa-circle-xmark"></i> Verbindungsfehler</div>
+                <div style="color: #e5e7eb;">Netzwerk- oder Serververbindung fehlgeschlagen: ${err.message}</div>
+            `;
+            refreshAILogs();
+        });
+    }
+
+    function refreshAILogs() {
+        const terminal = document.getElementById('ai-log-terminal');
+        if (!terminal) return;
+        
+        fetch('/recruiter/ki/logs/')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.logs && data.logs.length > 0) {
+                let html = "";
+                data.logs.forEach(log => {
+                    let statusBadge = "";
+                    if (log.success && !log.fallback_mode) {
+                        statusBadge = `<span style="background: rgba(16, 185, 129, 0.12); color: #34d399; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 9px; font-weight: bold; text-shadow: 0 0 6px rgba(52, 211, 153, 0.2);">KI ERFOLG</span>`;
+                    } else if (log.success && log.fallback_mode) {
+                        statusBadge = `<span style="background: rgba(245, 158, 11, 0.12); color: #fbbf24; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.25); font-size: 9px; font-weight: bold; text-shadow: 0 0 6px rgba(251, 191, 36, 0.2);">WARNUNG</span>`;
+                    } else {
+                        statusBadge = `<span style="background: rgba(239, 68, 68, 0.12); color: #f87171; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(239, 68, 68, 0.25); font-size: 9px; font-weight: bold; text-shadow: 0 0 6px rgba(248, 113, 113, 0.2);">FEHLER</span>`;
+                    }
+                    
+                    const customBadge = log.custom_prompt_active ? `<span style="color: #a78bfa; border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 4px; border-radius: 3px; font-size: 8px;">CUSTOM</span>` : '';
+                    
+                    html += `
+                        <div style="border-bottom: 1px solid rgba(255,255,255,0.04); padding-bottom: 8px; margin-bottom: 4px; display: flex; flex-direction: column; gap: 4px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+                                <div style="display: flex; align-items: center; gap: 6px; font-weight: bold; color: #fff;">
+                                    <span style="color: #6d28d9;">></span>
+                                    <span>${log.action_name}</span>
+                                    ${customBadge}
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="color: #6b7280;">${log.createdAt}</span>
+                                    ${statusBadge}
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #9ca3af; padding-left: 12px; flex-wrap: wrap;">
+                                <div>Modell: <strong style="color: #e5e7eb;">${log.model}</strong> | Latenz: <strong style="color: #e5e7eb;">${log.latency}s</strong></div>
+                                ${log.error_msg ? `<span style="color: #f87171; max-width: 250px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">Err: ${log.error_msg}</span>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                terminal.innerHTML = html;
+            } else {
+                terminal.innerHTML = `<div style="color: #6b7280; font-style: italic;">Keine Diagnoseprotokolle vorhanden.</div>`;
+            }
+        })
+        .catch(err => {
+            terminal.innerHTML = `<div style="color: #ef4444; font-style: italic;">Fehler beim Laden der Protokolle: ${err.message}</div>`;
+        });
+    }
+
+    // AGG Checker Tool inside Tab 7 (KI-Zentrale)
+    function runAGGChecker() {
+        const text = document.getElementById('agg-text').value;
+        const box = document.getElementById('agg-response-box');
+        if (!text.trim()) return;
+        box.innerText = "⏳ Lokale Gemma-KI prüft auf AGG-Konformität (im Hintergrund)...";
+
+        const formData = new FormData();
+        formData.append('text', text);
+
+        fetch(`/recruiter/ki/agg-check/`, { method: 'POST', body: formData })
+        .then(res => {
+            if (!res.ok) throw new Error("Fehler bei der Netzwerkantwort");
+            return res.json();
+        })
+        .then(data => {
+            if (data.success && data.async) {
+                pollAITask(data.task_id, 'AGG', (completedData) => {
+                    let html = "";
+                    const isFallback = completedData.fallback_mode;
+                    
+                    if (completedData.violations && completedData.violations.length > 0) {
+                        html += `<div style="color: #ef4444; font-weight: bold; margin-bottom: 8px;">⚠️ AGG-Risiken gefunden (${isFallback ? 'Fallback-Modus' : 'KI-Analyse'}):</div>`;
+                        html += `<ul style="margin: 0; padding-left: 20px; color: #fca5a5; display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px;">`;
+                        completedData.violations.forEach(v => {
+                            html += `<li>${v}</li>`;
+                        });
+                        html += `</ul>`;
+                        
+                        html += `<div style="color: var(--accent); font-weight: bold; margin-bottom: 4px;">Optimierter Formulierungsvorschlag:</div>`;
+                        html += `<div style="padding: 10px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #e5e7eb; white-space: pre-wrap; font-family: sans-serif; line-height: 1.4;">${completedData.optimized_text}</div>`;
+                        if (completedData.error_msg) {
+                            html += `<div style="color: #f59e0b; font-size: 11px; margin-top: 8px; font-style: italic;">Diagnose-Hinweis: ${completedData.error_msg}</div>`;
+                        }
+                    } else {
+                        html += `<div style="color: #10b981; font-weight: bold; display: flex; align-items: center; gap: 6px;">`;
+                        html += `<i class="fa-solid fa-circle-check"></i> Keine offensichtlichen AGG-Verstöße gefunden (${isFallback ? 'Fallback-Modus' : 'KI-Analyse'}).`;
+                        html += `</div>`;
+                    }
+                    box.innerHTML = html;
+                    refreshAILogs();
+                }, (error) => {
+                    box.innerHTML = `<span style="color:#ef4444;">[Fehler bei der Asynchronen Prüfung]:</span> ${error.message}`;
+                    refreshAILogs();
+                }, (seconds) => {
+                    box.innerText = `⏳ Lokale Gemma-KI prüft auf AGG-Konformität... (Laufzeit: ${seconds}s)`;
+                });
+            } else {
+                box.innerHTML = `<span style="color:#ef4444;">[Fehler]:</span> ${data.error || "Unerwarteter Fehler bei der Übermittlung."}`;
+            }
+        })
+        .catch(err => {
+            box.innerHTML = `<span style="color:#ef4444;">[Verbindungsfehler]:</span> ${err.message}`;
+        });
+    }
+
+    // AGG Check on Wizard Creator directly with premium inline interactive panel
+    let currentOptimizedText = "";
+
+    function runAGGCheckOnJob() {
+        const title = document.getElementById('job-title-inp').value;
+        const desc = document.getElementById('job-desc-inp').value;
+        if (!desc.trim() && !title.trim()) {
+            alert("Bitte geben Sie zuerst einen Stellentitel oder eine Beschreibung ein!");
+            return;
+        }
+
+        const box = document.getElementById('agg-suggestions-box');
+        const loading = document.getElementById('agg-suggestions-loading');
+        const content = document.getElementById('agg-suggestions-content');
+        
+        // Open box and show loading state
+        box.style.display = 'block';
+        box.style.opacity = '1';
+        loading.style.display = 'flex';
+        content.style.display = 'none';
+
+        // Combine title and description so both are fully analyzed by the AI & fallback regex
+        const combinedText = `Stellentitel: ${title}\nBeschreibung: ${desc}`;
+
+        const formData = new FormData();
+        formData.append('text', combinedText);
+
+        const progressText = loading.querySelector('span') || loading;
+
+        fetch(`/recruiter/ki/agg-check/`, { method: 'POST', body: formData })
+        .then(res => {
+            if (!res.ok) throw new Error("Netzwerkantwort war nicht ok");
+            return res.json();
+        })
+        .then(data => {
+            if (data.success && data.async) {
+                pollAITask(data.task_id, 'AGG_CHECK', (completedData) => {
+                    loading.style.display = 'none';
+                    content.style.display = 'block';
+                    
+                    const badge = document.getElementById('agg-badge');
+                    const warningsContainer = document.getElementById('agg-warnings-container');
+                    const warningsList = document.getElementById('agg-warnings-list');
+                    const safeMessage = document.getElementById('agg-safe-message');
+                    const optimizedContainer = document.getElementById('agg-optimized-container');
+                    const optimizedBox = document.getElementById('agg-optimized-text');
+                    const applyBtn = document.getElementById('btn-apply-agg');
+                    
+                    warningsList.innerHTML = '';
+                    
+                    if (completedData.violations && completedData.violations.length > 0) {
+                        badge.innerText = completedData.fallback_mode ? "⚠️ Warnung (Fallback)" : "⚠️ Warnung";
+                        badge.style.background = "rgba(239, 68, 68, 0.2)";
+                        badge.style.color = "#ef4444";
+                        badge.style.border = "1px solid #ef4444";
+                        
+                        warningsContainer.style.display = 'block';
+                        safeMessage.style.display = 'none';
+                        
+                        completedData.violations.forEach(v => {
+                            const li = document.createElement('li');
+                            li.innerText = v;
+                            warningsList.appendChild(li);
+                        });
+                        
+                        currentOptimizedText = completedData.optimized_text || completedData.original_text;
+                        optimizedBox.innerText = currentOptimizedText;
+                        optimizedContainer.style.display = 'block';
+                        applyBtn.style.display = 'block';
+                    } else {
+                        badge.innerText = completedData.fallback_mode ? "✅ Konform (Fallback)" : "✅ Konform";
+                        badge.style.background = "rgba(16, 185, 129, 0.2)";
+                        badge.style.color = "#10b981";
+                        badge.style.border = "1px solid #10b981";
+                        
+                        warningsContainer.style.display = 'none';
+                        safeMessage.style.display = 'block';
+                        
+                        currentOptimizedText = completedData.optimized_text || completedData.original_text;
+                        optimizedBox.innerText = currentOptimizedText;
+                        optimizedContainer.style.display = 'block';
+                        applyBtn.style.display = 'none';
+                    }
+                    
+                    if (completedData.error_msg) {
+                        const li = document.createElement('li');
+                        li.style.color = "#fbbf24";
+                        li.style.fontSize = "11px";
+                        li.style.listStyle = "none";
+                        li.style.marginTop = "8px";
+                        li.innerHTML = `<strong>Diagnose-Hinweis:</strong> Die KI hat das Fallback-Regelwerk ausgelöst.<br><span style="opacity:0.8">${completedData.error_msg}</span>`;
+                        warningsList.appendChild(li);
+                        warningsContainer.style.display = 'block';
+                    }
+                    
+                    refreshAILogs();
+                }, (error) => {
+                    loading.style.display = 'none';
+                    showAGGError("Fehler bei der Asynchronen Analyse: " + error.message);
+                    refreshAILogs();
+                }, (seconds) => {
+                    if (progressText) {
+                        progressText.innerText = `Prüfe auf AGG-Konformität... (${seconds}s)`;
+                    }
+                });
+            } else {
+                throw new Error("Fehler beim Starten der Asynchronen Analyse.");
+            }
+        })
+        .catch(err => {
+            loading.style.display = 'none';
+            showAGGError("Verbindung zum KI-Dienst fehlgeschlagen: " + err.message);
+        });
+    }
+
+    function showAGGError(msg) {
+        const content = document.getElementById('agg-suggestions-content');
+        const badge = document.getElementById('agg-badge');
+        const warningsContainer = document.getElementById('agg-warnings-container');
+        const warningsList = document.getElementById('agg-warnings-list');
+        const safeMessage = document.getElementById('agg-safe-message');
+        const optimizedContainer = document.getElementById('agg-optimized-container');
+        const applyBtn = document.getElementById('btn-apply-agg');
+        
+        content.style.display = 'block';
+        badge.innerText = "❌ Fehler";
+        badge.style.background = "rgba(239, 68, 68, 0.2)";
+        badge.style.color = "#ef4444";
+        badge.style.border = "1px solid #ef4444";
+        
+        warningsContainer.style.display = 'block';
+        warningsList.innerHTML = `<li>${msg}</li>`;
+        safeMessage.style.display = 'none';
+        optimizedContainer.style.display = 'none';
+        applyBtn.style.display = 'none';
+    }
+
+    function dismissAGGSuggestions() {
+        const box = document.getElementById('agg-suggestions-box');
+        box.style.opacity = '0';
+        setTimeout(() => {
+            box.style.display = 'none';
+            box.style.opacity = '1';
+        }, 300);
+    }
+
+    function applyAGGSuggestions() {
+        if (currentOptimizedText) {
+            let optimizedDesc = currentOptimizedText;
+            let optimizedTitle = "";
+
+            // Parse title if returned with prefix
+            if (currentOptimizedText.includes("Stellentitel:")) {
+                const parts = currentOptimizedText.split("Beschreibung:");
+                const titlePart = parts[0].replace("Stellentitel:", "").trim();
+                if (titlePart) {
+                    optimizedTitle = titlePart;
+                }
+                if (parts[1]) {
+                    optimizedDesc = parts[1].trim();
+                }
+            } else if (currentOptimizedText.includes("Ausschreibungstext:")) {
+                const parts = currentOptimizedText.split("Ausschreibungstext:");
+                optimizedDesc = parts[1].trim();
+            }
+
+            // Apply title update if found
+            if (optimizedTitle) {
+                document.getElementById('job-title-inp').value = optimizedTitle;
+                
+                // Flash effect on title input
+                const titleArea = document.getElementById('job-title-inp');
+                const origBorder = titleArea.style.borderColor;
+                titleArea.style.borderColor = 'var(--accent)';
+                setTimeout(() => { titleArea.style.borderColor = origBorder; }, 800);
+            }
+
+            // Apply description update
+            document.getElementById('job-desc-inp').value = optimizedDesc;
+            
+            // Subtle flash effect on textarea to indicate update
+            const descArea = document.getElementById('job-desc-inp');
+            const originalBorder = descArea.style.borderColor;
+            descArea.style.borderColor = 'var(--accent)';
+            descArea.style.boxShadow = '0 0 10px rgba(139, 92, 246, 0.5)';
+            setTimeout(() => {
+                descArea.style.borderColor = originalBorder;
+                descArea.style.boxShadow = '';
+            }, 800);
+            
+            dismissAGGSuggestions();
+        }
+    }
+
+    // Leichte Sprache text translator box
+    function translateSimpleGermanText() {
+        const text = document.getElementById('simple-german-text').value;
+        const box = document.getElementById('simple-german-response-box');
+        if (!text.trim()) return;
+        box.innerText = "⏳ Lokale Gemma-KI übersetzt in Leichte Sprache (BFSG)...";
+
+        const formData = new FormData();
+        formData.append('text', text);
+
+        fetch(`/recruiter/ki/simple-german/`, { method: 'POST', body: formData })
+        .then(res => {
+            if (!res.ok) throw new Error("Fehler bei der Serverantwort.");
+            return res.json();
+        })
+        .then(data => {
+            if (data.success) {
+                box.innerText = data.result;
+            } else {
+                box.innerHTML = `<span style="color:#ef4444;">[Fehler]:</span> ${data.error || "Unerwarteter Fehler"}`;
+            }
+        })
+        .catch(err => {
+            box.innerHTML = `<span style="color:#ef4444;">[Verbindungsfehler]:</span> ${err.message}`;
+        });
+    }
+
+    // Translate CMS Page inline to Leichte Sprache
+    function translateSimpleGermanCMS() {
+        const contentEl = document.getElementById('page-content');
+        const text = contentEl.value;
+        if (!text.trim()) {
+            alert("Bitte geben Sie zuerst einen Text in das Inhaltsfeld ein!");
+            return;
+        }
+        
+        if (!confirm("Möchten Sie den aktuellen Text durch die Leichte Sprache Übersetzung der Gemma-KI ersetzen?")) {
+            return;
+        }
+
+        const btn = document.getElementById('btn-translate-cms');
+        const origHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Übersetze...`;
+
+        const formData = new FormData();
+        formData.append('text', text);
+
+        fetch(`/recruiter/ki/simple-german/`, { method: 'POST', body: formData })
+        .then(res => {
+            if (!res.ok) throw new Error("Serverfehler bei der Übersetzung.");
+            return res.json();
+        })
+        .then(data => {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+            if (data.success) {
+                contentEl.value = data.result;
+                // Highlight text area green briefly
+                contentEl.style.borderColor = '#10b981';
+                contentEl.style.boxShadow = '0 0 8px rgba(16, 185, 129, 0.4)';
+                setTimeout(() => { 
+                    contentEl.style.borderColor = ''; 
+                    contentEl.style.boxShadow = '';
+                }, 1000);
+            } else {
+                alert("Fehler: " + (data.error || "Unbekannter Fehler"));
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+            alert("Fehler bei der Verbindung zum KI-Dienst: " + err.message);
+        });
+    }
+
+    // SGB IX Quota and ROI calculation
+    function calculateInclusionROI() {
+        const empCount = parseInt(document.getElementById('roi-employees').value);
+        const quote = parseFloat(document.getElementById('roi-quote').value);
+
+        // Update badges
+        document.getElementById('roi-ma-badge').innerText = `${empCount} MA`;
+        document.getElementById('roi-quote-badge').innerText = `${quote.toFixed(1)} %`;
+
+        // Quota calculations
+        const targetQuote = 0.05;
+        const requiredPositions = Math.ceil(empCount * targetQuote);
+        const actualHires = Math.round(empCount * (quote / 100));
+        const missingHires = Math.max(0, requiredPositions - actualHires);
+
+        // Penalty calculations
+        let monthlyPenaltyRatePerSpot = 0;
+        if (missingHires > 0) {
+            if (quote === 0) {
+                monthlyPenaltyRatePerSpot = 720; // Zero employment severe penalty SGB IX
+            } else if (quote < 2) {
+                monthlyPenaltyRatePerSpot = 360;
+            } else if (quote < 3) {
+                monthlyPenaltyRatePerSpot = 245;
+            } else if (quote < 5) {
+                monthlyPenaltyRatePerSpot = 140;
+            }
+        }
+
+        const monthlyPenalty = missingHires * monthlyPenaltyRatePerSpot;
+        const annualPenalty = monthlyPenalty * 12;
+
+        // Visual warnings
+        const warningEl = document.getElementById('roi-sb-warning');
+        if (missingHires > 0) {
+            warningEl.className = "roi-warning";
+            warningEl.style.background = "rgba(245, 158, 11, 0.1)";
+            warningEl.style.color = "#fbbf24";
+            warningEl.style.borderColor = "rgba(245, 158, 11, 0.2)";
+            warningEl.innerHTML = `⚠️ <strong>Strafabgabe aktiv!</strong> Bei <strong>${empCount} MA</strong> beträgt die gesetzliche Pflichtquote 5% (ca. <strong>${requiredPositions} Pflichtarbeitsplätze</strong>). Sie beschäftigen ca. ${actualHires} schwerbehinderte Menschen. Es fehlen ${missingHires} Besetzungen. Strafe: <strong>${monthlyPenaltyRatePerSpot} €</strong> pro Monat je fehlendem Platz. Jährliche Belastung: <strong>${annualPenalty.toLocaleString()} €</strong>.`;
+        } else {
+            warningEl.style.background = "rgba(20, 184, 166, 0.15)";
+            warningEl.style.color = "var(--accent-light)";
+            warningEl.style.borderColor = "rgba(20, 184, 166, 0.3)";
+            warningEl.innerHTML = `✅ <strong>Zielquote erfüllt!</strong> Herzlichen Glückwunsch, Sie erfüllen die gesetzliche 5%-Schwerbehindertenbeschäftigungsquote vollständig. Es fallen keine Strafzahlungen an!`;
+        }
+
+        // Calculations ROI
+        const conversionSavings = Math.round(empCount * 92); // Realistic estimated ROI boost +37%
+        const legalSavings = 15000; // Average penalty defense prevention cost saved
+
+        document.getElementById('roi-saving-abgabe').innerText = `+ ${annualPenalty.toLocaleString()} €`;
+        document.getElementById('roi-saving-conversion').innerText = `+ ${conversionSavings.toLocaleString()} €`;
+        document.getElementById('roi-saving-legal').innerText = `+ ${legalSavings.toLocaleString()} €`;
+
+        const totalROI = annualPenalty + conversionSavings + legalSavings;
+        document.getElementById('roi-total-saving').innerText = `${totalROI.toLocaleString()} € / Jahr`;
+    }
+
+    // Toggle prompt textareas in KI-Steuerungszentrum
+    function togglePromptTextarea(checkId, containerId) {
+        const check = document.getElementById(checkId);
+        const container = document.getElementById(containerId);
+        if (check.checked) {
+            container.style.display = 'block';
+        } else {
+            container.style.display = 'none';
+        }
+    }
+
+    // Global selected files list for PDF simulation
+    let selectedCVFiles = [];
+
+    function handleCVFileSelection(event) {
+        const files = event.target.files;
+        const listEl = document.getElementById('selected-cvs-list');
+        listEl.innerHTML = '';
+        selectedCVFiles = [];
+
+        if (files.length > 0) {
+            listEl.style.display = 'block';
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                selectedCVFiles.push(file);
+                listEl.innerHTML += `<div style="font-size:12px; color:#10b981; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-file-pdf"></i> ${file.name} (${Math.round(file.size / 1024)} KB)
+                </div>`;
+            }
+        } else {
+            listEl.style.display = 'none';
+        }
+    }
+
+    function simulateCVIngestion(event) {
+        // Name aus historischen Gruenden beibehalten; die Funktion ist jetzt
+        // ECHT: sie laedt die Dateien hoch, der Server erzeugt per Ollama
+        // echte Embeddings und speichert sie. Kein Fortschritts-Theater mehr.
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (selectedCVFiles.length === 0) {
+            alert("Bitte wählen Sie zuerst eine oder mehrere PDF-Dateien aus!");
+            return;
+        }
+
+        const btn = document.getElementById('btn-ingest-cvs');
+        const progressContainer = document.getElementById('ingestion-progress-container');
+        const progressBar = document.getElementById('ingestion-progress-bar');
+        const pctText = document.getElementById('ingestion-pct-text');
+        const statusText = document.getElementById('ingestion-status-text');
+
+        btn.disabled = true;
+        progressContainer.style.display = 'block';
+        // Unbestimmter Fortschritt: Wir kennen die echte Dauer nicht, also
+        // zeigen wir "in Arbeit" statt eine erfundene Prozentzahl.
+        progressBar.style.width = '100%';
+        progressBar.style.opacity = '0.5';
+        pctText.innerText = '';
+        statusText.innerText = 'Erzeuge Embeddings über die lokale KI …';
+
+        const fd = new FormData();
+        fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        selectedCVFiles.forEach(f => fd.append('cvs', f));
+        const jf = document.getElementById('ingest-job-family');
+        if (jf && jf.value) fd.append('job_family', jf.value);
+
+        fetch('/recruiter/best-performers/ingest/', { method: 'POST', body: fd })
+            .then(r => r.json().then(d => ({ ok: r.ok, d })))
+            .then(({ ok, d }) => {
+                btn.disabled = false;
+                progressContainer.style.display = 'none';
+                progressBar.style.opacity = '1';
+                if (ok && d.success) {
+                    let msg = d.message || 'Fertig.';
+                    if (d.skipped && d.skipped.length) {
+                        msg += '\n\nÜbersprungen:\n' +
+                            d.skipped.map(x => '• ' + x.name + ' (' + x.reason + ')').join('\n');
+                    }
+                    alert(msg);
+                    document.getElementById('selected-cvs-list').innerHTML = '';
+                    document.getElementById('selected-cvs-list').style.display = 'none';
+                    selectedCVFiles = [];
+                } else {
+                    // EHRLICH: kein Schein-Erfolg. Zeig den echten Grund.
+                    alert(d.error || 'Es wurde nichts gespeichert.');
+                }
+            })
+            .catch(() => {
+                btn.disabled = false;
+                progressContainer.style.display = 'none';
+                progressBar.style.opacity = '1';
+                alert('Upload fehlgeschlagen – es wurde nichts gespeichert.');
+            });
+    }
+
+    // DOMContentLoaded setup for tab preservation & drag-drop
+    window.addEventListener('DOMContentLoaded', () => {
+        // Tab preservation
+        const storedTab = localStorage.getItem('activeTab');
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlTab = urlParams.get('tab');
+        const targetTabId = urlTab || storedTab || 'kanban-tab';
+        
+        // Find sidebar link corresponding to targetTabId
+        const sidebarLink = Array.from(document.querySelectorAll('.sidebar-link'))
+            .find(link => link.getAttribute('onclick')?.includes(targetTabId));
+            
+        if (sidebarLink) {
+            switchTab(sidebarLink, targetTabId);
+        } else if (targetTabId !== 'kanban-tab') {
+            // Gespeicherter Tab ist fuer diese Rolle ausgeblendet: zurueck
+            // auf die taegliche Arbeit, statt gar nichts zu aktivieren.
+            const kanbanLink = document.querySelector(".sidebar-link[onclick*='kanban-tab']");
+            if (kanbanLink) switchTab(kanbanLink, 'kanban-tab');
+        }
+
+        // Setup drag & drop for CV zone
+        const dropZone = document.getElementById('cv-drop-zone');
+        if (dropZone) {
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#10b981';
+                dropZone.style.background = 'rgba(16, 185, 129, 0.1)';
+            });
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+                dropZone.style.background = 'rgba(0,0,0,0.2)';
+            });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+                dropZone.style.background = 'rgba(0,0,0,0.2)';
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const fileInput = document.getElementById('cv-file-input');
+                    fileInput.files = files;
+                    const event = { target: { files: files } };
+                    handleCVFileSelection(event);
+                }
+            });
+        }
+    });
+</script>

@@ -1,0 +1,88 @@
+        <!-- ====================================================================
+             TAB 5: TEMPLATE & VARIABLEN MANAGER
+             ==================================================================== -->
+        <div class="tab-content" id="templates-tab">
+            <div class="glass-card">
+                <h3 style="font-size: 22px; color: #fff; margin-bottom: 12px;">E-Mails & Globale Template-Variablen</h3>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 24px;">Steuern Sie E-Mail-Templates und verwalten Sie globale Variablen (Zero-Maintenance) für Seiten und E-Mails.</p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                    <!-- Left: Variables Manager -->
+                    <div class="glass-card" style="background: rgba(11, 13, 25, 0.4);">
+                        <h4 style="color: #fff; margin-bottom: 16px;"><i class="fa-solid fa-key" style="color: var(--accent);"></i> Globale Variablen (SystemSettings)</h4>
+                        
+                        <form method="POST" action="{% url 'ats:save_system_setting' %}" style="display: flex; gap: 8px; margin-bottom: 20px;">
+                            {% csrf_token %}
+                            <input type="hidden" name="setting_id" id="setting-id">
+                            <input type="text" name="key" id="setting-key" class="form-input" placeholder="VARIABLE_NAME" required style="width: 35%; text-transform: uppercase;">
+                            <input type="text" name="value" id="setting-value" class="form-input" placeholder="Variable Wert..." required style="width: 45%;">
+                            <button type="submit" class="btn-cta" style="width: 20%; padding: 0 10px;">Speichern</button>
+                        </form>
+                        
+                        <table class="premium-table" style="font-size: 13px;">
+                            <thead>
+                                <tr>
+                                    <th>Variable</th>
+                                    <th>Wert</th>
+                                    <th>Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for setting in all_system_settings %}
+                                    <tr>
+                                        <td><code>[[{{ setting.key }}]]</code></td>
+                                        <td>{{ setting.value }}</td>
+                                        <td>
+                                            <button class="btn-search" style="padding: 4px 6px; font-size: 10px; height: 24px;" 
+                                                onclick="editSystemSetting('{{ setting.id }}', '{{ setting.key }}', '{{ setting.value }}')">
+                                                <i class="fa-solid fa-pen"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Right: Email Template Editor -->
+                    <div class="glass-card" style="background: rgba(11, 13, 25, 0.4);">
+                        <h4 style="color: #fff; margin-bottom: 16px;"><i class="fa-solid fa-envelope" style="color: var(--primary-light);"></i> E-Mail Vorlagen</h4>
+                        
+                        <form method="POST" action="{% url 'ats:save_email_template' %}" id="email-template-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="template_id" id="email-template-id">
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="email-select">Vorlage auswählen zum Bearbeiten</label>
+                                <select id="email-select" class="filter-select" onchange="loadEmailTemplateToForm()">
+                                    <option value="">-- Neue Vorlage erstellen --</option>
+                                    {% for et in all_email_templates %}
+                                        <option value="{{ et.id }}" data-name="{{ et.name }}" data-subject="{{ et.subject }}" data-html="{{ et.htmlContent|escapejs }}">{{ et.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="email-name">Vorlagenname (z.B. Absage)</label>
+                                <input type="text" name="name" id="email-name" class="form-input" required placeholder="z. B. Eingangsbestätigung">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="email-subject">E-Mail Betreff</label>
+                                <input type="text" name="subject" id="email-subject" class="form-input" required placeholder="Betreff...">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="email-html">E-Mail Inhalt (HTML)</label>
+                                <textarea name="html_content" id="email-html" class="form-textarea" rows="6" required placeholder="Inhalt..."></textarea>
+                            </div>
+                            
+                            <button type="submit" class="btn-cta" style="width: 100%;">
+                                <i class="fa-solid fa-paper-plane"></i> E-Mail Vorlage sichern
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+

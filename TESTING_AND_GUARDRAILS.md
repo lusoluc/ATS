@@ -28,7 +28,7 @@ Verhalten. Details der Abdeckungs-Arbeit: `TEST_COVERAGE.md`.
 Das Besondere für die Zukunft: Diese Tests prüfen **nicht einzelne Funktionen**,
 sondern scannen die **gesamte Codebasis** bei jedem Lauf – auch Code, der erst
 morgen dazukommt. So kann sich ein im Sicherheits-Audit gefundenes Muster nicht
-unbemerkt wiederholen. Sie stehen in `ats/tests.py` (Abschnitt „WÄCHTER-TESTS").
+unbemerkt wiederholen. Sie stehen in `ats/tests/test_guardrails.py`.
 
 | Wächter | Verhindert die Wiederkehr von | Bezug |
 |---------|------------------------------|-------|
@@ -75,7 +75,7 @@ Auth-Wächter eine absichtlich ungeschützte View sofort meldet.
 ## Eine neue Prüfung ergänzen
 
 Kommt eine neue FehlerKLASSE dazu, die dauerhaft ferngehalten werden soll:
-1. In `ats/tests.py` unter „WÄCHTER-TESTS" eine `Guardrail…TestCase` ergänzen,
+1. In `ats/tests/test_guardrails.py` eine `Guardrail…TestCase` ergänzen,
    die die Codebasis scannt (Muster: die bestehenden Wächter kopieren).
 2. In `ci.yml` im Job `guardrails` die Klasse zur Liste hinzufügen (optional –
    die volle Suite führt sie ohnehin aus).

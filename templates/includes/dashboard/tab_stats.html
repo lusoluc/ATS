@@ -1,0 +1,85 @@
+        <!-- ====================================================================
+             TAB 8: STATISTIKEN & KPIS & INKLUSIONS-ROI
+             ==================================================================== -->
+        <div class="tab-content" id="stats-tab">
+            <!-- Quota ROI Calculator and KPIs in a beautiful layout -->
+            <div class="glass-card">
+                <h3 style="font-size: 22px; color: #fff; margin-bottom: 6px;">KPIs & Inklusions-ROI Rechner</h3>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 24px;">Berechnen Sie Ihre Pflichtabgaben (SGB IX) und erfahren Sie, wie viel Ausgleichsabgabe Sie durch Inklusion einsparen.</p>
+                
+                <div class="roi-grid">
+                    <!-- Left: Sliders -->
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div class="slider-card">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <label class="form-label" style="font-size: 15px; font-weight: 600; color: #fff;">Mitarbeiteranzahl (MA)</label>
+                                <span class="badge badge-accent" id="roi-ma-badge" style="font-size: 14px;">140 MA</span>
+                            </div>
+                            <input type="range" id="roi-employees" min="20" max="1000" step="5" value="140" class="roi-range-input" oninput="calculateInclusionROI()">
+                            <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-top: 8px;">
+                                <span>20</span><span>500</span><span>1000</span>
+                            </div>
+                        </div>
+
+                        <div class="slider-card">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <label class="form-label" style="font-size: 15px; font-weight: 600; color: #fff;">Schwerbehindertenquote (%)</label>
+                                <span class="badge badge-primary" id="roi-quote-badge" style="font-size: 14px;">0.0 %</span>
+                            </div>
+                            <input type="range" id="roi-quote" min="0" max="5" step="0.1" value="0" class="roi-range-input" oninput="calculateInclusionROI()">
+                            <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-top: 8px;">
+                                <span>0% (Nullbeschäftigung)</span><span>Gesetzlich: 5%</span>
+                            </div>
+                        </div>
+                        
+                        <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: var(--border-radius-sm); padding: 16px; font-size: 12px; color: #fbbf24; line-height: 1.5;" id="roi-sb-warning">
+                            ⚠️ <strong>Strafabgabe aktiv!</strong> Bei 140 MA beträgt die Zielquote 5% (ca. 7 Pflichtarbeitsplätze). Bei 0% Quote drohen 720 € Strafe monatlich je unbesetztem Platz.
+                        </div>
+                    </div>
+                    
+                    <!-- Right: ROI outcomes -->
+                    <div class="roi-result-card">
+                        <h4 style="color: #fff; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px; margin-bottom: 8px;">Jährlicher Inklusions-ROI</h4>
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(0,0,0,0.2); border-radius: var(--border-radius-sm);">
+                            <span style="font-size: 13px; color: var(--text-muted);">Ersparnis Ausgleichsabgabe</span>
+                            <strong style="color: var(--accent-light); font-size: 16px;" id="roi-saving-abgabe">+ 60.480 €</strong>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(0,0,0,0.2); border-radius: var(--border-radius-sm);">
+                            <span style="font-size: 13px; color: var(--text-muted);">Conversion-Mehrwert (BFSG +37%)</span>
+                            <strong style="color: var(--accent-light); font-size: 16px;" id="roi-saving-conversion">+ 12.800 €</strong>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(0,0,0,0.2); border-radius: var(--border-radius-sm);">
+                            <span style="font-size: 13px; color: var(--text-muted);">Schutz vor Lohnklagen (Equal Pay 2026)</span>
+                            <strong style="color: var(--accent-light); font-size: 16px;" id="roi-saving-legal">+ 15.000 €</strong>
+                        </div>
+                        
+                        <div style="padding: 16px; background: rgba(20, 184, 166, 0.15); border: 1px solid rgba(20, 184, 166, 0.3); border-radius: var(--border-radius-md); text-align: center; margin-top: 10px;">
+                            <span style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--accent-light); display: block; margin-bottom: 4px;">Gesamter Jährlicher ROI</span>
+                            <strong style="font-size: 32px; font-weight: 800; font-family: 'Outfit'; color: #fff;" id="roi-total-saving">88.280 € / Jahr</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Funnel SVG Graph -->
+                <h4 style="color: #fff; margin-top: 40px; margin-bottom: 20px;"><i class="fa-solid fa-filter" style="color: var(--primary-light);"></i> Recruiting Funnel Analyse</h4>
+                <div style="display: flex; justify-content: center; background: rgba(11, 13, 25, 0.4); border: 1px solid var(--glass-border); border-radius: var(--border-radius-lg); padding: 30px;">
+                    <svg width="600" height="200" viewBox="0 0 600 200" style="max-width: 100%;">
+                        <!-- Funnel polygon layers -->
+                        <polygon points="50,20 550,20 480,60 120,60" fill="rgba(139, 92, 246, 0.4)" stroke="var(--primary)" stroke-width="2" />
+                        <polygon points="120,60 480,60 410,100 190,100" fill="rgba(59, 130, 246, 0.4)" stroke="#3b82f6" stroke-width="2" />
+                        <polygon points="190,100 410,100 350,140 250,140" fill="rgba(20, 184, 166, 0.4)" stroke="var(--accent)" stroke-width="2" />
+                        <polygon points="250,140 350,140 320,180 280,180" fill="rgba(16, 185, 129, 0.4)" stroke="#10b981" stroke-width="2" />
+                        
+                        <!-- Text labels inside polygons -->
+                        <text x="300" y="45" fill="#fff" font-size="12" font-weight="bold" text-anchor="middle">1. NEUE BEWERBER ({{ stats.total }})</text>
+                        <text x="300" y="85" fill="#fff" font-size="12" font-weight="bold" text-anchor="middle">2. IN PRÜFUNG ({{ stats.in_review }})</text>
+                        <text x="300" y="125" fill="#fff" font-size="12" font-weight="bold" text-anchor="middle">3. EINGELADEN ({{ stats.invited }})</text>
+                        <text x="300" y="165" fill="#fff" font-size="12" font-weight="bold" text-anchor="middle">4. EINGESTELLT</text>
+                    </svg>
+                </div>
+            </div>
+        </div>
+

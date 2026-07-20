@@ -78,6 +78,7 @@ def create_job(request):
         template_id = request.POST.get('job_template')
         benefits_selected = request.POST.getlist('benefits')
         workflow_state_id = request.POST.get('workflow_state')
+        pay_band_id = request.POST.get('pay_band')
 
         with transaction.atomic():
             org = Organization.objects.first()
@@ -117,6 +118,7 @@ def create_job(request):
                 job.department_id = dept_id if dept_id else None
                 job.contactPerson_id = contact_id if contact_id else None
                 job.jobTemplate_id = template_id if template_id else None
+                job.payBand_id = pay_band_id if pay_band_id else None
                 job.save()
                 action = "UPDATE_JOB"
             else:
@@ -137,7 +139,8 @@ def create_job(request):
                     workflowState=workflow_state,
                     department_id=dept_id if dept_id else None,
                     contactPerson_id=contact_id if contact_id else None,
-                    jobTemplate_id=template_id if template_id else None
+                    jobTemplate_id=template_id if template_id else None,
+                    payBand_id=pay_band_id if pay_band_id else None,
                 )
                 action = "CREATE_JOB"
 
@@ -183,6 +186,17 @@ def create_job(request):
                 write_audit('REQUISITION_GATE_BLOCKED', user=request.user,
                             job=job.title)
                 messages.warning(request, _rq_reason)
+            # Entgelttransparenz (EU-RL 2023/970, Art. 5): ohne Entgeltband
+            # bleibt die Stelle Entwurf statt online zu gehen.
+            from ..pay_transparency import pay_blocked_reason
+            _pay_reason = pay_blocked_reason(job)
+            if _pay_reason and job.workflowState and \
+                    job.workflowState.name == 'published':
+                job.workflowState = draft_state()
+                job.save(update_fields=['workflowState'])
+                write_audit('PAY_TRANSPARENCY_GATE_BLOCKED', user=request.user,
+                            job=job.title)
+                messages.warning(request, _pay_reason)
 
         return redirect('ats:dashboard')
 
@@ -207,6 +221,11 @@ def toggle_job_active(request, job_id):
                              'error': 'Freigabe ausstehend – Aktivierung erfolgt '
                                       'automatisch mit der letzten Freigabe.'},
                             status=409)
+    # Entgelttransparenz: Aktivieren ohne Entgeltband ist nicht umgehbar
+    from ..pay_transparency import pay_blocked_reason
+    _pay = pay_blocked_reason(job)
+    if _pay and job.workflowState_id and job.workflowState.name != 'published':
+        return JsonResponse({'success': False, 'error': _pay}, status=409)
     published, _ = WorkflowState.objects.get_or_create(
         name='published', defaults={'description': 'Öffentlich sichtbar'})
     draft, _ = WorkflowState.objects.get_or_create(

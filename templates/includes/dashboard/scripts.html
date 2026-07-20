@@ -729,7 +729,7 @@
         openJobCreatorModal();
     }
 
-    function editJobPosting(id, title, description, tasksJson, requirementsJson, screeningQuestionsJson, facilityId, departmentId, locationId, jobFamilyId, contactPersonId, jobTemplateId, workflowStateId, benefitsSelectedCsv, panelUserIdsJson, panelQuorum, panelDeadlineDays, interviewRoundsCsv) {
+    function editJobPosting(id, title, description, tasksJson, requirementsJson, screeningQuestionsJson, facilityId, departmentId, locationId, jobFamilyId, contactPersonId, jobTemplateId, workflowStateId, benefitsSelectedCsv, panelUserIdsJson, panelQuorum, panelDeadlineDays, interviewRoundsCsv, payBandId) {
         document.getElementById('panel_quorum').value = panelQuorum || '';
         document.getElementById('panel_deadline_days').value = panelDeadlineDays || '';
         document.getElementById('interview_rounds').value = interviewRoundsCsv || '';
@@ -772,6 +772,7 @@
         document.getElementById('job-contact').value = contactPersonId || '';
         document.getElementById('job-template').value = jobTemplateId || '';
         document.getElementById('job-state').value = workflowStateId;
+        document.getElementById('job-pay-band').value = payBandId || '';
 
         // Benefits (Checkboxes)
         // Reset all benefits checkboxes first

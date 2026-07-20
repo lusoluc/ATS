@@ -358,6 +358,45 @@ class TextSnippet(models.Model):
     def __str__(self):
         return f"{self.category} Snippet"
 
+class PayBand(models.Model):
+    """Entgeltband — tarif-native Entgelttransparenz (EU-RL 2023/970, Art. 5).
+
+    Ein Band beschreibt die Einstiegsentgelt-Spanne einer Stelle auf objektiver,
+    geschlechtsneutraler Grundlage: entweder als Tarif-Referenz (TVöD/AVR mit
+    Entgeltgruppe und Stufenspanne) oder als Haustarif-Band. Stellen referenzieren
+    Bänder statt Freitext — gleiche Tätigkeit heißt damit systembedingt gleiche
+    veröffentlichte Spanne (Spannen-Konsistenz)."""
+    TARIFF_SYSTEMS = [
+        ("TVOED", "TVöD / TV-L"),
+        ("AVR_CARITAS", "AVR Caritas"),
+        ("AVR_DIAKONIE", "AVR Diakonie"),
+        ("HAUSTARIF", "Haustarif / eigenes Band"),
+    ]
+    PERIODS = [("MONTH", "pro Monat"), ("YEAR", "pro Jahr")]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=120)  # z. B. "TVöD-P 7 (Stufe 2–6)"
+    tariffSystem = models.CharField(max_length=30, choices=TARIFF_SYSTEMS, default="HAUSTARIF")
+    minAmount = models.DecimalField(max_digits=9, decimal_places=2)
+    maxAmount = models.DecimalField(max_digits=9, decimal_places=2)
+    period = models.CharField(max_length=10, choices=PERIODS, default="MONTH")
+    # Art. 5 Abs. 1 lit. b: Hinweis auf einschlägige Tarifvertrags-Bestimmungen
+    collectiveAgreement = models.CharField(max_length=255, blank=True, default="")
+    note = models.CharField(max_length=255, blank=True, default="")  # z. B. "zzgl. Schichtzulagen"
+    archived = models.BooleanField(default=False)
+    createdAt = models.DateTimeField(default=timezone.now)
+
+    @property
+    def range_label(self):
+        def fmt(v):
+            return f"{v:,.0f}".replace(",", ".")
+        period = dict(self.PERIODS).get(self.period, self.period)
+        return f"{fmt(self.minAmount)} – {fmt(self.maxAmount)} € {period}"
+
+    def __str__(self):
+        return f"{self.name} ({self.range_label})"
+
+
 class JobPosting(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=255)
@@ -376,6 +415,10 @@ class JobPosting(models.Model):
     jobFamily = models.ForeignKey(JobFamily, on_delete=models.CASCADE, related_name='jobPostings')
     workflowState = models.ForeignKey(WorkflowState, on_delete=models.CASCADE, related_name='jobPostings')
     jobTemplate = models.ForeignKey(JobTemplate, on_delete=models.SET_NULL, blank=True, null=True, related_name='jobPostings')
+    # Entgelttransparenz (EU-RL 2023/970, Art. 5): ohne Entgeltband keine
+    # Veröffentlichung — durchgesetzt in create_job/toggle_job_active
+    # (ats/pay_transparency.py), nicht auf Modellebene (Bestandsdaten/Entwürfe).
+    payBand = models.ForeignKey(PayBand, on_delete=models.PROTECT, blank=True, null=True, related_name='jobPostings')
     # Sichtungs-Gremium fuer hoehere Positionen: User-IDs (als Strings) derer,
     # die VOR einer Einladung abstimmen. Leer = kein Gremium (Normalfall).
     # Regel: absolute Mehrheit DAFUER gibt die Einladung frei (HR-Admin kann

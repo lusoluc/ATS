@@ -222,8 +222,31 @@
                     <span class="badge badge-accent"><i class="fa-solid fa-users" style="margin-right: 6px;"></i> {{ job.department.name }}</span>
                 {% endif %}
                 <span class="badge badge-primary"><i class="fa-solid fa-clock" style="margin-right: 6px;"></i> Vollzeit</span>
+                {% if job.payBand %}
+                <span class="badge badge-accent"><i class="fa-solid fa-euro-sign" style="margin-right: 6px;"></i> {{ job.payBand.range_label }}</span>
+                {% endif %}
             </div>
         </div>
+
+        {% if job.payBand %}
+        <!-- Entgelttransparenz (EU-RL 2023/970, Art. 5): Einstiegsentgelt-Spanne
+             und Tarifhinweis VOR dem Gespräch — direkt in der Anzeige. -->
+        <div class="detail-block">
+            <h2><i class="fa-solid fa-scale-balanced"></i> Vergütung</h2>
+            <p style="color: #d1d5db; font-size: 15px; line-height: 1.8; margin-top: 12px;">
+                <strong>{{ job.payBand.range_label }}</strong> ({{ job.payBand.name }}){% if job.payBand.note %} · {{ job.payBand.note }}{% endif %}
+            </p>
+            {% if job.payBand.collectiveAgreement %}
+            <p style="color: var(--text-muted); font-size: 13px; margin-top: 6px;">
+                Es gilt: {{ job.payBand.collectiveAgreement }}
+            </p>
+            {% endif %}
+            <p style="color: var(--text-muted); font-size: 13px; margin-top: 6px;">
+                Die Spanne beruht auf objektiven, geschlechtsneutralen Kriterien.
+                Ihre Einstufung richtet sich nach Qualifikation und anrechenbarer Erfahrung.
+            </p>
+        </div>
+        {% endif %}
 
         {% if job.description %}
         <div class="detail-block">

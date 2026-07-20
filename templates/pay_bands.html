@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Entgeltbänder · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap">
+  <h1 class="page-title"><i class="fa-solid fa-scale-balanced"></i> Entgeltbänder</h1>
+  <p class="page-lead">Entgelttransparenz (EU-RL 2023/970, Art. 5): Jede veröffentlichte Stelle braucht ein Band.
+     Die Spanne erscheint öffentlich in der Anzeige — tarif-nativ (TVöD/AVR) oder als Haustarif-Band.</p>
+
+  <div class="card">
+    <form method="post" class="form-row" style="margin-bottom: var(--space-4); flex-wrap: wrap; gap: 8px;">
+      {% csrf_token %}
+      <input name="name" class="input" placeholder="Band (z. B. TVöD-P 7, Stufe 2–6)" required style="flex:2; min-width:220px;">
+      <select name="tariffSystem" class="input" style="min-width:170px;">
+        {% for code, label in tariff_systems %}<option value="{{ code }}">{{ label }}</option>{% endfor %}
+      </select>
+      <input name="minAmount" class="input" type="number" step="1" min="0" placeholder="von € *" required style="max-width:110px;">
+      <input name="maxAmount" class="input" type="number" step="1" min="0" placeholder="bis € *" required style="max-width:110px;">
+      <select name="period" class="input" style="min-width:130px;">
+        {% for code, label in periods %}<option value="{{ code }}">{{ label }}</option>{% endfor %}
+      </select>
+      <input name="collectiveAgreement" class="input" placeholder="Tarifvertrag-Hinweis (z. B. TVöD-P, EG P7)" style="flex:2; min-width:220px;">
+      <input name="note" class="input" placeholder="Zusatz (z. B. zzgl. Schichtzulagen)" style="flex:2; min-width:200px;">
+      <button type="submit" class="btn btn-primary">Hinzufügen</button>
+    </form>
+    <table class="data-table">
+      <thead><tr><th>Band</th><th>Tarifwerk</th><th>Spanne</th><th>Tarifhinweis</th><th></th></tr></thead>
+      <tbody>
+      {% for b in bands %}
+        <tr>
+          <td><strong>{{ b.name }}</strong>{% if b.note %}<br><span style="color:var(--text-muted); font-size:12px;">{{ b.note }}</span>{% endif %}</td>
+          <td style="color:var(--text-muted);">{{ b.get_tariffSystem_display }}</td>
+          <td>{{ b.range_label }}</td>
+          <td style="color:var(--text-muted);">{{ b.collectiveAgreement|default:"–" }}</td>
+          <td style="text-align:right;"><form method="post" action="{% url 'ats:archive_pay_band' b.id %}" onsubmit="return confirm('Band archivieren? Bestehende Stellen behalten ihre Zuordnung.');">{% csrf_token %}<button type="submit" class="btn-icon danger" title="Archivieren"><i class="fa-solid fa-box-archive"></i></button></form></td>
+        </tr>
+      {% empty %}<tr><td colspan="5" class="empty-state">Noch keine Entgeltbänder. Ohne Band kann keine Stelle veröffentlicht werden.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

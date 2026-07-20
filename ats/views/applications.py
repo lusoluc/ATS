@@ -127,6 +127,9 @@ def dashboard(request):
     job_families = JobFamily.objects.filter(archived=False)
     contact_persons = ContactPerson.objects.all()
     all_benefits = Benefit.objects.all()
+    # Entgelttransparenz (E1): Entgeltbänder für den Stellen-Editor
+    from ..models import PayBand
+    pay_bands = PayBand.objects.filter(archived=False).order_by('tariffSystem', 'name')
     latest_tpl_ids = {}
     for t in JobTemplate.objects.order_by('-version', '-createdAt'):
         latest_tpl_ids.setdefault(t.title.lower(), t.id)
@@ -196,6 +199,7 @@ def dashboard(request):
         'job_families': job_families,
         'contact_persons': contact_persons,
         'all_benefits': all_benefits,
+        'pay_bands': pay_bands,
         'job_templates': job_templates,
         'ai_learning_samples': ai_learning_samples,
         'honeypot_spam_count': honeypot_spam_count,

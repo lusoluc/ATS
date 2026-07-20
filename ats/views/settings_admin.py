@@ -35,7 +35,7 @@ from .common import campaign_expired
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["save_app_workflow", "save_workflow_state", "save_email_template", "save_system_setting", "screening_questions_view", "archive_screening_question", "categories_view", "archive_category", "locations_view", "archive_location", "contacts_manage", "import_view", "import_template_csv", "source_channels_view"]
+__all__ = ["save_app_workflow", "save_workflow_state", "save_email_template", "save_system_setting", "screening_questions_view", "archive_screening_question", "categories_view", "archive_category", "locations_view", "archive_location", "contacts_manage", "import_view", "import_template_csv", "source_channels_view", "pay_bands_view", "archive_pay_band"]
 
 
 @hr_admin_required
@@ -352,6 +352,49 @@ def archive_category(request, cat_id):
     c.archived = True
     c.save()
     return redirect("ats:categories")
+
+
+# --- E1: Entgeltbänder (Entgelttransparenz, EU-RL 2023/970) -----------------
+@hr_admin_required
+def pay_bands_view(request):
+    from decimal import Decimal, InvalidOperation
+
+    from ..models import PayBand
+    if request.method == "POST":
+        name = (request.POST.get("name") or "").strip()[:120]
+        try:
+            min_amount = Decimal(request.POST.get("minAmount") or "")
+            max_amount = Decimal(request.POST.get("maxAmount") or "")
+        except InvalidOperation:
+            min_amount = max_amount = None
+        if name and min_amount is not None and max_amount is not None \
+                and Decimal(0) <= min_amount <= max_amount:
+            PayBand.objects.create(
+                name=name,
+                tariffSystem=(request.POST.get("tariffSystem") or "HAUSTARIF")[:30],
+                minAmount=min_amount,
+                maxAmount=max_amount,
+                period=(request.POST.get("period") or "MONTH")[:10],
+                collectiveAgreement=(request.POST.get("collectiveAgreement") or "").strip()[:255],
+                note=(request.POST.get("note") or "").strip()[:255],
+            )
+            write_audit("PAY_BAND_CREATED", user=request.user, name=name)
+        return redirect("ats:pay_bands")
+    bands = PayBand.objects.filter(archived=False).order_by("tariffSystem", "name")
+    return render(request, "pay_bands.html",
+                  {"bands": bands,
+                   "tariff_systems": PayBand.TARIFF_SYSTEMS,
+                   "periods": PayBand.PERIODS})
+
+
+@hr_admin_required
+def archive_pay_band(request, band_id):
+    from ..models import PayBand
+    band = get_object_or_404(PayBand, id=band_id)
+    band.archived = True
+    band.save(update_fields=["archived"])
+    write_audit("PAY_BAND_ARCHIVED", user=request.user, name=band.name)
+    return redirect("ats:pay_bands")
 
 
 # --- B14: Standorte ---------------------------------------------------------

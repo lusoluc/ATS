@@ -155,6 +155,10 @@ class ApprovalGateTestCase(TestCase):
                                            requiresApproval=requires)
         self.fam = JobFamily.objects.create(name="JF-" + str(_u.uuid4())[:6])
         self.published = WorkflowState.objects.create(name="published")
+        # Entgelttransparenz-Gate erfuellen — hier geht es um das Freigabe-Gate
+        from ..models import PayBand
+        self.band = PayBand.objects.create(
+            name="Gate-Band", minAmount=3000, maxAmount=3800)
 
     def _create_job(self, title="Stationsleitung OP"):
         rec = make_user("gate-" + title[:6].lower().replace(" ", ""), role="HR-Admin")
@@ -163,6 +167,7 @@ class ApprovalGateTestCase(TestCase):
             "title": title, "description": "Text",
             "facility": str(self.fac.id), "location": str(self.loc.id),
             "job_family": str(self.fam.id), "workflow_state": str(self.published.id),
+            "pay_band": str(self.band.id),
         })
 
     def test_job_for_approval_facility_starts_gated(self):
@@ -1046,6 +1051,9 @@ class RequisitionProcessTestCase(TestCase):
         self.fam = JobFamily.objects.create(name="RQ-Fam")
         self.published = WorkflowState.objects.create(name="published")
         WorkflowState.objects.create(name="draft")
+        from ..models import PayBand
+        self.band = PayBand.objects.create(
+            name="RQ-Band", minAmount=3000, maxAmount=3800)
         if active:
             SystemSetting.objects.create(key="REQUISITION_REQUIRED",
                                          value="1")
@@ -1087,7 +1095,8 @@ class RequisitionProcessTestCase(TestCase):
             "requirements": "", "screening_questions": "[]",
             "facility": str(self.fac.id), "location": str(self.loc.id),
             "job_family": str(self.fam.id),
-            "workflow_state": str(self.published.id)})
+            "workflow_state": str(self.published.id),
+            "pay_band": str(self.band.id)})
         job = JobPosting.objects.get(title="Direkt-Versuch")
         self.assertEqual(job.workflowState.name, "draft")      # blockiert
         # Schnell-Toggle umgeht das Gate nicht
@@ -1150,7 +1159,8 @@ class RequisitionProcessTestCase(TestCase):
             "requirements": "", "screening_questions": "[]",
             "facility": str(self.fac.id), "location": str(self.loc.id),
             "job_family": str(self.fam.id),
-            "workflow_state": str(self.published.id)})
+            "workflow_state": str(self.published.id),
+            "pay_band": str(self.band.id)})
         self.assertEqual(JobPosting.objects.get().workflowState.name,
                          "published")                          # wie bisher
         req = self._request_need()
@@ -1201,6 +1211,9 @@ class RequisitionRoutingTestCase(TestCase):
             mandatory=False)
         self.r_fallback = RequisitionRule.objects.create(
             name="Fallback", chain="Geschäftsführung", mandatory=False)
+        from ..models import PayBand
+        self.band = PayBand.objects.create(
+            name="RT-Band", minAmount=3200, maxAmount=4400)
         self.requester = make_user("rt-tl", role="Hiring-Manager")
 
     def test_resolver_specific_beats_general(self):
@@ -1230,7 +1243,8 @@ class RequisitionRoutingTestCase(TestCase):
             "facility": str(self.fac.id), "department": str(self.dep_it.id),
             "location": str(self.loc.id),
             "job_family": str(self.fam_core.id),
-            "workflow_state": str(self.published.id)})
+            "workflow_state": str(self.published.id),
+            "pay_band": str(self.band.id)})
         job = JobPosting.objects.get(title="Core-Banking-Architekt")
         self.assertEqual(job.workflowState.name, "draft")      # Regel-Pflicht
         # Vertrieb (Regel optional) publiziert frei
@@ -1241,7 +1255,8 @@ class RequisitionRoutingTestCase(TestCase):
             "department": str(self.dep_sales.id),
             "location": str(self.loc.id),
             "job_family": str(self.fam_admin.id),
-            "workflow_state": str(self.published.id)})
+            "workflow_state": str(self.published.id),
+            "pay_band": str(self.band.id)})
         self.assertEqual(JobPosting.objects.get(
             title="Vertriebsassistenz").workflowState.name, "published")
 

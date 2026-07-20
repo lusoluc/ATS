@@ -33,6 +33,6 @@ django_settings_module = "securats.settings"
 # Bereits voll typisierte Kernmodule: hier sind Annotationen Pflicht.
 # Neue typisierte Module in diese Liste aufnehmen.
 [[tool.mypy.overrides]]
-module = ["ats.audit"]
+module = ["ats.audit", "ats.pay_transparency"]
 disallow_untyped_defs = true
 check_untyped_defs = true

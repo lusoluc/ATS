@@ -131,6 +131,13 @@ from .test_misc import (
     InlineFormErrorsTestCase,
     SettingsAdminCoverageTestCase,
 )
+from .test_pay_transparency import (
+    GuardrailPayTransparencyTestCase,
+    PayBandAdminTestCase,
+    PayBandModelTestCase,
+    PayPublicDisplayTestCase,
+    PayPublishGateTestCase,
+)
 from .test_portal import (
     ApplicationConfirmationMailTestCase,
     CandidateFlowWP1TestCase,

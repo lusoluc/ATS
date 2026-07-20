@@ -319,6 +319,18 @@ MODALS & OVERLAYS
                     </div>
                 </div>
 
+                <div class="form-group">
+                    <!-- Entgelttransparenz (EU-RL 2023/970, Art. 5): ohne Band keine Veröffentlichung -->
+                    <label class="form-label" for="job-pay-band">Entgeltband (Pflicht für Veröffentlichung)</label>
+                    <select name="pay_band" id="job-pay-band" class="filter-select">
+                        <option value="">-- Noch kein Band gewählt (Stelle bleibt Entwurf) --</option>
+                        {% for pb in pay_bands %}
+                            <option value="{{ pb.id }}">{{ pb.name }} · {{ pb.range_label }}</option>
+                        {% endfor %}
+                    </select>
+                    <p style="font-size:11px; color: var(--text-muted); margin-top:4px;">Die Spanne erscheint öffentlich in der Anzeige (Entgelttransparenz). Bänder pflegt HR-Admin unter „Entgeltbänder".</p>
+                </div>
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     <div class="form-group">
                         <label class="form-label" for="job-contact">Ansprechpartner</label>

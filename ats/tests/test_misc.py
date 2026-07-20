@@ -290,13 +290,17 @@ class EditRoundTripPreservationTestCase(TestCase):
         b1 = Benefit.objects.create(name="Jobrad-" + str(_u.uuid4())[:4])
         b2 = Benefit.objects.create(name="Kita-" + str(_u.uuid4())[:4])
         panel_user = make_user("rtpanel", role="Hiring-Manager")
+        from ..models import PayBand
+        band = PayBand.objects.create(name="RT-Band", minAmount=3100,
+                                      maxAmount=3900)
         job = JobPosting.objects.create(
             title="Pflegefachkraft Nacht", organization=org, facility=fac,
             department=dept, location=loc, jobFamily=fam, workflowState=wf,
             contactPerson=cp, description="Beschreibung bleibt.",
             tasksJson='["Grundpflege"]', requirementsJson='["Examen"]',
             screeningQuestionsJson='[{"id":"q1","question":"Examen?","type":"YES_NO","isMandatory":true}]',
-            panelUserIdsJson=_json.dumps([str(panel_user.id)]))
+            panelUserIdsJson=_json.dumps([str(panel_user.id)]),
+            payBand=band)
         job.benefits.set([b1, b2])
         before = self._snapshot(job)
         self.client.force_login(make_user("rtrec", role="Recruiter"))
@@ -310,6 +314,7 @@ class EditRoundTripPreservationTestCase(TestCase):
             "location": str(loc.id), "job_family": str(fam.id),
             "contact_person": str(cp.id), "job_template": "",
             "workflow_state": str(wf.id),
+            "pay_band": str(band.id),
             "benefits": [str(b1.id), str(b2.id)],
             "panel_members_present": "1",
             "panel_members": [str(panel_user.id)],

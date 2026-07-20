@@ -201,9 +201,13 @@ class MasterDataTestCase(TestCase):
                                                  email="pw@x.de", phone="030-1")
         self.cp_b = ContactPerson.objects.create(firstName="Tobias", lastName="Klein",
                                                  email="tk@x.de")
+        from ..models import PayBand
+        band = PayBand.objects.create(name="MD-Band", minAmount=3000,
+                                      maxAmount=3800)
         self.jobs = [JobPosting.objects.create(
             title=f"Stelle {i}", organization=org, facility=self.fac, location=loc,
-            jobFamily=fam, workflowState=self.published, contactPerson=self.cp_a)
+            jobFamily=fam, workflowState=self.published, contactPerson=self.cp_a,
+            payBand=band)
             for i in range(3)]
 
     def test_central_edit_reflects_on_job_detail(self):

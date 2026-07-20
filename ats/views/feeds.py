@@ -68,7 +68,7 @@ def stepstone_feed(request):
 @feed_token_required
 def hr_ba_xml_feed(request):
     """Generates the official HR-BA-XML feed (Bundesagentur für Arbeit) for automatic syndication."""
-    jobs = JobPosting.objects.filter(workflowState__name="published").select_related('location', 'facility', 'organization')
+    jobs = JobPosting.objects.filter(workflowState__name="published").select_related('location', 'facility', 'organization', 'payBand')
 
     xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n<ba_stellenangebote>\n'
     for job in jobs:
@@ -80,6 +80,15 @@ def hr_ba_xml_feed(request):
         xml_content += f"      <plz>{job.location.postalCode or ''}</plz>\n"
         xml_content += f"      <strasse><![CDATA[{job.location.address or ''}]]></strasse>\n"
         xml_content += "    </arbeitsort>\n"
+        if job.payBand:
+            # Entgelttransparenz: Gehaltsspanne auch im Syndizierungs-Feed
+            # (analog SalaryRange im HR-BA-XML-Schema)
+            xml_content += "    <verguetung>\n"
+            xml_content += f"      <von>{job.payBand.minAmount}</von>\n"
+            xml_content += f"      <bis>{job.payBand.maxAmount}</bis>\n"
+            xml_content += f"      <zeitraum>{job.payBand.period}</zeitraum>\n"
+            xml_content += f"      <tarif><![CDATA[{job.payBand.collectiveAgreement or job.payBand.name}]]></tarif>\n"
+            xml_content += "    </verguetung>\n"
         xml_content += f"    <veroeffentlichungsdatum>{job.createdAt.strftime('%Y-%m-%d')}</veroeffentlichungsdatum>\n"
         xml_content += "  </stellenangebot>\n"
     xml_content += "</ba_stellenangebote>"

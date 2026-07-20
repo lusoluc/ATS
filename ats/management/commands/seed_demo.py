@@ -160,12 +160,31 @@ class Command(BaseCommand):
         draft, _ = WorkflowState.objects.get_or_create(
             name="draft", defaults={"description": "Deaktiviert / Entwurf"})
 
+        # Entgelttransparenz (E1): tarif-native Entgeltbänder — jede
+        # veröffentlichte Demo-Stelle traegt eine oeffentliche Spanne.
+        from ats.models import PayBand
+        band_p7, _ = PayBand.objects.get_or_create(
+            name="TVöD-P 7 (Stufe 2–6)", defaults=dict(
+                tariffSystem="TVOED", minAmount=3304, maxAmount=4106,
+                period="MONTH", collectiveAgreement="TVöD-P, Entgeltgruppe P7",
+                note="zzgl. Schichtzulagen und Jahressonderzahlung"))
+        band_p5, _ = PayBand.objects.get_or_create(
+            name="TVöD-P 5 (Stufe 2–6)", defaults=dict(
+                tariffSystem="TVOED", minAmount=2932, maxAmount=3507,
+                period="MONTH", collectiveAgreement="TVöD-P, Entgeltgruppe P5",
+                note="zzgl. Nachtzuschläge"))
+        band_e9, _ = PayBand.objects.get_or_create(
+            name="TVöD-E 9a (Verwaltung/IT)", defaults=dict(
+                tariffSystem="TVOED", minAmount=3448, maxAmount=4703,
+                period="MONTH", collectiveAgreement="TVöD-VKA, Entgeltgruppe 9a"))
+
         def job(title, fac, loc, fam, dep=None, cp=None, easy=None, screening=None,
-                state=published, days_old=30):
+                state=published, days_old=30, band=None):
             j = JobPosting.objects.create(
                 title=title, organization=org, facility=fac, location=loc,
                 jobFamily=fam, department=dep, contactPerson=cp,
                 workflowState=state,
+                payBand=band or band_p7,
                 description=(f"{title} in {loc.city}: unbefristet, faire Vergütung "
                              "nach Tarif, strukturierte Einarbeitung."),
                 descriptionEasy=easy or "",
@@ -184,13 +203,13 @@ class Command(BaseCommand):
                              "Haben Sie ein Examen als Pflegefachkraft?",
                              "isMandatory": True, "expectedAnswer": "Ja"}])
         j2 = job("Pflegehilfskraft Nachtdienst (m/w/d)", fac_pflege, lg,
-                 fam_pflege, cp=cp_tk, days_old=60)
+                 fam_pflege, cp=cp_tk, days_old=60, band=band_p5)
         j3 = job("Medizinische Fachangestellte (m/w/d)", fac_klinik, hh,
-                 fam_verwaltung, cp=cp_pw, days_old=25)
+                 fam_verwaltung, cp=cp_pw, days_old=25, band=band_e9)
         j4 = job("IT-Systemadministrator (m/w/d)", fac_klinik, be, fam_it,
-                 dep=dep_it, days_old=80)
+                 dep=dep_it, days_old=80, band=band_e9)
         job("Empfang & Patientenaufnahme (m/w/d)", fac_klinik, hh,
-            fam_verwaltung, days_old=10)
+            fam_verwaltung, days_old=10, band=band_e9)
         # Anzeige im Freigabe-Gate (Approvals-Postfach demonstrierbar)
         j_gate = job("Stationsleitung Geriatrie (m/w/d)", fac_pflege, lg,
                      fam_pflege, state=draft, days_old=3)

@@ -16,6 +16,8 @@ und ihren automatisierten Tests. Legende Status: ✅ umgesetzt · ◐ teilweise 
 | **BFSG / WCAG** – Barrierefreiheit | A11y-Panel (Legasthenie-Schrift, Kontrast, Fokus, Lese-Lineal, Vorlesen), Leichte Sprache | `templates/base.html`, `job_detail.html` | manuell; WCAG-Audit (WP7) | ◐ |
 | **KRITIS** – Betriebssicherheit / Monitoring | AI-Health-Endpoint, Diagnose-Command, abgesicherte Feeds (Token) | `healthz_ai`, `ai_doctor`, `feed_token_required` | `HealthzAiTestCase`, `FeedTokenTestCase` | ✅ |
 | **On-Premise / Souveränität** | Vollständig lokaler Betrieb, lokale LLM (Ollama), keine Cloud-Abhängigkeit | Docker-Compose (nur Django), `get_ollama_url` | NORTHSTAR §1 | ✅ |
+| **EU-RL 2023/970 (Entgelttransparenz), Art. 5 Abs. 1** – Einstiegsentgelt/-spanne vor dem Gespräch | Tarif-native Entgeltbänder (TVöD/AVR/Haustarif); Publish-Gate: ohne Band keine Veröffentlichung (Editor UND Schnell-Toggle); Spanne + Tarifhinweis öffentlich im Stellendetail; Spanne im BA-Feed | `models.PayBand`, `pay_transparency.pay_blocked_reason`, `views/jobs.py`, `job_detail.html`, `feeds.py` | `PayPublishGateTestCase`, `PayPublicDisplayTestCase`, `GuardrailPayTransparencyTestCase` | ✅ (E1) |
+| **EU-RL 2023/970, Art. 5 Abs. 2** – Verbot der Gehaltshistorie-Frage | Frageverbots-Wächter für Screening-Fragen/Vorlagen | geplant (Phase E2) | – | ❌ (E2 geplant) |
 
 ## Offene Punkte (dokumentiert, terminiert)
 

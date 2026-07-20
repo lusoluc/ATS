@@ -78,6 +78,52 @@ def salary_history_violation(text: str) -> str | None:
     return None
 
 
+def transparency_overview() -> dict:
+    """Kennzahlen für die Analytics-Seite (Phase E4).
+
+    - coverage: veröffentlichte Stellen mit/ohne Entgeltband. Ohne Band
+      sollte durch das Publish-Gate nichts mehr online sein; Altbestand
+      aus der Zeit vor E1 wird hier sichtbar statt vergessen.
+    - unevaluated_bands: aktive Bänder ohne vollständige Art.-4-Bewertung.
+    - family_conflicts: Jobfamilien, deren veröffentlichte Stellen mehr als
+      ein Band nutzen. Das ist eine AMPEL, kein Fehler — unterschiedliche
+      Qualifikationsstufen in einer Familie sind legitim. Aber genau diese
+      Fälle muss ein Träger begründen können (Art. 4), darum stehen sie hier.
+    """
+    from .models import JobPosting, PayBand
+
+    published = JobPosting.objects.filter(workflowState__name="published")
+    with_band = published.filter(payBand__isnull=False).count()
+    total = published.count()
+
+    unevaluated = [b for b in PayBand.objects.filter(archived=False)
+                   if not b.has_evaluation]
+
+    by_family: dict[str, dict] = {}
+    for job in (published.filter(payBand__isnull=False)
+                .select_related("jobFamily", "payBand")):
+        band = job.payBand
+        if band is None:  # per Filter ausgeschlossen — nur für die Typprüfung
+            continue
+        fam = by_family.setdefault(
+            job.jobFamily.name, {"family": job.jobFamily.name, "bands": {}})
+        fam["bands"].setdefault(band.name, []).append(job.title)
+    conflicts = [
+        {"family": f["family"],
+         "bands": [{"band": name, "jobs": jobs}
+                   for name, jobs in sorted(f["bands"].items())]}
+        for f in by_family.values() if len(f["bands"]) > 1
+    ]
+
+    return {
+        "published": total,
+        "with_band": with_band,
+        "without_band": total - with_band,
+        "unevaluated_bands": [b.name for b in unevaluated],
+        "family_conflicts": sorted(conflicts, key=lambda c: c["family"]),
+    }
+
+
 def strip_salary_history_questions(job: "JobPosting") -> list[str]:
     """Entfernt Gehaltshistorie-Fragen aus job.screeningQuestionsJson.
 

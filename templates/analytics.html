@@ -93,6 +93,31 @@
     </div>
   </div>
 
+  <!-- E4: Entgelttransparenz-Cockpit -->
+  <div class="card">
+    <h2 style="margin:0 0 var(--space-1); font-size:18px;"><i class="fa-solid fa-euro-sign" style="color:var(--accent-light);"></i> Entgelttransparenz</h2>
+    <p style="color:var(--text-muted); font-size:12px; margin:0 0 var(--space-3);">Gleiche Jobfamilie mit mehreren Bändern ist kein Fehler — aber ein Fall, den Sie begründen können müssen (Art. 4). Genau die stehen hier.</p>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:var(--space-3);">
+      <div><div style="font-size:24px; font-weight:700;">{{ pay_overview.with_band }}/{{ pay_overview.published }}</div><div style="color:var(--text-muted); font-size:12px;">veröffentlichte Stellen mit Entgeltband{% if pay_overview.without_band %} · <span style="color:var(--danger-light);">{{ pay_overview.without_band }} Altbestand ohne Band</span>{% endif %}</div></div>
+      <div><div style="font-size:24px; font-weight:700;">{{ pay_overview.unevaluated_bands|length }}</div><div style="color:var(--text-muted); font-size:12px;">Bänder ohne Art.-4-Bewertung{% if pay_overview.unevaluated_bands %}: {{ pay_overview.unevaluated_bands|join:", " }}{% endif %}</div></div>
+      <div><div style="font-size:24px; font-weight:700;">{{ pay_overview.family_conflicts|length }}</div><div style="color:var(--text-muted); font-size:12px;">Jobfamilien mit mehreren Bändern</div></div>
+    </div>
+    {% if pay_overview.family_conflicts %}
+    <table class="data-table" style="margin-top: var(--space-3);">
+      <thead><tr><th>Jobfamilie</th><th>Band</th><th>Stellen</th></tr></thead>
+      <tbody>
+      {% for c in pay_overview.family_conflicts %}{% for b in c.bands %}
+        <tr>
+          <td>{% if forloop.first %}<strong>{{ c.family }}</strong>{% endif %}</td>
+          <td>{{ b.band }}</td>
+          <td style="color:var(--text-muted);">{{ b.jobs|join:", " }}</td>
+        </tr>
+      {% endfor %}{% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+
   <div class="card" style="margin-bottom: var(--space-4);">
     <h2 style="margin:0 0 var(--space-1); font-size:18px;"><i class="fa-solid fa-calendar-check" style="color:var(--accent-light);"></i> Termine &amp; Selbstbuchung</h2>
     <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--space-3);">Letzte {{ appointments.days }} Tage · nur Aggregate im eigenen Zugriffsbereich, keine Einzelfälle.</p>

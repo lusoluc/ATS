@@ -286,6 +286,61 @@ class PayBandEvaluationTestCase(TestCase):
         self.assertContains(page, "✓ bewertet")
 
 
+class TransparencyOverviewTestCase(TestCase):
+    """E4: Kennzahlen — Abdeckung, unbewertete Bänder, Familien-Ampel."""
+
+    def setUp(self):
+        self.org, self.fac, self.loc, self.fam, self.published, self.band = _world()
+
+    def _job(self, title, band, fam=None):
+        return JobPosting.objects.create(
+            title=title, organization=self.org, facility=self.fac,
+            location=self.loc, jobFamily=fam or self.fam,
+            workflowState=self.published, payBand=band)
+
+    def test_counts_and_conflicts(self):
+        from ..pay_transparency import transparency_overview
+        other_band = PayBand.objects.create(name="P8", minAmount=3490,
+                                            maxAmount=4410)
+        other_fam = JobFamily.objects.create(name="PT-Verwaltung")
+        self._job("Stelle A", self.band)
+        self._job("Stelle B", other_band)                       # gleiche Familie, anderes Band
+        self._job("Stelle C", self.band, fam=other_fam)         # eigene Familie, ein Band
+        # Altbestand ohne Band (am Gate vorbei per ORM, wie Bestandsdaten)
+        JobPosting.objects.create(
+            title="Altbestand", organization=self.org, facility=self.fac,
+            location=self.loc, jobFamily=other_fam,
+            workflowState=self.published)
+        o = transparency_overview()
+        self.assertEqual(o["published"], 4)
+        self.assertEqual(o["with_band"], 3)
+        self.assertEqual(o["without_band"], 1)
+        self.assertEqual(len(o["family_conflicts"]), 1)
+        conflict = o["family_conflicts"][0]
+        self.assertEqual(conflict["family"], "PT-Pflege")
+        self.assertEqual([b["band"] for b in conflict["bands"]],
+                         ["P8", "TVöD-P 7 (Stufe 2–6)"])
+        # beide Bänder unbewertet (keine Art.-4-Kriterien gesetzt)
+        self.assertIn("P8", o["unevaluated_bands"])
+
+    def test_evaluated_band_not_listed(self):
+        from ..pay_transparency import transparency_overview
+        self.band.criteriaSkills = "Examen"
+        self.band.criteriaEffort = "Schicht"
+        self.band.criteriaResponsibility = "Medikamente"
+        self.band.criteriaWorkingConditions = "Station"
+        self.band.save()
+        self.assertNotIn(self.band.name,
+                         transparency_overview()["unevaluated_bands"])
+
+    def test_analytics_page_shows_cockpit(self):
+        self._job("Stelle A", self.band)
+        self.client.force_login(make_user("e4-admin", role="HR-Admin"))
+        page = self.client.get(reverse("ats:analytics"))
+        self.assertContains(page, "Entgelttransparenz")
+        self.assertContains(page, "veröffentlichte Stellen mit Entgeltband")
+
+
 class SalaryHistoryDetectionTestCase(TestCase):
     """E2/Art. 5 Abs. 2: Erkennung — Historie verboten, Vorstellung erlaubt."""
 

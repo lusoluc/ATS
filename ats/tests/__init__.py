@@ -141,6 +141,7 @@ from .test_pay_transparency import (
     PayRangeAuditAnchorTestCase,
     SalaryHistoryDetectionTestCase,
     SalaryHistoryEnforcementTestCase,
+    TransparencyOverviewTestCase,
 )
 from .test_portal import (
     ApplicationConfirmationMailTestCase,

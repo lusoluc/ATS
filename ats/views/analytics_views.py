@@ -139,7 +139,10 @@ def analytics_view(request):
         if _fac_ids:
             _req_qs = _req_qs.filter(facility_id__in=_fac_ids)
     stage_rows = requisition_stage_stats(_req_qs)
+    from ..pay_transparency import transparency_overview
+    pay_overview = transparency_overview()
     return render(request, 'analytics.html', {
+        'pay_overview': pay_overview,
         'stage_rows': stage_rows,
         'total': total,
         'landing_rows': landing_rows,

@@ -33,12 +33,14 @@
     h1{font-size:22px;margin:0 0 4px;} .muted{color:var(--text-muted);font-size:14px;}
     .row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border-color);flex-wrap:wrap;}
     .badge{padding:4px 10px;border-radius:999px;font-size:12px;background:var(--surface-hover);color:var(--text-muted);}
-    .b-INVITED{background:rgba(20,184,166,.16);color:#0d9488;}
-    .b-HIRED{background:rgba(34,197,94,.16);color:#16a34a;}
-    .b-REJECTED{background:rgba(148,163,184,.18);color:#64748b;}
-    .b-IN_REVIEW{background:rgba(245,158,11,.16);color:#b45309;}
-    .b-NEW{background:rgba(139,92,246,.14);color:var(--primary);}
-    .b-WITHDRAWN{background:rgba(148,163,184,.18);color:#64748b;}
+    /* Solide Chip-Farben: weiß auf dunklem Grund liest sich in beiden
+       Themes (Dark-Default und helles Traeger-Branding). */
+    .b-INVITED{background:#0f766e;color:#fff;}
+    .b-HIRED{background:#15803d;color:#fff;}
+    .b-REJECTED{background:#475569;color:#fff;}
+    .b-IN_REVIEW{background:#b45309;color:#fff;}
+    .b-NEW{background:#6d28d9;color:#fff;}
+    .b-WITHDRAWN{background:#475569;color:#fff;}
     button{background:none;border:1px solid var(--danger);color:var(--danger);border-radius:10px;
            padding:10px 14px;min-height:44px;cursor:pointer;font-size:13px;}
     input[type=text],input[type=email],input[type=tel],textarea,select{
@@ -188,10 +190,10 @@
           <div style="border:1px solid #334155; border-radius:10px; padding:12px; margin-top:8px;">
             {% for m in r.messages %}
             <div style="margin-bottom:8px; display:flex; {% if m.direction == 'INBOUND' %}justify-content:flex-end;{% endif %}">
-              <div style="max-width:85%; font-size:13px; padding:8px 10px; border-radius:10px; white-space:pre-wrap;
-                {% if m.direction == 'INBOUND' %}background:#1d283f; border:1px solid #334155;
-                {% else %}background:#101a30; border:1px solid #26324d;{% endif %}">
-                <div style="color:#7c8aa5; font-size:11px; margin-bottom:2px;">{% if m.direction == 'INBOUND' %}Sie{% else %}Recruiting-Team{% endif %} · {{ m.createdAt|date:"d.m.Y H:i" }}</div>
+              <div style="max-width:85%; font-size:13px; padding:8px 10px; border-radius:10px; white-space:pre-wrap; color:var(--text-main);
+                {% if m.direction == 'INBOUND' %}background:var(--surface-hover); border:1px solid var(--border-color);
+                {% else %}background:var(--surface-color); border:1px solid var(--border-color);{% endif %}">
+                <div style="color:var(--text-muted); font-size:11px; margin-bottom:2px;">{% if m.direction == 'INBOUND' %}Sie{% else %}Recruiting-Team{% endif %} · {{ m.createdAt|date:"d.m.Y H:i" }}</div>
                 {{ m.content }}
               </div>
             </div>

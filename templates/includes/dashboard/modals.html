@@ -387,7 +387,7 @@ MODALS & OVERLAYS
                     <label class="form-label" for="job-state">Workflow-Veröffentlichungsstatus</label>
                     <select name="workflow_state" id="job-state" class="filter-select">
                         {% for state in all_workflows %}
-                            <option value="{{ state.id }}" {% if state.name == 'published' %}selected{% endif %}>{{ state.name }} ({{ state.description }})</option>
+                            <option value="{{ state.id }}" {% if state.name == 'published' %}selected{% endif %}>{{ state.description|default:state.name }}</option>
                         {% endfor %}
                     </select>
                 </div>

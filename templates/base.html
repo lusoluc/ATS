@@ -163,21 +163,16 @@
             font-family: 'Outfit', sans-serif;
             font-size: 24px;
             font-weight: 800;
-            color: #fff;
+            color: var(--text-main);
             text-decoration: none;
             display: flex;
             align-items: center;
             gap: 10px;
-            background: linear-gradient(135deg, #fff 0%, var(--primary-light) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
         }
 
         .logo i {
             font-size: 26px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: var(--primary-light);
         }
 
         .nav-links {
@@ -198,8 +193,8 @@
         }
 
         .nav-item a:hover, .nav-item.active a {
-            color: #fff;
-            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            background: rgba(128, 128, 160, 0.12);
         }
 
         .btn-cta {
@@ -232,7 +227,8 @@
         }
 
         .btn-search {
-            background: var(--accent);
+            /* dunkleres Teal: weiße Schrift erreicht damit AA-Kontrast */
+            background: #0f766e;
             color: #fff !important;
             border: none;
             padding: 8px 16px;
@@ -331,7 +327,7 @@
         footer {
             margin-top: auto;
             border-top: 1px solid var(--glass-border);
-            background: rgba(7, 8, 16, 0.8);
+            background: rgba(15, 23, 42, 0.85);
             padding: 40px 24px 20px;
         }
 
@@ -354,9 +350,7 @@
             font-family: 'Outfit', sans-serif;
             font-weight: 700;
             font-size: 18px;
-            background: linear-gradient(135deg, #fff 0%, var(--primary-light) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: var(--text-main);
         }
 
         .footer-links {
@@ -531,12 +525,15 @@
         }
         
         /* Sliding Inclusion Panel Overlay */
+        /* Das Panel bleibt in beiden Themes dunkel (Navy) — deshalb tragen
+           ALLE Texte darin harte helle Farben statt der Theme-Token, die im
+           hellen Träger-Branding dunkel würden. */
         .inclusion-panel {
             position: fixed;
             bottom: 100px;
             right: 30px;
             width: 320px;
-            background: rgba(11, 13, 25, 0.95);
+            background: rgba(17, 26, 46, 0.97);
             border: 1px solid var(--glass-border);
             border-radius: var(--border-radius-lg);
             backdrop-filter: blur(20px);
@@ -592,7 +589,7 @@
         }
         .inclusion-option-desc {
             font-size: 11px;
-            color: var(--text-muted);
+            color: #a6aebc;
         }
         
         /* Toggle Switch styling */
@@ -669,8 +666,8 @@
             background-position: right 14px center;
             background-size: 16px;
             padding-right: 40px !important;
-            background-color: rgba(11, 13, 25, 0.8) !important;
-            color: #fff !important;
+            background-color: var(--surface-color) !important;
+            color: var(--text-main) !important;
             border: 1px solid var(--glass-border) !important;
             border-radius: var(--border-radius-sm) !important;
             transition: var(--transition-smooth) !important;
@@ -685,8 +682,8 @@
 
         /* Customize select option styling */
         select option {
-            background-color: #171b38;
-            color: #fff;
+            background-color: var(--surface-color);
+            color: var(--text-main);
             padding: 10px;
         }
         /* ============================================================
@@ -748,6 +745,9 @@
             background: var(--primary); color: #fff; padding: 10px 16px;
             border-radius: 0 0 8px 0; font-weight: 600; }
         .skip-link:focus { left: 0; }
+        /* Ungestylte Links erben sonst Browser-Blau — auf dunklem Grund unlesbar */
+        a:not([class]) { color: var(--primary-light); }
+
         /* Nur für Screenreader (z. B. aria-live-Regionen, Tastatur-Hinweise) */
         .sr-only { position: absolute; width: 1px; height: 1px; padding: 0;
             margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0);
@@ -921,7 +921,7 @@
             <span class="inclusion-panel-title">
                 <i class="fa-solid fa-sliders"></i> Barrierefreiheit (BFSG)
             </span>
-            <button onclick="toggleInclusionPanel()" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">
+            <button onclick="toggleInclusionPanel()" style="background:none; border:none; color:#a6aebc; cursor:pointer; font-size:16px;">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
@@ -981,7 +981,7 @@
                 <span class="inclusion-option-desc">Liest markierten Text vor – oder den Seiteninhalt.</span>
             </div>
             <button type="button" onclick="speakContent()" aria-label="Text vorlesen"
-                    style="background:none;border:1px solid var(--border-color);color:var(--text-main);border-radius:var(--border-radius-sm);padding:8px 10px;cursor:pointer;">
+                    style="background:none;border:1px solid #4b5563;color:#e5e7eb;border-radius:var(--border-radius-sm);padding:8px 10px;cursor:pointer;">
                 <i class="fa-solid fa-volume-high"></i>
             </button>
         </div>

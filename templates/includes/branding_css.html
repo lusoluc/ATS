@@ -75,10 +75,9 @@
     border-bottom-color: var(--border-color);
   }
   .logo, .footer-logo {
-    -webkit-text-fill-color: initial !important;
-    background: none !important;
     color: var(--primary) !important;
   }
+  a:not([class]) { color: var(--primary); }
   footer {
     background: #ffffff;
   }
@@ -91,11 +90,9 @@
     color: var(--text-muted) !important;
   }
 
-  /* Hero Section Title */
+  /* Hero Section Title — solide Farbe, keine Verläufe in Schrift */
   .hero-content h1 {
-    background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%) !important;
-    -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
+    color: var(--text-main) !important;
   }
 
   /* Tech Cards & Cards in Light Mode */

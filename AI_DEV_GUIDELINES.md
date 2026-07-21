@@ -9,10 +9,9 @@ stillgelegter Architektur.
 > **Frühere Version dieses Dokuments beschrieb Next.js + Prisma als
 > kanonischen Stack.** Das ist überholt. Die Kanon-Entscheidung (siehe
 > `NORTHSTAR.md` Abschnitt 6) fiel zugunsten von **Django** – Next.js/Prisma
-> und die Express-Ebene liegen vollständig in `legacy/` und werden **nicht
-> mehr ausgeliefert**. Next.js-, Prisma- oder Express-Code in `legacy/` ist
-> Referenzmaterial für den Feature-Abgleich (`FEATURE_BACKLOG.md`), keine
-> Vorlage zum Weiterbauen.
+> und die Express-Ebene wurden entfernt und liegen nur noch in der
+> Git-History. Dieser Alt-Code ist Referenzmaterial für den Feature-Abgleich
+> (`FEATURE_BACKLOG.md`), keine Vorlage zum Weiterbauen.
 
 ---
 

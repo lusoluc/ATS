@@ -17,8 +17,8 @@ SecurATS ist auf **einen** Stack konsolidiert:
 - **Lokale KI:** Ollama / Gemma (Zero-Data-Transfer)
 - **Betrieb:** Docker + docker-compose
 
-Die früheren Parallel-Stacks **Next.js + Prisma** und **Express** wurden nach
-`legacy/` ausgelagert (verlustfrei, Git-History erhalten) – siehe `legacy/README.md`.
+Die früheren Parallel-Stacks **Next.js + Prisma** und **Express** wurden entfernt;
+der Code liegt vollständig in der Git-History (Stand vor der Stack-Konsolidierung).
 Hintergrund und Zielbild stehen in **`NORTHSTAR.md`**, die vollständige
 Bestandsaufnahme in **`PROJECT_ANALYSIS.md`**.
 
@@ -29,7 +29,6 @@ securats/       Django-Projekt (Settings, URLs)
 templates/      Serverseitige Templates (Career-Portal + Recruiter-Dashboard)
 static/         Statische Assets
 infrastructure/ Deploy-/Backup-/Restore-Skripte
-legacy/         Stillgelegte Stacks (Next.js-Frontend, Express-API) – nur Referenz
 NORTHSTAR.md    Vision, Personas, Funktionsumfang, Roadmap
 PROJECT_ANALYSIS.md  Analyse & Befunde
 ```
@@ -71,7 +70,7 @@ zugänglich.
 - **Compliance:** DSGVO-Auto-Deletion (Cronjob), AGG-Checker, air-gap-fähig, PII-Verschlüsselung at-rest.
 - **SAP-Integration:** SuccessFactors „Candidate-to-Employee"-Bridge mit visuellem Field-Mapper.
 - **BA-XML-Export:** automatische Vakanzen-Einspeisung an die Arbeitsagentur.
-- **CMS:** editierbare Seiteninhalte. *(Der frühere Puck-Drag-&-Drop-Builder war Teil des Next.js-Frontends und liegt nun in `legacy/`; ein Nachbau in Django ist im Roadmap-Backlog.)*
+- **CMS:** editierbare Seiteninhalte. *(Der frühere Puck-Drag-&-Drop-Builder war Teil des Next.js-Frontends und liegt in der Git-History; ein Nachbau in Django ist im Roadmap-Backlog.)*
 
 ## Automatische Löschung (Retention)
 DSGVO-konforme Löschung/Anonymisierung läuft über das Management-Command:

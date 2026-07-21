@@ -1,8 +1,8 @@
 # SecurATS – Feature-Gap-Backlog (Next.js → Django)
 
 > Entstanden bei der Stack-Konsolidierung (NORTHSTAR.md, Phase 1). Erfasst, was der
-> stillgelegte Next.js-Stack (`legacy/frontend/`) konnte und in Django noch nach-
-> zubauen ist.
+> stillgelegte Next.js-Stack (heute nur noch in der Git-History) konnte und in
+> Django noch nachzubauen ist.
 
 ## Status – Backlog vollständig abgearbeitet
 **Alle 18 Punkte umgesetzt & getestet.** (Dieser Ursprungs-Backlog stammt aus der
@@ -115,5 +115,5 @@ Spekulation:
 Demo-Hosting, produktives SMTP, und – das wichtigste V0-Gate – **10 Discovery-Gespräche**
 mit Trägern aus Pflege/Sozialwirtschaft, bevor weitere große Wetten gebaut werden.
 
-> Referenz für den Nachbau ist jeweils der Code in `legacy/frontend/src/app/api/...`
-> bzw. `.../app/...`. Die Django-Modelle sind die Datenautorität.
+> Referenz für den Nachbau ist der Alt-Code in der Git-History (früherer Pfad
+> `src/app/api/...` bzw. `.../app/...`). Die Django-Modelle sind die Datenautorität.

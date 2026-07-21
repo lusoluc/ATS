@@ -63,7 +63,7 @@ die Extreme **Marek** (ultrakurz, mobil, Leichte Sprache) und **Dr. Vossberg**
 - Matrix je Seite gegen zugeordnete UCs ausfüllen (Status + Notiz).
 - Bewerbungsformular: **Multi-Datei-Upload** (UC-KV-03/04), **Foto-Upload statt PDF** (UC-MN-05), Minimal-Pflichtfelder + kurzer mobiler Flow (UC-MN-03/04/06), klare Schrittführung.
 - **Leichte-Sprache-Umschaltung** auf der Stellenanzeige (UC-MN-02, UC-LK-05).
-- **Barrierefreiheits-Panel** aus `legacy/frontend` nach Django portieren (UC-LK-01..04).
+- **Barrierefreiheits-Panel** nach Django portieren (UC-LK-01..04) — erledigt, siehe `templates/base.html` (Inklusions-Panel).
 - Magic-Link-Portal: Prozess-Timeline/nächste Schritte (UC-KV-09), Rückfrage-Antwort (UC-LK-11), Terminwahl (Teil-Roadmap).
 - **Kontaktperson** auf Stellendetail sichtbar (UC-KV-07).
 **DoD:** alle F-UCs ✅/◐ mit Notiz; mobil getestet; BFSG-Grundprinzipien erfüllt.

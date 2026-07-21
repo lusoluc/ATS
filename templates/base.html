@@ -177,7 +177,7 @@
 
         .nav-links {
             display: flex;
-            gap: 28px;
+            gap: 20px;
             align-items: center;
             list-style: none;
         }
@@ -190,6 +190,7 @@
             transition: var(--transition-smooth);
             padding: 8px 12px;
             border-radius: var(--border-radius-sm);
+            white-space: nowrap;   /* Labels wie "SAP Integration" nicht umbrechen */
         }
 
         .nav-item a:hover, .nav-item.active a {
@@ -198,6 +199,11 @@
         }
 
         .btn-cta {
+            /* Pill-Button: inline-flex + nowrap, sonst zerbricht der runde
+               Rahmen, wenn der Text auf zwei Zeilen umbricht */
+            display: inline-flex;
+            align-items: center;
+            white-space: nowrap;
             background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
             color: #fff !important;
             padding: 10px 20px !important;
@@ -212,6 +218,11 @@
         }
 
         .btn-secondary-cta {
+            /* Pill-Button: inline-flex + nowrap, sonst zerbricht der runde
+               Rahmen, wenn "Recruiter ATS" auf zwei Zeilen umbricht */
+            display: inline-flex;
+            align-items: center;
+            white-space: nowrap;
             border: 1px solid var(--primary);
             background: transparent !important;
             color: #fff !important;
@@ -395,7 +406,10 @@
         }
 
         /* Responsive Media Queries */
-        @media (max-width: 768px) {
+        /* 960px statt 768px: die volle Nav braucht in einer Reihe ~900px
+           (Logo + fuenf Elemente). Darunter wuerde sie ueberlaufen oder die
+           Pill-Buttons zerbrechen – deshalb greift hier das Hamburger-Menue. */
+        @media (max-width: 960px) {
             .nav-links {
                 display: none;
                 flex-direction: column;
@@ -416,7 +430,9 @@
             .mobile-toggle {
                 display: block;
             }
+        }
 
+        @media (max-width: 768px) {
             .footer-content {
                 flex-direction: column;
                 text-align: center;

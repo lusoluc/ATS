@@ -10,10 +10,25 @@ Prinzip:
   Nachbesserungs-Loop: erneutes Speichern reicht das Ticket neu ein (UC-JF-07).
 - Der Schnell-Toggle darf das Gate nicht umgehen (views.toggle_job_active).
 """
+from typing import TYPE_CHECKING
+
 from .models import ApprovalStep, ApprovalTicket, SystemSetting, WorkflowState
 
+if TYPE_CHECKING:
+    from django.contrib.auth.models import User
 
-def approval_chain(facility=None) -> list[str]:
+    from .models import (
+        Department,
+        Facility,
+        JobFamily,
+        JobPosting,
+        RequisitionRule,
+        RequisitionStep,
+        StaffingRequest,
+    )
+
+
+def approval_chain(facility: "Facility | None" = None) -> list[str]:
     """Freigabekette: Einrichtungs-eigene Kette > globale APPROVAL_CHAIN > "HR-Admin".
 
     Individuell je Einrichtung einstellbar (Facility.approvalChain), ohne dass
@@ -37,13 +52,13 @@ def draft_state() -> WorkflowState:
     return state
 
 
-def has_open_gate(job) -> bool:
+def has_open_gate(job: "JobPosting") -> bool:
     """True, wenn eine Freigabe aussteht oder verweigert wurde (Gate geschlossen)."""
     ticket = getattr(job, "approvalTicket", None)
     return ticket is not None and ticket.status in ("PENDING", "RETURNED", "REJECTED")
 
 
-def ensure_approval_gate(job):
+def ensure_approval_gate(job: "JobPosting") -> "ApprovalTicket | None":
     """Stellt sicher, dass eine zustimmungspflichtige Anzeige durchs Gate läuft.
 
     - Neue Anzeige: Ticket + Kette anlegen, Anzeige auf `draft` zwingen.
@@ -79,7 +94,9 @@ def requisition_required() -> bool:
     return bool(s and s.value == "1")
 
 
-def requisition_chain(facility=None, department=None, job_family=None) -> list[str]:
+def requisition_chain(facility: "Facility | None" = None,
+                      department: "Department | None" = None,
+                      job_family: "JobFamily | None" = None) -> list[str]:
     """Genehmigungskette fuer Personalbedarf:
     Einrichtungs-Kette > globale REQUISITION_CHAIN > Freigabekette der
     Einrichtung (eine Governance-Wahrheit statt zwei Pflegeorte)."""
@@ -96,7 +113,7 @@ def requisition_chain(facility=None, department=None, job_family=None) -> list[s
     return chain or approval_chain(facility)
 
 
-def open_requisition_steps(req):
+def open_requisition_steps(req: "StaffingRequest") -> None:
     """Erzeugt die Stufen fuer einen Antrag (idempotent). Mehrere Rollen
     mit gleicher order = PARALLELE Stufe: alle muessen genehmigen, bevor
     die naechste order faellig wird."""
@@ -111,8 +128,9 @@ def open_requisition_steps(req):
                                            order=order, groupQuorum=quorum)
 
 
-def requisition_required_for(facility=None, department=None,
-                             job_family=None) -> bool:
+def requisition_required_for(facility: "Facility | None" = None,
+                             department: "Department | None" = None,
+                             job_family: "JobFamily | None" = None) -> bool:
     """Pflicht global ODER ueber eine mandatory-Regel im Geltungsbereich."""
     if requisition_required():
         return True
@@ -120,7 +138,7 @@ def requisition_required_for(facility=None, department=None,
     return bool(rule and rule.mandatory)
 
 
-def requisition_blocked_reason(job) -> str | None:
+def requisition_blocked_reason(job: "JobPosting") -> str | None:
     """None = Veroeffentlichung frei. Prueft nur, wenn der Prozess fuer den
     Geltungsbereich der Stelle Pflicht ist (global oder per Matrix-Regel).
     Nachweis = ein angenommener/konvertierter Bedarf, der auf diese Stelle
@@ -137,12 +155,15 @@ def requisition_blocked_reason(job) -> str | None:
             "Personalbedarf möglich. Bitte zuerst unter „Bedarf“ beantragen "
             "und genehmigen lassen, dann daraus die Ausschreibung erstellen.")
 
-def resolve_requisition_rule(facility=None, department=None, job_family=None):
+def resolve_requisition_rule(facility: "Facility | None" = None,
+                             department: "Department | None" = None,
+                             job_family: "JobFamily | None" = None,
+                             ) -> "RequisitionRule | None":
     """Spezifischste aktive Regel fuer den Geltungsbereich (None = keine).
     Wildcards: eine nicht gesetzte Dimension der Regel passt auf alles;
     eine GESETZTE Dimension muss exakt passen."""
     from .models import RequisitionRule
-    best = None
+    best: RequisitionRule | None = None
     for rule in RequisitionRule.objects.filter(active=True):
         if rule.facility_id and rule.facility_id != getattr(facility, 'id', facility):
             continue
@@ -156,7 +177,8 @@ def resolve_requisition_rule(facility=None, department=None, job_family=None):
             best = rule
     return best
 
-def may_decide_requisition_step(user, step):
+def may_decide_requisition_step(user: "User", step: "RequisitionStep",
+                                ) -> "tuple[bool, User | None]":
     """Darf diese Person die Stufe entscheiden? -> (erlaubt, vertritt_wen).
 
     Erlaubt bei direkter Rollen-Zugehoerigkeit (Gruppe = step.role) oder
@@ -177,12 +199,12 @@ def may_decide_requisition_step(user, step):
             return True, d.delegator
     return False, None
 
-def _parse_group_quorum(segment):
+def _parse_group_quorum(segment: str) -> tuple[list[str], int]:
     """Zieht ein optionales Quorum-Suffix "(N)" aus einem Ketten-Segment.
     Liefert (roles, quorum). Quorum ohne Suffix oder unsinnig = len(roles)
     (alle noetig). Beispiel: "A + B + C (2)" -> (["A","B","C"], 2)."""
     import re
-    quorum = None
+    quorum: int | None = None
     m = re.search(r"\((\d+)\)\s*$", segment)
     if m:
         quorum = int(m.group(1))
@@ -193,8 +215,10 @@ def _parse_group_quorum(segment):
     return roles, quorum
 
 
-def requisition_chain_groups(facility=None, department=None,
-                             job_family=None) -> list[list[str]]:
+def requisition_chain_groups(facility: "Facility | None" = None,
+                             department: "Department | None" = None,
+                             job_family: "JobFamily | None" = None,
+                             ) -> list[list[str]]:
     """Kette als Stufen-GRUPPEN (nur Rollen, Quorum-Suffix entfernt).
     Syntax: Komma trennt sequenzielle Stufen, '+' verbindet parallele
     Rollen, optionales "(N)" am Ende einer Gruppe = Quorum."""
@@ -203,17 +227,19 @@ def requisition_chain_groups(facility=None, department=None,
                                                  job_family)]
 
 
-def requisition_chain_groups_with_quorum(facility=None, department=None,
-                                         job_family=None):
+def requisition_chain_groups_with_quorum(
+        facility: "Facility | None" = None,
+        department: "Department | None" = None,
+        job_family: "JobFamily | None" = None) -> list[tuple[list[str], int]]:
     """Wie requisition_chain_groups, aber list[(roles, quorum)]."""
-    out = []
+    out: list[tuple[list[str], int]] = []
     for segment in requisition_chain(facility, department, job_family):
         roles, quorum = _parse_group_quorum(segment)
         if roles:
             out.append((roles, quorum))
     return out
 
-def due_requisition_steps(req):
+def due_requisition_steps(req: "StaffingRequest") -> "list[RequisitionStep]":
     """Die aktuell FAELLIGEN Stufen (alle PENDING mit der niedrigsten
     offenen order) – bei parallelen Gruppen mehr als eine."""
     pending = req.steps.filter(status='PENDING').order_by('order')
@@ -222,7 +248,7 @@ def due_requisition_steps(req):
         return []
     return list(pending.filter(order=first.order))
 
-def notify_due_requisition_steps(req) -> int:
+def notify_due_requisition_steps(req: "StaffingRequest") -> int:
     """Benachrichtigt alle Personen, die JETZT entscheiden koennen: die
     Mitglieder der faelligen Rollen-Gruppen plus deren aktive Vertretungen
     (Scope ALL oder passende Einrichtung; stellenscharfe Vertretungen

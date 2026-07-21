@@ -6,13 +6,21 @@ frei. HR-Admin kann mit dokumentierter Verantwortung uebersteuern (Audit).
 Kommentare und Fragen des Gremiums landen in den internen Notizen – ein Ort,
 alle Beteiligten sehen dasselbe (360-Grad-Prinzip).
 """
-def _parse_ids(raw):
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from django.contrib.auth.models import User
+
+    from .models import Application, JobPosting, RoleDelegation
+
+
+def _parse_ids(raw: object) -> list[str]:
     if not isinstance(raw, list):
         return []
     return [str(i) for i in raw if str(i).strip()]
 
 
-def resolve_panel(job):
+def resolve_panel(job: "JobPosting") -> tuple[list[str], str]:
     """Gremien-Aufloesung mit Spezifitaets-Leiter (konsistent zu Prozess/Workflow):
 
         Stelle > Abteilung > Einrichtung > Standort > Jobfamilie > Organisation
@@ -41,11 +49,11 @@ def resolve_panel(job):
     return [], ""
 
 
-def panel_member_ids(job):
+def panel_member_ids(job: "JobPosting") -> list[str]:
     return resolve_panel(job)[0]
 
 
-def panel_state(app):
+def panel_state(app: "Application") -> dict[str, Any]:
     """Zustand des Gremiums fuer eine Bewerbung.
 
     Rueckgabe-Dict: required, members, votes_for, votes_against, missing,
@@ -62,14 +70,14 @@ def panel_state(app):
 
     from .models import RoleDelegation
     now = _tz.now()
-    seat_of_delegate = {}
+    seat_of_delegate: dict[str, str] = {}
     for d in RoleDelegation.objects.filter(
             delegator_id__in=[int(m) for m in members if m.isdigit()],
             validFrom__lte=now, validUntil__gt=now):
         from .permissions import delegation_covers
         if delegation_covers(d, app.jobPosting):
             seat_of_delegate.setdefault(str(d.delegatee_id), str(d.delegator_id))
-    votes = {}
+    votes: dict[str, str] = {}
     for v in app.votes.all():
         uid = str(v.user_id)
         if uid in members:
@@ -109,17 +117,17 @@ def panel_state(app):
     names = {str(u.id): (u.get_full_name() or u.username)
              for u in _User.objects.filter(
                  id__in=[int(m) for m in members if m.isdigit()])}
-    delegate_names = {}
+    delegate_names: dict[str, str] = {}
     if seat_of_delegate:
         for du in _User.objects.filter(
                 id__in=[int(d) for d in seat_of_delegate if d.isdigit()]):
             delegate_names[str(du.id)] = du.get_full_name() or du.username
     seat_votes_direct = {str(v.user_id): v.vote for v in app.votes.all()
                          if str(v.user_id) in members}
-    seats = []
+    seats: list[dict[str, Any]] = []
     for m in members:
         vote = votes.get(m)
-        via = None
+        via: str | None = None
         if vote and m not in seat_votes_direct:
             for delegate_id, seat in seat_of_delegate.items():
                 if seat == m:
@@ -133,7 +141,7 @@ def panel_state(app):
             "deadline_days": deadline_days, "seats": seats}
 
 
-def invitation_blocked_reason(app):
+def invitation_blocked_reason(app: "Application") -> str | None:
     """None = Einladung frei; sonst die erklaerende Meldung."""
     state = panel_state(app)
     if state["required"] and not state["allowed"]:
@@ -141,8 +149,10 @@ def invitation_blocked_reason(app):
     return None
 
 
-def resolve_panel_preview(job_family_id=None, facility_id=None,
-                          department_id=None, location_id=None):
+def resolve_panel_preview(job_family_id: str | None = None,
+                          facility_id: str | None = None,
+                          department_id: str | None = None,
+                          location_id: str | None = None) -> tuple[list[str], str]:
     """Vorschau fuer den Stellen-Wizard: welches Gremium WUERDE ohne eigene
     Auswahl wirken? Gleiche Leiter wie resolve_panel, nur ohne Stellen-Ebene
     (die Stelle existiert ja noch nicht). Organisation wird ueber die
@@ -170,7 +180,8 @@ def resolve_panel_preview(job_family_id=None, facility_id=None,
     return [], ""
 
 
-def sits_on_panel(user, job, delegations=None):
+def sits_on_panel(user: "User", job: "JobPosting",
+                  delegations: "list[RoleDelegation] | None" = None) -> bool:
     """Sitzt diese Person im Gremium dieser Stelle – selbst ODER als aktive
     Vertretung eines Mitglieds (UC-VT-04)? Fuer Listen/Zaehler, damit
     Vertretungen ihre ausstehenden Sitze auch SEHEN, nicht nur stimmen duerfen.

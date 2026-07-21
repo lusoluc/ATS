@@ -4,17 +4,19 @@ Erzeugt einen vollständigen, maschinenlesbaren Export aller zu einer Person
 gespeicherten Daten. `internalNotes` sind interne Bewertungen und werden bewusst
 NICHT exportiert (kein Auskunftsanspruch auf interne Vermerke Dritter).
 """
-from .models import Application, ApplicationDocument, AuditLog
+from typing import Any
+
+from .models import Applicant, Application, ApplicationDocument, AuditLog
 
 
-def build_applicant_export(applicant) -> dict:
+def build_applicant_export(applicant: Applicant) -> dict[str, Any]:
     """Baut das Export-Dict für eine bewerbende Person."""
     apps = (Application.objects
             .filter(applicant=applicant)
             .select_related("jobPosting")
             .order_by("createdAt"))
 
-    applications = []
+    applications: list[dict[str, Any]] = []
     for a in apps:
         docs = ApplicationDocument.objects.filter(application=a).values_list("name", flat=True)
         applications.append({

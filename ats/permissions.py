@@ -6,11 +6,22 @@ Rollen sind als Django-Groups abgebildet. Superuser umgehen die Prüfung.
 Hinweis: Dies ist die grundlegende RBAC-Schicht (Phase 2). Feingranulares
 BOLA-Scoping (Standort-/Abteilungssilos) ist ein separater Folgeschritt.
 """
+from collections.abc import Callable
 from functools import wraps
+from typing import TYPE_CHECKING, Any
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.db.models import Q
+from django.db.models import Q, QuerySet
+from django.http import HttpRequest, HttpResponseBase
+
+if TYPE_CHECKING:
+    from django.contrib.auth.models import User
+
+    from .models import Application, JobPosting, RoleDelegation
+
+# Views liefern beliebige Response-Typen; mehr Praezision braucht der Decorator nicht.
+_ViewFunc = Callable[..., HttpResponseBase]
 
 # Rollen (= Django-Group-Namen)
 HR_ADMIN = "HR-Admin"
@@ -21,7 +32,7 @@ VIEWER = "Viewer"
 ALL_ROLES = (HR_ADMIN, RECRUITER, HIRING_MANAGER, VIEWER)
 
 
-def role_required(*roles):
+def role_required(*roles: str) -> Callable[[_ViewFunc], _ViewFunc]:
     """View-Decorator: erfordert Login UND Mitgliedschaft in einer der Rollen.
 
     - Anonym            -> Redirect zum Login (via login_required).
@@ -29,10 +40,10 @@ def role_required(*roles):
       falsche Rolle     -> 403 PermissionDenied.
     - Superuser         -> immer erlaubt.
     """
-    def decorator(view_func):
+    def decorator(view_func: _ViewFunc) -> _ViewFunc:
         @wraps(view_func)
         @login_required
-        def _wrapped(request, *args, **kwargs):
+        def _wrapped(request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
             user = request.user
             if user.is_superuser or user.groups.filter(name__in=roles).exists():
                 return view_func(request, *args, **kwargs)
@@ -50,15 +61,16 @@ hr_admin_required = role_required(HR_ADMIN)              # Konfiguration/Adminis
 # ============================================================================
 # BOLA-Scoping: begrenzt Datenzugriff auf erlaubte Standorte/Einrichtungen
 # ============================================================================
-def has_full_access(user):
+def has_full_access(user: "User") -> bool:
     """HR-Admin/Superuser oder Nutzer ohne Einschränkung sehen alles."""
     if user.is_superuser or user.groups.filter(name=HR_ADMIN).exists():
         return True
     scope = getattr(user, "scope", None)
-    return scope is None or scope.full_access
+    return scope is None or bool(scope.full_access)
 
 
-def _scope_ids(user):
+def _scope_ids(user: "User") -> tuple[set[Any], set[Any]]:
+    # UUID-Mengen; values_list liefert ohnehin Any-Elemente
     scope = user.scope
     return (
         set(scope.locations.values_list("id", flat=True)),
@@ -66,28 +78,28 @@ def _scope_ids(user):
     )
 
 
-def scope_applications(user, qs):
+def scope_applications(user: "User", qs: "QuerySet[Application]") -> "QuerySet[Application]":
     if has_full_access(user):
         return qs
     loc_ids, fac_ids = _scope_ids(user)
     return qs.filter(Q(jobPosting__location_id__in=loc_ids) | Q(jobPosting__facility_id__in=fac_ids))
 
 
-def scope_jobs(user, qs):
+def scope_jobs(user: "User", qs: "QuerySet[JobPosting]") -> "QuerySet[JobPosting]":
     if has_full_access(user):
         return qs
     loc_ids, fac_ids = _scope_ids(user)
     return qs.filter(Q(location_id__in=loc_ids) | Q(facility_id__in=fac_ids))
 
 
-def can_access_application(user, app):
+def can_access_application(user: "User", app: "Application") -> bool:
     if has_full_access(user):
         return True
     loc_ids, fac_ids = _scope_ids(user)
     return app.jobPosting.location_id in loc_ids or app.jobPosting.facility_id in fac_ids
 
 
-def active_delegations_to(user):
+def active_delegations_to(user: "User") -> "list[RoleDelegation]":
     """Aktive Vertretungen, bei denen `user` die Vertretung IST (delegatee).
 
     Zeitfenster wird serverseitig geprueft – eine abgelaufene Vertretung
@@ -105,7 +117,7 @@ def active_delegations_to(user):
                 .select_related('delegator'))
 
 
-def delegation_covers(delegation, job):
+def delegation_covers(delegation: "RoleDelegation", job: "JobPosting | None") -> bool:
     """Greift diese Vertretung fuer diese Stelle? (ALL / FACILITY / JOB)"""
     if delegation.scopeType == 'ALL':
         return True
@@ -116,7 +128,7 @@ def delegation_covers(delegation, job):
     return False
 
 
-def can_override(user):
+def can_override(user: "User") -> bool:
     """Darf diese Person Gremien-/Prozess-Entscheidungen uebersteuern?
 
     Granular konfigurierbar: SystemSetting OVERRIDE_GROUPS (Kommaliste von

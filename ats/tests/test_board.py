@@ -7,28 +7,20 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
+from .factories import make_application, make_job, make_world
 from .utils import make_user
 
 
 class ApplicationDocumentsTestCase(TestCase):
     """WP1: Mehrfach-Upload + sicherer Nachweis-Download (BOLA/Audit)."""
 
-    def _job(self, loc=None):
-        import uuid as _u
-
-        from ..models import Facility, JobFamily, JobPosting, Location, Organization, WorkflowState
-        org = Organization.objects.create(name="O")
-        loc = loc or Location.objects.create(name="Berlin")
-        fac = Facility.objects.create(name="F", organization=org)
-        fam = JobFamily.objects.create(name="JF-" + str(_u.uuid4())[:6])
-        wf = WorkflowState.objects.create(name="W-" + str(_u.uuid4())[:6])
-        return JobPosting.objects.create(title="Fachärztin", organization=org, facility=fac,
-                                         location=loc, jobFamily=fam, workflowState=wf), loc
+    def _job(self):
+        return make_job(make_world(), title="Fachärztin")
 
     def test_apply_with_multiple_documents_and_photo_cv(self):
         with tempfile.TemporaryDirectory() as tmp:
             with override_settings(MEDIA_ROOT=tmp):
-                job, _ = self._job()
+                job = self._job()
                 cv = SimpleUploadedFile("cv.jpg", b"\xff\xd8\xff", content_type="image/jpeg")
                 d1 = SimpleUploadedFile("approbation.pdf", b"%PDF-1", content_type="application/pdf")
                 d2 = SimpleUploadedFile("zeugnis.jpg", b"\xff\xd8\xff", content_type="image/jpeg")
@@ -46,10 +38,9 @@ class ApplicationDocumentsTestCase(TestCase):
     def test_document_download_auth_and_bola(self):
         with tempfile.TemporaryDirectory() as tmp:
             with override_settings(MEDIA_ROOT=tmp):
-                from ..models import Applicant, Application, ApplicationDocument, Location, UserScope
-                job, loc = self._job()
-                appl = Applicant.objects.create(firstName="K", lastName="V", email="kv2@ex.org")
-                app = Application.objects.create(applicant=appl, jobPosting=job)
+                from ..models import ApplicationDocument, Location, UserScope
+                app = make_application(self._job(), first_name="K",
+                                       last_name="V", email="kv2@ex.org")
                 doc = ApplicationDocument.objects.create(
                     application=app, name="approbation.pdf",
                     file=SimpleUploadedFile("a.pdf", b"%PDF-1"))
@@ -84,38 +75,17 @@ class BoardReorderTestCase(TestCase):
     """WP4/B10: Spalten-Reihenfolge persistieren, BOLA-sicher."""
 
     def test_reorder_updates_board_order_and_respects_scope(self):
-        import uuid as _u
-
-        from ..models import (
-            Applicant,
-            Application,
-            Facility,
-            JobFamily,
-            JobPosting,
-            Location,
-            Organization,
-            UserScope,
-            WorkflowState,
-        )
-        org = Organization.objects.create(name="O")
-        loc_b = Location.objects.create(name="Berlin")
+        from ..models import Location, UserScope
+        world = make_world()
         loc_m = Location.objects.create(name="Muenchen")
-        fac = Facility.objects.create(name="F", organization=org)
-        fam = JobFamily.objects.create(name="JF-" + str(_u.uuid4())[:6])
-        wf = WorkflowState.objects.create(name="W-" + str(_u.uuid4())[:6])
-        job_b = JobPosting.objects.create(title="J1", organization=org, facility=fac,
-                                          location=loc_b, jobFamily=fam, workflowState=wf)
-        job_m = JobPosting.objects.create(title="J2", organization=org, facility=fac,
-                                          location=loc_m, jobFamily=fam, workflowState=wf)
-        apps = []
-        for i, (job, mail) in enumerate([(job_b, "a@x.de"), (job_b, "b@x.de"), (job_m, "c@x.de")]):
-            ap = Applicant.objects.create(firstName=f"P{i}", lastName="T", email=mail)
-            apps.append(Application.objects.create(applicant=ap, jobPosting=job, status="NEW"))
+        job_b = make_job(world, title="J1")
+        job_m = make_job(world, title="J2", location=loc_m)
+        apps = [make_application(job) for job in (job_b, job_b, job_m)]
 
-        # Recruiter nur mit Berlin-Scope
+        # Recruiter nur mit Scope auf den Welt-Standort
         rec = make_user("wp4rec", role="Recruiter")
         sc = UserScope.objects.create(user=rec, full_access=False)
-        sc.locations.add(loc_b)
+        sc.locations.add(world.location)
         self.client.force_login(rec)
 
         r = self.client.post(reverse('ats:reorder_board'), data={
@@ -138,30 +108,8 @@ class WP4FeatureTestCase(TestCase):
     """WP4: Bulk-Statuswechsel (BOLA+Audit) und Vorlagen-Versionierung."""
 
     def _setup_apps(self):
-        import uuid as _u
-
-        from ..models import (
-            Applicant,
-            Application,
-            Facility,
-            JobFamily,
-            JobPosting,
-            Location,
-            Organization,
-            WorkflowState,
-        )
-        org = Organization.objects.create(name="O")
-        loc = Location.objects.create(name="Berlin")
-        fac = Facility.objects.create(name="F", organization=org)
-        fam = JobFamily.objects.create(name="JF-" + str(_u.uuid4())[:6])
-        wf = WorkflowState.objects.create(name="W-" + str(_u.uuid4())[:6])
-        job = JobPosting.objects.create(title="J", organization=org, facility=fac,
-                                        location=loc, jobFamily=fam, workflowState=wf)
-        out = []
-        for i in range(3):
-            ap = Applicant.objects.create(firstName=f"B{i}", lastName="T", email=f"b{i}@x.de")
-            out.append(Application.objects.create(applicant=ap, jobPosting=job, status="NEW"))
-        return out
+        job = make_job(make_world(), title="J")
+        return [make_application(job) for _ in range(3)]
 
     def test_bulk_status_change_with_audit(self):
         from ..models import AuditLog
@@ -225,34 +173,12 @@ class TodayFocusAndContactTestCase(TestCase):
     """UC-PW-06/UM-06 'Heute wichtig' + UC-AY-09 Kontaktdaten im Portal."""
 
     def _world(self):
-        import uuid as _u
-
-        from ..models import (
-            Applicant,
-            ApplicantToken,
-            Application,
-            Facility,
-            Interview,
-            JobFamily,
-            JobPosting,
-            Location,
-            Message,
-            Organization,
-            StaffingRequest,
-            WorkflowState,
-        )
-        org = Organization.objects.create(name="O")
-        loc = Location.objects.create(name="HH")
-        fac = Facility.objects.create(name="F", organization=org)
-        fam = JobFamily.objects.create(name="JF-" + str(_u.uuid4())[:6])
-        wf = WorkflowState.objects.create(name="published")
-        self.job = JobPosting.objects.create(title="Pflegefachkraft", organization=org,
-                                             facility=fac, location=loc,
-                                             jobFamily=fam, workflowState=wf)
-        self.ap = Applicant.objects.create(firstName="Lena", lastName="B",
-                                           email="lena@x.de", phone="040-1")
-        self.app = Application.objects.create(applicant=self.ap, jobPosting=self.job,
-                                              status="NEW")
+        from ..models import ApplicantToken, Application, Interview, Message, StaffingRequest
+        world = make_world()
+        self.job = make_job(world, title="Pflegefachkraft")
+        self.app = make_application(self.job, first_name="Lena", last_name="B",
+                                    email="lena@x.de", phone="040-1")
+        self.ap = self.app.applicant
         Application.objects.filter(id=self.app.id).update(
             createdAt=timezone.now() - datetime.timedelta(days=9))  # ueberfaellig
         ApplicantToken.objects.create(applicant=self.ap, token="tf-token",
@@ -261,7 +187,7 @@ class TodayFocusAndContactTestCase(TestCase):
                                content="Wann höre ich von Ihnen?")
         Interview.objects.create(application=self.app, locationType="VIDEO",
                                  scheduledAt=timezone.now() - datetime.timedelta(days=2))
-        StaffingRequest.objects.create(title="MFA", facility=fac,
+        StaffingRequest.objects.create(title="MFA", facility=world.facility,
                                        justification="Empfang unterbesetzt")
 
     def test_dashboard_shows_bundled_signals(self):
@@ -316,32 +242,12 @@ class HiredStatusTestCase(TestCase):
     """Das Einstellungs-Ereignis: Uebergaenge, Time-to-Fill, Kennzahlen."""
 
     def _world(self):
-        from ..models import (
-            Applicant,
-            Application,
-            Facility,
-            JobFamily,
-            JobPosting,
-            Location,
-            Organization,
-            SourceChannel,
-            WorkflowState,
-        )
-        org = Organization.objects.create(name="O")
-        loc = Location.objects.create(name="HH")
-        fac = Facility.objects.create(name="F", organization=org)
-        fam = JobFamily.objects.create(name="HS-Fam")
-        wf = WorkflowState.objects.create(name="published")
-        self.job = JobPosting.objects.create(title="Pflegefachkraft",
-                                             organization=org, facility=fac,
-                                             location=loc, jobFamily=fam,
-                                             workflowState=wf)
+        from ..models import Application, SourceChannel
+        self.job = make_job(make_world(), title="Pflegefachkraft")
         SourceChannel.objects.create(name="Jobmesse", slug="MESSE_HS")
-        ap = Applicant.objects.create(firstName="Rosa", lastName="M",
-                                      email="rosa@x.de")
-        self.app = Application.objects.create(
-            applicant=ap, jobPosting=self.job, status="INVITED",
-            source="MESSE_HS")
+        self.app = make_application(self.job, first_name="Rosa", last_name="M",
+                                    email="rosa@x.de", status="INVITED",
+                                    source="MESSE_HS")
         Application.objects.filter(id=self.app.id).update(
             createdAt=timezone.now() - datetime.timedelta(days=14))
         self.app.refresh_from_db()
@@ -419,28 +325,9 @@ class ManualHireDateTestCase(TestCase):
     """Einstellungsdatum manuell setzbar + nachtraeglich korrigierbar."""
 
     def _world(self):
-        from ..models import (
-            Applicant,
-            Application,
-            Facility,
-            JobFamily,
-            JobPosting,
-            Location,
-            Organization,
-            WorkflowState,
-        )
-        org = Organization.objects.create(name="O")
-        loc = Location.objects.create(name="HH")
-        fac = Facility.objects.create(name="F", organization=org)
-        fam = JobFamily.objects.create(name="MH-Fam")
-        wf = WorkflowState.objects.create(name="published")
-        job = JobPosting.objects.create(title="Stelle", organization=org,
-                                        facility=fac, location=loc,
-                                        jobFamily=fam, workflowState=wf)
-        ap = Applicant.objects.create(firstName="Ida", lastName="B",
-                                      email="ida@x.de")
-        self.app = Application.objects.create(applicant=ap, jobPosting=job,
-                                              status="INVITED")
+        job = make_job(make_world(), title="Stelle")
+        self.app = make_application(job, first_name="Ida", last_name="B",
+                                    email="ida@x.de", status="INVITED")
 
     def _set(self, **data):
         return self.client.post(
@@ -479,30 +366,10 @@ class CvInlinePreviewTestCase(TestCase):
 
     def setUp(self):
         from django.core.files.storage import default_storage
-        from django.core.files.uploadedfile import SimpleUploadedFile
 
-        from ..models import (
-            Applicant,
-            Application,
-            Facility,
-            JobFamily,
-            JobPosting,
-            Location,
-            Organization,
-            WorkflowState,
-        )
-        org = Organization.objects.create(name="O")
-        self.loc = Location.objects.create(name="HH")
-        fac = Facility.objects.create(name="F", organization=org)
-        fam = JobFamily.objects.create(name="CV-Fam")
-        ws = WorkflowState.objects.create(name="published")
-        job = JobPosting.objects.create(title="Pflegekraft", organization=org,
-                                        facility=fac, location=self.loc,
-                                        jobFamily=fam, workflowState=ws)
-        self.app = Application.objects.create(
-            applicant=Applicant.objects.create(firstName="C", lastName="V",
-                                               email="cv@x.de"),
-            jobPosting=job)
+        self.app = make_application(
+            make_job(make_world(), title="Pflegekraft"),
+            first_name="C", last_name="V", email="cv@x.de")
         self.app.cvStorageId = default_storage.save(
             "cvs/abc_lebenslauf.pdf",
             SimpleUploadedFile("lebenslauf.pdf", b"%PDF-1.4 inhalt"))
@@ -563,7 +430,6 @@ class CvInlinePreviewTestCase(TestCase):
         """doc/docx kann kein Browser rendern – ehrlich als Download liefern
         statt eine kaputte Vorschau zu zeigen."""
         from django.core.files.storage import default_storage
-        from django.core.files.uploadedfile import SimpleUploadedFile
         self.app.cvStorageId = default_storage.save(
             "cvs/xyz_lebenslauf.docx",
             SimpleUploadedFile("lebenslauf.docx", b"PK\x03\x04"))

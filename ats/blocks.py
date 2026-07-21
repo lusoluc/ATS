@@ -10,9 +10,11 @@ BLOCK_TYPES ist die eine Wahrheit: sie speist den Editor (Felder, Labels,
 Hilfetexte) UND die serverseitige Validierung. Neue Bloecke = ein Eintrag
 hier + ein Zweig im Render-Include.
 """
+from typing import Any
 
 # field-Typen: text, textarea, lines (eine Angabe je Zeile), int, url
-BLOCK_TYPES = {
+# (heterogene Editor-Spezifikation: label ist str, fields eine Tupel-Liste)
+BLOCK_TYPES: dict[str, dict[str, Any]] = {
     "hero": {
         "label": "Hero (Bild + Botschaft)",
         "fields": [
@@ -80,18 +82,20 @@ MAX_BLOCKS = 30
 MAX_TEXT = 4000
 
 
-def normalize_block(raw):
+def normalize_block(raw: dict[str, Any] | None) -> dict[str, Any] | None:
     """Einzelnen Block pruefen/stutzen; None wenn Typ unbekannt."""
-    btype = (raw or {}).get("type")
+    raw = raw or {}
+    btype = str(raw.get("type") or "")
     spec = BLOCK_TYPES.get(btype)
     if not spec:
         return None
-    out = {"type": btype}
+    out: dict[str, Any] = {"type": btype}
     for name, ftype, _label in spec["fields"]:
         val = raw.get(name)
         if ftype == "int":
             try:
-                out[name] = max(1, min(12, int(val)))
+                # fehlender Wert faellt wie bisher auf den Default 5
+                out[name] = max(1, min(12, int(val) if val is not None else 5))
             except (TypeError, ValueError):
                 out[name] = 5
         elif ftype == "lines":
@@ -102,8 +106,8 @@ def normalize_block(raw):
     return out
 
 
-def normalize_blocks(raw_list):
-    out = []
+def normalize_blocks(raw_list: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
     for raw in (raw_list or [])[:MAX_BLOCKS]:
         b = normalize_block(raw)
         if b:
@@ -111,18 +115,19 @@ def normalize_blocks(raw_list):
     return out
 
 
-def load_blocks(obj):
+def load_blocks(obj: Any) -> list[dict[str, Any]]:
+    # obj: jedes Modell mit blocksJson (Page, Landingpage) — Union unnoetig eng
     try:
         return normalize_blocks(obj.blocksJson or [])
     except (ValueError, TypeError):
         return []
 
 
-def enrich_blocks(blocks):
+def enrich_blocks(blocks: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Datenbedarf aufloesen: Ansprechpersonen-Objekt, Stellen-Liste.
     Mutiert Kopien – Templates rendern nur, holen nichts selbst."""
     from .models import ContactPerson, JobPosting
-    enriched = []
+    enriched: list[dict[str, Any]] = []
     for b in blocks:
         b = dict(b)
         if b["type"] == "contact" and b.get("contactPersonId"):
@@ -135,7 +140,7 @@ def enrich_blocks(blocks):
                              .order_by("-createdAt")[:b.get("limit", 5)])
         # Pipe-Listen fuer stats/faq vorzerlegen (Template bleibt dumm)
         if b["type"] in ("stats", "faq"):
-            pairs = []
+            pairs: list[dict[str, str]] = []
             for line in b.get("items", []):
                 left, _, right = line.partition("|")
                 pairs.append({"a": left.strip(), "b": right.strip()})

@@ -10,32 +10,9 @@ Kern-Garantien:
 from django.test import TestCase
 from django.urls import reverse
 
-from ..models import (
-    AuditLog,
-    Facility,
-    JobFamily,
-    JobPosting,
-    Location,
-    Organization,
-    PayBand,
-    WorkflowState,
-)
+from ..models import AuditLog, JobFamily, JobPosting, PayBand, WorkflowState
+from .factories import make_job, make_world
 from .utils import make_user
-
-
-def _world():
-    org = Organization.objects.create(name="PT-Org")
-    fac = Facility.objects.create(name="PT-Klinik", organization=org)
-    loc = Location.objects.create(name="PT-HH", city="Hamburg")
-    fam = JobFamily.objects.create(name="PT-Pflege")
-    published, _ = WorkflowState.objects.get_or_create(
-        name="published", defaults={"description": "Öffentlich"})
-    band = PayBand.objects.create(
-        name="TVöD-P 7 (Stufe 2–6)", tariffSystem="TVOED",
-        minAmount=3304, maxAmount=4106, period="MONTH",
-        collectiveAgreement="TVöD-P, Entgeltgruppe P7",
-        note="zzgl. Schichtzulagen")
-    return org, fac, loc, fam, published, band
 
 
 class PayBandModelTestCase(TestCase):
@@ -76,15 +53,16 @@ class PayPublishGateTestCase(TestCase):
     """Art. 5: ohne Entgeltband keine Veröffentlichung — auf allen Pfaden."""
 
     def setUp(self):
-        self.org, self.fac, self.loc, self.fam, self.published, self.band = _world()
+        self.w = make_world()
         self.client.force_login(make_user("pt-rec-gate", role="Recruiter"))
 
     def _save_job(self, extra):
         data = {"title": "Pflegefachkraft (m/w/d)",
                 "description": "Text",
-                "facility": str(self.fac.id), "location": str(self.loc.id),
-                "job_family": str(self.fam.id),
-                "workflow_state": str(self.published.id)}
+                "facility": str(self.w.facility.id),
+                "location": str(self.w.location.id),
+                "job_family": str(self.w.job_family.id),
+                "workflow_state": str(self.w.published.id)}
         data.update(extra)
         return self.client.post(reverse("ats:create_job"), data=data)
 
@@ -96,17 +74,16 @@ class PayPublishGateTestCase(TestCase):
             action="PAY_TRANSPARENCY_GATE_BLOCKED").exists())
 
     def test_publish_with_band_stays_published(self):
-        self._save_job({"pay_band": str(self.band.id)})
+        self._save_job({"pay_band": str(self.w.band.id)})
         job = JobPosting.objects.get(title="Pflegefachkraft (m/w/d)")
         self.assertEqual(job.workflowState.name, "published")
-        self.assertEqual(job.payBand_id, self.band.id)
+        self.assertEqual(job.payBand_id, self.w.band.id)
 
     def test_quick_toggle_cannot_bypass_gate(self):
         draft, _ = WorkflowState.objects.get_or_create(
             name="draft", defaults={"description": "Entwurf"})
-        job = JobPosting.objects.create(
-            title="Ohne Band", organization=self.org, facility=self.fac,
-            location=self.loc, jobFamily=self.fam, workflowState=draft)
+        job = make_job(self.w, title="Ohne Band", workflowState=draft,
+                       payBand=None)
         resp = self.client.post(reverse("ats:toggle_job_active", args=[job.id]))
         self.assertEqual(resp.status_code, 409)
         self.assertIn("Entgelttransparenz", resp.json()["error"])
@@ -116,10 +93,7 @@ class PayPublishGateTestCase(TestCase):
     def test_quick_toggle_works_with_band(self):
         draft, _ = WorkflowState.objects.get_or_create(
             name="draft", defaults={"description": "Entwurf"})
-        job = JobPosting.objects.create(
-            title="Mit Band", organization=self.org, facility=self.fac,
-            location=self.loc, jobFamily=self.fam, workflowState=draft,
-            payBand=self.band)
+        job = make_job(self.w, title="Mit Band", workflowState=draft)
         resp = self.client.post(reverse("ats:toggle_job_active", args=[job.id]))
         self.assertTrue(resp.json()["success"])
         job.refresh_from_db()
@@ -130,11 +104,8 @@ class PayPublicDisplayTestCase(TestCase):
     """Art. 5 Abs. 1: Spanne + Tarifhinweis öffentlich VOR dem Gespräch."""
 
     def setUp(self):
-        self.org, self.fac, self.loc, self.fam, self.published, self.band = _world()
-        self.job = JobPosting.objects.create(
-            title="Pflegefachkraft Station 1", organization=self.org,
-            facility=self.fac, location=self.loc, jobFamily=self.fam,
-            workflowState=self.published, payBand=self.band)
+        self.w = make_world()
+        self.job = make_job(self.w, title="Pflegefachkraft Station 1")
 
     def test_job_detail_shows_range_and_tariff(self):
         resp = self.client.get(reverse("ats:job_detail", args=[self.job.id]))
@@ -197,19 +168,17 @@ class PayRangeAuditAnchorTestCase(TestCase):
     manipulationssicherer Nachweis, welche Spanne wann öffentlich war."""
 
     def setUp(self):
-        self.org, self.fac, self.loc, self.fam, self.published, self.band = _world()
+        self.w = make_world()
 
     def _job(self, state=None, band=None, title="Anker-Stelle"):
-        return JobPosting.objects.create(
-            title=title, organization=self.org, facility=self.fac,
-            location=self.loc, jobFamily=self.fam,
-            workflowState=state or self.published, payBand=band)
+        return make_job(self.w, title=title,
+                        workflowState=state or self.w.published, payBand=band)
 
     def test_publish_creates_chained_entry_with_metadata(self):
         import json as _json
 
         from ..audit import verify_audit_chain
-        self._job(band=self.band)
+        self._job(band=self.w.band)
         entry = AuditLog.objects.get(action="PAY_RANGE_PUBLISHED")
         self.assertTrue(entry.entryHash)                       # Teil der Kette
         meta = _json.loads(entry.metadataJson)
@@ -220,14 +189,14 @@ class PayRangeAuditAnchorTestCase(TestCase):
         self.assertTrue(verify_audit_chain()["ok"])
 
     def test_unrelated_resave_does_not_duplicate(self):
-        job = self._job(band=self.band)
+        job = self._job(band=self.w.band)
         job.title = "Anker-Stelle (geändert)"
         job.save()
         self.assertEqual(
             AuditLog.objects.filter(action="PAY_RANGE_PUBLISHED").count(), 1)
 
     def test_band_change_while_published_is_anchored_again(self):
-        job = self._job(band=self.band)
+        job = self._job(band=self.w.band)
         other = PayBand.objects.create(name="P8", minAmount=3490, maxAmount=4410)
         job.payBand = other
         job.save()
@@ -241,14 +210,14 @@ class PayRangeAuditAnchorTestCase(TestCase):
     def test_draft_job_is_not_anchored(self):
         draft, _ = WorkflowState.objects.get_or_create(
             name="draft", defaults={"description": "Entwurf"})
-        self._job(state=draft, band=self.band)
+        self._job(state=draft, band=self.w.band)
         self.assertFalse(
             AuditLog.objects.filter(action="PAY_RANGE_PUBLISHED").exists())
 
     def test_toggle_activation_is_anchored(self):
         draft, _ = WorkflowState.objects.get_or_create(
             name="draft", defaults={"description": "Entwurf"})
-        job = self._job(state=draft, band=self.band)
+        job = self._job(state=draft, band=self.w.band)
         self.client.force_login(make_user("e3-rec", role="Recruiter"))
         self.client.post(reverse("ats:toggle_job_active", args=[job.id]))
         self.assertTrue(
@@ -259,7 +228,7 @@ class PayBandEvaluationTestCase(TestCase):
     """E3 / Art. 4: Tätigkeitsbewertung je Band (vier Kriterien)."""
 
     def setUp(self):
-        _, _, _, _, _, self.band = _world()
+        self.band = make_world().band
 
     def test_has_evaluation_requires_all_four(self):
         self.assertFalse(self.band.has_evaluation)
@@ -290,34 +259,29 @@ class TransparencyOverviewTestCase(TestCase):
     """E4: Kennzahlen — Abdeckung, unbewertete Bänder, Familien-Ampel."""
 
     def setUp(self):
-        self.org, self.fac, self.loc, self.fam, self.published, self.band = _world()
+        self.w = make_world()
 
     def _job(self, title, band, fam=None):
-        return JobPosting.objects.create(
-            title=title, organization=self.org, facility=self.fac,
-            location=self.loc, jobFamily=fam or self.fam,
-            workflowState=self.published, payBand=band)
+        return make_job(self.w, title=title, payBand=band,
+                        jobFamily=fam or self.w.job_family)
 
     def test_counts_and_conflicts(self):
         from ..pay_transparency import transparency_overview
         other_band = PayBand.objects.create(name="P8", minAmount=3490,
                                             maxAmount=4410)
         other_fam = JobFamily.objects.create(name="PT-Verwaltung")
-        self._job("Stelle A", self.band)
+        self._job("Stelle A", self.w.band)
         self._job("Stelle B", other_band)                       # gleiche Familie, anderes Band
-        self._job("Stelle C", self.band, fam=other_fam)         # eigene Familie, ein Band
+        self._job("Stelle C", self.w.band, fam=other_fam)       # eigene Familie, ein Band
         # Altbestand ohne Band (am Gate vorbei per ORM, wie Bestandsdaten)
-        JobPosting.objects.create(
-            title="Altbestand", organization=self.org, facility=self.fac,
-            location=self.loc, jobFamily=other_fam,
-            workflowState=self.published)
+        self._job("Altbestand", None, fam=other_fam)
         o = transparency_overview()
         self.assertEqual(o["published"], 4)
         self.assertEqual(o["with_band"], 3)
         self.assertEqual(o["without_band"], 1)
         self.assertEqual(len(o["family_conflicts"]), 1)
         conflict = o["family_conflicts"][0]
-        self.assertEqual(conflict["family"], "PT-Pflege")
+        self.assertEqual(conflict["family"], self.w.job_family.name)
         self.assertEqual([b["band"] for b in conflict["bands"]],
                          ["P8", "TVöD-P 7 (Stufe 2–6)"])
         # beide Bänder unbewertet (keine Art.-4-Kriterien gesetzt)
@@ -325,16 +289,17 @@ class TransparencyOverviewTestCase(TestCase):
 
     def test_evaluated_band_not_listed(self):
         from ..pay_transparency import transparency_overview
-        self.band.criteriaSkills = "Examen"
-        self.band.criteriaEffort = "Schicht"
-        self.band.criteriaResponsibility = "Medikamente"
-        self.band.criteriaWorkingConditions = "Station"
-        self.band.save()
-        self.assertNotIn(self.band.name,
+        band = self.w.band
+        band.criteriaSkills = "Examen"
+        band.criteriaEffort = "Schicht"
+        band.criteriaResponsibility = "Medikamente"
+        band.criteriaWorkingConditions = "Station"
+        band.save()
+        self.assertNotIn(band.name,
                          transparency_overview()["unevaluated_bands"])
 
     def test_analytics_page_shows_cockpit(self):
-        self._job("Stelle A", self.band)
+        self._job("Stelle A", self.w.band)
         self.client.force_login(make_user("e4-admin", role="HR-Admin"))
         page = self.client.get(reverse("ats:analytics"))
         self.assertContains(page, "Entgelttransparenz")
@@ -379,17 +344,18 @@ class SalaryHistoryEnforcementTestCase(TestCase):
     """E2: Durchsetzung an allen vier Eingangswegen."""
 
     def setUp(self):
-        self.org, self.fac, self.loc, self.fam, self.published, self.band = _world()
+        self.w = make_world()
 
     def test_create_job_strips_history_question_keeps_legit(self):
         import json as _json
         self.client.force_login(make_user("e2-rec", role="Recruiter"))
         self.client.post(reverse("ats:create_job"), data={
             "title": "E2-Stelle", "description": "Text",
-            "facility": str(self.fac.id), "location": str(self.loc.id),
-            "job_family": str(self.fam.id),
-            "workflow_state": str(self.published.id),
-            "pay_band": str(self.band.id),
+            "facility": str(self.w.facility.id),
+            "location": str(self.w.location.id),
+            "job_family": str(self.w.job_family.id),
+            "workflow_state": str(self.w.published.id),
+            "pay_band": str(self.w.band.id),
             "screening_questions": _json.dumps([
                 {"id": "q1", "question": "Was war Ihr letztes Gehalt?",
                  "type": "TEXT", "isMandatory": False},
@@ -426,15 +392,15 @@ class SalaryHistoryEnforcementTestCase(TestCase):
         import json as _json
         self.client.force_login(make_user("e2-admin2", role="HR-Admin"))
         self.client.post(reverse("ats:screening_questions"), data={
-            "form": "minimum", "family_id": str(self.fam.id),
+            "form": "minimum", "family_id": str(self.w.job_family.id),
             "minimum_json": _json.dumps([
                 {"id": "m1", "question": "Was haben Sie zuletzt verdient?",
                  "type": "TEXT", "isMandatory": True},
                 {"id": "m2", "question": "Führerschein Klasse B?",
                  "type": "YES_NO", "isMandatory": True},
             ])})
-        self.fam.refresh_from_db()
-        fragen = [q["question"] for q in self.fam.minimumQuestionsJson]
+        self.w.job_family.refresh_from_db()
+        fragen = [q["question"] for q in self.w.job_family.minimumQuestionsJson]
         self.assertEqual(fragen, ["Führerschein Klasse B?"])
 
     def test_ai_validator_filters_history_question(self):

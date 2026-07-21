@@ -400,7 +400,7 @@ class SalaryHistoryEnforcementTestCase(TestCase):
                  "type": "TEXT", "isMandatory": False},
             ])})
         job = JobPosting.objects.get(title="E2-Stelle")
-        fragen = [q["question"] for q in _json.loads(job.screeningQuestionsJson)]
+        fragen = [q["question"] for q in job.screeningQuestionsJson]
         self.assertNotIn("Was war Ihr letztes Gehalt?", fragen)
         self.assertIn("Haben Sie ein Examen?", fragen)          # bleibt
         self.assertIn("Was ist Ihre Gehaltsvorstellung?", fragen)  # zulässig
@@ -434,7 +434,7 @@ class SalaryHistoryEnforcementTestCase(TestCase):
                  "type": "YES_NO", "isMandatory": True},
             ])})
         self.fam.refresh_from_db()
-        fragen = [q["question"] for q in _json.loads(self.fam.minimumQuestionsJson)]
+        fragen = [q["question"] for q in self.fam.minimumQuestionsJson]
         self.assertEqual(fragen, ["Führerschein Klasse B?"])
 
     def test_ai_validator_filters_history_question(self):

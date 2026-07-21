@@ -125,21 +125,9 @@ def job_detail(request, job_id):
     nav_pages = Page.objects.filter(status="published", navEnabled=True).order_by('navOrder')
     job = get_object_or_404(JobPosting.objects.select_related('location', 'facility', 'department', 'contactPerson'), id=job_id)
 
-    # Parse modular components
-    tasks = []
-    requirements = []
-
-    if job.tasksJson:
-        try:
-            tasks = json.loads(job.tasksJson)
-        except Exception:
-            tasks = []
-
-    if job.requirementsJson:
-        try:
-            requirements = json.loads(job.requirementsJson)
-        except Exception:
-            requirements = []
+    # Modulare Bestandteile (JSONField liefert direkt Listen)
+    tasks = job.tasksJson or []
+    requirements = job.requirementsJson or []
 
     context = {
         'nav_pages': nav_pages,
@@ -160,13 +148,8 @@ def bewerben(request, job_id):
     nav_pages = Page.objects.filter(status="published", navEnabled=True).order_by('navOrder')
     job = get_object_or_404(JobPosting, id=job_id)
 
-    # Parse screening questions
-    screening_questions = []
-    if job.screeningQuestionsJson:
-        try:
-            screening_questions = json.loads(job.screeningQuestionsJson)
-        except Exception:
-            screening_questions = []
+    # Screening-Fragen (JSONField liefert direkt eine Liste)
+    screening_questions = job.screeningQuestionsJson or []
 
     if request.method == 'POST':
         # 1. Honey Pot Spam Protection
@@ -324,7 +307,7 @@ def bewerben(request, job_id):
                 jobPosting=job,
                 cvStorageId=cv_storage_path,
                 coverLetterTxt=cover_letter,
-                screeningAnswersJson=json.dumps(answers_dict),
+                screeningAnswersJson=answers_dict,
                 aiScore=ai_score,
                 aiRationale=ai_rationale,
                 status=initial_status,

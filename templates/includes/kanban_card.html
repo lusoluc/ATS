@@ -1,4 +1,4 @@
-<div class="applicant-card"
+{% load json_tags %}<div class="applicant-card"
      id="card-{{ app.id }}"
      draggable="true"
      ondragstart="dragCard(event, '{{ app.id }}')"
@@ -16,7 +16,7 @@
      data-ai-rationale="{{ app.aiRationale|default:'' }}"
      data-cv-storage-id="{{ app.cvStorageId|default:'' }}"
      data-notes="{{ app.internalNotes|default:'' }}"
-     data-screening="{{ app.screeningAnswersJson|default:'{}' }}"
+     data-screening="{{ app.screeningAnswersJson|as_json }}"
      onclick="openCandidateCard(this)"
 >
     <div class="card-header">

@@ -56,10 +56,9 @@ def create_job(request):
         panel_quorum, quorum_sent = _clamped('panel_quorum', 1, 15)
         panel_deadline, deadline_sent = _clamped('panel_deadline_days', 1, 60)
         rounds_sent = 'interview_rounds' in request.POST
-        rounds_json = json.dumps(
-            [r.strip()[:60] for r in
-             request.POST.get('interview_rounds', '').split(',')
-             if r.strip()][:6], ensure_ascii=False)
+        rounds_list = [r.strip()[:60] for r in
+                       request.POST.get('interview_rounds', '').split(',')
+                       if r.strip()][:6]
         description = request.POST.get('description', '').strip()
 
         tasks_raw = request.POST.get('tasks', '')
@@ -68,7 +67,14 @@ def create_job(request):
         tasks = [t.strip() for t in tasks_raw.split('\n') if t.strip()]
         requirements = [r.strip() for r in requirements_raw.split('\n') if r.strip()]
 
+        # HTTP liefert einen JSON-String – vor der Zuweisung ans JSONField parsen.
         screening_raw = request.POST.get('screening_questions', '[]')
+        try:
+            screening_questions = json.loads(screening_raw or '[]')
+            if not isinstance(screening_questions, list):
+                screening_questions = []
+        except (ValueError, TypeError):
+            screening_questions = []
 
         facility_id = request.POST.get('facility')
         dept_id = request.POST.get('department')
@@ -106,11 +112,11 @@ def create_job(request):
                 if deadline_sent:
                     job.panelDeadlineDays = panel_deadline
                 if rounds_sent:
-                    job.interviewRoundsJson = rounds_json
+                    job.interviewRoundsJson = rounds_list
                 job.description = description
-                job.tasksJson = json.dumps(tasks)
-                job.requirementsJson = json.dumps(requirements)
-                job.screeningQuestionsJson = screening_raw
+                job.tasksJson = tasks
+                job.requirementsJson = requirements
+                job.screeningQuestionsJson = screening_questions
                 job.facility = facility
                 job.location = location
                 job.jobFamily = job_family
@@ -126,12 +132,12 @@ def create_job(request):
                     title=title,
                     headcount=headcount or 1,
                     panelQuorum=panel_quorum,
-                    interviewRoundsJson=rounds_json,
+                    interviewRoundsJson=rounds_list,
                     panelDeadlineDays=panel_deadline,
                     description=description,
-                    tasksJson=json.dumps(tasks),
-                    requirementsJson=json.dumps(requirements),
-                    screeningQuestionsJson=screening_raw,
+                    tasksJson=tasks,
+                    requirementsJson=requirements,
+                    screeningQuestionsJson=screening_questions,
                     organization=org,
                     facility=facility,
                     location=location,
@@ -160,7 +166,7 @@ def create_job(request):
                 raw_ids = request.POST.getlist('panel_members')
                 valid = list(_User.objects.filter(id__in=raw_ids, is_active=True)
                              .values_list('id', flat=True))
-                job.panelUserIdsJson = json.dumps([str(i) for i in valid])
+                job.panelUserIdsJson = [str(i) for i in valid]
                 job.save(update_fields=['panelUserIdsJson'])
             # Vorstands-Mindeststandards: serverseitig, nach JEDEM Speichern –
             # egal ob Wizard, Vorgaenger-Uebernahme oder Import den Inhalt lieferte.

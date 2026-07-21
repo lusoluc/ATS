@@ -109,20 +109,20 @@ def save_app_workflow(request):
                 wf = get_object_or_404(AppWorkflowDef, id=workflow_id)
                 wf.name = name
                 wf.facility = facility
-                wf.locationIdsJson = json.dumps(location_ids)
-                wf.categoryIdsJson = json.dumps(category_ids)
-                wf.jobIdsJson = json.dumps(job_ids)
-                wf.stepsJson = json.dumps(structured_steps)
+                wf.locationIdsJson = location_ids
+                wf.categoryIdsJson = category_ids
+                wf.jobIdsJson = job_ids
+                wf.stepsJson = structured_steps
                 wf.save()
                 action = "UPDATE_APP_WORKFLOW"
             else:
                 wf = AppWorkflowDef.objects.create(
                     name=name,
                     facility=facility,
-                    locationIdsJson=json.dumps(location_ids),
-                    categoryIdsJson=json.dumps(category_ids),
-                    jobIdsJson=json.dumps(job_ids),
-                    stepsJson=json.dumps(structured_steps)
+                    locationIdsJson=location_ids,
+                    categoryIdsJson=category_ids,
+                    jobIdsJson=job_ids,
+                    stepsJson=structured_steps
                 )
                 action = "CREATE_APP_WORKFLOW"
 
@@ -245,7 +245,7 @@ def screening_questions_view(request):
         from ..questions import normalize_question, normalize_questions
         fam = get_object_or_404(JobFamily, id=request.POST.get("family_id"))
         try:
-            qs = normalize_questions(json.loads(fam.minimumQuestionsJson or "[]"))
+            qs = normalize_questions(fam.minimumQuestionsJson or [])
         except (ValueError, TypeError):
             qs = []
         action = request.POST.get("action", "")
@@ -288,7 +288,7 @@ def screening_questions_view(request):
                         family=fam.name,
                         removed=[q.get("question") for q in blocked])
             messages.warning(request, PAY_HISTORY_MESSAGE)
-        fam.minimumQuestionsJson = json.dumps(qs, ensure_ascii=False)
+        fam.minimumQuestionsJson = qs
         fam.save(update_fields=["minimumQuestionsJson"])
         write_audit("MINIMUM_STANDARD_CHANGED", user=request.user,
                     family=fam.name, count=len(qs), op=action)
@@ -316,7 +316,8 @@ def screening_questions_view(request):
                         family=fam.name,
                         removed=[q.get("question") for q in blocked])
             messages.warning(request, PAY_HISTORY_MESSAGE)
-        fam.minimumQuestionsJson = json.dumps(parsed, ensure_ascii=False)
+        # minimum_json kommt bereits geparst aus dem POST – nicht erneut dumpen.
+        fam.minimumQuestionsJson = parsed
         fam.save(update_fields=["minimumQuestionsJson"])
         write_audit("MINIMUM_STANDARD_CHANGED", user=request.user,
                     family=fam.name, count=len(parsed))
@@ -338,7 +339,7 @@ def screening_questions_view(request):
     family_rows = []
     for f in JobFamily.objects.filter(archived=False).order_by("name"):
         try:
-            fqs = _nq(json.loads(f.minimumQuestionsJson or "[]"))
+            fqs = _nq(f.minimumQuestionsJson or [])
         except (ValueError, TypeError):
             fqs = []
         rows = [{"i": i, "q": q,

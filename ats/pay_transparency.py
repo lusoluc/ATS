@@ -17,7 +17,6 @@ Bewusst als eigenes Modul: die Wächter der Folgephasen (Art.-4-
 Tätigkeitsbewertung, Spannen-Konsistenz) docken hier an, ohne Views
 oder Modelle zu verstreuen.
 """
-import json
 import re
 from typing import TYPE_CHECKING
 
@@ -129,10 +128,7 @@ def strip_salary_history_questions(job: "JobPosting") -> list[str]:
 
     Liefert die entfernten Fragetexte (leer = nichts zu tun). Der Aufrufer
     speichert und auditiert — Muster wie ensure_minimum_standards."""
-    try:
-        questions = json.loads(job.screeningQuestionsJson or "[]")
-    except (ValueError, TypeError):
-        return []
+    questions = job.screeningQuestionsJson or []
     if not isinstance(questions, list):
         return []
     kept, removed = [], []
@@ -143,5 +139,5 @@ def strip_salary_history_questions(job: "JobPosting") -> list[str]:
         else:
             kept.append(q)
     if removed:
-        job.screeningQuestionsJson = json.dumps(kept, ensure_ascii=False)
+        job.screeningQuestionsJson = kept
     return removed

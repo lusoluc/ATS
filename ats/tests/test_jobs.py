@@ -293,7 +293,6 @@ class ScreeningQuestionTypesTestCase(TestCase):
     """Dynamisches Bewerbungsformular: TEXT/SELECT/YES_NO je Stelle."""
 
     def _world(self, screening):
-        import json as _json
 
         from ..models import Facility, JobFamily, JobPosting, Location, Organization, WorkflowState
         org = Organization.objects.create(name="O")
@@ -304,7 +303,7 @@ class ScreeningQuestionTypesTestCase(TestCase):
         self.job = JobPosting.objects.create(
             title="Senior IT Business Analyst", organization=org,
             facility=fac, location=loc, jobFamily=fam, workflowState=wf,
-            screeningQuestionsJson=_json.dumps(screening))
+            screeningQuestionsJson=screening)
 
     QUESTIONS = [
         {"id": "pay", "type": "SELECT", "isMandatory": True,
@@ -333,7 +332,6 @@ class ScreeningQuestionTypesTestCase(TestCase):
         self.assertContains(page, "DORA/MaRisk/PSD2")
 
     def test_answers_saved_and_ko_only_with_expected(self):
-        import json as _json
 
         from ..models import Application
         self._world(self.QUESTIONS)
@@ -341,7 +339,7 @@ class ScreeningQuestionTypesTestCase(TestCase):
                     exp="YES")
         app = Application.objects.get()
         self.assertEqual(app.status, "NEW")                    # kein K.O.
-        answers = _json.loads(app.screeningAnswersJson)
+        answers = app.screeningAnswersJson
         self.assertEqual(
             answers["Mit welchen Payment-Standards haben Sie gearbeitet?"],
             "ISO 20022")
@@ -361,14 +359,13 @@ class ScreeningQuestionTypesTestCase(TestCase):
         self.assertContains(r, 'value="SEPA" selected')        # Werterhalt
 
     def test_text_answer_xss_stays_escaped(self):
-        import json as _json
 
         from ..models import Application
         self._world(self.QUESTIONS)
         payload = '<script>alert("qx")</script>'
         self._apply(pay="SEPA", reg=payload, exp="YES")
         app = Application.objects.get()
-        answers = _json.loads(app.screeningAnswersJson)
+        answers = app.screeningAnswersJson
         self.assertEqual(
             answers["Kurz: ein regulatorisches Projekt (DORA/MaRisk/PSD2)?"],
             payload)                                           # roh gespeichert
@@ -380,7 +377,6 @@ class QuestionBuilderAndFileTypeTestCase(TestCase):
     """Mindeststandard-Builder ohne JSON + Pflicht-Dokument-Fragetyp."""
 
     def _world(self, screening=None):
-        import json as _json
 
         from ..models import Facility, JobFamily, JobPosting, Location, Organization, WorkflowState
         org = Organization.objects.create(name="O")
@@ -391,10 +387,9 @@ class QuestionBuilderAndFileTypeTestCase(TestCase):
         self.job = JobPosting.objects.create(
             title="Pflegefachkraft", organization=org, facility=fac,
             location=loc, jobFamily=self.fam, workflowState=wf,
-            screeningQuestionsJson=_json.dumps(screening or []))
+            screeningQuestionsJson=screening or [])
 
     def test_builder_add_edit_reorder_delete_without_json(self):
-        import json as _json
         self._world()
         self.client.force_login(make_user("qbadmin", role="HR-Admin"))
         url = reverse('ats:screening_questions')
@@ -407,7 +402,7 @@ class QuestionBuilderAndFileTypeTestCase(TestCase):
                                     "q_type": "FILE",
                                     "q_question": "Führerschein Klasse B"})
         self.fam.refresh_from_db()
-        qs = _json.loads(self.fam.minimumQuestionsJson)
+        qs = self.fam.minimumQuestionsJson
         self.assertEqual([q["type"] for q in qs], ["YES_NO", "FILE"])
         self.assertEqual(qs[0]["expectedAnswer"], "YES")       # K.O. gesetzt
         self.assertTrue(all(q["isMandatory"] for q in qs))     # immer Pflicht
@@ -419,7 +414,7 @@ class QuestionBuilderAndFileTypeTestCase(TestCase):
                                     "q_expected": "YES"})
         self.client.post(url, data={**base, "action": "delete", "idx": "0"})
         self.fam.refresh_from_db()
-        qs = _json.loads(self.fam.minimumQuestionsJson)
+        qs = self.fam.minimumQuestionsJson
         self.assertEqual(len(qs), 1)
         self.assertIn("Pflege-Examen", qs[0]["question"])
         # Die Seite selbst zeigt Formularfelder, kein JSON-Feld mehr
@@ -456,7 +451,7 @@ class QuestionBuilderAndFileTypeTestCase(TestCase):
         doc = ApplicationDocument.objects.get(docType="REQUIRED")
         self.assertIn("Führerschein Klasse B", doc.name)
         self.assertIn("schein.pdf",
-                      app.screeningAnswersJson)               # Antwort = Dateiname
+                      str(app.screeningAnswersJson))          # Antwort = Dateiname
         self.assertEqual(app.status, "NEW")                    # FILE nie K.O.
 
 class JobTemplateHierarchyTestCase(TestCase):
@@ -636,14 +631,13 @@ class WorkflowActionsTestCase(TestCase):
     def test_auto_advance_does_not_chain(self):
         """Der Autovorlauf löst KEINE weitere Automatik aus – sonst wären
         Endlosschleifen möglich."""
-        import json
 
         from ..models import AppWorkflowDef, AuditLog
         # Regel: bei INVITED nochmal weiterschieben (würde eine Kette bilden)
         AppWorkflowDef.objects.create(
-            name="Kette", jobIdsJson=json.dumps([str(self.job.id)]),
-            stepsJson=json.dumps([{"state": "INVITED", "actions": [
-                {"type": "AUTO_ADVANCE", "to": "NEW"}]}]))
+            name="Kette", jobIdsJson=[str(self.job.id)],
+            stepsJson=[{"state": "INVITED", "actions": [
+                {"type": "AUTO_ADVANCE", "to": "NEW"}]}])
         self._run([{"type": "AUTO_ADVANCE", "to": "INVITED"}])
         self.assertEqual(self.app.status, "INVITED")   # NICHT weiter zu NEW
         self.assertEqual(AuditLog.objects.filter(
@@ -765,10 +759,8 @@ class AutomationFormEditorTestCase(TestCase):
         self.client.force_login(self.admin)
 
     def _saved_steps(self):
-        import json
-
         from ..models import AppWorkflowDef
-        return json.loads(AppWorkflowDef.objects.get().stepsJson)
+        return AppWorkflowDef.objects.get().stepsJson
 
     def test_defaults_contain_no_phantom_actions(self):
         """Die Vorbelegung darf KEINE Aktionstypen mehr erzeugen, die der
@@ -798,8 +790,6 @@ class AutomationFormEditorTestCase(TestCase):
 
     def test_defaults_are_actually_executed(self):
         """Beweis, dass die Vorbelegung wirkt: INVITED legt eine Aufgabe an."""
-        import json
-
         from ..models import (
             Applicant,
             Application,
@@ -827,7 +817,7 @@ class AutomationFormEditorTestCase(TestCase):
             applicant=Applicant.objects.create(firstName="A", lastName="F",
                                                email="af@x.de"),
             jobPosting=job, status="INVITED")
-        steps = json.loads(AppWorkflowDef.objects.get().stepsJson)
+        steps = AppWorkflowDef.objects.get().stepsJson
         execute_workflow_actions(app, steps[0]["actions"])
         self.assertEqual(WorkflowTask.objects.count(), 1)   # Aufgabe entstand
 

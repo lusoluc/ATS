@@ -479,7 +479,7 @@ class ApplicantFormSecurityTestCase(TestCase):
                                              organization=org, facility=fac,
                                              location=loc, jobFamily=fam,
                                              workflowState=wf,
-                                             screeningQuestionsJson='[]')
+                                             screeningQuestionsJson=[])
 
     def _apply(self, cv, docs=()):
         data = {"first_name": "Eva", "last_name": "Test",

@@ -1,3 +1,4 @@
+import json
 import os
 import sqlite3
 
@@ -81,6 +82,19 @@ class Command(BaseCommand):
         if dt and dt.tzinfo is None:
             dt = make_aware(dt)
         return dt
+
+    def parse_json(self, raw, default):
+        """Alt-DB (Prisma) speichert JSON als TEXT – fuer die JSONFields
+        muss der String jetzt geparst werden (kaputt/leer -> Default)."""
+        if raw is None or raw == '':
+            return default
+        if isinstance(raw, (list, dict)):
+            return raw
+        try:
+            parsed = json.loads(raw)
+        except (ValueError, TypeError):
+            return default
+        return parsed if isinstance(parsed, type(default)) else default
 
     def handle(self, *args, **options):
         source_path = options['source']
@@ -350,15 +364,18 @@ class Command(BaseCommand):
                 for r in get_rows('WorkflowDefinition'):
                     WorkflowDefinition.objects.create(
                         id=r['id'], name=r['name'], facility_id=r['facilityId'],
-                        stepsJson=r['stepsJson'], createdAt=self.parse_date(r['createdAt'])
+                        stepsJson=self.parse_json(r['stepsJson'], []),
+                        createdAt=self.parse_date(r['createdAt'])
                     )
 
                 # AppWorkflowDef
                 for r in get_rows('AppWorkflowDef'):
                     AppWorkflowDef.objects.create(
                         id=r['id'], name=r['name'], facility_id=r['facilityId'],
-                        locationIdsJson=r['locationIdsJson'], categoryIdsJson=r['categoryIdsJson'],
-                        jobIdsJson=r['jobIdsJson'], stepsJson=r['stepsJson'],
+                        locationIdsJson=self.parse_json(r['locationIdsJson'], []),
+                        categoryIdsJson=self.parse_json(r['categoryIdsJson'], []),
+                        jobIdsJson=self.parse_json(r['jobIdsJson'], []),
+                        stepsJson=self.parse_json(r['stepsJson'], []),
                         createdAt=self.parse_date(r['createdAt'])
                     )
 
@@ -384,8 +401,9 @@ class Command(BaseCommand):
                 for r in get_rows('JobPosting'):
                     JobPosting.objects.create(
                         id=r['id'], title=r['title'], description=r['description'],
-                        tasksJson=r['tasksJson'], requirementsJson=r['requirementsJson'],
-                        screeningQuestionsJson=r['screeningQuestionsJson'],
+                        tasksJson=self.parse_json(r['tasksJson'], []),
+                        requirementsJson=self.parse_json(r['requirementsJson'], []),
+                        screeningQuestionsJson=self.parse_json(r['screeningQuestionsJson'], []),
                         contactPerson_id=r['contactPersonId'], organization_id=r['organizationId'],
                         facility_id=r['facilityId'], department_id=r['departmentId'],
                         location_id=r['locationId'], jobFamily_id=r['jobFamilyId'],
@@ -418,7 +436,7 @@ class Command(BaseCommand):
                     Application.objects.create(
                         id=r['id'], applicant_id=r['applicantId'], jobPosting_id=r['jobPostingId'],
                         cvStorageId=r['cvStorageId'], coverLetterTxt=r['coverLetterTxt'],
-                        screeningAnswersJson=r['screeningAnswersJson'],
+                        screeningAnswersJson=self.parse_json(r['screeningAnswersJson'], {}),
                         aiScore=r['aiScore'], aiRationale=r['aiRationale'],
                         status=r['status'], withdrawReason=r['withdrawReason'],
                         privacyNoticeVersion_id=r['privacyNoticeVersionId'],
@@ -475,7 +493,8 @@ class Command(BaseCommand):
                     AILearningSample.objects.create(
                         id=r['id'], application_id=r['applicationId'], categoryId=r['categoryId'],
                         facilityId=r['facilityId'], feedbackType=r['feedbackType'],
-                        anonymizedProfileJson=r['anonymizedProfileJson'], createdAt=self.parse_date(r['createdAt'])
+                        anonymizedProfileJson=self.parse_json(r['anonymizedProfileJson'], {}),
+                        createdAt=self.parse_date(r['createdAt'])
                     )
 
                 # --- 7. MIGRATION LEVEL 7: AppSteps ---

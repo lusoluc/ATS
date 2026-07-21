@@ -10,7 +10,6 @@ BLOCK_TYPES ist die eine Wahrheit: sie speist den Editor (Felder, Labels,
 Hilfetexte) UND die serverseitige Validierung. Neue Bloecke = ein Eintrag
 hier + ein Zweig im Render-Include.
 """
-import json
 
 # field-Typen: text, textarea, lines (eine Angabe je Zeile), int, url
 BLOCK_TYPES = {
@@ -114,7 +113,7 @@ def normalize_blocks(raw_list):
 
 def load_blocks(obj):
     try:
-        return normalize_blocks(json.loads(obj.blocksJson or "[]"))
+        return normalize_blocks(obj.blocksJson or [])
     except (ValueError, TypeError):
         return []
 

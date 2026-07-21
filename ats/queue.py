@@ -20,8 +20,10 @@ logger = logging.getLogger(__name__)
 
 
 def enqueue(task_type: str, payload: dict) -> AiTask:
+    # Robustheit der frueheren dumps(default=str)-Variante erhalten:
+    # nicht-JSON-faehige Werte (UUID, datetime) werden zu Strings.
     return AiTask.objects.create(taskType=task_type,
-                                 payloadJson=json.dumps(payload, default=str))
+                                 payloadJson=json.loads(json.dumps(payload, default=str)))
 
 
 # --- Handler ------------------------------------------------------------------
@@ -65,9 +67,9 @@ def process(task: AiTask) -> None:
     try:
         if handler is None:
             raise ValueError(f"Unbekannter taskType: {task.taskType}")
-        result = handler(json.loads(task.payloadJson or "{}"))
+        result = handler(task.payloadJson or {})
         task.status = "DONE"
-        task.resultJson = json.dumps(result or {}, default=str)
+        task.resultJson = json.loads(json.dumps(result or {}, default=str))
         task.error = None
     except Exception as e:
         logger.exception("AiTask %s fehlgeschlagen (Versuch %s/%s)",

@@ -521,7 +521,7 @@ def save_interview_feedback(request, app_id):
         application=app, author=request.user, round=rnd,
         defaults={
             'recommendation': recommendation,
-            'ratingsJson': json.dumps(ratings, ensure_ascii=False),
+            'ratingsJson': ratings,
             'strengths': (request.POST.get('strengths') or '').strip()[:4000],
             'concerns': (request.POST.get('concerns') or '').strip()[:4000],
             'comment': (request.POST.get('comment') or '').strip()[:4000],

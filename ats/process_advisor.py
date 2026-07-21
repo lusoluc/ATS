@@ -152,21 +152,14 @@ def ensure_minimum_standards(job):
     isMandatory=True erzwungen. Rueckgabe: Anzahl der Korrekturen (0 = Stelle
     erfuellte den Standard bereits). Aufrufer speichert und auditiert.
     """
-    import json as _json
     fam = getattr(job, 'jobFamily', None)
     if fam is None:
         return 0
-    try:
-        minimum = _json.loads(fam.minimumQuestionsJson or '[]')
-    except ValueError:
-        minimum = []
+    minimum = fam.minimumQuestionsJson or []
     if not minimum:
         return 0
-    try:
-        current = _json.loads(job.screeningQuestionsJson or '[]')
-        if not isinstance(current, list):
-            current = []
-    except ValueError:
+    current = job.screeningQuestionsJson or []
+    if not isinstance(current, list):
         current = []
     changes = 0
     for req in minimum:
@@ -186,5 +179,5 @@ def ensure_minimum_standards(job):
             existing['isMandatory'] = True   # Abschwaechen unmoeglich
             changes += 1
     if changes:
-        job.screeningQuestionsJson = _json.dumps(current, ensure_ascii=False)
+        job.screeningQuestionsJson = current
     return changes

@@ -12,7 +12,6 @@ Nutzung (ALTERNATIV zur Pflege-Demo, gleiche Instanz = ein Mandant):
 Bewusst OHNE geschuetzte Assets (kein Logo, keine Bilder der BAWAG) –
 nur Farbwelt und Struktur der Referenz.
 """
-import json
 from datetime import timedelta
 
 from django.conf import settings
@@ -102,14 +101,14 @@ class Command(PflegeSeed):
                     "question": "Haben Sie bereits im regulierten Umfeld "
                                 "(Bank/Versicherung/KRITIS) gearbeitet?"}]
         for fam in (fam_ba, fam_agile):
-            fam.minimumQuestionsJson = json.dumps(min_reg)
+            fam.minimumQuestionsJson = min_reg
             fam.save(update_fields=["minimumQuestionsJson"])
         # Filiale: Bankausbildung als Mindeststandard (K.O.)
-        fam_beratung.minimumQuestionsJson = json.dumps([{
+        fam_beratung.minimumQuestionsJson = [{
             "id": "min-bank", "type": "YES_NO", "isMandatory": True,
             "expectedAnswer": "YES",
             "question": "Liegt eine abgeschlossene Bankausbildung oder "
-                        "vergleichbare Qualifikation vor?"}])
+                        "vergleichbare Qualifikation vor?"}]
         fam_beratung.save(update_fields=["minimumQuestionsJson"])
 
         # ---------- Menschen ----------------------------------------------
@@ -132,13 +131,13 @@ class Command(PflegeSeed):
         demo_user("demo-bank-admin", "HR-Admin", "Sandra", "Wolf")
 
         # Executive-Prozess als KONFIGURATION: Familien-Default-Gremium
-        fam_exec.panelUserIdsJson = json.dumps([str(hm_it.id),
-                                                str(lead_it.id),
-                                                str(rec.id)])
-        fam_exec.minimumQuestionsJson = json.dumps([{
+        fam_exec.panelUserIdsJson = [str(hm_it.id),
+                                     str(lead_it.id),
+                                     str(rec.id)]
+        fam_exec.minimumQuestionsJson = [{
             "id": "min-exec", "type": "TEXT", "isMandatory": True,
             "question": "Beschreiben Sie Ihre P&L- bzw. "
-                        "Führungsverantwortung der letzten 5 Jahre."}])
+                        "Führungsverantwortung der letzten 5 Jahre."}]
         fam_exec.save(update_fields=["panelUserIdsJson",
                                      "minimumQuestionsJson"])
 
@@ -152,14 +151,14 @@ class Command(PflegeSeed):
             department=dep_it, jobFamily=fam_ba,
             chain="Bereichsleitung IT, Risikomanagement, Geschäftsführung",
             mandatory=True,
-            formQuestionsJson=json.dumps([
+            formQuestionsJson=[
                 {"id": "stack", "type": "TEXT", "isMandatory": True,
                  "question": "Welcher Tech-Stack / welche Systeme werden "
                              "betreut (z. B. T24, SWIFT-Gateway)?"},
                 {"id": "budget", "type": "SELECT", "isMandatory": True,
                  "question": "Ist das Budget im Stellenplan hinterlegt?",
                  "options": ["Ja, Stellenplan", "Ja, Sonderbudget",
-                             "Noch offen"]}]))
+                             "Noch offen"]}])
         RequisitionRule.objects.create(
             name="Standard Filialvertrieb", facility=filialnetz,
             chain="Filialleitung, Geschäftsführung", mandatory=False)
@@ -182,9 +181,9 @@ class Command(PflegeSeed):
                 department=dep, location=loc, jobFamily=fam,
                 contactPerson=cp, workflowState=published,
                 description=description,
-                tasksJson=json.dumps(tasks),
-                requirementsJson=json.dumps(requirements),
-                screeningQuestionsJson=json.dumps(screening))
+                tasksJson=tasks,
+                requirementsJson=requirements,
+                screeningQuestionsJson=screening)
             JobPosting.objects.filter(id=j.id).update(
                 createdAt=now - timedelta(days=days_old))
             return j
@@ -236,7 +235,7 @@ class Command(PflegeSeed):
                              "Core-Banking-Umfeld?"},
             ] + min_reg, days_old=18)
         # Tech-Prozess: Fachinterview + Team-Fit als 2er-Sichtungs-Gremium
-        j_ba.panelUserIdsJson = json.dumps([str(hm_it.id), str(lead_it.id)])
+        j_ba.panelUserIdsJson = [str(hm_it.id), str(lead_it.id)]
         j_ba.save(update_fields=["panelUserIdsJson"])
 
         # ---------- Stelle 2: Scrum Product Owner --------------------------
@@ -280,7 +279,7 @@ class Command(PflegeSeed):
                  "question": "Haben Sie mindestens 2 Jahre als PO/Agile "
                              "Coach mit Entwicklungsteams gearbeitet?"},
             ] + min_reg, days_old=9)
-        j_po.panelUserIdsJson = json.dumps([str(hm_it.id), str(lead_it.id)])
+        j_po.panelUserIdsJson = [str(hm_it.id), str(lead_it.id)]
         j_po.save(update_fields=["panelUserIdsJson"])
 
         # ---------- Stelle 3: Customer Relationship Manager ---------------
@@ -331,7 +330,7 @@ class Command(PflegeSeed):
                 "✓ Strukturierte Entwicklung: von der Fachkarriere bis zur "
                 "Führung"),
             contactPerson=cp, views=57,
-            blocksJson=json.dumps([
+            blocksJson=[
                 {"type": "stats",
                  "items": ["2,1 Mio|Kundinnen & Kunden",
                            "3.600+|Kolleginnen & Kollegen",
@@ -351,7 +350,7 @@ class Command(PflegeSeed):
                      "Gespräch, Team-Fit – transparent im Bewerberportal."]},
                 {"type": "cta", "text": "Nichts Passendes dabei?",
                  "buttonLabel": "Alle offenen Stellen ansehen",
-                 "url": "/jobs/"}]))
+                 "url": "/jobs/"}])
 
         # ---------- Lebendige Bewerbungen ----------------------------------
         def applicant(first, last, mail):
@@ -372,7 +371,7 @@ class Command(PflegeSeed):
         app1 = Application.objects.create(
             applicant=a1, jobPosting=j_ba, status="IN_REVIEW",
             source="LINKEDIN",
-            screeningAnswersJson=json.dumps(answers_ba))
+            screeningAnswersJson=answers_ba)
         ApplicationVote.objects.create(application=app1, user=hm_it,
                                        vote="FOR")  # 1/2 – Demo-Moment
         a2 = applicant("Daniel", "Kraus", "daniel.kraus@demo-mail.at")

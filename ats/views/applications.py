@@ -396,7 +396,7 @@ def update_status(request, app_id):
             wf = get_matching_workflow(app)
             if wf and wf.stepsJson:
                 try:
-                    steps = json.loads(wf.stepsJson)
+                    steps = wf.stepsJson
                     for step in steps:
                         step_state = ""
                         step_actions = []
@@ -458,32 +458,45 @@ def add_note(request, app_id):
 
 
 def get_matching_workflow(app):
-    """Finds the most specific AppWorkflowDef for this application's job, location, department or category."""
+    """Finds the most specific AppWorkflowDef for this application's job, location, department or category.
+
+    Die ID-Listen liegen als JSONField-Listen vor; __contains auf JSONField
+    ist auf SQLite nicht verfügbar, daher Abgleich in Python (pk-Reihenfolge
+    wie zuvor bei .first()).
+    """
+    workflows = list(AppWorkflowDef.objects.order_by('pk'))
+
+    def _first_with(field, needle):
+        return next((w for w in workflows
+                     if str(needle) in [str(i) for i in (getattr(w, field) or [])]),
+                    None)
+
     # 1. Check Job Posting specificity
-    wf = AppWorkflowDef.objects.filter(jobIdsJson__contains=str(app.jobPosting.id)).first()
+    wf = _first_with('jobIdsJson', app.jobPosting.id)
     if wf:
         return wf
 
     # 2. Check Location specificity
     if app.jobPosting.location:
-        wf = AppWorkflowDef.objects.filter(locationIdsJson__contains=str(app.jobPosting.location.id)).first()
+        wf = _first_with('locationIdsJson', app.jobPosting.location.id)
         if wf:
             return wf
 
     # 3. Check Category (Job Family) specificity
     if app.jobPosting.jobFamily:
-        wf = AppWorkflowDef.objects.filter(categoryIdsJson__contains=str(app.jobPosting.jobFamily.id)).first()
+        wf = _first_with('categoryIdsJson', app.jobPosting.jobFamily.id)
         if wf:
             return wf
 
     # 4. Check Facility specificity
     if app.jobPosting.facility:
-        wf = AppWorkflowDef.objects.filter(facility=app.jobPosting.facility).first()
+        wf = next((w for w in workflows
+                   if w.facility_id == app.jobPosting.facility.id), None)
         if wf:
             return wf
 
     # 5. Global Fallback
-    return AppWorkflowDef.objects.first()
+    return workflows[0] if workflows else None
 
 
 def execute_workflow_actions(app, actions):
@@ -790,11 +803,11 @@ def toggle_learning_sample(request, app_id):
                     'feedbackType': feedback_type,
                     'categoryId': str(app.jobPosting.jobFamily.id) if app.jobPosting.jobFamily else None,
                     'facilityId': str(app.jobPosting.facility.id),
-                    'anonymizedProfileJson': json.dumps({
+                    'anonymizedProfileJson': {
                         'coverLetter': app.coverLetterTxt,
                         'aiScore': app.aiScore,
                         'jobTitle': app.jobPosting.title
-                    })
+                    }
                 }
             )
 

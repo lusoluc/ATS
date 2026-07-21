@@ -702,7 +702,7 @@ class ConfigurableInterviewFormatsTestCase(TestCase):
 class InterviewRoundsTestCase(TestCase):
     """P1-11: mehrstufige Gespraechsrunden als formale Zustaende."""
 
-    def _world(self, rounds='["Erstgespräch", "Fachgespräch"]'):
+    def _world(self, rounds=("Erstgespräch", "Fachgespräch")):
         from ..models import (
             Applicant,
             Application,
@@ -721,7 +721,7 @@ class InterviewRoundsTestCase(TestCase):
         self.job = JobPosting.objects.create(
             title="Stationsleitung", organization=org, facility=self.fac,
             location=self.loc, jobFamily=self.fam,
-            workflowState=self.published, interviewRoundsJson=rounds)
+            workflowState=self.published, interviewRoundsJson=list(rounds))
         ap = Applicant.objects.create(firstName="R", lastName="K",
                                       email="rk@x.de")
         self.app = Application.objects.create(applicant=ap,
@@ -772,7 +772,7 @@ class InterviewRoundsTestCase(TestCase):
             action="INTERVIEW_ROUND_CHANGED").exists())
 
     def test_no_rounds_defined_keeps_legacy_behavior(self):
-        self._world(rounds="[]")
+        self._world(rounds=[])
         self.client.force_login(self.rec)
         r = self._hire()
         self.assertTrue(r.json()["success"])                    # wie bisher
@@ -780,9 +780,8 @@ class InterviewRoundsTestCase(TestCase):
         self.assertEqual(r2.status_code, 400)                   # nichts definiert
 
     def test_wizard_sets_rounds_and_edit_preserves(self):
-        import json as _json
 
-        self._world(rounds="[]")
+        self._world(rounds=[])
         self.client.force_login(make_user("ir-admin", role="HR-Admin"))
         base = {"job_id": str(self.job.id), "title": "Stationsleitung",
                 "description": "x", "tasks": "", "requirements": "",
@@ -793,17 +792,17 @@ class InterviewRoundsTestCase(TestCase):
             **base, "interview_rounds":
                 "Erstgespräch, Probearbeit , , Zusage-Gespräch"})
         self.job.refresh_from_db()
-        self.assertEqual(_json.loads(self.job.interviewRoundsJson),
+        self.assertEqual(self.job.interviewRoundsJson,
                          ["Erstgespräch", "Probearbeit", "Zusage-Gespräch"])
         # Edit OHNE das Feld: Bestand bleibt (Lehre aus der Headcount-Runde)
         self.client.post(reverse('ats:create_job'), data=base)
         self.job.refresh_from_db()
-        self.assertEqual(len(_json.loads(self.job.interviewRoundsJson)), 3)
+        self.assertEqual(len(self.job.interviewRoundsJson), 3)
         # Geleert = Rundenpflicht bewusst entfernt
         self.client.post(reverse('ats:create_job'),
                          data={**base, "interview_rounds": ""})
         self.job.refresh_from_db()
-        self.assertEqual(self.job.interviewRoundsJson, "[]")
+        self.assertEqual(self.job.interviewRoundsJson, [])
 
     def test_rounds_visible_on_interviews_page(self):
         self._world()
@@ -816,7 +815,7 @@ class InterviewRoundsTestCase(TestCase):
 class InterviewRoundCouplingTestCase(TestCase):
     """Interview-Ergebnis 'Stattgefunden' fuehrt die Gespraechsrunde mit."""
 
-    def _world(self, rounds='["Erstgespräch", "Fachgespräch"]'):
+    def _world(self, rounds=("Erstgespräch", "Fachgespräch")):
         from ..models import (
             Applicant,
             Application,
@@ -836,7 +835,7 @@ class InterviewRoundCouplingTestCase(TestCase):
         self.job = JobPosting.objects.create(
             title="Pflegefachkraft", organization=org, facility=fac,
             location=loc, jobFamily=fam, workflowState=ws,
-            interviewRoundsJson=rounds)
+            interviewRoundsJson=list(rounds))
         ap = Applicant.objects.create(firstName="I", lastName="C",
                                       email="ic@x.de")
         self.app = Application.objects.create(applicant=ap,
@@ -870,7 +869,7 @@ class InterviewRoundCouplingTestCase(TestCase):
         self.assertEqual(self.app.interviewRound, 0)
 
     def test_never_advances_beyond_defined_rounds(self):
-        self._world(rounds='["Einzelgespräch"]')              # nur 1 Runde
+        self._world(rounds=['Einzelgespräch'])              # nur 1 Runde
         self.app.interviewRound = 1                            # schon fertig
         self.app.save(update_fields=['interviewRound'])
         self._set_outcome("COMPLETED")
@@ -878,7 +877,7 @@ class InterviewRoundCouplingTestCase(TestCase):
         self.assertEqual(self.app.interviewRound, 1)           # kein Overflow
 
     def test_no_rounds_defined_is_noop(self):
-        self._world(rounds="[]")
+        self._world(rounds=[])
         self._set_outcome("COMPLETED")
         self.app.refresh_from_db()
         self.assertEqual(self.app.interviewRound, 0)           # nichts passiert
@@ -892,7 +891,7 @@ class InterviewFeedbackTestCase(TestCase):
     """Strukturiertes Interview-Feedback: erfassen, gruppieren, an
     Entscheidungspunkten sichtbar, Bedenken-Warnung an HIRED."""
 
-    def _world(self, rounds='["Erstgespräch", "Fachgespräch"]'):
+    def _world(self, rounds=("Erstgespräch", "Fachgespräch")):
         from ..models import (
             Applicant,
             Application,
@@ -911,7 +910,7 @@ class InterviewFeedbackTestCase(TestCase):
         self.job = JobPosting.objects.create(
             title="Teamleitung Pflege", organization=org, facility=fac,
             location=loc, jobFamily=fam, workflowState=ws,
-            interviewRoundsJson=rounds)
+            interviewRoundsJson=list(rounds))
         ap = Applicant.objects.create(firstName="F", lastName="B",
                                       email="fb@x.de")
         self.app = Application.objects.create(applicant=ap,
@@ -967,7 +966,7 @@ class InterviewFeedbackTestCase(TestCase):
 
     def test_hire_warns_on_open_concerns_then_allows_with_force(self):
         from ..models import AuditLog
-        self._world(rounds="[]")   # keine Rundenpflicht, damit HIRED offen
+        self._world(rounds=[])   # keine Rundenpflicht, damit HIRED offen
         self._save(self.rec2, round="0", recommendation="NO",
                    concerns="Referenzen ausstehend")
         self.client.force_login(self.rec)
@@ -992,7 +991,7 @@ class InterviewFeedbackTestCase(TestCase):
             action="HIRE_CONCERNS_ACKNOWLEDGED").exists())
 
     def test_hire_unaffected_when_no_concerns(self):
-        self._world(rounds="[]")
+        self._world(rounds=[])
         self._save(self.rec2, round="0", recommendation="YES",
                    strengths="Top", concerns="")   # keine Bedenken
         self.client.force_login(self.rec)
@@ -1042,7 +1041,7 @@ class InterviewFeedbackPercentTestCase(TestCase):
         self.job = JobPosting.objects.create(
             title="Erzieher:in", organization=org, facility=fac,
             location=loc, jobFamily=fam, workflowState=ws,
-            interviewRoundsJson='["Erstgespräch"]')
+            interviewRoundsJson=['Erstgespräch'])
         ap = Applicant.objects.create(firstName="F", lastName="P",
                                       email="fp@x.de")
         self.app = Application.objects.create(applicant=ap,
@@ -1136,12 +1135,11 @@ class FeedbackBoardSummaryTestCase(TestCase):
         self.rec2 = make_user("bs-rec2", role="Recruiter")
 
     def _fb(self, author, ratings, concerns="", rec="YES", rnd=0):
-        import json
 
         from ..models import InterviewFeedback
         InterviewFeedback.objects.create(
             application=self.app, author=author, round=rnd,
-            recommendation=rec, ratingsJson=json.dumps(ratings),
+            recommendation=rec, ratingsJson=ratings,
             concerns=concerns)
 
     def test_bulk_summary_averages_and_counts(self):
@@ -1172,7 +1170,7 @@ class FeedbackBoardSummaryTestCase(TestCase):
 class FeedbackRequestTestCase(TestCase):
     """Bitte um Feedback: Event-Mail bei 'stattgefunden' + Cron-Nachfassen."""
 
-    def _world(self, rounds="[]"):
+    def _world(self, rounds=()):
         from ..models import (
             Applicant,
             Application,
@@ -1192,7 +1190,7 @@ class FeedbackRequestTestCase(TestCase):
         self.job = JobPosting.objects.create(
             title="Heilerziehungspfleger", organization=org, facility=fac,
             location=loc, jobFamily=fam, workflowState=ws,
-            interviewRoundsJson=rounds)
+            interviewRoundsJson=list(rounds))
         self.app = Application.objects.create(
             applicant=Applicant.objects.create(firstName="F", lastName="R",
                                                email="fr@x.de"),
@@ -1232,7 +1230,7 @@ class FeedbackRequestTestCase(TestCase):
         # p1 hat schon bewertet (Runde 0)
         InterviewFeedback.objects.create(
             application=self.app, author=self.p1, round=0,
-            recommendation="YES", ratingsJson='{"Passt ins Team": 80}')
+            recommendation="YES", ratingsJson={"Passt ins Team": 80})
         box = self._complete()
         rcpts = [m.to[0] for m in box]
         self.assertEqual(rcpts, ["p2@x.de"])         # nur der Offene
@@ -1281,7 +1279,6 @@ class FeedbackModalJsonTestCase(TestCase):
     """Interview-Feedback im Kandidaten-Modal (JSON-Endpoint)."""
 
     def _world(self):
-        import json
 
         from ..models import (
             Applicant,
@@ -1310,7 +1307,7 @@ class FeedbackModalJsonTestCase(TestCase):
         self.rec2 = make_user("mj-rec2", role="Recruiter")
         InterviewFeedback.objects.create(
             application=self.app, author=self.rec2, round=0,
-            recommendation="NO", ratingsJson=json.dumps({"Passt ins Team": 40}),
+            recommendation="NO", ratingsJson={"Passt ins Team": 40},
             concerns="Führung noch unklar", strengths="Fachlich stark")
 
     def test_json_returns_structured_feedback(self):

@@ -6,7 +6,6 @@ urls.py und bestehende Importe (`from ats.views import X`) unveraendert
 funktionieren.
 """
 import datetime
-import json
 import logging
 
 from django.contrib import messages
@@ -248,7 +247,7 @@ def panel_defaults_view(request):
             raw_ids = request.POST.getlist('members')
             value = [str(i) for i in _User.objects.filter(
                 id__in=raw_ids, is_active=True).values_list('id', flat=True)]
-        obj.panelUserIdsJson = json.dumps(value)
+        obj.panelUserIdsJson = value
         obj.save(update_fields=['panelUserIdsJson'])
         write_audit('PANEL_DEFAULT_CHANGED', user=request.user,
                     level=request.POST.get('level'), entity=str(obj),
@@ -263,10 +262,7 @@ def panel_defaults_view(request):
     def rows(model, level):
         out = []
         for obj in model.objects.order_by('name'):
-            try:
-                current = json.loads(obj.panelUserIdsJson or '[]')
-            except ValueError:
-                current = []
+            current = obj.panelUserIdsJson or []
             out.append({'obj': obj, 'level': level,
                         'no_panel': any(str(i).upper() == 'NONE' for i in current),
                         'current': {str(i) for i in current}})
@@ -468,7 +464,7 @@ def staffing_requests_view(request):
             answers = {}
             if rule:
                 try:
-                    rqs = _nqs(json.loads(rule.formQuestionsJson or "[]"))
+                    rqs = _nqs(rule.formQuestionsJson or [])
                 except (ValueError, TypeError):
                     rqs = []
                 for q in rqs:
@@ -485,7 +481,7 @@ def staffing_requests_view(request):
                 jobFamily=job_family,
                 headcount=headcount, desiredStart=desired,
                 justification=justification, requestedBy=request.user,
-                answersJson=json.dumps(answers, ensure_ascii=False))
+                answersJson=answers)
             write_audit('STAFFING_REQUEST_CREATED', user=request.user,
                         request_id=str(req.id), facility=facility.name,
                         headcount=headcount)
@@ -529,8 +525,7 @@ def staffing_requests_view(request):
             rule = get_object_or_404(RequisitionRule,
                                      id=request.POST.get('rule_id'))
             try:
-                qs = normalize_questions(json.loads(
-                    rule.formQuestionsJson or "[]"))
+                qs = normalize_questions(rule.formQuestionsJson or [])
             except (ValueError, TypeError):
                 qs = []
             if form == 'rule_q_add':
@@ -545,7 +540,7 @@ def staffing_requests_view(request):
                 idx = request.POST.get('idx')
                 if idx and idx.isdigit() and int(idx) < len(qs):
                     qs.pop(int(idx))
-            rule.formQuestionsJson = json.dumps(qs, ensure_ascii=False)
+            rule.formQuestionsJson = qs
             rule.save(update_fields=['formQuestionsJson'])
             write_audit('REQUISITION_RULE_FORM_CHANGED', user=request.user,
                         name=rule.name, count=len(qs))
@@ -707,14 +702,14 @@ def staffing_requests_view(request):
                              "Veröffentlichung vervollständigen – der "
                              "Prozess-Berater in der Bearbeitung schlägt "
                              "passende Screening-Fragen vor.)"),
-                screeningQuestionsJson='[]')
+                screeningQuestionsJson=[])
             # Prozess-Gedaechtnis: der Entwurf bekommt den zuletzt real
             # genutzten Prozess der Jobfamilie gleich mit (Fragen, Aufgaben,
             # Anforderungen) – eine Klickstrecke weniger beim Vervollstaendigen.
             prev = _previous_process(job.jobFamily_id, req.facility_id,
                                      exclude_id=job.id)
             if prev:
-                job.screeningQuestionsJson = json.dumps(prev['screening_questions'])
+                job.screeningQuestionsJson = prev['screening_questions']
                 job.tasksJson = prev['tasks']
                 job.requirementsJson = prev['requirements']
                 job.save(update_fields=['screeningQuestionsJson', 'tasksJson',
@@ -786,8 +781,7 @@ def staffing_requests_view(request):
     form_questions = []
     if form_rule:
         try:
-            form_questions = _nq2(json.loads(
-                form_rule.formQuestionsJson or "[]"))
+            form_questions = _nq2(form_rule.formQuestionsJson or [])
         except (ValueError, TypeError):
             form_questions = []
     rule_rows = []
@@ -795,7 +789,7 @@ def staffing_requests_view(request):
     for rl in _RR.objects.select_related(
             'facility', 'department', 'jobFamily').order_by('-createdAt'):
         try:
-            rl_qs = _nq2(json.loads(rl.formQuestionsJson or "[]"))
+            rl_qs = _nq2(rl.formQuestionsJson or [])
         except (ValueError, TypeError):
             rl_qs = []
         rule_rows.append({'rule': rl, 'questions': rl_qs,
@@ -807,10 +801,7 @@ def staffing_requests_view(request):
         rows = []
         for r in reqs:
             steps = list(r.steps.all())
-            try:
-                answers = json.loads(r.answersJson or "{}")
-            except (ValueError, TypeError):
-                answers = {}
+            answers = r.answersJson or {}
             pending = [st for st in steps if st.status == 'PENDING']
             min_order = pending[0].order if pending else None
             due = [st for st in pending if st.order == min_order]
@@ -887,19 +878,16 @@ def _previous_process(job_family_id, facility_id=None, exclude_id=None,
         return {'source': 'REGELWERK', 'scope': 'Regelwerk (keine Vorlage vorhanden)',
                 'source_title': f'Prozess-Berater: {fam_name}', 'source_date': '',
                 'source_facility': '', 'screening_questions': questions,
-                'tasks': '[]', 'requirements': '[]'}
-    try:
-        questions = json.loads(source.screeningQuestionsJson or '[]')
-    except ValueError:
-        questions = []
+                'tasks': [], 'requirements': []}
+    questions = source.screeningQuestionsJson or []
     return {
         'source': 'VORGAENGER', 'scope': scope,
         'source_title': source.title,
         'source_date': timezone.localtime(source.createdAt).strftime('%d.%m.%Y'),
         'source_facility': source.facility.name if source.facility else '',
         'screening_questions': questions,
-        'tasks': source.tasksJson or '[]',
-        'requirements': source.requirementsJson or '[]',
+        'tasks': source.tasksJson or [],
+        'requirements': source.requirementsJson or [],
     }
 
 

@@ -266,7 +266,7 @@ class SourceChannelTestCase(TestCase):
                                              organization=org, facility=fac,
                                              location=loc, jobFamily=fam,
                                              workflowState=wf,
-                                             screeningQuestionsJson='[]')
+                                             screeningQuestionsJson=[])
 
     def _apply(self, email):
         return self.client.post(reverse('ats:bewerben', args=[self.job.id]),
@@ -361,7 +361,7 @@ class AnalyticsCoverageTestCase(TestCase):
         job = JobPosting.objects.create(title="Stelle", organization=org,
                                         facility=fac, location=loc,
                                         jobFamily=fam, workflowState=wf,
-                                        screeningQuestionsJson='[]')
+                                        screeningQuestionsJson=[])
         self.client.get("/pages/impressum-ac/")                # Inhaltsseite
         self.assertIsNone(self.client.session.get("application_src"))
         self.client.post(reverse('ats:bewerben', args=[job.id]),
@@ -439,7 +439,7 @@ class HeadcountTestCase(TestCase):
             title="Pflegefachkraft Nord", organization=org,
             facility=self.fac, location=loc, jobFamily=fam,
             workflowState=wf, headcount=headcount,
-            screeningQuestionsJson='[]')
+            screeningQuestionsJson=[])
         LandingPage.objects.create(name="LP", slug="hc-lp",
                                    facility=self.fac)
 

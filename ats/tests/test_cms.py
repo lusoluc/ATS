@@ -119,7 +119,6 @@ class VisualProcessLanguageTestCase(TestCase):
         self.assertContains(page, "Bewerbungsfortschritt")       # a11y-Label
 
     def test_approvals_seat_dots_with_delegation_marker(self):
-        import json as _json
 
         from ..models import (
             Applicant,
@@ -143,7 +142,7 @@ class VisualProcessLanguageTestCase(TestCase):
         job = JobPosting.objects.create(
             title="PDL Sitzprobe", organization=org, facility=fac,
             location=loc, jobFamily=fam, workflowState=wf,
-            panelUserIdsJson=_json.dumps([str(member.id), str(other.id)]))
+            panelUserIdsJson=[str(member.id), str(other.id)])
         ap = Applicant.objects.create(firstName="S", lastName="K", email="sk@x.de")
         app = Application.objects.create(applicant=ap, jobPosting=job,
                                          status="IN_REVIEW")
@@ -245,7 +244,7 @@ class LandingPageTestCase(TestCase):
             return JobPosting.objects.create(title=title, organization=org,
                                              facility=fac, location=self.loc,
                                              jobFamily=fam, workflowState=wf,
-                                             screeningQuestionsJson='[]')
+                                             screeningQuestionsJson=[])
         self.job_in = job("Pflegefachkraft Elbblick", self.fac_a)
         self.job_out = job("Verwaltung Klinik B", self.fac_b)
         self.lp = LandingPage.objects.create(
@@ -319,12 +318,11 @@ class CmsBlocksTestCase(TestCase):
         self.assertEqual(out[2]["items"], ["10|Häuser", "4,8|Note"])
 
     def _page(self, blocks):
-        import json as _json
 
         from ..models import Page
         return Page.objects.create(title="Karriere", slug="karriere-cms",
                                    status="published",
-                                   blocksJson=_json.dumps(blocks))
+                                   blocksJson=blocks)
 
     def test_public_page_renders_blocks_escaped(self):
         from ..models import ContactPerson, Facility, JobFamily, JobPosting, Location, Organization, WorkflowState
@@ -364,7 +362,6 @@ class CmsBlocksTestCase(TestCase):
         self.assertContains(page, "&lt;script&gt;")
 
     def test_editor_cycle_add_save_reorder_delete_and_rights(self):
-        import json as _json
 
         pg = self._page([])
         url = reverse('ats:blocks_editor',
@@ -381,16 +378,15 @@ class CmsBlocksTestCase(TestCase):
                                     "f_imageUrl": ""})
         self.client.post(url, data={"action": "up", "idx": "1"})
         pg.refresh_from_db()
-        blocks = _json.loads(pg.blocksJson)
+        blocks = pg.blocksJson
         self.assertEqual([b["type"] for b in blocks],
                          ["checklist", "hero"])                # umsortiert
         self.assertEqual(blocks[1]["heading"], "Hallo")
         self.client.post(url, data={"action": "delete", "idx": "0"})
         pg.refresh_from_db()
-        self.assertEqual(len(_json.loads(pg.blocksJson)), 1)
+        self.assertEqual(len(pg.blocksJson), 1)
 
     def test_editor_noop_save_preserves_blocks(self):
-        import json as _json
 
         blocks = [{"type": "quote", "text": "Bestes Team.",
                    "author": "Aylin", "role": "Pflege"}]
@@ -402,16 +398,15 @@ class CmsBlocksTestCase(TestCase):
                                     "f_text": "Bestes Team.",
                                     "f_author": "Aylin", "f_role": "Pflege"})
         pg.refresh_from_db()
-        self.assertEqual(_json.loads(pg.blocksJson), blocks)   # No-Op-Garantie
+        self.assertEqual(pg.blocksJson, blocks)                # No-Op-Garantie
 
     def test_landing_page_renders_blocks(self):
-        import json as _json
 
         from ..models import LandingPage
         LandingPage.objects.create(
             name="LP", slug="lp-blocks",
-            blocksJson=_json.dumps([{"type": "stats",
-                                     "items": ["57|Aufrufe heute"]}]))
+            blocksJson=[{"type": "stats",
+                         "items": ["57|Aufrufe heute"]}])
         page = self.client.get(reverse('ats:landing_page',
                                        args=["lp-blocks"]))
         self.assertContains(page, "Aufrufe heute")

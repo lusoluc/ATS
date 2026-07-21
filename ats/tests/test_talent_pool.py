@@ -138,14 +138,17 @@ class ProcessMemoryTestCase(TestCase):
             title="Pflegefachkraft Station 1", organization=org,
             facility=self.fac_a, location=loc, jobFamily=self.fam,
             workflowState=wf,
-            screeningQuestionsJson='[{"id":"q1","question":"Examen?","type":"YES_NO","isMandatory":true,"expectedAnswer":"YES"}]',
-            tasksJson='["Grundpflege"]', requirementsJson='["Examen"]',
+            screeningQuestionsJson=[{"id": "q1", "question": "Examen?",
+                                     "type": "YES_NO", "isMandatory": True,
+                                     "expectedAnswer": "YES"}],
+            tasksJson=["Grundpflege"], requirementsJson=["Examen"],
             createdAt=now - datetime.timedelta(hours=2))
         self.newer_other_fac = JobPosting.objects.create(
             title="Pflegefachkraft Klinik B", organization=org,
             facility=self.fac_b, location=loc, jobFamily=self.fam,
             workflowState=wf,
-            screeningQuestionsJson='[{"id":"q9","question":"Nachtdienst?","type":"YES_NO","isMandatory":false}]',
+            screeningQuestionsJson=[{"id": "q9", "question": "Nachtdienst?",
+                                     "type": "YES_NO", "isMandatory": False}],
             createdAt=now)
         self.org, self.loc, self.wf = org, loc, wf
 
@@ -182,7 +185,7 @@ class ProcessMemoryTestCase(TestCase):
             "form": "convert", "request_id": str(req.id),
             "location": str(self.loc.id)})
         job = JobPosting.objects.get(title="Pflegefachkraft Nachtdienst")
-        self.assertIn("Examen?", job.screeningQuestionsJson)   # bewaehrter Prozess
+        self.assertIn("Examen?", str(job.screeningQuestionsJson))  # bewaehrter Prozess
         self.assertIn("Grundpflege", job.tasksJson)
         self.assertIn("vervollständigen", job.description)     # Geruest bleibt
 
@@ -203,21 +206,23 @@ class ProcessLadderAndStandardsTestCase(TestCase):
         self.wf = WorkflowState.objects.create(name="published")
         self.org = org
 
-        def mk(title, fac, loc, dept=None, q="[]", days_old=0):
+        def mk(title, fac, loc, dept=None, q=None, days_old=0):
             j = JobPosting.objects.create(
                 title=title, organization=org, facility=fac, location=loc,
                 department=dept, jobFamily=self.fam, workflowState=self.wf,
-                screeningQuestionsJson=q)
+                screeningQuestionsJson=q or [])
             if days_old:
                 JobPosting.objects.filter(id=j.id).update(
                     createdAt=timezone.now() - datetime.timedelta(days=days_old))
             return j
         # aelteste: gleiche Abteilung; mittel: gleiche Einrichtung; neueste: nur Standort
         self.j_dept = mk("Mit Abteilung", self.fac_a, self.loc_hh, self.dept,
-                         q='[{"id":"qd","question":"Abteilungsfrage?","type":"YES_NO","isMandatory":true}]',
+                         q=[{"id": "qd", "question": "Abteilungsfrage?",
+                             "type": "YES_NO", "isMandatory": True}],
                          days_old=30)
         self.j_fac = mk("Mit Einrichtung", self.fac_a, self.loc_hh, None,
-                        q='[{"id":"qf","question":"Einrichtungsfrage?","type":"YES_NO","isMandatory":false}]',
+                        q=[{"id": "qf", "question": "Einrichtungsfrage?",
+                            "type": "YES_NO", "isMandatory": False}],
                         days_old=15)
         self.j_loc = mk("Nur Standort", self.fac_b, self.loc_hh, None, days_old=1)
 
@@ -252,10 +257,11 @@ class ProcessLadderAndStandardsTestCase(TestCase):
     def test_minimum_standards_enforced_and_not_weakenable(self):
         from ..models import AuditLog, JobPosting
         self._world()
-        self.fam.minimumQuestionsJson = ('[{"id":"min-fzg","question":"Liegt ein '
-                                         'erweitertes Führungszeugnis vor?",'
-                                         '"type":"YES_NO","isMandatory":true,'
-                                         '"expectedAnswer":"YES"}]')
+        self.fam.minimumQuestionsJson = [{
+            "id": "min-fzg",
+            "question": "Liegt ein erweitertes Führungszeugnis vor?",
+            "type": "YES_NO", "isMandatory": True,
+            "expectedAnswer": "YES"}]
         self.fam.save()
         rec = make_user("stdrec", role="Recruiter")
         self.client.force_login(rec)
@@ -267,11 +273,11 @@ class ProcessLadderAndStandardsTestCase(TestCase):
             "facility": str(self.fac_a.id), "location": str(self.loc_hh.id),
             "job_family": str(self.fam.id), "workflow_state": str(self.wf.id)})
         job = JobPosting.objects.get(title="Erzieher Kita Nord")
-        self.assertIn("Führungszeugnis", job.screeningQuestionsJson)
+        self.assertIn("Führungszeugnis", str(job.screeningQuestionsJson))
         self.assertTrue(AuditLog.objects.filter(action="MINIMUM_STANDARD_APPLIED").exists())
         # Versuch, die Pflichtfrage auf optional abzuschwaechen -> erzwungen True
         import json as _json
-        weakened = _json.loads(job.screeningQuestionsJson)
+        weakened = job.screeningQuestionsJson
         for q in weakened:
             q["isMandatory"] = False
         self.client.post(reverse('ats:create_job'), data={
@@ -281,11 +287,11 @@ class ProcessLadderAndStandardsTestCase(TestCase):
             "facility": str(self.fac_a.id), "location": str(self.loc_hh.id),
             "job_family": str(self.fam.id), "workflow_state": str(self.wf.id)})
         job.refresh_from_db()
-        fzg = next(q for q in _json.loads(job.screeningQuestionsJson)
+        fzg = next(q for q in job.screeningQuestionsJson
                    if q["id"] == "min-fzg")
         self.assertTrue(fzg["isMandatory"])                    # nicht abschwaechbar
         # eigene Frage darf optional bleiben
-        own = next(q for q in _json.loads(job.screeningQuestionsJson)
+        own = next(q for q in job.screeningQuestionsJson
                    if q["id"] == "q1")
         self.assertFalse(own["isMandatory"])
 
@@ -302,4 +308,4 @@ class ProcessLadderAndStandardsTestCase(TestCase):
             "minimum_json": 'kein json'})
         self.assertContains(r, "Ungültiges JSON")              # nichts kaputt gespeichert
         self.fam.refresh_from_db()
-        self.assertEqual(self.fam.minimumQuestionsJson, "[]")
+        self.assertEqual(self.fam.minimumQuestionsJson, [])

@@ -417,12 +417,11 @@ class ReviewPanelTestCase(TestCase):
         self.m1 = make_user("panel1", role="Hiring-Manager")
         self.m2 = make_user("panel2", role="Recruiter")
         self.m3 = make_user("panel3", role="Viewer")
-        import json as _json
         self.job = JobPosting.objects.create(
             title="Pflegedienstleitung", organization=org, facility=fac,
             location=loc, jobFamily=fam, workflowState=wf,
-            panelUserIdsJson=_json.dumps([str(self.m1.id), str(self.m2.id),
-                                          str(self.m3.id)]))
+            panelUserIdsJson=[str(self.m1.id), str(self.m2.id),
+                              str(self.m3.id)])
         ap = Applicant.objects.create(firstName="Vera", lastName="M",
                                       email="vera@x.de")
         self.app = Application.objects.create(applicant=ap, jobPosting=self.job,
@@ -510,7 +509,6 @@ class DelegationOverrideRemindersTestCase(TestCase):
     """Vertretung wirkt (Freigaben + Gremium), granulares Override, Mahnungen."""
 
     def _world(self):
-        import json as _json
         import uuid as _u
 
         from ..models import (
@@ -545,7 +543,7 @@ class DelegationOverrideRemindersTestCase(TestCase):
         self.job = JobPosting.objects.create(
             title="Pflegedienstleitung", organization=org, facility=self.fac,
             location=loc, jobFamily=fam, workflowState=wf,
-            panelUserIdsJson=_json.dumps([str(self.hm.id)]))
+            panelUserIdsJson=[str(self.hm.id)])
         ap = Applicant.objects.create(firstName="Ines", lastName="T",
                                       email="ines@x.de")
         self.app = Application.objects.create(applicant=ap, jobPosting=self.job,
@@ -640,7 +638,6 @@ class DelegationLifecycleAndPanelDefaultsTestCase(TestCase):
     """UC-VT-02 (Sofort-Deaktivierung) + flexible Gremien-Defaults (Leiter)."""
 
     def _world(self):
-        import json as _json
         import uuid as _u
 
         from ..models import (
@@ -652,17 +649,17 @@ class DelegationLifecycleAndPanelDefaultsTestCase(TestCase):
             WorkflowState,
         )
         self.org = Organization.objects.create(
-            name="Traeger", panelUserIdsJson="[]")
+            name="Traeger", panelUserIdsJson=[])
         self.loc = Location.objects.create(name="HH")
         self.fac = Facility.objects.create(name="Klinik A", organization=self.org)
         self.dept = Department.objects.create(name="Station 3", facility=self.fac)
         self.fam = JobFamily.objects.create(name="JF-" + str(_u.uuid4())[:6])
         self.fam_aushilfe = JobFamily.objects.create(
             name="Aushilfe-" + str(_u.uuid4())[:4],
-            panelUserIdsJson=_json.dumps(["NONE"]))
+            panelUserIdsJson=["NONE"])
         self.wf = WorkflowState.objects.create(name="published")
         self.gremium_user = make_user("orggremium", role="Hiring-Manager")
-        self.org.panelUserIdsJson = _json.dumps([str(self.gremium_user.id)])
+        self.org.panelUserIdsJson = [str(self.gremium_user.id)]
         self.org.save()
 
     def _job(self, **kw):
@@ -682,7 +679,6 @@ class DelegationLifecycleAndPanelDefaultsTestCase(TestCase):
                                           status="IN_REVIEW")
 
     def test_panel_inheritance_ladder_and_none_sentinel(self):
-        import json as _json
 
         from ..panel import resolve_panel
         self._world()
@@ -693,7 +689,7 @@ class DelegationLifecycleAndPanelDefaultsTestCase(TestCase):
         self.assertEqual(source, "Organisation")
         # 2) Abteilungs-Default schlaegt Firmen-Default
         dept_user = make_user("deptgremium", role="Recruiter")
-        self.dept.panelUserIdsJson = _json.dumps([str(dept_user.id)])
+        self.dept.panelUserIdsJson = [str(dept_user.id)]
         self.dept.save()
         job_dept = self._job(title="Stationsleitung", department=self.dept)
         members, source = resolve_panel(job_dept)
@@ -701,8 +697,8 @@ class DelegationLifecycleAndPanelDefaultsTestCase(TestCase):
         self.assertEqual(source, "Abteilung")
         # 3) Stellen-Ebene schlaegt alles
         job_own = self._job(title="PDL", department=self.dept,
-                            panelUserIdsJson=_json.dumps([str(self.gremium_user.id),
-                                                          str(dept_user.id)]))
+                            panelUserIdsJson=[str(self.gremium_user.id),
+                                              str(dept_user.id)])
         members, source = resolve_panel(job_own)
         self.assertEqual(source, "Stelle")
         self.assertEqual(len(members), 2)
@@ -795,13 +791,12 @@ class PanelPreviewAndConvertInheritanceTestCase(TestCase):
     """Gremium-Flexibilitaet auch beim Prozess-ERSTELLEN: Vorschau + Vererbung."""
 
     def _world(self):
-        import json as _json
         import uuid as _u
 
         from ..models import Department, Facility, JobFamily, Location, Organization, WorkflowState
         self.gremium_user = make_user("prevgremium", role="Hiring-Manager")
         self.org = Organization.objects.create(
-            name="Traeger", panelUserIdsJson=_json.dumps([str(self.gremium_user.id)]))
+            name="Traeger", panelUserIdsJson=[str(self.gremium_user.id)])
         self.loc = Location.objects.create(name="HH")
         self.fac = Facility.objects.create(name="Klinik A", organization=self.org)
         self.dept = Department.objects.create(name="Station 3", facility=self.fac)
@@ -810,7 +805,6 @@ class PanelPreviewAndConvertInheritanceTestCase(TestCase):
         SystemSetting.objects.create(key="APPROVAL_CHAIN", value="HR-Admin")
 
     def test_preview_resolves_ladder_and_requires_role(self):
-        import json as _json
         self._world()
         url = (reverse('ats:panel_preview')
                + f"?facility={self.fac.id}&job_family={self.fam.id}")
@@ -821,7 +815,7 @@ class PanelPreviewAndConvertInheritanceTestCase(TestCase):
         self.assertIn("prevgremium", d["members"])
         # Abteilungs-Default schlaegt Organisation – Vorschau folgt der Leiter
         dept_user = make_user("prevdept", role="Recruiter")
-        self.dept.panelUserIdsJson = _json.dumps([str(dept_user.id)])
+        self.dept.panelUserIdsJson = [str(dept_user.id)]
         self.dept.save()
         d = self.client.get(url + f"&department={self.dept.id}").json()
         self.assertEqual(d["source"], "Abteilung")
@@ -839,7 +833,7 @@ class PanelPreviewAndConvertInheritanceTestCase(TestCase):
             "form": "convert", "request_id": str(req.id),
             "location": str(self.loc.id)})
         job = JobPosting.objects.get(title="Pflegedienstleitung neu")
-        self.assertEqual(job.panelUserIdsJson, "[]")            # erbt, kein Eigen-Panel
+        self.assertEqual(job.panelUserIdsJson, [])              # erbt, kein Eigen-Panel
         ap = Applicant.objects.create(firstName="N", lastName="P", email="np@x.de")
         app = Application.objects.create(applicant=ap, jobPosting=job,
                                          status="IN_REVIEW")
@@ -899,7 +893,7 @@ class DemoGovernanceWorldTestCase(TestCase):
 
         from ..models import JobFamily, TalentPoolSubscription
         fam = JobFamily.objects.get(name="Pflege")
-        self.assertIn("Examen", fam.minimumQuestionsJson)
+        self.assertIn("Examen", str(fam.minimumQuestionsJson))
         self.assertEqual(TalentPoolSubscription.objects.count(), 2)
         self.client.force_login(User.objects.get(username="demo-admin"))
         page = self.client.get(reverse('ats:talent_pool'))
@@ -913,7 +907,6 @@ class PanelQuorumDeadlineTestCase(TestCase):
     """P1-8: konfigurierbares Quorum + Abstimmungs-Frist mit Eskalation."""
 
     def _world(self, quorum=None, deadline=None, seats=3):
-        import json as _json
 
         from ..models import (
             Applicant,
@@ -939,7 +932,7 @@ class PanelQuorumDeadlineTestCase(TestCase):
             title="Leitung Wohnbereich", organization=org, facility=self.fac,
             location=loc, jobFamily=self.fam, workflowState=self.published,
             panelQuorum=quorum, panelDeadlineDays=deadline,
-            panelUserIdsJson=_json.dumps([str(m.id) for m in self.members]))
+            panelUserIdsJson=[str(m.id) for m in self.members])
         ap = Applicant.objects.create(firstName="P", lastName="Q",
                                       email="pq@x.de")
         self.app = Application.objects.create(applicant=ap,
@@ -1203,8 +1196,9 @@ class RequisitionRoutingTestCase(TestCase):
             department=self.dep_it, jobFamily=self.fam_core,
             chain="Bereichsleitung, Risikomanagement, Geschäftsführung",
             mandatory=True,
-            formQuestionsJson='[{"id":"stack","type":"TEXT","isMandatory":true,'
-                              '"question":"Welcher Tech-Stack wird betreut?"}]')
+            formQuestionsJson=[{"id": "stack", "type": "TEXT",
+                               "isMandatory": True,
+                               "question": "Welcher Tech-Stack wird betreut?"}])
         self.r_std = RequisitionRule.objects.create(
             name="Standard Vertrieb", facility=self.fac,
             department=self.dep_sales, chain="Filialleitung",
@@ -1261,7 +1255,6 @@ class RequisitionRoutingTestCase(TestCase):
             title="Vertriebsassistenz").workflowState.name, "published")
 
     def test_dynamic_form_questions_enforced_and_stored(self):
-        import json as _json
 
         from ..models import StaffingRequest
         self._world()
@@ -1288,7 +1281,7 @@ class RequisitionRoutingTestCase(TestCase):
         self.assertEqual([st.role for st in req.steps.all()],
                          ["Bereichsleitung", "Risikomanagement",
                           "Geschäftsführung"])
-        answers = _json.loads(req.answersJson)
+        answers = req.answersJson
         self.assertEqual(answers["Welcher Tech-Stack wird betreut?"],
                          "Kernbank T24, ISO 20022")
         # Entscheider sieht die Angaben
@@ -2019,7 +2012,6 @@ class PanelVoteByDeputyTestCase(TestCase):
     """
 
     def setUp(self):
-        import json
 
         from ..models import (
             Applicant,
@@ -2045,8 +2037,8 @@ class PanelVoteByDeputyTestCase(TestCase):
         self.job = JobPosting.objects.create(
             title="Pflegefachkraft", organization=org, facility=self.fac,
             location=loc, jobFamily=fam, workflowState=ws,
-            panelUserIdsJson=json.dumps([str(self.m1.id), str(self.m2.id),
-                                         str(self.m3.id)]))
+            panelUserIdsJson=[str(self.m1.id), str(self.m2.id),
+                              str(self.m3.id)])
         self.app = Application.objects.create(
             applicant=Applicant.objects.create(firstName="P", lastName="V",
                                                email="pv@x.de"),

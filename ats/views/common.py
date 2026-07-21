@@ -218,19 +218,19 @@ Gegründet im Herzen von Berlin, ist SecurATS ein führender Anbieter von datens
         job_fullstack = JobPosting.objects.create(
             title="Full Stack Django Developer (m/w/d)",
             description="Wir suchen einen erfahrenen Web-Entwickler zur Skalierung unserer integrierten Recruiting-Plattform.",
-            tasksJson=json.dumps([
+            tasksJson=[
                 "Entwicklung von robusten Backend-Architekturen mit Python & Django",
                 "Gestaltung von hochresponsiven UIs mittels modernem CSS und performantem Vanilla JS",
                 "Anbindung und Optimierung von RESTful Schnittstellen und Integrations-Feeds",
                 "Sicherstellung höchster Sicherheits- und Datenschutzstandards (DSGVO)"
-            ]),
-            requirementsJson=json.dumps([
+            ],
+            requirementsJson=[
                 "Fundierte Erfahrung mit Python, Django und relationalen Datenbanken",
                 "Exzellente Kenntnisse in HTML5, CSS3 und modernen Web-Technologien",
                 "Verständnis von Sicherheitsaspekten wie CSRF, XSS und PII-At-Rest-Verschlüsselung",
                 "Fließende Deutsch- und gute Englischkenntnisse in Wort und Schrift"
-            ]),
-            screeningQuestionsJson=json.dumps([
+            ],
+            screeningQuestionsJson=[
                 {
                     "id": "q1",
                     "question": "Verfügen Sie über mindestens 3 Jahre Erfahrung mit dem Django Web-Framework?",
@@ -245,7 +245,7 @@ Gegründet im Herzen von Berlin, ist SecurATS ein führender Anbieter von datens
                     "isMandatory": False,
                     "expectedAnswer": "YES"
                 }
-            ]),
+            ],
             contactPerson=contact_marcus,
             organization=org,
             facility=fac_berlin,
@@ -260,19 +260,19 @@ Gegründet im Herzen von Berlin, ist SecurATS ein führender Anbieter von datens
         job_recruiter = JobPosting.objects.create(
             title="Junior Recruiting Manager (m/w/d)",
             description="Verstärke unser HR-Team bei der Suche und Betreuung der besten IT-Talente.",
-            tasksJson=json.dumps([
+            tasksJson=[
                 "Steuerung des gesamten Bewerbungsprozesses von der Ausschreibung bis zum Onboarding",
                 "Führen von Erstgesprächen und Koordination von Fachinterviews",
                 "Pflege und Ausbau unseres Talent Pools",
                 "Mitgestaltung moderner Candidate Journeys"
-            ]),
-            requirementsJson=json.dumps([
+            ],
+            requirementsJson=[
                 "Erste Berufserfahrung im Recruiting oder HR-Bereich",
                 "Starke kommunikative Fähigkeiten und Empathie",
                 "Strukturierte, selbstständige Arbeitsweise",
                 "Fließende Deutschkenntnisse"
-            ]),
-            screeningQuestionsJson=json.dumps([
+            ],
+            screeningQuestionsJson=[
                 {
                     "id": "q1",
                     "question": "Können Sie ab sofort in Vollzeit an unserem Standort München starten?",
@@ -280,7 +280,7 @@ Gegründet im Herzen von Berlin, ist SecurATS ein führender Anbieter von datens
                     "isMandatory": True,
                     "expectedAnswer": "YES"
                 }
-            ]),
+            ],
             contactPerson=contact_carla,
             organization=org,
             facility=fac_munich,

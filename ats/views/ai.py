@@ -1175,7 +1175,7 @@ def ingest_best_performers(request):
         label = (f.name.rsplit('.', 1)[0] or 'Profil')[:200]
         prof = BestPerformerProfile.objects.create(
             label=label, jobFamily=job_family, model=model,
-            dim=len(vec), vectorJson=json.dumps(vec),
+            dim=len(vec), vectorJson=vec,
             createdBy=request.user if request.user.is_authenticated else None)
         write_audit('BEST_PERFORMER_INGESTED', user=request.user,
                     profile=str(prof.id), dim=len(vec))

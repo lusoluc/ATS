@@ -243,7 +243,10 @@ class EditRoundTripPreservationTestCase(TestCase):
         from django.forms.models import model_to_dict
         d = model_to_dict(obj)
         # M2M-Felder als sortierte ID-Listen vergleichbar machen
-        return {k: (sorted(str(x.pk) for x in v) if isinstance(v, list) else v)
+        # (JSONField-Listen enthalten keine Model-Instanzen und bleiben roh)
+        return {k: (sorted(str(x.pk) for x in v)
+                    if isinstance(v, list) and all(hasattr(x, "pk") for x in v)
+                    else v)
                 for k, v in d.items()}
 
     def _assert_unchanged(self, obj, before, ignore=("updatedAt",)):
@@ -297,9 +300,10 @@ class EditRoundTripPreservationTestCase(TestCase):
             title="Pflegefachkraft Nacht", organization=org, facility=fac,
             department=dept, location=loc, jobFamily=fam, workflowState=wf,
             contactPerson=cp, description="Beschreibung bleibt.",
-            tasksJson='["Grundpflege"]', requirementsJson='["Examen"]',
-            screeningQuestionsJson='[{"id":"q1","question":"Examen?","type":"YES_NO","isMandatory":true}]',
-            panelUserIdsJson=_json.dumps([str(panel_user.id)]),
+            tasksJson=["Grundpflege"], requirementsJson=["Examen"],
+            screeningQuestionsJson=[{"id": "q1", "question": "Examen?",
+                                     "type": "YES_NO", "isMandatory": True}],
+            panelUserIdsJson=[str(panel_user.id)],
             payBand=band)
         job.benefits.set([b1, b2])
         before = self._snapshot(job)
@@ -309,7 +313,7 @@ class EditRoundTripPreservationTestCase(TestCase):
             "job_id": str(job.id), "title": job.title,
             "description": job.description,
             "tasks": "Grundpflege", "requirements": "Examen",
-            "screening_questions": job.screeningQuestionsJson,
+            "screening_questions": _json.dumps(job.screeningQuestionsJson),
             "facility": str(fac.id), "department": str(dept.id),
             "location": str(loc.id), "job_family": str(fam.id),
             "contact_person": str(cp.id), "job_template": "",
@@ -414,8 +418,9 @@ class EditRoundTripPreservationTestCase(TestCase):
         member = make_user("rtmember", role="Recruiter")
         fam = JobFamily.objects.create(
             name="JF-" + str(_u.uuid4())[:6],
-            panelUserIdsJson=_json.dumps([str(member.id)]),
-            minimumQuestionsJson='[{"id":"min-1","question":"Examen?","type":"YES_NO","isMandatory":true}]')
+            panelUserIdsJson=[str(member.id)],
+            minimumQuestionsJson=[{"id": "min-1", "question": "Examen?",
+                                   "type": "YES_NO", "isMandatory": True}])
         before = self._snapshot(fam)
         self.client.force_login(make_user("rtadmin2", role="HR-Admin"))
         self.client.post(reverse('ats:panel_defaults'), data={
@@ -423,7 +428,7 @@ class EditRoundTripPreservationTestCase(TestCase):
             "members": [str(member.id)]})
         self.client.post(reverse('ats:screening_questions'), data={
             "form": "minimum", "family_id": str(fam.id),
-            "minimum_json": fam.minimumQuestionsJson})
+            "minimum_json": _json.dumps(fam.minimumQuestionsJson)})
         self._assert_unchanged(fam, before)
 
 class SettingsAdminCoverageTestCase(TestCase):

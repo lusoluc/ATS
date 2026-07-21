@@ -64,7 +64,7 @@ class SecurityAuditRegressionTestCase(TestCase):
     # Fund 1: Open Redirect
     def test_open_redirect_blocked_external_next(self):
         self._world()
-        self.job.interviewRoundsJson = '["Erstgespräch"]'
+        self.job.interviewRoundsJson = ["Erstgespräch"]
         self.job.save(update_fields=['interviewRoundsJson'])
         rec = make_user("sec-rec", role="Recruiter")
         self.client.force_login(rec)
@@ -83,7 +83,7 @@ class SecurityAuditRegressionTestCase(TestCase):
 
     def test_open_redirect_allows_internal_next(self):
         self._world()
-        self.job.interviewRoundsJson = '["Erstgespräch"]'
+        self.job.interviewRoundsJson = ["Erstgespräch"]
         self.job.save(update_fields=['interviewRoundsJson'])
         rec = make_user("sec-rec2", role="Recruiter")
         self.client.force_login(rec)

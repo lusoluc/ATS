@@ -107,7 +107,7 @@ class Organization(models.Model):
     # Gremien-Default dieser Ebene (Sichtungs-Gremium): wird von Stellen
     # geerbt, wenn keine spezifischere Ebene greift. Sentinel ["NONE"] =
     # "hier bewusst KEIN Gremium" (unterbricht die Vererbung).
-    panelUserIdsJson = models.TextField(default="[]")
+    panelUserIdsJson = models.JSONField(default=list)
     createdAt = models.DateTimeField(default=timezone.now)
     updatedAt = models.DateTimeField(auto_now=True)
 
@@ -137,7 +137,7 @@ class Facility(models.Model):
     # Gremien-Default dieser Ebene (Sichtungs-Gremium): wird von Stellen
     # geerbt, wenn keine spezifischere Ebene greift. Sentinel ["NONE"] =
     # "hier bewusst KEIN Gremium" (unterbricht die Vererbung).
-    panelUserIdsJson = models.TextField(default="[]")
+    panelUserIdsJson = models.JSONField(default=list)
 
 
     def __str__(self):
@@ -161,7 +161,7 @@ class Department(models.Model):
     # Gremien-Default dieser Ebene (Sichtungs-Gremium): wird von Stellen
     # geerbt, wenn keine spezifischere Ebene greift. Sentinel ["NONE"] =
     # "hier bewusst KEIN Gremium" (unterbricht die Vererbung).
-    panelUserIdsJson = models.TextField(default="[]")
+    panelUserIdsJson = models.JSONField(default=list)
     description = models.TextField(blank=True, null=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True, null=True)
     facility = models.ForeignKey(Facility, on_delete=models.CASCADE, related_name='departments')
@@ -177,7 +177,7 @@ class Location(models.Model):
     # Gremien-Default dieser Ebene (Sichtungs-Gremium): wird von Stellen
     # geerbt, wenn keine spezifischere Ebene greift. Sentinel ["NONE"] =
     # "hier bewusst KEIN Gremium" (unterbricht die Vererbung).
-    panelUserIdsJson = models.TextField(default="[]")
+    panelUserIdsJson = models.JSONField(default=list)
     address = models.CharField(max_length=255, blank=True, null=True)
     city = models.CharField(max_length=100, blank=True, null=True)
     postalCode = models.CharField(max_length=20, blank=True, null=True)
@@ -196,14 +196,14 @@ class JobFamily(models.Model):
     # Gremien-Default dieser Ebene (Sichtungs-Gremium): wird von Stellen
     # geerbt, wenn keine spezifischere Ebene greift. Sentinel ["NONE"] =
     # "hier bewusst KEIN Gremium" (unterbricht die Vererbung).
-    panelUserIdsJson = models.TextField(default="[]")
+    panelUserIdsJson = models.JSONField(default=list)
     description = models.TextField(blank=True, null=True)
     archived = models.BooleanField(default=False)
     # Vorstands-Governance: Mindest-Screening-Fragen dieser Jobfamilie.
     # Werden beim Speichern jeder Stelle SERVERSEITIG gemergt (fehlende wieder
     # eingefuegt, isMandatory erzwungen) – unabhaengig davon, was UI,
     # Prozess-Gedaechtnis oder Import liefern. Pflege: nur HR-Admin.
-    minimumQuestionsJson = models.TextField(default="[]")
+    minimumQuestionsJson = models.JSONField(default=list)
     createdAt = models.DateTimeField(default=timezone.now)
     updatedAt = models.DateTimeField(auto_now=True)
 
@@ -421,9 +421,9 @@ class JobPosting(models.Model):
     description = models.TextField(blank=True, null=True)
     descriptionEasy = models.TextField(blank=True, null=True)  # WP1: Leichte-Sprache-Variante
 
-    tasksJson = models.TextField(default="[]")
-    requirementsJson = models.TextField(default="[]")
-    screeningQuestionsJson = models.TextField(default="[]")
+    tasksJson = models.JSONField(default=list)
+    requirementsJson = models.JSONField(default=list)
+    screeningQuestionsJson = models.JSONField(default=list)
 
     contactPerson = models.ForeignKey(ContactPerson, on_delete=models.SET_NULL, blank=True, null=True, related_name='jobPostings')
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='jobPostings')
@@ -441,7 +441,7 @@ class JobPosting(models.Model):
     # die VOR einer Einladung abstimmen. Leer = kein Gremium (Normalfall).
     # Regel: absolute Mehrheit DAFUER gibt die Einladung frei (HR-Admin kann
     # mit Audit uebersteuern). Durchsetzung serverseitig an allen Pfaden.
-    panelUserIdsJson = models.TextField(default="[]")
+    panelUserIdsJson = models.JSONField(default=list)
     # Mehrfachbedarf: "3 Stellen gleicher Art" als EINE Ausschreibung
     headcount = models.PositiveIntegerField(default=1)
     # Gremium-Governance je Stelle: Quorum (null = absolute Mehrheit der
@@ -450,7 +450,7 @@ class JobPosting(models.Model):
     panelDeadlineDays = models.PositiveSmallIntegerField(blank=True, null=True)
     # P1-11: Gespraechsrunden als formale Zustaende (["Erstgespraech", ...]);
     # leer = Bestandsverhalten (Einladung -> Einstellung ohne Rundenpflicht)
-    interviewRoundsJson = models.TextField(default="[]")
+    interviewRoundsJson = models.JSONField(default=list)
 
     @property
     def interview_rounds_csv(self):
@@ -479,7 +479,7 @@ class WorkflowDefinition(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     facility = models.ForeignKey(Facility, on_delete=models.CASCADE, related_name='workflows')
-    stepsJson = models.TextField(default="[]")
+    stepsJson = models.JSONField(default=list)
     createdAt = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
@@ -572,7 +572,7 @@ class Application(models.Model):
 
     cvStorageId = models.CharField(max_length=255, blank=True, null=True)
     coverLetterTxt = EncryptedTextField(blank=True, null=True)
-    screeningAnswersJson = models.TextField(default="{}")
+    screeningAnswersJson = models.JSONField(default=dict)
 
     aiScore = models.CharField(max_length=10, blank=True, null=True)  # A, B, C, D
     aiRationale = models.TextField(blank=True, null=True)
@@ -591,6 +591,14 @@ class Application(models.Model):
     createdAt = models.DateTimeField(default=timezone.now)
     updatedAt = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        # Meistgenutzte Filterfelder (Board-Spalten, Quellen-Analytics, Zeitreihen)
+        indexes = [
+            models.Index(fields=["status"]),
+            models.Index(fields=["source"]),
+            models.Index(fields=["createdAt"]),
+        ]
+
     def __str__(self):
         return f"Application by {self.applicant} for {self.jobPosting}"
 
@@ -598,10 +606,10 @@ class AppWorkflowDef(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     facility = models.ForeignKey(Facility, on_delete=models.CASCADE, related_name='appWorkflows', blank=True, null=True)
-    locationIdsJson = models.TextField(default="[]")
-    categoryIdsJson = models.TextField(default="[]")
-    jobIdsJson = models.TextField(default="[]")
-    stepsJson = models.TextField(default="[]")
+    locationIdsJson = models.JSONField(default=list)
+    categoryIdsJson = models.JSONField(default=list)
+    jobIdsJson = models.JSONField(default=list)
+    stepsJson = models.JSONField(default=list)
     createdAt = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
@@ -633,7 +641,7 @@ class BestPerformerProfile(models.Model):
                                   related_name='bestPerformerProfiles')
     model = models.CharField(max_length=100)
     dim = models.IntegerField(default=0)
-    vectorJson = models.TextField()          # JSON-Liste floats (Embedding)
+    vectorJson = models.JSONField()          # JSON-Liste floats (Embedding)
     createdBy = models.ForeignKey('auth.User', on_delete=models.SET_NULL,
                                   blank=True, null=True)
     createdAt = models.DateTimeField(default=timezone.now)
@@ -642,11 +650,7 @@ class BestPerformerProfile(models.Model):
         ordering = ['-createdAt']
 
     def vector(self):
-        import json as _j
-        try:
-            return _j.loads(self.vectorJson)
-        except (ValueError, TypeError):
-            return []
+        return self.vectorJson if isinstance(self.vectorJson, list) else []
 
 
 class WorkflowTask(models.Model):
@@ -726,15 +730,11 @@ _LEGACY_KINDS = {"REMOTE": "VIDEO", "IN_PERSON": "ON_SITE",
 
 def interview_rounds(job) -> list[str]:
     """Definierte Gespraechsrunden einer Stelle (leer = keine Rundenpflicht).
-    Robust gegen kaputtes JSON; hart gekappt auf 6 Runden a 60 Zeichen."""
-    import json as _json
-    try:
-        parsed = _json.loads(getattr(job, 'interviewRoundsJson', None) or "[]")
-        if not isinstance(parsed, list):
-            return []
-        return [str(r).strip()[:60] for r in parsed if str(r).strip()][:6]
-    except (ValueError, TypeError):
+    Robust gegen kaputte Daten; hart gekappt auf 6 Runden a 60 Zeichen."""
+    parsed = getattr(job, 'interviewRoundsJson', None) or []
+    if not isinstance(parsed, list):
         return []
+    return [str(r).strip()[:60] for r in parsed if str(r).strip()][:6]
 
 
 def rounds_state(app) -> dict:
@@ -816,6 +816,14 @@ class Interview(models.Model):
         return interview_outcome_label(self.outcome)
     createdAt = models.DateTimeField(default=timezone.now)
     updatedAt = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        # Kalender-Bereiche, Erinnerungs-Command, No-Show-Auswertung
+        indexes = [
+            models.Index(fields=["scheduledAt"]),
+            models.Index(fields=["outcome"]),
+            models.Index(fields=["reminderSentAt"]),
+        ]
 
     def __str__(self):
         return f"Interview on {self.scheduledAt}"
@@ -959,7 +967,7 @@ class InterviewFeedback(models.Model):
     round = models.PositiveSmallIntegerField(default=0)  # 0 = ohne Runde
     recommendation = models.CharField(max_length=20,
                                       choices=INTERVIEW_RECOMMENDATIONS)
-    ratingsJson = models.TextField(default="{}")   # {"Kriterium": 1..4}
+    ratingsJson = models.JSONField(default=dict)   # {"Kriterium": 1..4}
     strengths = models.TextField(blank=True, default="")
     concerns = models.TextField(blank=True, default="")   # Bedenken
     comment = models.TextField(blank=True, default="")
@@ -972,12 +980,8 @@ class InterviewFeedback(models.Model):
 
     @property
     def ratings(self):
-        import json as _json
-        try:
-            data = _json.loads(self.ratingsJson or "{}")
-            return data if isinstance(data, dict) else {}
-        except (ValueError, TypeError):
-            return {}
+        data = self.ratingsJson or {}
+        return data if isinstance(data, dict) else {}
 
     @property
     def overall_score(self):
@@ -1032,7 +1036,6 @@ def feedback_summaries(application_ids):
     kein N+1). Liefert {app_id: {count, avg_score, open_concerns,
     positive}}. avg_score = Mittel der Feedback-Gesamt-Scores (nur die mit
     Bewertungen); positive = Zahl der Empfehlungen dafuer."""
-    import json as _json
     out = {}
     qs = (InterviewFeedback.objects
           .filter(application_id__in=list(application_ids))
@@ -1048,11 +1051,8 @@ def feedback_summaries(application_ids):
             a['open_concerns'] += 1
         if rec in ('STRONG_YES', 'YES'):
             a['positive'] += 1
-        try:
-            vals = [v for v in _json.loads(ratings_json or '{}').values()
-                    if isinstance(v, (int, float))]
-        except (ValueError, TypeError):
-            vals = []
+        ratings = ratings_json if isinstance(ratings_json, dict) else {}
+        vals = [v for v in ratings.values() if isinstance(v, (int, float))]
         if vals:
             a['score_sum'] += sum(vals) / len(vals)
             a['score_n'] += 1
@@ -1093,7 +1093,7 @@ class LandingPage(models.Model):
                                  blank=True, null=True)
     contactPerson = models.ForeignKey(ContactPerson, on_delete=models.SET_NULL,
                                       blank=True, null=True)
-    blocksJson = models.TextField(default="[]")  # CMS-Baukasten (ats/blocks.py)
+    blocksJson = models.JSONField(default=list)  # CMS-Baukasten (ats/blocks.py)
     active = models.BooleanField(default=True)
     expiresAt = models.DateTimeField(blank=True, null=True)  # Kampagnen-Ende
     views = models.IntegerField(default=0)  # Bot-Rauschen inklusive (ehrlich)
@@ -1154,7 +1154,7 @@ class Page(models.Model):
     title = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, unique=True)
     content = models.TextField(default="")
-    blocksJson = models.TextField(default="[]")  # CMS-Baukasten (ats/blocks.py)
+    blocksJson = models.JSONField(default=list)  # CMS-Baukasten (ats/blocks.py)
     views = models.IntegerField(default=0)  # Aufrufe (Bot-Rauschen inklusive)
     status = models.CharField(max_length=50, default="published")  # published, draft, archived
     navEnabled = models.BooleanField(default=True)
@@ -1245,8 +1245,8 @@ class StaffingRequest(models.Model):
     headcount = models.PositiveSmallIntegerField(default=1)
     desiredStart = models.DateField(blank=True, null=True)
     justification = models.TextField()                       # warum, was passiert sonst
-    answersJson = models.TextField(default="{}")             # Antworten des Regel-Formulars
-    status = models.CharField(max_length=20, choices=STATUS, default="OPEN")
+    answersJson = models.JSONField(default=dict)             # Antworten des Regel-Formulars
+    status = models.CharField(max_length=20, choices=STATUS, default="OPEN", db_index=True)
     requestedBy = models.ForeignKey('auth.User', on_delete=models.SET_NULL,
                                     blank=True, null=True,
                                     related_name='staffingRequests')
@@ -1287,7 +1287,7 @@ class RequisitionRule(models.Model):
                                   blank=True, null=True,
                                   related_name='requisitionRules')
     chain = models.CharField(max_length=255)                 # Rollen, kommasep.
-    formQuestionsJson = models.TextField(default="[]")       # ats/questions.py
+    formQuestionsJson = models.JSONField(default=list)       # ats/questions.py
     mandatory = models.BooleanField(default=True)
     active = models.BooleanField(default=True)
     createdAt = models.DateTimeField(default=timezone.now)
@@ -1383,6 +1383,9 @@ class AuditLog(models.Model):
     action = models.CharField(max_length=100)  # READ_CV, STATUS_CHANGE, DELETE_APPLICANT
     userId = models.CharField(max_length=255, blank=True, null=True)
     applicationId = models.CharField(max_length=255, blank=True, null=True)
+    # BEWUSST TextField, kein JSONField: der String ist die kanonische Form,
+    # die in die Hash-Kette eingeht (audit._entry_hash). Ein Dict-Roundtrip
+    # könnte die Serialisierung ändern und die Kette für Bestandsdaten brechen.
     metadataJson = models.TextField(default="{}")
     createdAt = models.DateTimeField(default=timezone.now)
     # WP2/UC-MB-12: Integritäts-Hashkette (Append-Only-Nachweis, Manipulationserkennung)
@@ -1393,6 +1396,14 @@ class AuditLog(models.Model):
     # UUID – die Verifikation meldet dann falschen Manipulations-Alarm.
     # unique=True erzwingt zudem eine lineare Kette bei parallelen Schreibern.
     seq = models.BigIntegerField(unique=True, blank=True, null=True, editable=False)
+
+    class Meta:
+        # Audit-Viewer-Filter, DSGVO-Export je Bewerbung, Zeitreihen
+        indexes = [
+            models.Index(fields=["action"]),
+            models.Index(fields=["applicationId"]),
+            models.Index(fields=["createdAt"]),
+        ]
 
     def __str__(self):
         return f"{self.action} at {self.createdAt}"
@@ -1408,7 +1419,7 @@ class AILearningSample(models.Model):
     categoryId = models.CharField(max_length=255, blank=True, null=True)
     facilityId = models.CharField(max_length=255, blank=True, null=True)
     feedbackType = models.CharField(max_length=50)  # POSITIVE, NEGATIVE
-    anonymizedProfileJson = models.TextField(default="{}")
+    anonymizedProfileJson = models.JSONField(default=dict)
     createdAt = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
@@ -1475,9 +1486,9 @@ class AiTask(models.Model):
     STATUS = ["PENDING", "RUNNING", "DONE", "FAILED"]
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     taskType = models.CharField(max_length=50)          # z.B. SCORE_APPLICATION
-    payloadJson = models.TextField(default="{}")
+    payloadJson = models.JSONField(default=dict)
     status = models.CharField(max_length=20, default="PENDING")
-    resultJson = models.TextField(blank=True, null=True)
+    resultJson = models.JSONField(blank=True, null=True)
     error = models.TextField(blank=True, null=True)
     attempts = models.IntegerField(default=0)
     maxAttempts = models.IntegerField(default=3)

@@ -193,7 +193,7 @@ class Command(BaseCommand):
                 description=(f"{title} in {loc.city}: unbefristet, faire Vergütung "
                              "nach Tarif, strukturierte Einarbeitung."),
                 descriptionEasy=easy or "",
-                screeningQuestionsJson=json.dumps(screening or []),
+                screeningQuestionsJson=screening or [],
             )
             JobPosting.objects.filter(id=j.id).update(
                 createdAt=now - timedelta(days=days_old))
@@ -347,19 +347,19 @@ class Command(BaseCommand):
         leitung = demo_user("demo-leitung", "Hiring-Manager", "Melanie", "Dorn")
 
         # Vorstands-Mindeststandard: Pflege braucht IMMER die Examensfrage
-        fam_pflege.minimumQuestionsJson = json.dumps([{
+        fam_pflege.minimumQuestionsJson = [{
             "id": "min-examen",
             "question": "Liegt ein Pflege-Examen (3-jährig) vor?",
-            "type": "YES_NO", "isMandatory": True, "expectedAnswer": "YES"}])
+            "type": "YES_NO", "isMandatory": True, "expectedAnswer": "YES"}]
         fam_pflege.save(update_fields=["minimumQuestionsJson"])
 
         # Hoehere Position mit Sichtungs-Gremium (2 von 3 noetig)
         j_pdl = job("Pflegedienstleitung Haus Elbblick (m/w/d)", fac_pflege, lg,
                     fam_pflege, days_old=12)
-        j_pdl.panelUserIdsJson = json.dumps([str(hm_hoefer.id),
-                                             str(leitung.id),
-                                             str(User.objects.get_or_create(
-                                                 username="demo-admin")[0].id)])
+        j_pdl.panelUserIdsJson = [str(hm_hoefer.id),
+                                  str(leitung.id),
+                                  str(User.objects.get_or_create(
+                                      username="demo-admin")[0].id)]
         j_pdl.save(update_fields=["panelUserIdsJson"])
         pdl_bewerberin = Applicant.objects.create(
             firstName="Sabine", lastName="Krüger",

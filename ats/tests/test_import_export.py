@@ -392,7 +392,6 @@ class DemoBankWorldTestCase(TestCase):
         self.assertContains(page, "--bg-color: #f5f7fa")
 
     def test_dynamic_form_and_process_governance(self):
-        import json as _json
 
         from ..models import ApplicationVote, JobPosting
         j_ba = JobPosting.objects.get(
@@ -402,7 +401,7 @@ class DemoBankWorldTestCase(TestCase):
         self.assertContains(form, "regulatorisches Projekt") # TEXT-Frage
         self.assertContains(form, "regulierten Umfeld")      # Mindeststandard
         # Tech-Prozess: 2er-Gremium konfiguriert, 1/2 Stimme im Demo-Stand
-        self.assertEqual(len(_json.loads(j_ba.panelUserIdsJson)), 2)
+        self.assertEqual(len(j_ba.panelUserIdsJson), 2)
         self.assertEqual(ApplicationVote.objects.filter(
             application__jobPosting=j_ba).count(), 1)
 

@@ -68,7 +68,7 @@ class Command(BaseCommand):
 
                 # 1. Anonymize Application fields
                 app.coverLetterTxt = "ANONYMISIERT"
-                app.screeningAnswersJson = "{}"
+                app.screeningAnswersJson = {}
                 app.internalNotes = "Dieser Datensatz wurde gemäß DSGVO-Vorgaben anonymisiert."
                 app.cvStorageId = None
                 app.save()

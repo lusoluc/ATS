@@ -152,8 +152,6 @@ def blocks_editor(request, kind, obj_id):
     funktioniert ohne JavaScript und laesst sich vollstaendig testen.
     Rechte folgen der jeweiligen Verwaltung: CMS-Seiten nur HR-Admin.
     """
-    import json as _json
-
     from django.http import HttpResponseForbidden
 
     from ..blocks import BLOCK_TYPES, enrich_blocks, load_blocks, normalize_block
@@ -191,7 +189,7 @@ def blocks_editor(request, kind, obj_id):
             blocks[idx + 1], blocks[idx] = blocks[idx], blocks[idx + 1]
         elif action == 'delete' and idx is not None and idx < len(blocks):
             blocks.pop(idx)
-        obj.blocksJson = _json.dumps(blocks)
+        obj.blocksJson = blocks
         obj.save(update_fields=['blocksJson'])
         write_audit('CMS_BLOCKS_CHANGED', user=request.user, kind=kind,
                     target=str(obj_id), op=action, count=len(blocks))

@@ -6,15 +6,10 @@ frei. HR-Admin kann mit dokumentierter Verantwortung uebersteuern (Audit).
 Kommentare und Fragen des Gremiums landen in den internen Notizen – ein Ort,
 alle Beteiligten sehen dasselbe (360-Grad-Prinzip).
 """
-import json
-
-
 def _parse_ids(raw):
-    try:
-        ids = json.loads(raw or "[]")
-        return [str(i) for i in ids if str(i).strip()]
-    except ValueError:
+    if not isinstance(raw, list):
         return []
+    return [str(i) for i in raw if str(i).strip()]
 
 
 def resolve_panel(job):
@@ -29,12 +24,12 @@ def resolve_panel(job):
     Rueckgabe: (member_ids, quelle) – quelle fuer UI/Audit („geerbt von …").
     """
     ladder = [
-        (getattr(job, "panelUserIdsJson", "[]"), "Stelle"),
-        (getattr(job.department, "panelUserIdsJson", "[]") if job.department_id else "[]", "Abteilung"),
-        (getattr(job.facility, "panelUserIdsJson", "[]") if job.facility_id else "[]", "Einrichtung"),
-        (getattr(job.location, "panelUserIdsJson", "[]") if job.location_id else "[]", "Standort"),
-        (getattr(job.jobFamily, "panelUserIdsJson", "[]") if job.jobFamily_id else "[]", "Jobfamilie"),
-        (getattr(job.organization, "panelUserIdsJson", "[]") if job.organization_id else "[]", "Organisation"),
+        (getattr(job, "panelUserIdsJson", []), "Stelle"),
+        (getattr(job.department, "panelUserIdsJson", []) if job.department_id else [], "Abteilung"),
+        (getattr(job.facility, "panelUserIdsJson", []) if job.facility_id else [], "Einrichtung"),
+        (getattr(job.location, "panelUserIdsJson", []) if job.location_id else [], "Standort"),
+        (getattr(job.jobFamily, "panelUserIdsJson", []) if job.jobFamily_id else [], "Jobfamilie"),
+        (getattr(job.organization, "panelUserIdsJson", []) if job.organization_id else [], "Organisation"),
     ]
     for raw, source in ladder:
         ids = _parse_ids(raw)
@@ -166,7 +161,7 @@ def resolve_panel_preview(job_family_id=None, facility_id=None,
     for obj, source in ladder:
         if obj is None:
             continue
-        ids = _parse_ids(getattr(obj, "panelUserIdsJson", "[]"))
+        ids = _parse_ids(getattr(obj, "panelUserIdsJson", []))
         if not ids:
             continue
         if any(str(i).upper() == "NONE" for i in ids):

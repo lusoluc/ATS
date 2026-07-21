@@ -147,8 +147,8 @@
                 const filled = (scr.value.trim() && scr.value.trim() !== '[]') || tasks.value.trim() || reqs.value.trim();
                 if (filled && !confirm(`Felder sind bereits befüllt – mit dem Prozess von „${d.source_title}" (${d.source_date}) überschreiben?`)) return;
                 scr.value = JSON.stringify(d.screening_questions, null, 0);
-                try { tasks.value = JSON.parse(d.tasks).join('\n'); } catch (e) {}
-                try { reqs.value = JSON.parse(d.requirements).join('\n'); } catch (e) {}
+                try { tasks.value = (Array.isArray(d.tasks) ? d.tasks : JSON.parse(d.tasks)).join('\n'); } catch (e) {}
+                try { reqs.value = (Array.isArray(d.requirements) ? d.requirements : JSON.parse(d.requirements)).join('\n'); } catch (e) {}
                 alert(`Übernommen: ${d.source_title}${d.source_date ? ' (' + d.source_date + ')' : ''} – Herkunft: ${d.scope}. Bitte prüfen und anpassen.`);
             })
             .catch(() => { btn.disabled = false; alert('Abruf fehlgeschlagen.'); });

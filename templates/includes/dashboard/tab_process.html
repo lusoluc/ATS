@@ -1,3 +1,4 @@
+        {% load json_tags %}
         <!-- ====================================================================
              TAB 3: PROZESS FLOW MANAGER
              ==================================================================== -->
@@ -192,27 +193,27 @@
                                                 {% if wf.facility %}
                                                     <div style="color: #fff;">🏢 Mandant: {{ wf.facility.name }}</div>
                                                 {% endif %}
-                                                {% if wf.locationIdsJson != '[]' and wf.locationIdsJson != '""' %}
+                                                {% if wf.locationIdsJson %}
                                                     <div>📍 Standorte aktiv</div>
                                                 {% endif %}
-                                                {% if wf.categoryIdsJson != '[]' and wf.categoryIdsJson != '""' %}
+                                                {% if wf.categoryIdsJson %}
                                                     <div>🏷️ Kategorien aktiv</div>
                                                 {% endif %}
-                                                {% if wf.jobIdsJson != '[]' and wf.jobIdsJson != '""' %}
+                                                {% if wf.jobIdsJson %}
                                                     <div>💼 Spezifische Jobs</div>
                                                 {% endif %}
-                                                {% if not wf.facility and wf.locationIdsJson == '[]' and wf.categoryIdsJson == '[]' and wf.jobIdsJson == '[]' %}
+                                                {% if not wf.facility and not wf.locationIdsJson and not wf.categoryIdsJson and not wf.jobIdsJson %}
                                                     <span style="color: var(--accent);">Globaler Fallback</span>
                                                 {% endif %}
                                             </td>
                                             <td>
                                                 <div style="font-family: monospace; font-size: 11px; color: var(--accent);">
-                                                    {{ wf.stepsJson }}
+                                                    {{ wf.stepsJson|as_json }}
                                                 </div>
                                             </td>
                                             <td>
                                                 <button class="btn-search" style="padding: 4px 8px; font-size: 11px; height: 26px;" 
-                                                    onclick="editAppWorkflow('{{ wf.id|escapejs }}', '{{ wf.name|escapejs }}', '{{ wf.facility.id|default:''|escapejs }}', '{{ wf.locationIdsJson|escapejs }}', '{{ wf.categoryIdsJson|escapejs }}', '{{ wf.jobIdsJson|escapejs }}', '{{ wf.stepsJson|escapejs }}')">
+                                                    onclick="editAppWorkflow('{{ wf.id|escapejs }}', '{{ wf.name|escapejs }}', '{{ wf.facility.id|default:''|escapejs }}', '{{ wf.locationIdsJson|as_json|escapejs }}', '{{ wf.categoryIdsJson|as_json|escapejs }}', '{{ wf.jobIdsJson|as_json|escapejs }}', '{{ wf.stepsJson|as_json|escapejs }}')">
                                                     <i class="fa-solid fa-pen"></i>
                                                 </button>
                                             </td>

@@ -179,11 +179,14 @@ def approvals_inbox(request):
     _delegs = active_delegations_to(request.user)
     panel_apps = [a for a in candidates
                   if sits_on_panel(request.user, a.jobPosting, _delegs)][:50]
-    voted = set(ApplicationVote.objects.filter(
+    # Einmal-Aktion: die abgegebene Stimme wird am Button sichtbar; nur das
+    # AENDERN auf die Gegenstimme bleibt moeglich (dokumentiertes Feature).
+    my_votes = dict(ApplicationVote.objects.filter(
         user=request.user, application__in=panel_apps)
-        .values_list('application_id', flat=True))
+        .values_list('application_id', 'vote'))
     panel_rows = [{'app': a, 'state': panel_state(a),
-                   'my_vote_pending': a.id not in voted}
+                   'my_vote': my_votes.get(a.id),
+                   'my_vote_pending': a.id not in my_votes}
                   for a in panel_apps]
     return render(request, 'approvals.html',
                   {'rows': rows, 'sla_days': sla_days,

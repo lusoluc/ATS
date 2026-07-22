@@ -13,11 +13,23 @@
         </div>
       {% empty %}<p class="empty-state">Noch keine Nachrichten.</p>{% endfor %}
     </div>
+    {% if awaiting_reply %}
+    <!-- Einmal-Aktion: gesendet, noch keine Antwort und kein Statuswechsel -->
+    <div class="form-row" aria-live="polite">
+      <button type="button" class="btn btn-primary btn-done" disabled>
+        <i class="fa-solid fa-check"></i> Nachricht gesendet – wartet auf Antwort
+      </button>
+      <span style="font-size:12px; color:var(--text-muted);">
+        Erneutes Senden ist möglich, sobald eine Antwort eingeht oder sich der Bewerbungsstatus ändert.
+      </span>
+    </div>
+    {% else %}
     <form method="post" class="form-row">
       {% csrf_token %}
       <input name="content" class="input" placeholder="Nachricht an Bewerber…" required>
-      <button type="submit" class="btn btn-primary">Senden</button>
+      <button type="submit" class="btn btn-primary" data-done-label="Gesendet">Senden</button>
     </form>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

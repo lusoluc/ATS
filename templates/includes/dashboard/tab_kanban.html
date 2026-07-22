@@ -27,6 +27,26 @@
                     </button>
                 </div>
             </div>
+
+            <!-- A2: Suche + Schnellfilter — filtert Karten live, ohne Server-Roundtrip -->
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
+                <input type="search" id="board-search" class="form-input" style="max-width:280px;"
+                       placeholder="Suchen: Name oder Stelle …"
+                       aria-label="Bewerbungen durchsuchen" oninput="filterBoard()">
+                <select id="board-filter-source" class="filter-select" style="max-width:180px;"
+                        aria-label="Nach Quelle filtern" onchange="filterBoard()">
+                    <option value="">Alle Quellen</option>
+                    {% for src in board_sources %}<option value="{{ src }}">{{ src }}</option>{% endfor %}
+                </select>
+                <select id="board-filter-score" class="filter-select" style="max-width:170px;"
+                        aria-label="Nach KI-Score filtern" onchange="filterBoard()">
+                    <option value="">Alle KI-Scores</option>
+                    <option value="A">A</option><option value="B">B</option>
+                    <option value="C">C</option><option value="D">D</option>
+                    <option value="-">ohne Bewertung</option>
+                </select>
+                <span id="board-filter-status" aria-live="polite" style="font-size:12px; color:var(--text-muted);"></span>
+            </div>
             
             <!-- Quick KPI Cards -->
             <div class="stats-bar" style="margin-bottom: 24px;">

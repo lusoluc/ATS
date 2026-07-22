@@ -406,7 +406,7 @@ MODALS & OVERLAYS
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="job-screening">Screening K.O. Fragen (JSON-Format)</label>
+                    <label class="form-label">Screening-Fragen</label>
                     <div style="display:flex; gap:8px; align-items:center; margin:6px 0;">
                         <button type="button" class="btn-search" style="padding:4px 10px; height:auto; font-size:11px; margin:0; border-radius: var(--border-radius-sm);" onclick="usePreviousProcess(this)" title="Screening-Fragen, Aufgaben und Anforderungen der jüngsten Stelle gleicher Jobfamilie (bevorzugt gleiche Einrichtung) übernehmen"><i class="fa-solid fa-clock-rotate-left"></i> Bewährten Prozess übernehmen</button>
                         <button type="button" class="btn-search" style="padding:4px 10px; height:auto; font-size:11px; margin:0; border-radius: var(--border-radius-sm);" onclick="suggestProcess(this, false)"><i class="fa-solid fa-lightbulb"></i> Prozess vorschlagen</button>
@@ -414,7 +414,54 @@ MODALS & OVERLAYS
                         <span id="process-suggest-status" aria-live="polite" style="font-size:11px; color: var(--text-muted);"></span>
                     </div>
                     <div id="process-suggest-notes" aria-live="polite" style="display:none; font-size:12px; color: var(--text-muted); border:1px solid var(--border-color); border-radius: var(--border-radius-sm); padding:10px; margin-bottom:8px;"></div>
-                    <textarea name="screening_questions" id="job-screening" class="form-textarea" rows="3" placeholder='[{"id": "q1", "question": "Haben Sie Erfahrung?", "type": "YES_NO", "isMandatory": true, "expectedAnswer": "YES"}]'></textarea>
+                    <!-- Fragen-Baukasten: bedienbar ohne JSON. Quelle der Wahrheit
+                         bleibt das (versteckte) Feld screening_questions - auch die
+                         KI-Vorschlaege und das Bearbeiten-Prefill schreiben dorthin
+                         und rendern den Baukasten danach neu. -->
+                    <div id="qb-list" role="list" aria-label="Screening-Fragen dieser Stelle"></div>
+                    <div id="qb-editor" style="display:none; border:1px solid var(--glass-border); border-radius: var(--border-radius-sm); padding:12px; margin-top:8px;">
+                        <input type="hidden" id="qb-edit-idx" value="">
+                        <div style="display:grid; grid-template-columns: 1fr 180px; gap:10px;">
+                            <div class="form-group" style="margin:0;">
+                                <label class="form-label" for="qb-question">Frage</label>
+                                <input type="text" id="qb-question" class="form-input" maxlength="200" placeholder="z. B. Haben Sie ein Examen als Pflegefachkraft?">
+                            </div>
+                            <div class="form-group" style="margin:0;">
+                                <label class="form-label" for="qb-type">Typ</label>
+                                <select id="qb-type" class="filter-select" onchange="qbTypeChanged()">
+                                    <option value="YES_NO">Ja/Nein-Frage</option>
+                                    <option value="SELECT">Auswahl</option>
+                                    <option value="TEXT">Freitext</option>
+                                    <option value="FILE">Pflicht-Dokument (Upload)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group" id="qb-options-group" style="display:none; margin:10px 0 0;">
+                            <label class="form-label" for="qb-options">Auswahlmöglichkeiten (eine je Zeile)</label>
+                            <textarea id="qb-options" class="form-textarea" rows="3"></textarea>
+                        </div>
+                        <div style="display:flex; gap:16px; align-items:center; margin-top:10px; flex-wrap:wrap;">
+                            <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-main); cursor:pointer;">
+                                <input type="checkbox" id="qb-mandatory" style="accent-color: var(--danger);">
+                                K.O.-Frage (falsche Antwort = automatische Absage)
+                            </label>
+                            <span id="qb-expected-group" style="display:none;">
+                                <label class="form-label" for="qb-expected" style="display:inline; margin-right:6px;">Erwartete Antwort:</label>
+                                <input type="text" id="qb-expected" class="form-input" style="width:140px; display:inline-block;" placeholder="z. B. Ja">
+                            </span>
+                        </div>
+                        <div style="display:flex; gap:8px; margin-top:12px;">
+                            <button type="button" class="btn-search" onclick="qbSave()"><i class="fa-solid fa-check"></i> Übernehmen</button>
+                            <button type="button" class="btn-search" style="background:rgba(255,255,255,0.08);" onclick="qbCancel()">Abbrechen</button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-search" id="qb-add-btn" style="margin-top:8px; padding:6px 12px; height:auto; font-size:12px;" onclick="qbShowEditor(null)">
+                        <i class="fa-solid fa-circle-plus"></i> Frage hinzufügen
+                    </button>
+                    <details style="margin-top:8px;">
+                        <summary style="cursor:pointer; font-size:12px; color:var(--text-muted);">JSON-Expertenansicht</summary>
+                        <textarea name="screening_questions" id="job-screening" class="form-textarea" rows="3" oninput="qbRender()" aria-label="Screening-Fragen als JSON"></textarea>
+                    </details>
                 </div>
 
                 <div class="form-group">

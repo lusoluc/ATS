@@ -127,6 +127,157 @@
         });
     });
 
+    // ---- Board-Suche + Schnellfilter (A2) ----
+    function filterBoard() {
+        const term = (document.getElementById('board-search').value || '').toLowerCase().trim();
+        const source = document.getElementById('board-filter-source').value;
+        const score = document.getElementById('board-filter-score').value;
+        let sichtbar = 0, gesamt = 0;
+        document.querySelectorAll('.applicant-card').forEach(card => {
+            gesamt++;
+            const name = (card.getAttribute('data-name') || '').toLowerCase();
+            const job = (card.getAttribute('data-job') || '').toLowerCase();
+            const cardSource = card.getAttribute('data-source') || '';
+            const cardScore = card.getAttribute('data-ai-score') || '-';
+            const passt = (!term || name.includes(term) || job.includes(term))
+                && (!source || cardSource === source)
+                && (!score || (score === '-' ? cardScore === '-' || cardScore === '' : cardScore === score));
+            card.style.display = passt ? '' : 'none';
+            if (passt) sichtbar++;
+        });
+        const status = document.getElementById('board-filter-status');
+        const aktiv = term || source || score;
+        status.textContent = aktiv ? `${sichtbar} von ${gesamt} Bewerbungen sichtbar` : '';
+    }
+
+    // ---- Fragen-Baukasten (A1): bedienbare Ansicht ueber dem JSON-Feld ----
+    // Quelle der Wahrheit ist #job-screening (name=screening_questions);
+    // Baukasten, KI-Vorschlaege und Bearbeiten-Prefill schreiben dorthin.
+    const QB_TYPE_LABELS = { YES_NO: 'Ja/Nein', SELECT: 'Auswahl',
+                             TEXT: 'Freitext', FILE: 'Dokument-Upload' };
+
+    function qbRead() {
+        try {
+            const arr = JSON.parse(document.getElementById('job-screening').value || '[]');
+            return Array.isArray(arr) ? arr : [];
+        } catch (e) { return []; }
+    }
+
+    function qbWrite(arr) {
+        document.getElementById('job-screening').value = JSON.stringify(arr);
+        qbRender();
+    }
+
+    function qbRender() {
+        const list = document.getElementById('qb-list');
+        if (!list) return;
+        const qs = qbRead();
+        list.innerHTML = '';
+        if (!qs.length) {
+            list.innerHTML = '<p style="font-size:12px; color:var(--text-muted); margin:4px 0;">Noch keine Fragen – über „Frage hinzufügen" oder die Vorschlags-Buttons anlegen.</p>';
+            return;
+        }
+        qs.forEach((q, i) => {
+            const row = document.createElement('div');
+            row.setAttribute('role', 'listitem');
+            row.style.cssText = 'display:flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid var(--glass-border); border-radius:var(--border-radius-sm); margin-top:6px;';
+            const ko = q.isMandatory && q.expectedAnswer
+                ? '<span class="badge" style="background:rgba(239,68,68,.15); color:#f87171; font-size:10px;">K.O.</span>'
+                : (q.isMandatory ? '<span class="badge" style="background:rgba(245,158,11,.15); color:#fbbf24; font-size:10px;">Pflicht</span>' : '');
+            const text = document.createElement('span');
+            text.style.cssText = 'flex:1; font-size:13px; color:var(--text-main);';
+            text.textContent = q.question || '(ohne Text)';
+            const meta = document.createElement('span');
+            meta.style.cssText = 'font-size:11px; color:var(--text-muted);';
+            meta.textContent = QB_TYPE_LABELS[q.type] || q.type || 'Ja/Nein';
+            row.appendChild(text);
+            row.insertAdjacentHTML('beforeend', ko);
+            row.appendChild(meta);
+            [['fa-chevron-up', 'Nach oben', () => qbMove(i, -1)],
+             ['fa-chevron-down', 'Nach unten', () => qbMove(i, 1)],
+             ['fa-pen', 'Bearbeiten', () => qbShowEditor(i)],
+             ['fa-xmark', 'Entfernen', () => qbDelete(i)]].forEach(([icon, label, fn]) => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'btn-icon';
+                b.setAttribute('aria-label', label);
+                b.title = label;
+                b.style.cssText = 'background:none; border:none; color:var(--text-muted); cursor:pointer; padding:2px 5px;';
+                b.innerHTML = `<i class="fa-solid ${icon}"></i>`;
+                b.onclick = fn;
+                row.appendChild(b);
+            });
+            list.appendChild(row);
+        });
+    }
+
+    function qbMove(i, dir) {
+        const qs = qbRead();
+        const j = i + dir;
+        if (j < 0 || j >= qs.length) return;
+        [qs[i], qs[j]] = [qs[j], qs[i]];
+        qbWrite(qs);
+    }
+
+    function qbDelete(i) {
+        const qs = qbRead();
+        qs.splice(i, 1);
+        qbWrite(qs);
+    }
+
+    function qbShowEditor(idx) {
+        const qs = qbRead();
+        const q = idx !== null ? (qs[idx] || {}) : {};
+        document.getElementById('qb-edit-idx').value = idx === null ? '' : String(idx);
+        document.getElementById('qb-question').value = q.question || '';
+        document.getElementById('qb-type').value = q.type || 'YES_NO';
+        document.getElementById('qb-mandatory').checked = !!q.isMandatory;
+        document.getElementById('qb-expected').value = q.expectedAnswer || '';
+        document.getElementById('qb-options').value = Array.isArray(q.options) ? q.options.join('\n') : '';
+        document.getElementById('qb-editor').style.display = 'block';
+        qbTypeChanged();
+        document.getElementById('qb-question').focus();
+    }
+
+    function qbTypeChanged() {
+        const t = document.getElementById('qb-type').value;
+        document.getElementById('qb-options-group').style.display = t === 'SELECT' ? 'block' : 'none';
+        // Erwartete Antwort ergibt nur bei beantwortbaren Typen einen K.O.-Abgleich
+        document.getElementById('qb-expected-group').style.display =
+            (t === 'YES_NO' || t === 'SELECT') ? 'inline' : 'none';
+    }
+
+    function qbSave() {
+        const question = document.getElementById('qb-question').value.trim();
+        if (!question) { document.getElementById('qb-question').focus(); return; }
+        const type = document.getElementById('qb-type').value;
+        const qs = qbRead();
+        const idxRaw = document.getElementById('qb-edit-idx').value;
+        const existing = idxRaw !== '' ? qs[parseInt(idxRaw, 10)] : null;
+        const entry = {
+            id: existing && existing.id ? existing.id : 'q_' + (qs.length + 1) + '_' + question.length,
+            question: question,
+            type: type,
+            isMandatory: document.getElementById('qb-mandatory').checked,
+            expectedAnswer: (type === 'YES_NO' || type === 'SELECT')
+                ? document.getElementById('qb-expected').value.trim() : '',
+        };
+        if (type === 'SELECT') {
+            entry.options = document.getElementById('qb-options').value
+                .split('\n').map(s => s.trim()).filter(Boolean);
+        }
+        if (idxRaw !== '') { qs[parseInt(idxRaw, 10)] = entry; } else { qs.push(entry); }
+        qbWrite(qs);
+        qbCancel();
+    }
+
+    function qbCancel() {
+        document.getElementById('qb-editor').style.display = 'none';
+        document.getElementById('qb-edit-idx').value = '';
+    }
+
+    document.addEventListener('DOMContentLoaded', qbRender);
+
     function usePreviousProcess(btn) {
         const fam = document.getElementById('job-family').value;
         const fac = document.getElementById('job-facility') ? document.getElementById('job-facility').value : '';
@@ -147,6 +298,7 @@
                 const filled = (scr.value.trim() && scr.value.trim() !== '[]') || tasks.value.trim() || reqs.value.trim();
                 if (filled && !confirm(`Felder sind bereits befüllt – mit dem Prozess von „${d.source_title}" (${d.source_date}) überschreiben?`)) return;
                 scr.value = JSON.stringify(d.screening_questions, null, 0);
+                qbRender();
                 try { tasks.value = (Array.isArray(d.tasks) ? d.tasks : JSON.parse(d.tasks)).join('\n'); } catch (e) {}
                 try { reqs.value = (Array.isArray(d.requirements) ? d.requirements : JSON.parse(d.requirements)).join('\n'); } catch (e) {}
                 alert(`Übernommen: ${d.source_title}${d.source_date ? ' (' + d.source_date + ')' : ''} – Herkunft: ${d.scope}. Bitte prüfen und anpassen.`);
@@ -172,6 +324,7 @@
             .then(d => {
                 if (d.questions && d.questions.length) {
                     document.getElementById('job-screening').value = JSON.stringify(d.questions, null, 2);
+                    qbRender();
                 }
                 const parts = [];
                 if (d.gate && d.gate.text) parts.push((d.gate.active ? '🔒 ' : '') + d.gate.text);
@@ -444,9 +597,16 @@
     /* Entscheidung direkt aus dem Bewerbungs-Fenster.
        Nutzt denselben Endpunkt und dieselben Schutzplanken wie Drag&Drop –
        inklusive des Bedenken-Gates vor einer Einstellung. */
+    let decideInFlight = false;   // Einmal-Aktion: kein Doppel-POST bei Doppelklick
     function decideFromModal(newStatus) {
         const appId = activeApplicationId;
-        if (!appId) return;
+        if (!appId || decideInFlight) return;
+        decideInFlight = true;
+        document.querySelectorAll('[id^="modal-decide-"]').forEach(b => b.disabled = true);
+        const decideDone = () => {
+            decideInFlight = false;
+            document.querySelectorAll('[id^="modal-decide-"]').forEach(b => b.disabled = false);
+        };
 
         const send = (force) => {
             const fd = new FormData();
@@ -467,11 +627,14 @@
                 if (confirm((data.error || 'Es liegen Bedenken vor.') +
                             '\n\n' + list + '\n\nTrotzdem fortfahren?')) {
                     send(true).then(() => location.reload());
+                } else {
+                    decideDone();
                 }
             } else {
                 alert(data.error || 'Statuswechsel nicht möglich.');
+                decideDone();
             }
-        }).catch(() => alert('Statuswechsel fehlgeschlagen.'));
+        }).catch(() => { alert('Statuswechsel fehlgeschlagen.'); decideDone(); });
     }
 
     function openCandidateModal(appId, name, job, email, phone, coverLetter, aiScore, aiRationale, cvStorageId, internalNotes, screeningJson) {
@@ -702,6 +865,8 @@
         document.getElementById('job-tasks-inp').value = '';
         document.getElementById('job-reqs-inp').value = '';
         document.getElementById('job-screening').value = '';
+        qbRender();
+        qbCancel();
         document.getElementById('panel_quorum').value = '';
         document.getElementById('panel_deadline_days').value = '';
         document.getElementById('interview_rounds').value = '';
@@ -797,6 +962,8 @@
 
         // Screening questions
         document.getElementById('job-screening').value = screeningQuestionsJson;
+        qbRender();
+        qbCancel();
 
         // Change modal title and button text
         document.querySelector('#jobCreatorModal h2').innerHTML = '<i class="fa-solid fa-pen-to-square" style="color: var(--accent);"></i> Stellenangebot bearbeiten';

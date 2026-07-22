@@ -521,3 +521,57 @@ class SidebarRoleFilteringTestCase(TestCase):
         # Direkter Zugriff auf eine Admin-Aktion trotz verstecktem Tab
         r = self.client.get(reverse('ats:sap_sf_mapper'))
         self.assertIn(r.status_code, (302, 403, 404))
+
+
+class SendOnceStateTestCase(TestCase):
+    """Einmal-Aktionen: Der Gesendet-Zustand verhindert Doppel-Nachrichten.
+
+    Regel: Nach einer gesendeten Nachricht bleibt das Senden gesperrt, bis
+    entweder eine Antwort des Bewerbers eingeht ODER sich der
+    Bewerbungsstatus aendert. Der Zustand wird serverseitig gerendert und
+    ueberlebt damit jeden Seiten-Reload."""
+
+    def setUp(self):
+        self.app = make_application(make_job(make_world(), title="SO-Stelle"))
+        self.rec = make_user("so-rec", role="Recruiter")
+        self.client.force_login(self.rec)
+        self.url = reverse('ats:application_messages', args=[self.app.id])
+
+    def _send(self, text="Rückfrage zu den Unterlagen"):
+        resp = self.client.post(self.url, data={"content": text})
+        # Deterministisch trotz grober Uhr-Aufloesung: die gesendete Nachricht
+        # liegt sicher VOR den Folge-Ereignissen des Tests.
+        from datetime import timedelta
+
+        from ..models import Message
+        Message.objects.filter(application=self.app, direction='OUTBOUND') \
+            .update(createdAt=timezone.now() - timedelta(seconds=5))
+        return resp
+
+    def test_after_send_form_is_replaced_by_done_state(self):
+        self._send()
+        page = self.client.get(self.url)
+        self.assertContains(page, "Nachricht gesendet – wartet auf Antwort")
+        self.assertNotContains(page, 'name="content"')      # kein Formular
+
+    def test_inbound_reply_reenables_form(self):
+        from ..models import Message
+        self._send()
+        Message.objects.create(application=self.app, direction='INBOUND',
+                               content='Anbei die Unterlagen.')
+        page = self.client.get(self.url)
+        self.assertContains(page, 'name="content"')
+        self.assertNotContains(page, "wartet auf Antwort")
+
+    def test_status_change_reenables_form(self):
+        self._send()
+        r = self.client.post(reverse('ats:update_status', args=[self.app.id]),
+                             data={"status": "IN_REVIEW"})
+        self.assertEqual(r.status_code, 200)
+        page = self.client.get(self.url)
+        self.assertContains(page, 'name="content"')
+
+    def test_fresh_conversation_shows_form(self):
+        page = self.client.get(self.url)
+        self.assertContains(page, 'name="content"')
+        self.assertNotContains(page, "wartet auf Antwort")

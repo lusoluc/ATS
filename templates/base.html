@@ -764,6 +764,9 @@
         /* Ungestylte Links erben sonst Browser-Blau — auf dunklem Grund unlesbar */
         a:not([class]) { color: var(--primary-light); }
 
+        /* Einmal-Aktionen: erledigter Zustand eines Aktions-Buttons */
+        .btn-done { opacity: .65; cursor: default; pointer-events: none; }
+
         /* Nur für Screenreader (z. B. aria-live-Regionen, Tastatur-Hinweise) */
         .sr-only { position: absolute; width: 1px; height: 1px; padding: 0;
             margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0);
@@ -1113,6 +1116,23 @@
             window.speechSynthesis.speak(u);
         }
         
+        // Einmal-Aktionen: Nach dem Absenden eines Formulars wird der geklickte
+        // Submit-Button deaktiviert und zeigt sein Erledigt-Label
+        // (data-done-label) — verhindert Doppel-Sendungen durch Doppelklick.
+        // Deaktiviert wird NACH dem Submit-Start (setTimeout), damit
+        // name/value des Buttons (z. B. vote=FOR) noch mitgesendet werden.
+        document.addEventListener('submit', function (e) {
+            const clicked = e.submitter
+                || e.target.querySelector('button[type="submit"], input[type="submit"]');
+            if (!clicked || clicked.disabled) return;
+            setTimeout(function () {
+                clicked.disabled = true;
+                clicked.classList.add('btn-done');
+                const done = clicked.getAttribute('data-done-label');
+                if (done) clicked.innerHTML = '<i class="fa-solid fa-check"></i> ' + done;
+            }, 0);
+        });
+
         // Reading ruler cursor mouse tracker
         window.addEventListener('mousemove', (e) => {
             if (rulerEl && rulerEl.style.display === 'block') {

@@ -130,6 +130,8 @@ def dashboard(request):
     # Entgelttransparenz (E1): Entgeltbänder für den Stellen-Editor
     from ..models import PayBand
     pay_bands = PayBand.objects.filter(archived=False).order_by('tariffSystem', 'name')
+    # A2: Quellen-Filter über dem Board (nur tatsächlich vorkommende Quellen)
+    board_sources = sorted({a.source for a in applications if a.source})
     latest_tpl_ids = {}
     for t in JobTemplate.objects.order_by('-version', '-createdAt'):
         latest_tpl_ids.setdefault(t.title.lower(), t.id)
@@ -200,6 +202,7 @@ def dashboard(request):
         'contact_persons': contact_persons,
         'all_benefits': all_benefits,
         'pay_bands': pay_bands,
+        'board_sources': board_sources,
         'job_templates': job_templates,
         'ai_learning_samples': ai_learning_samples,
         'honeypot_spam_count': honeypot_spam_count,
@@ -896,7 +899,24 @@ def application_messages(request, app_id):
     # Zaehler im "Heute wichtig"-Block wird durch das Oeffnen sauber abgebaut
     app.messages.filter(direction='INBOUND', readStatus=False).update(readStatus=True)
     msgs = app.messages.order_by('createdAt')
-    return render(request, 'messages.html', {'application': app, 'messages': msgs})
+    # Einmal-Aktion: solange auf die letzte gesendete Nachricht weder eine
+    # Antwort kam noch sich der Status geaendert hat, bleibt der Senden-Button
+    # im Zustand "gesendet" - das verhindert versehentliche Doppel-Nachrichten.
+    last_out = app.messages.filter(direction='OUTBOUND').order_by('-createdAt').first()
+    awaiting_reply = False
+    if last_out:
+        # __gte statt __gt: bei grober Uhr-Aufloesung koennen Antwort bzw.
+        # Statuswechsel im selben Tick liegen wie die gesendete Nachricht -
+        # ein gleichzeitiges Ereignis zaehlt als Freischaltung.
+        answered = app.messages.filter(
+            direction='INBOUND', createdAt__gte=last_out.createdAt).exists()
+        status_changed = AuditLog.objects.filter(
+            action='STATUS_CHANGE', applicationId=str(app.id),
+            createdAt__gte=last_out.createdAt).exists()
+        awaiting_reply = not answered and not status_changed
+    return render(request, 'messages.html',
+                  {'application': app, 'messages': msgs,
+                   'awaiting_reply': awaiting_reply})
 
 
 @any_staff_required

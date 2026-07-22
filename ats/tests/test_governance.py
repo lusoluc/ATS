@@ -2141,3 +2141,30 @@ class PanelVoteByDeputyTestCase(TestCase):
         # Vertretung liefert die dritte Stimme
         self._vote(self.deputy)
         self.assertEqual(self._state()["votes_for"], 3)
+
+
+class VoteOnceStateTestCase(TestCase):
+    """Einmal-Aktion Gremium: die abgegebene Stimme ist am Button sichtbar;
+    nur das Aendern auf die Gegenstimme bleibt anklickbar (auditiert)."""
+
+    def _panel_world(self):
+        from .factories import make_application, make_job, make_world
+        from .utils import make_user
+        world = make_world()
+        member = make_user("vo-member", role="Hiring-Manager")
+        job = make_job(world, title="VO-Stelle",
+                       panelUserIdsJson=[str(member.id)])
+        app = make_application(job)
+        return member, app
+
+    def test_vote_state_rendered_after_voting(self):
+        member, app = self._panel_world()
+        self.client.force_login(member)
+        page = self.client.get(reverse('ats:approvals'))
+        self.assertContains(page, 'value="FOR"')               # beide Buttons aktiv
+        self.client.post(reverse('ats:application_vote', args=[app.id]),
+                         data={"vote": "FOR"})
+        page = self.client.get(reverse('ats:approvals'))
+        self.assertContains(page, "Dafür gestimmt")            # Erledigt-Zustand
+        self.assertContains(page, "Ändern: Dagegen")           # Gegenstimme bleibt
+        self.assertNotContains(page, 'data-done-label="Dafür gestimmt"')

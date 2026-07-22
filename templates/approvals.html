@@ -61,10 +61,18 @@
             {% csrf_token %}
             <input type="text" name="comment" class="input" placeholder="Kommentar / Frage (optional, intern)" style="padding:6px 8px; font-size:12px;">
             <div style="display:flex; gap:6px;">
-              <button type="submit" name="vote" value="FOR" class="btn btn-primary" style="padding:6px 10px; font-size:12px;"><i class="fa-solid fa-thumbs-up"></i> Dafür</button>
-              <button type="submit" name="vote" value="AGAINST" class="btn btn-ghost" style="padding:6px 10px; font-size:12px;"><i class="fa-solid fa-thumbs-down"></i> Dagegen</button>
+              {% if r.my_vote == 'FOR' %}
+              <button type="button" class="btn btn-primary btn-done" disabled style="padding:6px 10px; font-size:12px;"><i class="fa-solid fa-check"></i> Dafür gestimmt</button>
+              <button type="submit" name="vote" value="AGAINST" class="btn btn-ghost" style="padding:6px 10px; font-size:12px;" data-done-label="Geändert"><i class="fa-solid fa-thumbs-down"></i> Ändern: Dagegen</button>
+              {% elif r.my_vote == 'AGAINST' %}
+              <button type="submit" name="vote" value="FOR" class="btn btn-ghost" style="padding:6px 10px; font-size:12px;" data-done-label="Geändert"><i class="fa-solid fa-thumbs-up"></i> Ändern: Dafür</button>
+              <button type="button" class="btn btn-primary btn-done" disabled style="padding:6px 10px; font-size:12px;"><i class="fa-solid fa-check"></i> Dagegen gestimmt</button>
+              {% else %}
+              <button type="submit" name="vote" value="FOR" class="btn btn-primary" style="padding:6px 10px; font-size:12px;" data-done-label="Dafür gestimmt"><i class="fa-solid fa-thumbs-up"></i> Dafür</button>
+              <button type="submit" name="vote" value="AGAINST" class="btn btn-ghost" style="padding:6px 10px; font-size:12px;" data-done-label="Dagegen gestimmt"><i class="fa-solid fa-thumbs-down"></i> Dagegen</button>
+              {% endif %}
             </div>
-            {% if not r.my_vote_pending %}<span style="font-size:11px; color:var(--text-muted);">Sie haben abgestimmt – erneutes Klicken ändert die Stimme (auditiert).</span>{% endif %}
+            {% if not r.my_vote_pending %}<span style="font-size:11px; color:var(--text-muted);">Stimme abgegeben – Ändern ist möglich und wird auditiert.</span>{% endif %}
           </form>
         </td>
       </tr>

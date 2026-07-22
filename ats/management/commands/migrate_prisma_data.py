@@ -8,7 +8,6 @@ from django.utils.dateparse import parse_datetime
 from django.utils.timezone import make_aware
 
 from ats.models import (
-    AILearningSample,
     Applicant,
     ApplicantToken,
     Application,
@@ -123,7 +122,6 @@ class Command(BaseCommand):
             with transaction.atomic():
                 # --- TRUNCATE ALL EXISTING TARGET TABLES TO AVOID CONFLICTS ---
                 self.stdout.write("Bereinige bestehende Tabellen im Zielsystem...")
-                AILearningSample.objects.all().delete()
                 AuditLog.objects.all().delete()
                 RoleDelegation.objects.all().delete()
                 ScreeningQuestion.objects.all().delete()
@@ -486,15 +484,6 @@ class Command(BaseCommand):
                         id=r['id'], application_id=r['applicationId'], direction=r['direction'],
                         content=r['content'], readStatus=bool(r['readStatus']),
                         createdAt=self.parse_date(r['createdAt']), updatedAt=self.parse_date(r['updatedAt'])
-                    )
-
-                # AILearningSample
-                for r in get_rows('AILearningSample'):
-                    AILearningSample.objects.create(
-                        id=r['id'], application_id=r['applicationId'], categoryId=r['categoryId'],
-                        facilityId=r['facilityId'], feedbackType=r['feedbackType'],
-                        anonymizedProfileJson=self.parse_json(r['anonymizedProfileJson'], {}),
-                        createdAt=self.parse_date(r['createdAt'])
                     )
 
                 # --- 7. MIGRATION LEVEL 7: AppSteps ---

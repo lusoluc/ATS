@@ -59,7 +59,6 @@ urlpatterns = [
     path('recruiter/ki/logs/', views.get_ai_execution_logs, name='get_ai_execution_logs'),
     path('recruiter/ki/validate-prompt/', views.validate_ai_prompt, name='validate_ai_prompt'),
     path('recruiter/ki/validate-prompt/status/<uuid:task_id>/', views.validate_ai_prompt_status, name='validate_ai_prompt_status'),
-    path('recruiter/applications/<uuid:app_id>/toggle-learning/', views.toggle_learning_sample, name='toggle_learning_sample'),
     path('recruiter/sap-sf/', views.sap_sf_mapper, name='sap_sf_mapper'),
 
     # Backlog-Features (siehe FEATURE_BACKLOG.md)

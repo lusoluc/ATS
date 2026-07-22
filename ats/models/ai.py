@@ -1,28 +1,14 @@
-"""KI-Domaene: Lernstichproben, Best-Performer-Profile (Embeddings) und die Async-Task-Queue."""
+"""KI-Domaene: Best-Performer-Profile (Embeddings) und die Async-Task-Queue."""
 import uuid
 
 from django.db import models
 from django.utils import timezone
 
-from .applications import Application
 from .organization import JobFamily
 
 # ============================================================================
 # 10. AI LEARNING & CONTEXTUAL RAG
 # ============================================================================
-
-class AILearningSample(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    application = models.OneToOneField(Application, on_delete=models.CASCADE, related_name='aiLearningSample')
-    categoryId = models.CharField(max_length=255, blank=True, null=True)
-    facilityId = models.CharField(max_length=255, blank=True, null=True)
-    feedbackType = models.CharField(max_length=50)  # POSITIVE, NEGATIVE
-    anonymizedProfileJson = models.JSONField(default=dict)
-    createdAt = models.DateTimeField(default=timezone.now)
-
-    def __str__(self):
-        return f"Learning sample for {self.application.id}"
-
 
 class BestPerformerProfile(models.Model):
     """Semantisches Profil eines "Best-Performer"-Lebenslaufs.

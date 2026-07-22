@@ -1,7 +1,6 @@
 from django.contrib import admin
 
 from .models import (
-    AILearningSample,
     Applicant,
     ApplicantToken,
     Application,
@@ -142,7 +141,6 @@ admin.site.register(EmailTemplate)
 admin.site.register(ScreeningQuestion)
 admin.site.register(RoleDelegation)
 admin.site.register(AuditLog)
-admin.site.register(AILearningSample)
 
 
 # BOLA UserScope – Zuweisung erlaubter Standorte/Einrichtungen je Auth-User

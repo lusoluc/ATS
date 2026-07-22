@@ -116,21 +116,9 @@ class SecurityAuditRegressionTestCase(TestCase):
                                  data={"application_id": str(self.app.id),
                                        "location_type": "REMOTE"})
             self.assertEqual(r.status_code, 404)
-
-    # Fund 3: toggle_learning_sample BOLA
-    def test_toggle_learning_sample_bola_scoped(self):
-        from ..permissions import can_access_application
-        self._world()
-        outsider = make_user("sec-out2", role="Recruiter")
-        if hasattr(outsider, 'scope'):
-            outsider.scope.facilities.clear()
-            outsider.scope.locations.clear()
-        if not can_access_application(outsider, self.app):
-            self.client.force_login(outsider)
-            r = self.client.post(
-                reverse('ats:toggle_learning_sample', args=[self.app.id]),
-                data={"feedback_type": "POSITIVE"})
-            self.assertEqual(r.status_code, 404)
+    # Fund 3 (toggle_learning_sample BOLA) entfaellt: der Endpunkt wurde mit
+    # den wirkungslosen „RAG"-Feedback-Buttons entfernt (kein Lern-Effekt,
+    # nur ein Klick fuers System). Angriffsflaeche damit ganz weg.
 
 class DemoSeedGuardTestCase(TestCase):
     """Fund 4: Demo-Seeds duerfen ohne DEMO_MODE keine Backdoor-Konten anlegen."""

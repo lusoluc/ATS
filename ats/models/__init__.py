@@ -12,7 +12,7 @@ anlegen, sonst entstehen Zirkelimporte (die Reihenfolge der Zeilen hier
 ist dagegen egal, sie folgt der Import-Sortierung).
 """
 
-from .ai import AILearningSample, AiTask, BestPerformerProfile
+from .ai import AiTask, BestPerformerProfile
 from .applications import (
     DEFAULT_FEEDBACK_CRITERIA,
     INTERVIEW_KINDS,
@@ -97,7 +97,6 @@ from .system import (
 )
 
 __all__ = [
-    "AILearningSample",
     "AiTask",
     "Applicant",
     "ApplicantManager",

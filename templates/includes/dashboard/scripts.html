@@ -1250,25 +1250,6 @@
         }
     }
 
-    // RAG Learning Sample Feedback trigger
-    function trainLearningSample(type) {
-        if (!activeApplicationId) return;
-        const formData = new FormData();
-        formData.append('feedback_type', type);
-        
-        fetch(`/recruiter/applications/${activeApplicationId}/toggle-learning/`, {
-            method: 'POST',
-            body: formData
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                alert(`✅ RAG-Feedback erfolgreich als ${type} übermittelt!`);
-            }
-        })
-        .catch(err => console.error("Error updating RAG learning:", err));
-    }
-
     // SAP SF sync console trigger
     function testGemmaConnection() {
         const prompt = document.getElementById('gemma-prompt').value;

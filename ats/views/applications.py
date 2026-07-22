@@ -12,7 +12,6 @@ import os as _os
 
 from django.contrib.auth.models import Group
 from django.core.files.storage import default_storage
-from django.db import transaction
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -21,7 +20,6 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 
 from ..audit import write_audit
 from ..models import (
-    AILearningSample,
     ApplicantToken,
     Application,
     AppWorkflowDef,
@@ -50,7 +48,7 @@ from .governance import _pending_steps_for
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "toggle_learning_sample", "reorder_board", "bulk_update_status", "application_messages", "application_vote", "talent_pool_view", "tasks_view"]
+__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "reorder_board", "bulk_update_status", "application_messages", "application_vote", "talent_pool_view", "tasks_view"]
 
 
 @ensure_csrf_cookie
@@ -144,8 +142,7 @@ def dashboard(request):
         latest_tpl_ids.setdefault(t.title.lower(), t.id)
     job_templates = JobTemplate.objects.filter(id__in=latest_tpl_ids.values()).order_by('title')
 
-    # Learning samples and spambot counts
-    ai_learning_samples = AILearningSample.objects.select_related('application', 'application__applicant', 'application__jobPosting')
+    # Spambot-Zaehler (Honeypot)
     honeypot_spam_count = AuditLog.objects.filter(action="SUBMIT_APPLICATION", metadataJson__contains="website_url").count()
     if honeypot_spam_count == 0:
         honeypot_spam_count = 14  # High-fidelity metrics fallback
@@ -211,7 +208,6 @@ def dashboard(request):
         'pay_bands': pay_bands,
         'board_sources': board_sources,
         'job_templates': job_templates,
-        'ai_learning_samples': ai_learning_samples,
         'honeypot_spam_count': honeypot_spam_count,
         'gemma_status': gemma_status,
 
@@ -795,44 +791,6 @@ def download_cv(request, app_id):
         # Kein MIME-Sniffing: der Browser darf den Typ nicht "erraten".
         resp["X-Content-Type-Options"] = "nosniff"
     return resp
-
-
-@recruiter_required
-def toggle_learning_sample(request, app_id):
-    """Toggles or creates an AILearningSample feedback for Gemma training."""
-    if request.method == 'POST':
-        app = get_object_or_404(Application, id=app_id)
-        if not can_access_application(request.user, app):
-            raise Http404("Nicht im Zugriffsbereich.")
-        feedback_type = request.POST.get('feedback_type', 'POSITIVE').upper()
-
-        with transaction.atomic():
-            sample, created = AILearningSample.objects.get_or_create(
-                application=app,
-                defaults={
-                    'feedbackType': feedback_type,
-                    'categoryId': str(app.jobPosting.jobFamily.id) if app.jobPosting.jobFamily else None,
-                    'facilityId': str(app.jobPosting.facility.id),
-                    'anonymizedProfileJson': {
-                        'coverLetter': app.coverLetterTxt,
-                        'aiScore': app.aiScore,
-                        'jobTitle': app.jobPosting.title
-                    }
-                }
-            )
-
-            if not created:
-                sample.feedbackType = feedback_type
-                sample.save()
-
-            AuditLog.objects.create(
-                action="AI_FEEDBACK",
-                applicationId=str(app.id),
-                metadataJson=json.dumps({"feedbackType": feedback_type})
-            )
-
-        return JsonResponse({'success': True, 'feedback_type': feedback_type})
-    return JsonResponse({'success': False, 'error': 'Invalid request method.'})
 
 
 # --- WP4/B10: Kanban-Reihenfolge einer Spalte persistieren -------------------

@@ -575,3 +575,69 @@ class SendOnceStateTestCase(TestCase):
         page = self.client.get(self.url)
         self.assertContains(page, 'name="content"')
         self.assertNotContains(page, "wartet auf Antwort")
+
+
+class BoardInsightsTestCase(TestCase):
+    """C1 Wiederbewerber-Signal + C2 Liegenbleiber-Radar (aus vorhandenen Daten)."""
+
+    def test_repeat_applicant_detected_across_applications(self):
+        from ..board_insights import repeat_applicant_map
+        from ..models import Applicant, Application
+        job = make_job(make_world(), title="RA-Stelle")
+        person = Applicant.objects.create(firstName="Mehrfach", lastName="Test",
+                                          email="mehrfach@ex.org")
+        # zwei Bewerbungen derselben Person, aeltere abgelehnt
+        old = Application.objects.create(applicant=person, jobPosting=job,
+                                         status="REJECTED")
+        Application.objects.filter(id=old.id).update(
+            createdAt=timezone.now() - datetime.timedelta(days=120))
+        new = Application.objects.create(applicant=person, jobPosting=job,
+                                         status="NEW")
+        # Einzelbewerber als Gegenprobe
+        solo = make_application(job, first_name="Einzel", last_name="Fall",
+                                email="einzel@ex.org")
+        m = repeat_applicant_map([new, solo])
+        self.assertIn(new.id, m)
+        self.assertEqual(m[new.id]["count"], 2)
+        self.assertEqual(m[new.id]["prev_status"], "Abgelehnt")
+        self.assertNotIn(solo.id, m)                       # nur eine Bewerbung
+
+    def test_stale_radar_levels_and_endstate_excluded(self):
+        from ..board_insights import stale_days_map
+        from ..models import Application
+        job = make_job(make_world(), title="ST-Stelle")
+
+        def aged(status, days):
+            a = make_application(job)
+            a.status = status
+            a.save(update_fields=["status"])
+            Application.objects.filter(id=a.id).update(
+                createdAt=timezone.now() - datetime.timedelta(days=days))
+            a.refresh_from_db()
+            return a
+
+        frisch = aged("NEW", 2)
+        warn = aged("NEW", 9)
+        alert = aged("IN_REVIEW", 20)
+        erledigt = aged("REJECTED", 30)   # Endzustand -> kein Signal
+        m = stale_days_map([frisch, warn, alert, erledigt])
+        self.assertNotIn(frisch.id, m)
+        self.assertEqual(m[warn.id]["level"], "warn")
+        self.assertEqual(m[alert.id]["level"], "alert")
+        self.assertNotIn(erledigt.id, m)
+
+    def test_status_change_audit_resets_stale_clock(self):
+        """Ein Statuswechsel setzt die Liegenbleiber-Uhr zurueck: die Karte ist
+        alt, aber gerade erst (per Audit) bewegt worden."""
+        from ..audit import create_chained_audit
+        from ..board_insights import stale_days_map
+        from ..models import Application
+        job = make_job(make_world(), title="RS-Stelle")
+        a = make_application(job)
+        Application.objects.filter(id=a.id).update(
+            createdAt=timezone.now() - datetime.timedelta(days=30))
+        a.refresh_from_db()
+        # frischer Statuswechsel heute
+        create_chained_audit("STATUS_CHANGE", application_id=str(a.id))
+        m = stale_days_map([a])
+        self.assertNotIn(a.id, m)                          # Uhr zurueckgesetzt

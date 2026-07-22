@@ -40,7 +40,26 @@
       {% if app.fb_summary.open_concerns %}<span class="badge" style="font-size:10px; padding:3px 8px; background:rgba(239,68,68,.15); color:#f87171;" title="{{ app.fb_summary.open_concerns }} Rückmeldung(en) mit Bedenken"><i class="fa-solid fa-triangle-exclamation" style="font-size:9px;"></i> {{ app.fb_summary.open_concerns }}</span>{% endif %}
     </div>
     {% endif %}
-    
+
+    {% if app.repeat_info or app.stale_info %}
+    <div style="display:flex; align-items:center; gap:6px; margin-top:6px; flex-wrap:wrap;">
+      {% if app.repeat_info %}
+      <!-- C1: Wiederbewerber-Signal aus dem E-Mail-Blind-Index -->
+      <span class="badge" style="font-size:10px; padding:3px 8px; background:rgba(99,102,241,.15); color:#a5b4fc;"
+            title="{{ app.repeat_info.count }}. Bewerbung dieser Person{% if app.repeat_info.prev_date %} · zuletzt {{ app.repeat_info.prev_status }} am {{ app.repeat_info.prev_date|date:'d.m.Y' }}{% endif %}">
+        <i class="fa-solid fa-rotate-left" style="font-size:9px;"></i> {{ app.repeat_info.count }}. Bewerbung
+      </span>
+      {% endif %}
+      {% if app.stale_info %}
+      <!-- C2: Liegenbleiber-Radar -->
+      <span class="badge" style="font-size:10px; padding:3px 8px; background:{% if app.stale_info.level == 'alert' %}rgba(239,68,68,.15); color:#f87171{% else %}rgba(245,158,11,.15); color:#fbbf24{% endif %};"
+            title="Seit {{ app.stale_info.days }} Tagen ohne Statuswechsel in dieser Spalte">
+        <i class="fa-solid fa-clock" style="font-size:9px;"></i> {{ app.stale_info.days }} T
+      </span>
+      {% endif %}
+    </div>
+    {% endif %}
+
     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
         <span class="badge badge-primary" style="font-size: 10px; padding: 3px 8px;">
             <i class="fa-solid fa-location-dot" style="font-size: 9px; margin-right: 4px;"></i>{{ app.jobPosting.location.city }}

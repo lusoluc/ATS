@@ -37,6 +37,7 @@ module = [
     "ats.approvals",
     "ats.audit",
     "ats.blocks",
+    "ats.board_insights",
     "ats.dsgvo",
     "ats.panel",
     "ats.pay_transparency",

@@ -80,8 +80,15 @@ def dashboard(request):
     # der kollektive Eindruck direkt auf dem Board, ohne Detail-Klick.
     from ..models import feedback_summaries
     _fb = feedback_summaries([a.id for a in applications])
+    # C1/C2: Wiederbewerber-Signal und Liegenbleiber-Radar (je 1 Query)
+    from ..board_insights import repeat_applicant_map, stale_days_map
+    _apps = list(applications)
+    _repeat = repeat_applicant_map(_apps)
+    _stale = stale_days_map(_apps)
     for a in applications:
         a.fb_summary = _fb.get(a.id)
+        a.repeat_info = _repeat.get(a.id)
+        a.stale_info = _stale.get(a.id)
 
     # Extra data for interactive modals
     active_jobs = scope_jobs(request.user, JobPosting.objects.all().select_related('location', 'facility', 'department', 'workflowState', 'contactPerson', 'jobTemplate').order_by('-createdAt'))

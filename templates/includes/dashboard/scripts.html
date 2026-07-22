@@ -2002,6 +2002,16 @@
             if (kanbanLink) switchTab(kanbanLink, 'kanban-tab');
         }
 
+        // B1: Sprung aus der globalen Suche direkt auf die Karte (#card-<id>)
+        if (window.location.hash.startsWith('#card-')) {
+            const card = document.getElementById(window.location.hash.slice(1));
+            if (card) {
+                card.scrollIntoView({ block: 'center' });
+                card.style.outline = '2px solid var(--accent)';
+                setTimeout(() => openCandidateCard(card), 200);
+            }
+        }
+
         // Setup drag & drop for CV zone
         const dropZone = document.getElementById('cv-drop-zone');
         if (dropZone) {

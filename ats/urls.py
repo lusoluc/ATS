@@ -20,6 +20,7 @@ urlpatterns = [
 
     # Recruiter ATS Dashboard URLs
     path('recruiter/dashboard/', views.dashboard, name='dashboard'),
+    path('recruiter/suche/', views.global_search, name='global_search'),  # B1
     path('recruiter/applications/<uuid:app_id>/update-status/', views.update_status, name='update_status'),
     path('recruiter/applications/<uuid:app_id>/add-note/', views.add_note, name='add_note'),
     path('recruiter/interviews/schedule/', views.schedule_interview, name='schedule_interview'),

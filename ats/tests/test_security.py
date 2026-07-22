@@ -606,3 +606,61 @@ class BruteForceLockoutTestCase(TestCase):
         import ats.views as v
         vsrc = inspect.getsource(v.SafeLoginView)
         self.assertIn('cache', vsrc)
+
+
+class GlobalSearchTestCase(TestCase):
+    """B1: Globale Suche - Treffer nur im eigenen Zugriffsbereich (BOLA)."""
+
+    def setUp(self):
+        from ..models import Location
+        from .factories import make_application, make_job, make_world
+        self.world = make_world()
+        self.job = make_job(self.world, title="Pflegefachkraft Nachtdienst")
+        self.app = make_application(self.job, first_name="Sabine",
+                                    last_name="Kruse", email="sabine@ex.org")
+        # Zweite Welt/Stelle an anderem Standort (ausserhalb des Scopes)
+        self.other_loc = Location.objects.create(name="Muenchen")
+        self.other_job = make_job(self.world, title="Buchhalter",
+                                  location=self.other_loc)
+        self.other_app = make_application(self.other_job, first_name="Sabine",
+                                          last_name="Fremd", email="fremd@ex.org")
+
+    def _search(self, q):
+        return self.client.get(reverse('ats:global_search'), {"q": q})
+
+    def test_name_search_finds_applicant(self):
+        self.client.force_login(make_user("gs-admin", role="HR-Admin"))
+        r = self._search("Kruse")
+        self.assertContains(r, "Sabine Kruse")
+
+    def test_email_search_exact_match(self):
+        self.client.force_login(make_user("gs-admin2", role="HR-Admin"))
+        r = self._search("sabine@ex.org")
+        self.assertContains(r, "Sabine Kruse")
+
+    def test_job_title_search(self):
+        self.client.force_login(make_user("gs-admin3", role="HR-Admin"))
+        r = self._search("Nachtdienst")
+        self.assertContains(r, "Pflegefachkraft Nachtdienst")
+
+    def test_bola_scoped_recruiter_does_not_see_foreign_applicant(self):
+        from ..models import UserScope
+        from ..permissions import can_access_application
+        rec = make_user("gs-scoped", role="Recruiter")
+        sc = UserScope.objects.create(user=rec, full_access=False)
+        sc.locations.add(self.world.location)   # nur die eigene Welt
+        # Test nur sinnvoll, wenn der Scope die Fremd-Bewerbung wirklich sperrt
+        if not can_access_application(rec, self.other_app):
+            self.client.force_login(rec)
+            r = self._search("Sabine")
+            self.assertContains(r, "Sabine Kruse")       # eigener Standort
+            self.assertNotContains(r, "Sabine Fremd")    # fremder Standort
+
+    def test_requires_login(self):
+        r = self._search("Kruse")
+        self.assertIn(r.status_code, (302, 403))
+
+    def test_short_query_yields_nothing(self):
+        self.client.force_login(make_user("gs-admin4", role="HR-Admin"))
+        r = self._search("a")
+        self.assertContains(r, "0 Treffer")

@@ -18,4 +18,5 @@ from .governance import *  # noqa: F401,F403
 from .interviews import *  # noqa: F401,F403
 from .jobs import *  # noqa: F401,F403
 from .public import *  # noqa: F401,F403
+from .search import *  # noqa: F401,F403
 from .settings_admin import *  # noqa: F401,F403

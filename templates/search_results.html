@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Suche · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap" style="max-width:820px;">
+  <h1 class="page-title"><i class="fa-solid fa-magnifying-glass"></i> Suche</h1>
+  {% if q %}
+    <p class="page-lead">{{ total }} Treffer für „{{ q }}".</p>
+  {% else %}
+    <p class="page-lead">Suchbegriff eingeben (Name, E-Mail oder Stelle).</p>
+  {% endif %}
+
+  {% if applicants %}
+  <div class="card" style="margin-bottom: var(--space-4);">
+    <h2 style="font-size:16px; margin:0 0 var(--space-3);"><i class="fa-solid fa-user"></i> Bewerber</h2>
+    <ul class="list-reset">
+      {% for a in applicants %}
+      <li class="list-row">
+        <span>
+          <strong>{{ a.applicant.firstName }} {{ a.applicant.lastName }}</strong>
+          <span style="color:var(--text-muted); font-size:13px;"> · {{ a.jobPosting.title }} · {{ a.get_status_display|default:a.status }}</span>
+        </span>
+        <a class="btn btn-primary" style="padding:5px 12px; font-size:13px;"
+           href="{% url 'ats:dashboard' %}#card-{{ a.id }}">Öffnen</a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if jobs %}
+  <div class="card" style="margin-bottom: var(--space-4);">
+    <h2 style="font-size:16px; margin:0 0 var(--space-3);"><i class="fa-solid fa-briefcase"></i> Stellen</h2>
+    <ul class="list-reset">
+      {% for j in jobs %}
+      <li class="list-row">
+        <span><strong>{{ j.title }}</strong><span style="color:var(--text-muted); font-size:13px;"> · {{ j.location.city }}</span></span>
+        <a class="btn btn-primary" style="padding:5px 12px; font-size:13px;"
+           href="{% url 'ats:job_detail' j.id %}">Ansehen</a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if pages %}
+  <div class="card" style="margin-bottom: var(--space-4);">
+    <h2 style="font-size:16px; margin:0 0 var(--space-3);"><i class="fa-solid fa-file-lines"></i> Inhaltsseiten</h2>
+    <ul class="list-reset">
+      {% for p in pages %}
+      <li class="list-row">
+        <span><strong>{{ p.title }}</strong></span>
+        <a class="btn btn-primary" style="padding:5px 12px; font-size:13px;" href="/pages/{{ p.slug }}/">Ansehen</a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if q and total == 0 %}
+  <div class="card"><p class="empty-state">Keine Treffer. Namen werden im eigenen Zugriffsbereich durchsucht; für E-Mail hilft die genaue Adresse.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

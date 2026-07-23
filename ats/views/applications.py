@@ -47,7 +47,7 @@ from .governance import _pending_steps_for
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "reorder_board", "bulk_update_status", "application_messages", "draft_reply", "inbox_view", "open_question_clusters", "application_vote", "talent_pool_view", "job_pool_matches", "application_timeline", "job_timeline", "tasks_view"]
+__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "reorder_board", "bulk_update_status", "application_messages", "draft_reply", "inbox_view", "open_question_clusters", "batch_reply", "application_vote", "talent_pool_view", "job_pool_matches", "application_timeline", "job_timeline", "tasks_view"]
 
 
 @ensure_csrf_cookie
@@ -817,12 +817,14 @@ def open_question_clusters(user):
     """
     from django.db.models import OuterRef, Subquery
 
+    from ..board_insights import status_label
     from ..inbox_intents import (
         INTENT_ICONS,
         INTENT_LABELS,
         INTENT_ORDER,
         analyze,
     )
+    from ..reply_drafts import batch_template
     latest = (Message.objects.filter(application=OuterRef('pk'))
               .order_by('-createdAt'))
     apps = (scope_applications(user, Application.objects.all())
@@ -839,7 +841,9 @@ def open_question_clusters(user):
         grouped[analysis.bucket].append({
             'app': app,
             'name': f"{app.applicant.firstName} {app.applicant.lastName}".strip(),
+            'first_name': app.applicant.firstName,
             'job': app.jobPosting.title,
+            'status': status_label(app.status),
             'question': (app.last_content or '')[:160],
             'when': app.last_at,
             'reason': analysis.reason,
@@ -856,6 +860,7 @@ def open_question_clusters(user):
                 'icon': INTENT_ICONS[intent],
                 'items': items,
                 'count': len(items),
+                'template': batch_template(intent),
             })
     return clusters
 
@@ -869,6 +874,65 @@ def inbox_view(request):
     clusters = open_question_clusters(request.user)
     total = sum(c['count'] for c in clusters)
     return render(request, 'inbox.html', {'clusters': clusters, 'total': total})
+
+
+@recruiter_required
+def batch_reply(request):
+    """Sammel-Antwort: EINE geprüfte Vorlage, pro Person personalisiert an alle
+    Ausgewählten gesendet. Kein Massenversand-Look - Platzhalter werden je
+    Bewerbung ersetzt.
+
+    Senden-einmal: es wird nur an Bewerbungen gesendet, deren letzte Nachricht
+    noch INBOUND ist (offene Frage). Wer bereits eine Antwort hat, wird
+    uebersprungen. BOLA je Bewerbung. Der Audit-Eintrag ist zugleich das
+    Lern-Signal (welche Antwort fuer welches Anliegen).
+    """
+    if request.method != 'POST':
+        return redirect('ats:inbox')
+    from ..reply_drafts import personalize
+    intent = (request.POST.get('intent') or '').strip()[:20]
+    template = (request.POST.get('template') or '').strip()[:4000]
+    app_ids = request.POST.getlist('app_ids')
+    if not template or not app_ids:
+        messages.warning(request, "Keine Vorlage oder keine Auswahl.")
+        return redirect('ats:inbox')
+
+    sent = 0
+    skipped = 0
+    for app in (Application.objects.filter(id__in=app_ids)
+                .select_related('applicant', 'jobPosting')):
+        if not can_access_application(request.user, app):
+            skipped += 1
+            continue
+        # Senden-einmal: nur an offene Fragen. Offen = es gibt eine INBOUND-
+        # Nachricht, auf die noch keine Antwort folgte. __gte (nicht __gt):
+        # bei grober Uhr-Aufloesung zaehlt eine gleichzeitige Antwort als
+        # Antwort - verhindert Doppel-Nachrichten (wie awaiting_reply).
+        last_in = (app.messages.filter(direction='INBOUND')
+                   .order_by('-createdAt').first())
+        if not last_in:
+            skipped += 1
+            continue
+        answered = app.messages.filter(
+            direction='OUTBOUND', createdAt__gte=last_in.createdAt).exists()
+        if answered:
+            skipped += 1
+            continue
+        text = personalize(template, first_name=app.applicant.firstName,
+                           job_title=app.jobPosting.title, status=app.status)
+        Message.objects.create(application=app, direction='OUTBOUND',
+                               content=text)
+        write_audit('BATCH_REPLY_SENT', user=request.user,
+                    application_id=app.id, intent=intent)
+        sent += 1
+
+    if sent:
+        messages.success(
+            request, f"{sent} Antwort(en) gesendet."
+            + (f" {skipped} übersprungen (bereits beantwortet)." if skipped else ""))
+    else:
+        messages.warning(request, "Nichts gesendet – die Fragen waren bereits beantwortet.")
+    return redirect('ats:inbox')
 
 
 # --- B6: Nachrichten-Verlauf je Bewerbung -----------------------------------

@@ -54,6 +54,69 @@ def rule_based_draft(*, status: str, job_title: str) -> str:
     )
 
 
+# --- Sammel-Antworten: eine Vorlage je Anliegen, pro Person eingesetzt -------
+# Platzhalter werden beim Senden je Bewerbung ersetzt - so liest sich die
+# Antwort individuell, obwohl HR nur EINE Vorlage prueft. Kein Massenversand.
+_BATCH_TEMPLATES: dict[str, str] = {
+    "STATUS": (
+        "Guten Tag [[Vorname]],\n\n"
+        "vielen Dank fuer Ihre Nachricht zu Ihrer Bewerbung als [[Stelle]].\n\n"
+        "Ihre Bewerbung liegt uns vor (aktueller Stand: [[Stand]]) und wird "
+        "sorgfaeltig geprueft. Sobald es einen neuen Stand gibt, melden wir uns "
+        "bei Ihnen.\n\n"
+        "Fuer Rueckfragen sind wir gern fuer Sie da.\n\n"
+        "Freundliche Gruesse\nIhr Recruiting-Team"
+    ),
+    "PROCESS": (
+        "Guten Tag [[Vorname]],\n\n"
+        "gern erlaeutern wir den weiteren Ablauf zu Ihrer Bewerbung als "
+        "[[Stelle]]: Wir sichten die Unterlagen, laden passende Bewerber:innen "
+        "zum Gespraech ein und geben anschliessend eine Rueckmeldung. Aktueller "
+        "Stand Ihrer Bewerbung: [[Stand]].\n\n"
+        "Bei Fragen sind wir gern fuer Sie da.\n\n"
+        "Freundliche Gruesse\nIhr Recruiting-Team"
+    ),
+    "DOCUMENTS": (
+        "Guten Tag [[Vorname]],\n\n"
+        "vielen Dank fuer Ihre Nachricht zu Ihren Unterlagen fuer die Stelle "
+        "[[Stelle]]. Ihre Bewerbung ist bei uns eingegangen. Sollten Unterlagen "
+        "fehlen, kommen wir aktiv auf Sie zu - Sie muessen zunaechst nichts "
+        "weiter veranlassen.\n\n"
+        "Fuer Rueckfragen sind wir gern fuer Sie da.\n\n"
+        "Freundliche Gruesse\nIhr Recruiting-Team"
+    ),
+    "SCHEDULING": (
+        "Guten Tag [[Vorname]],\n\n"
+        "vielen Dank fuer Ihre Nachricht zum Termin fuer die Stelle [[Stelle]]. "
+        "Gern finden wir einen passenden Zeitpunkt - bitte nennen Sie uns zwei "
+        "bis drei Zeitfenster, die Ihnen passen, dann stimmen wir uns ab.\n\n"
+        "Freundliche Gruesse\nIhr Recruiting-Team"
+    ),
+    "WITHDRAWAL": (
+        "Guten Tag [[Vorname]],\n\n"
+        "vielen Dank fuer Ihre Rueckmeldung. Wir haben Ihren Wunsch zur Stelle "
+        "[[Stelle]] notiert und melden uns bei Ihnen. Fuer Ihre weitere "
+        "berufliche Zukunft wuenschen wir Ihnen alles Gute.\n\n"
+        "Freundliche Gruesse\nIhr Recruiting-Team"
+    ),
+}
+
+
+def batch_template(intent: str) -> str:
+    """Sammel-Antwort-Vorlage je Anliegen (mit Platzhaltern). Leer fuer OTHER -
+    dort gibt es bewusst keine Sammel-Antwort (individuelle Pruefung)."""
+    return _BATCH_TEMPLATES.get(intent, "")
+
+
+def personalize(template: str, *, first_name: str, job_title: str,
+                status: str) -> str:
+    """Setzt die Platzhalter einer Sammel-Vorlage je Bewerbung ein."""
+    return (template
+            .replace("[[Vorname]]", (first_name or "").strip())
+            .replace("[[Stelle]]", (job_title or "").strip())
+            .replace("[[Stand]]", status_label(status)))
+
+
 def ai_system_prompt(*, status: str, job_title: str) -> str:
     """Systemanweisung fuer die lokale KI-Verfeinerung des Entwurfs.
 

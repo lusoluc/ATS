@@ -109,6 +109,7 @@ urlpatterns = [
     path('recruiter/applications/<uuid:app_id>/messages/', views.application_messages, name='application_messages'),  # B6
     path('recruiter/applications/<uuid:app_id>/draft-reply/', views.draft_reply, name='draft_reply'),  # C4
     path('recruiter/postfach/', views.inbox_view, name='inbox'),  # Sammel-Postfach
+    path('recruiter/postfach/sammel-antwort/', views.batch_reply, name='batch_reply'),
     path('job-alert/', views.job_alert_subscribe, name='job_alert'),
     path('preise/', views.pricing_view, name='pricing'),  # P0.3 (nur DEMO_MODE)
     path('job-alert/confirm/<str:token>/', views.job_alert_confirm, name='job_alert_confirm'),

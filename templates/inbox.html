@@ -21,7 +21,6 @@
     </div>
     {% if c.intent == 'OTHER' %}
     <p class="ib-hint"><i class="fa-solid fa-user-pen"></i> Diese Nachrichten werden bewusst nicht gesammelt beantwortet – bitte einzeln prüfen.</p>
-    {% endif %}
     <ul class="ib-list">
       {% for it in c.items %}
       <li class="ib-item">
@@ -40,6 +39,45 @@
       </li>
       {% endfor %}
     </ul>
+    {% else %}
+    <form method="post" action="{% url 'ats:batch_reply' %}" class="ib-form" data-intent="{{ c.intent }}">
+      {% csrf_token %}
+      <input type="hidden" name="intent" value="{{ c.intent }}">
+      <ul class="ib-list">
+        {% for it in c.items %}
+        <li class="ib-item">
+          <label class="ib-item-main" style="cursor:pointer; display:flex; gap:10px; align-items:flex-start;">
+            <input type="checkbox" name="app_ids" value="{{ it.app.id }}" class="ib-check"
+                   data-vorname="{{ it.first_name }}" data-stelle="{{ it.job }}" data-stand="{{ it.status }}" checked>
+            <span style="min-width:0;">
+              <span><strong>{{ it.name }}</strong> <span class="ib-job">· {{ it.job }} · {{ it.status }}</span></span>
+              <span class="ib-q" style="display:block;">„{{ it.question }}{% if it.question|length >= 160 %}…{% endif %}“</span>
+              <span class="ib-when" style="display:block;">{{ it.when|date:'d.m.Y H:i' }} Uhr</span>
+            </span>
+          </label>
+          <a href="{% url 'ats:application_messages' it.app.id %}" class="btn-search ib-answer" title="Einzeln ansehen">
+            <i class="fa-solid fa-up-right-from-square"></i>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+
+      <div class="ib-compose">
+        <label class="form-label" style="font-size:12px;">Sammel-Antwort (Vorlage – Platzhalter <code>[[Vorname]]</code>, <code>[[Stelle]]</code>, <code>[[Stand]]</code> werden je Person ersetzt)</label>
+        <textarea name="template" rows="7" class="form-textarea ib-template" style="width:100%;">{{ c.template }}</textarea>
+        <div class="ib-preview-wrap">
+          <div class="ib-preview-label">Vorschau für <span class="ib-preview-name">–</span>:</div>
+          <div class="ib-preview" aria-live="polite"></div>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:10px;">
+          <button type="submit" class="btn btn-primary" data-done-label="Antworten gesendet">
+            <i class="fa-solid fa-paper-plane"></i> An <span class="ib-count">{{ c.count }}</span> Ausgewählte senden
+          </button>
+          <span class="ib-note" style="font-size:11px; color:var(--text-muted);">Wird je Person personalisiert. Nichts wird automatisch versendet – Sie lösen es aus.</span>
+        </div>
+      </div>
+    </form>
+    {% endif %}
   </div>
   {% endfor %}
   {% else %}
@@ -66,5 +104,47 @@
   .ib-q { color:var(--text-main); font-size:13px; margin-top:3px; }
   .ib-when { color:var(--text-muted); font-size:11px; margin-top:3px; font-variant-numeric:tabular-nums; }
   .ib-answer { flex-shrink:0; padding:6px 12px; height:auto; font-size:12px; }
+  .ib-compose { margin-top:12px; padding-top:12px; border-top:1px dashed var(--border-color); }
+  .ib-compose code { background:rgba(255,255,255,0.08); padding:0 4px; border-radius:4px; font-size:11px; }
+  .ib-preview-wrap { margin-top:8px; }
+  .ib-preview-label { font-size:11px; color:var(--text-muted); margin-bottom:4px; }
+  .ib-preview { background:var(--bg-color); border:1px solid var(--border-color);
+                border-radius:var(--border-radius-sm); padding:10px 12px; font-size:13px;
+                color:var(--text-main); white-space:pre-line; min-height:40px; }
 </style>
+
+<script>
+  (function () {
+    function fill(tpl, cb) {
+      return tpl
+        .replaceAll('[[Vorname]]', cb.dataset.vorname || '')
+        .replaceAll('[[Stelle]]', cb.dataset.stelle || '')
+        .replaceAll('[[Stand]]', cb.dataset.stand || '');
+    }
+    document.querySelectorAll('.ib-form').forEach(function (form) {
+      const boxes = [...form.querySelectorAll('.ib-check')];
+      const tpl = form.querySelector('.ib-template');
+      const preview = form.querySelector('.ib-preview');
+      const previewName = form.querySelector('.ib-preview-name');
+      const count = form.querySelector('.ib-count');
+      const submit = form.querySelector('button[type=submit]');
+      function refresh() {
+        const checked = boxes.filter(b => b.checked);
+        if (count) count.textContent = checked.length;
+        if (submit) submit.disabled = checked.length === 0;
+        const first = checked[0];
+        if (first && preview) {
+          preview.textContent = fill(tpl.value, first);
+          if (previewName) previewName.textContent = first.dataset.vorname || '–';
+        } else if (preview) {
+          preview.textContent = '(niemand ausgewählt)';
+          if (previewName) previewName.textContent = '–';
+        }
+      }
+      boxes.forEach(b => b.addEventListener('change', refresh));
+      if (tpl) tpl.addEventListener('input', refresh);
+      refresh();
+    });
+  })();
+</script>
 {% endblock %}

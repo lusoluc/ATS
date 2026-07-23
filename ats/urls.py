@@ -107,6 +107,7 @@ urlpatterns = [
     path('recruiter/audit/export.csv', views.audit_export, name='audit_export'),
     path('recruiter/bedarf/', views.staffing_requests_view, name='staffing_requests'),
     path('recruiter/applications/<uuid:app_id>/messages/', views.application_messages, name='application_messages'),  # B6
+    path('recruiter/applications/<uuid:app_id>/draft-reply/', views.draft_reply, name='draft_reply'),  # C4
     path('job-alert/', views.job_alert_subscribe, name='job_alert'),
     path('preise/', views.pricing_view, name='pricing'),  # P0.3 (nur DEMO_MODE)
     path('job-alert/confirm/<str:token>/', views.job_alert_confirm, name='job_alert_confirm'),

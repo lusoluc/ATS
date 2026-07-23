@@ -47,7 +47,7 @@ from .governance import _pending_steps_for
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "reorder_board", "bulk_update_status", "application_messages", "application_vote", "talent_pool_view", "job_pool_matches", "application_timeline", "job_timeline", "tasks_view"]
+__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "reorder_board", "bulk_update_status", "application_messages", "draft_reply", "application_vote", "talent_pool_view", "job_pool_matches", "application_timeline", "job_timeline", "tasks_view"]
 
 
 @ensure_csrf_cookie
@@ -840,6 +840,70 @@ def application_messages(request, app_id):
     return render(request, 'messages.html',
                   {'application': app, 'messages': msgs,
                    'awaiting_reply': awaiting_reply})
+
+
+@any_staff_required
+def draft_reply(request, app_id):
+    """C4: Entwurf fuer eine Antwort auf die Bewerber-Nachricht.
+
+    Regelbasierte Grundlage (immer verfuegbar) + optionale lokale Gemma-
+    Verfeinerung. Der Entwurf landet NUR im Textfeld - gesendet wird erst
+    durch den Menschen. Die eingehende Nachricht ist nicht vertrauenswuerdige
+    Eingabe (ai_safety); keine weiteren Bewerberdaten gehen an die KI.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST erforderlich'}, status=405)
+    app = get_object_or_404(Application, id=app_id)
+    if not can_access_application(request.user, app):
+        raise Http404("Nicht im Zugriffsbereich.")
+
+    from ..reply_drafts import ai_system_prompt, rule_based_draft
+    job_title = app.jobPosting.title
+    baseline = rule_based_draft(status=app.status, job_title=job_title)
+
+    last_in = (app.messages.filter(direction='INBOUND')
+               .order_by('-createdAt').first())
+    inbound = (last_in.content if last_in else '').strip()[:4000]
+
+    # Ohne konkrete Bewerber-Nachricht bleibt es beim regelbasierten Entwurf -
+    # die KI soll auf eine Nachricht ANTWORTEN, nicht frei fabulieren.
+    if not inbound:
+        return JsonResponse({'draft': baseline, 'used_ai': False,
+                             'note': 'Vorlage passend zum Status – bitte prüfen.'})
+
+    import time
+
+    from ..ai_safety import PROMPT_VERSION, wrap_untrusted
+    from .ai import (
+        get_ai_model,
+        get_ollama_url,
+        log_ai_execution,
+        make_ollama_request,
+    )
+    payload = {
+        "model": get_ai_model(),
+        "system": ai_system_prompt(status=app.status, job_title=job_title),
+        "prompt": wrap_untrusted(inbound),
+        "stream": False,
+        "options": {"temperature": 0.3},
+        "keep_alive": "10m",
+    }
+    start = time.time()
+    try:
+        ok, data = make_ollama_request(get_ollama_url(), payload, timeout=20.0)
+        latency = round(time.time() - start, 2)
+        if ok and (data.get('response') or '').strip():
+            draft = data['response'].strip()[:4000]
+            log_ai_execution("Antwort-Entwurf", get_ai_model(), latency, True,
+                             False, "", False, prompt_used=inbound,
+                             tokens=data.get('eval_count'),
+                             prompt_version=PROMPT_VERSION)
+            return JsonResponse({'draft': draft, 'used_ai': True,
+                                 'note': 'Entwurf – bitte vor dem Senden prüfen.'})
+    except Exception:
+        logger.exception("KI-Antwort-Entwurf nicht verfügbar")
+    return JsonResponse({'draft': baseline, 'used_ai': False,
+                         'note': 'Lokale KI nicht erreichbar – Status-Vorlage.'})
 
 
 @any_staff_required

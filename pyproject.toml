@@ -42,6 +42,7 @@ module = [
     "ats.panel",
     "ats.pay_transparency",
     "ats.permissions",
+    "ats.reply_drafts",
     "ats.talent_pool",
     "ats.timeline",
 ]

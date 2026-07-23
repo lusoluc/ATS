@@ -24,12 +24,44 @@
       </span>
     </div>
     {% else %}
-    <form method="post" class="form-row">
+    <form method="post" id="reply-form">
       {% csrf_token %}
-      <input name="content" class="input" placeholder="Nachricht an Bewerber…" required>
+      <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap;">
+        <button type="button" class="btn-search" style="padding:6px 12px; height:auto; font-size:12px;" onclick="draftReply(this)">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> KI-Antwort entwerfen
+        </button>
+        <span id="draft-status" aria-live="polite" style="font-size:12px; color:var(--text-muted);"></span>
+      </div>
+      <textarea name="content" id="reply-content" class="form-textarea" rows="6" style="width:100%;" placeholder="Nachricht an Bewerber…" required></textarea>
+      <p style="font-size:11px; color:var(--text-muted); margin:6px 0 10px;">
+        Ein KI-Entwurf ist ein Vorschlag – bitte vor dem Senden prüfen und anpassen. Gesendet wird nichts automatisch.
+      </p>
       <button type="submit" class="btn btn-primary" data-done-label="Gesendet">Senden</button>
     </form>
     {% endif %}
   </div>
 </div>
+
+<script>
+  function draftReply(btn) {
+    const box = document.getElementById('reply-content');
+    const status = document.getElementById('draft-status');
+    const form = document.getElementById('reply-form');
+    const token = form.querySelector('[name=csrfmiddlewaretoken]').value;
+    if (box.value.trim() && !confirm('Vorhandenen Text durch KI-Entwurf ersetzen?')) return;
+    btn.disabled = true;
+    status.textContent = 'Entwurf wird erstellt…';
+    fetch('{% url "ats:draft_reply" application.id %}', {
+      method: 'POST',
+      headers: {'X-CSRFToken': token, 'Content-Type': 'application/x-www-form-urlencoded'},
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.draft) { box.value = data.draft; box.focus(); }
+        status.textContent = data.note || '';
+      })
+      .catch(() => { status.textContent = 'Entwurf konnte nicht erstellt werden.'; })
+      .finally(() => { btn.disabled = false; });
+  }
+</script>
 {% endblock %}

@@ -3,6 +3,37 @@
 {% block admin_body %}
 <h1 class="page-title"><i class="fa-solid fa-robot"></i> KI-Zentrale &amp; Spam</h1>
 <p class="page-lead">Die lokale KI testen, Regelwerke pflegen und nachvollziehen, was sie tatsächlich getan hat.</p>
+
+<div class="glass-card" style="margin-bottom:24px;">
+  <h3 style="font-size:17px; color:#fff; margin:0 0 4px; display:flex; align-items:center; gap:8px;">
+    <i class="fa-solid fa-reply-all" style="color:var(--accent);"></i> Automatische Antworten auf Bewerber-Fragen
+  </h3>
+  <p style="color:var(--text-muted); font-size:13px; margin:0 0 14px;">
+    Nur sichere, eindeutige Kommunikations-Anliegen werden automatisch beantwortet – nie eine
+    Entscheidung (Einladung, Absage, Zusage) und nie eine zusammengesetzte oder unklare Nachricht.
+    Jede Auto-Antwort ist als automatisch gekennzeichnet, nennt den Weg zu einem Menschen und wird protokolliert.
+  </p>
+  <form method="post" action="{% url 'ats:save_auto_reply_settings' %}">
+    {% csrf_token %}
+    <label style="display:flex; align-items:center; gap:10px; font-size:14px; color:#fff; cursor:pointer; margin-bottom:12px;">
+      <input type="checkbox" name="auto_reply_enabled" value="1" style="accent-color:var(--accent); width:18px; height:18px;" {% if auto_reply_master %}checked{% endif %}>
+      <strong>Auto-Antwort aktiv</strong> <span style="color:var(--text-muted); font-size:12px;">(Hauptschalter)</span>
+    </label>
+    <div style="font-size:12px; color:var(--text-muted); margin-bottom:6px;">Automatisch beantwortet werden – nur sichere Anliegen wählbar:</div>
+    <div style="display:flex; flex-wrap:wrap; gap:16px; margin-bottom:14px;">
+      {% for ch in auto_reply_choices %}
+      <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:#fff; cursor:pointer;">
+        <input type="checkbox" name="auto_reply_intents" value="{{ ch.code }}" style="accent-color:var(--accent);" {% if ch.on %}checked{% endif %}>
+        {{ ch.label }}
+      </label>
+      {% endfor %}
+    </div>
+    <button type="submit" class="btn-cta" style="height:38px; font-size:13px; padding:0 18px;">
+      <i class="fa-solid fa-floppy-disk"></i> Speichern
+    </button>
+  </form>
+</div>
+
 {% include 'includes/dashboard/tab_ki.html' %}
 {% endblock %}
 

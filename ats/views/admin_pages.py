@@ -20,8 +20,9 @@ re-exportiert.
 """
 import socket
 
+from django.contrib import messages
 from django.contrib.auth.models import Group
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 
 from ..models import (
     Application,
@@ -37,7 +38,7 @@ from ..models import (
 )
 from ..permissions import hr_admin_required, scope_applications, scope_jobs
 
-__all__ = ["stats_page", "process_page", "templates_page", "cms_page", "ki_page", "hris_page"]
+__all__ = ["stats_page", "process_page", "templates_page", "cms_page", "ki_page", "hris_page", "save_auto_reply_settings"]
 
 
 def gemma_status() -> str:
@@ -127,10 +128,44 @@ def ki_page(request):
     `ai_settings` ist die flache Schluessel/Wert-Sicht auf die
     SystemSettings — das Formular liest daraus seine Vorbelegung.
     """
+    from ..auto_reply import enabled_intents, is_master_enabled
+    from ..inbox_intents import AUTO_SAFE_INTENTS, INTENT_LABELS
+    active = enabled_intents()
+    auto_reply_choices = [
+        {'code': i, 'label': INTENT_LABELS[i], 'on': i in active}
+        for i in sorted(AUTO_SAFE_INTENTS)]
     return render(request, 'admin_pages/ki.html', {
         'ai_settings': {s.key: s.value for s in SystemSetting.objects.all()},
         'gemma_status': gemma_status(),
+        'auto_reply_master': is_master_enabled(),
+        'auto_reply_choices': auto_reply_choices,
     })
+
+
+@hr_admin_required
+def save_auto_reply_settings(request):
+    """Governance der Auto-Antwort (Stufe 4): Hauptschalter + welche sicheren
+    Anliegen automatisch beantwortet werden. Auswahl wird hart auf die
+    sicheren Anliegen gefiltert - ein Entscheidungs-Anliegen laesst sich hier
+    nicht freischalten."""
+    import json
+
+    from ..audit import write_audit
+    from ..auto_reply import AUTO_REPLY_ENABLED_KEY, AUTO_REPLY_INTENTS_KEY
+    from ..inbox_intents import AUTO_SAFE_INTENTS
+    if request.method != 'POST':
+        return redirect('ats:ki_page')
+    master = '1' if request.POST.get('auto_reply_enabled') else '0'
+    chosen = [i for i in request.POST.getlist('auto_reply_intents')
+              if i in AUTO_SAFE_INTENTS]
+    SystemSetting.objects.update_or_create(
+        key=AUTO_REPLY_ENABLED_KEY, defaults={'value': master})
+    SystemSetting.objects.update_or_create(
+        key=AUTO_REPLY_INTENTS_KEY, defaults={'value': json.dumps(chosen)})
+    write_audit('AUTO_REPLY_SETTINGS_CHANGED', user=request.user,
+                enabled=(master == '1'), intents=chosen)
+    messages.success(request, "Einstellungen der Auto-Antwort gespeichert.")
+    return redirect('ats:ki_page')
 
 
 @hr_admin_required

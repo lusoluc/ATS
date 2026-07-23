@@ -561,14 +561,27 @@ def candidate_portal(request, token):
             Message.objects.create(application=app, direction='INBOUND',
                                    content=content)
             write_audit('CANDIDATE_MESSAGE_SENT', application_id=app.id)
+            # Stufe 4: Auto-Antwort NUR fuer sichere, eindeutige Anliegen
+            # (Stand/Ablauf), wenn freigeschaltet. Fail-safe: ein Fehler darf
+            # die Bewerber-Nachricht nie blockieren.
+            auto_replied = False
+            try:
+                from ..auto_reply import maybe_auto_reply
+                auto_replied = maybe_auto_reply(app, content)
+            except Exception:
+                logger.exception('Auto-Antwort fehlgeschlagen')
             cp = app.jobPosting.contactPerson
             if cp and cp.email:
                 try:
                     from django.core.mail import send_mail
+                    auto_note = ('\n\n(Eine automatische Status-Antwort wurde '
+                                 'bereits gesendet – bitte bei Bedarf ergänzen.)'
+                                 if auto_replied else '')
                     send_mail(
                         f'Rückfrage zur Bewerbung – {app.jobPosting.title}',
                         (f'{app.applicant.firstName} {app.applicant.lastName} fragt:\n\n'
-                         f'{content}\n\nAntworten: /recruiter/applications/{app.id}/messages/'),
+                         f'{content}\n\nAntworten: /recruiter/applications/{app.id}/messages/'
+                         f'{auto_note}'),
                         None, [cp.email], fail_silently=True)
                 except Exception:
                     logger.exception('Rueckfrage-Mail fehlgeschlagen')

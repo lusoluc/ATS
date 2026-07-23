@@ -46,6 +46,7 @@ urlpatterns = [
     path('recruiter/email-vorlagen/', views.templates_page, name='templates_page'),
     path('recruiter/cms/', views.cms_page, name='cms_page'),
     path('recruiter/ki-zentrale/', views.ki_page, name='ki_page'),
+    path('recruiter/ki-zentrale/auto-antwort/', views.save_auto_reply_settings, name='save_auto_reply_settings'),
     path('recruiter/hris/', views.hris_page, name='hris_page'),
 
     # API Feeds & Integrations

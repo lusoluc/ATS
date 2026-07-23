@@ -41,6 +41,7 @@ module = [
     "ats.dsgvo",
     "ats.panel",
     "ats.pay_transparency",
+    "ats.auto_reply",
     "ats.inbox_intents",
     "ats.permissions",
     "ats.reply_drafts",

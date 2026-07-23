@@ -42,6 +42,7 @@ module = [
     "ats.panel",
     "ats.pay_transparency",
     "ats.permissions",
+    "ats.talent_pool",
 ]
 disallow_untyped_defs = true
 check_untyped_defs = true

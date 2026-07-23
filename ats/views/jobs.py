@@ -12,6 +12,7 @@ from django.contrib import messages
 from django.db import transaction
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
 from ..audit import write_audit
 from ..models import (
@@ -213,6 +214,20 @@ def create_job(request):
                 write_audit('PAY_TRANSPARENCY_GATE_BLOCKED', user=request.user,
                             job=job.title)
                 messages.warning(request, _pay_reason)
+
+            # C3: Talent-Pool-Abgleich - aus dem Archiv ein aktives Werkzeug.
+            # Nur wenn die Stelle wirklich online ist (alle Gates passiert).
+            if job.workflowState and job.workflowState.name == 'published':
+                from django.utils.safestring import mark_safe
+
+                from ..talent_pool import pool_matches_for_job
+                _pool = pool_matches_for_job(job)
+                if _pool:
+                    url = reverse('ats:job_pool_matches', args=[job.id])
+                    messages.info(request, mark_safe(
+                        f"{len(_pool)} Person(en) im Talent-Pool passen zu dieser "
+                        f"Stelle. <a href=\"{url}\" style=\"text-decoration:underline;\">"
+                        f"Talente ansehen und einladen</a>"))
 
         return redirect('ats:dashboard')
 

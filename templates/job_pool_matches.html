@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block title %}Passende Talente · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap" style="max-width:760px;">
+  <a href="{% url 'ats:dashboard' %}" style="color:var(--text-muted); text-decoration:none; font-size:13px;">
+    <i class="fa-solid fa-arrow-left"></i> Zurück zum Board
+  </a>
+  <h1 class="page-title" style="margin-top:8px;"><i class="fa-solid fa-user-check"></i> Passende Talente im Pool</h1>
+  <p class="page-lead">
+    Für die Stelle <strong>{{ job.title }}</strong>{% if job.location %} · {{ job.location.city }}{% endif %}.
+    Diese Personen haben in gelegentliche, passende Hinweise eingewilligt.
+  </p>
+
+  {% if candidates %}
+  <form method="post">
+    {% csrf_token %}
+    <div class="card" style="margin-bottom:var(--space-4);">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width:32px;"><input type="checkbox" id="select-all" aria-label="Alle auswählen"></th>
+            <th>Name</th>
+            <th>Stand</th>
+            <th style="text-align:right;">Profil</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in candidates %}
+          <tr>
+            <td>
+              {% if not c.contacted_at %}
+              <input type="checkbox" name="sub_ids" value="{{ c.sub.id }}" class="pool-check" aria-label="{{ c.name }} auswählen">
+              {% endif %}
+            </td>
+            <td><strong>{{ c.name }}</strong></td>
+            <td>
+              {% if c.contacted_at %}
+                <span class="badge badge-accent" style="font-size:11px;"><i class="fa-solid fa-check"></i> eingeladen</span>
+              {% else %}
+                <span style="color:var(--text-muted); font-size:12px;">noch nicht angeschrieben</span>
+              {% endif %}
+            </td>
+            <td style="text-align:right;">
+              {% if c.last_application_id %}
+                <a href="{% url 'ats:dashboard' %}#card-{{ c.last_application_id }}" class="btn-search" style="padding:4px 10px; height:auto; font-size:12px;">
+                  <i class="fa-solid fa-eye"></i> Ansehen
+                </a>
+              {% else %}
+                <span style="color:var(--text-muted); font-size:12px;">–</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if open_count %}
+    <!-- Alltag: mit einem Klick alle noch nicht angeschriebenen einladen.
+         Ausnahme: einzelne abwählen und nur die gewünschten einladen. -->
+    <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+      <button type="submit" class="btn btn-primary" data-done-label="Einladungen gesendet">
+        <i class="fa-solid fa-paper-plane"></i> Ausgewählte einladen (<span id="pool-count">{{ open_count }}</span>)
+      </button>
+      <span style="font-size:12px; color:var(--text-muted);">
+        Standardmäßig sind alle noch offenen Talente ausgewählt. Zum Prüfen einzelne abwählen oder Profil ansehen.
+      </span>
+    </div>
+    {% else %}
+    <p class="empty-state">Alle passenden Talente wurden bereits zu dieser Stelle eingeladen.</p>
+    {% endif %}
+  </form>
+  {% else %}
+  <div class="card"><p class="empty-state">Keine passenden Talente im Pool für diese Stelle.</p></div>
+  {% endif %}
+</div>
+
+<script>
+  // Standard: alle offenen Talente vorausgewählt (Alltags-Fall „alle einladen").
+  (function () {
+    const boxes = [...document.querySelectorAll('.pool-check')];
+    boxes.forEach(b => b.checked = true);
+    const all = document.getElementById('select-all');
+    const count = document.getElementById('pool-count');
+    function refresh() {
+      const n = boxes.filter(b => b.checked).length;
+      if (count) count.textContent = n;
+      if (all) all.checked = n === boxes.length && n > 0;
+    }
+    if (all) all.checked = boxes.length > 0;
+    all && all.addEventListener('change', () => { boxes.forEach(b => b.checked = all.checked); refresh(); });
+    boxes.forEach(b => b.addEventListener('change', refresh));
+    refresh();
+  })();
+</script>
+{% endblock %}

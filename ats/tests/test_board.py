@@ -475,6 +475,10 @@ class SidebarRoleFilteringTestCase(TestCase):
     Ziel: kein Schritt zu viel. Der ueberladene Arbeitsplatz (8 Werkzeuge +
     ueber 20 Verwaltungs-Links fuer JEDEN) hat einen Recruiter, der nur
     sichten will, mit SAP-Sync und Systemeinstellungen konfrontiert.
+
+    Seit B2 liegen die sechs Verwaltungs-Bereiche auf EIGENEN Seiten. Im
+    Dashboard steht davon nur noch der Link – geprueft wird deshalb der
+    Link (Seitenleiste) UND der serverseitige Schutz der Seite selbst.
     """
 
     def setUp(self):
@@ -484,41 +488,75 @@ class SidebarRoleFilteringTestCase(TestCase):
     # Werkzeuge, die JEDER braucht (taegliche Arbeit)
     WORK = ["kanban-tab", "jobs-tab", "Interview-Kalender", "Talent-Pool",
             "Freigaben"]
-    # Inhaltliche Marker, die NUR im (versteckten) Admin-Bereich vorkommen.
-    # Bewusst inhaltliche Texte statt Tab-IDs: die *-tab-IDs tauchen auch im
-    # mitgelieferten JavaScript (switchTab-Aufrufe) auf und trennen daher nicht.
-    ADMIN_ONLY = ["SAP SuccessFactors", "CMS Seiten-Editor", "Feldzuordnung",
-                  "Recruiting Prozess Flow", "Globale Variablen",
-                  "HRIS / SAP-Anbindung", "Ausgleichsabgabe", "Audit-Log",
-                  "Governance", "Daten-Import"]
+    # Seiten, die nur ein HR-Admin erreichen darf: URL-Name + ein inhaltlicher
+    # Marker, der beweist, dass die Seite wirklich ihren Inhalt ausliefert.
+    ADMIN_PAGES = [
+        ('ats:stats_page', "Ausgleichsabgabe"),
+        ('ats:process_page', "Recruiting Prozess Flow"),
+        ('ats:templates_page', "Globale Variablen"),
+        ('ats:cms_page', "CMS Seitenübersicht"),
+        ('ats:ki_page', "KI-Steuerungszentrum"),
+        ('ats:hris_page', "Feldzuordnung"),
+    ]
+    # Weitere Verwaltungs-Links, die schon immer eigene Seiten waren.
+    ADMIN_ONLY_LINKS = ["Audit-Log", "Governance", "Daten-Import"]
+
+    def _admin_link_markers(self):
+        """Alle Seitenleisten-Ziele, die ein Recruiter nicht sehen darf."""
+        return ([reverse(name) for name, _ in self.ADMIN_PAGES]
+                + self.ADMIN_ONLY_LINKS)
 
     def test_recruiter_sees_only_daily_work(self):
         self.client.force_login(self.recruiter)
         html = self.client.get(reverse('ats:dashboard')).content.decode()
         for tool in self.WORK:
             self.assertIn(tool, html, f"Recruiter braucht '{tool}'")
-        for tool in self.ADMIN_ONLY:
-            self.assertNotIn(tool, html,
-                             f"Recruiter soll '{tool}' NICHT sehen")
+        for marker in self._admin_link_markers():
+            self.assertNotIn(marker, html,
+                             f"Recruiter soll '{marker}' NICHT sehen")
 
     def test_admin_sees_everything(self):
         self.client.force_login(self.admin)
         html = self.client.get(reverse('ats:dashboard')).content.decode()
-        for tool in self.WORK + self.ADMIN_ONLY:
+        for tool in self.WORK + self._admin_link_markers():
             self.assertIn(tool, html, f"Admin braucht Zugriff auf '{tool}'")
 
     def test_superuser_counts_as_admin(self):
         su = make_user("side-su", superuser=True)
         self.client.force_login(su)
         html = self.client.get(reverse('ats:dashboard')).content.decode()
-        self.assertIn("sap-tab", html)
+        self.assertIn(reverse('ats:hris_page'), html)
+
+    def test_dashboard_carries_no_admin_content_anymore(self):
+        """B2: Die Verwaltungs-Inhalte liegen auf eigenen Seiten – auch fuer
+        einen HR-Admin darf das Dashboard sie nicht mehr mitliefern. Sonst
+        waere die Aufteilung nur Kosmetik."""
+        self.client.force_login(self.admin)
+        html = self.client.get(reverse('ats:dashboard')).content.decode()
+        for _, marker in self.ADMIN_PAGES:
+            self.assertNotIn(marker, html,
+                             f"'{marker}' gehoert nicht mehr ins Dashboard")
+
+    def test_admin_pages_render_for_hr_admin(self):
+        self.client.force_login(self.admin)
+        for name, marker in self.ADMIN_PAGES:
+            with self.subTest(page=name):
+                r = self.client.get(reverse(name))
+                self.assertEqual(r.status_code, 200)
+                self.assertIn(marker, r.content.decode())
+
+    def test_admin_pages_rejected_for_recruiter(self):
+        """Das Ausblenden in der Seitenleiste ist Benutzerfuehrung, KEINE
+        Sicherheitsmassnahme. Wer die URL kennt, wird trotzdem abgewiesen."""
+        self.client.force_login(self.recruiter)
+        for name, _ in self.ADMIN_PAGES:
+            with self.subTest(page=name):
+                r = self.client.get(reverse(name))
+                self.assertIn(r.status_code, (302, 403, 404))
 
     def test_hiding_is_ui_only_server_still_protects(self):
-        """Wichtig: Das Ausblenden ist Benutzerfuehrung, KEINE
-        Sicherheitsmassnahme. Die Admin-Aktionen bleiben serverseitig
-        geschuetzt – ein Recruiter, der die URL kennt, wird abgewiesen."""
+        """Gilt genauso fuer die aelteren Admin-Aktionen."""
         self.client.force_login(self.recruiter)
-        # Direkter Zugriff auf eine Admin-Aktion trotz verstecktem Tab
         r = self.client.get(reverse('ats:sap_sf_mapper'))
         self.assertIn(r.status_code, (302, 403, 404))
 
@@ -641,3 +679,104 @@ class BoardInsightsTestCase(TestCase):
         create_chained_audit("STATUS_CHANGE", application_id=str(a.id))
         m = stale_days_map([a])
         self.assertNotIn(a.id, m)                          # Uhr zurueckgesetzt
+
+
+class TalentPoolMatchTestCase(TestCase):
+    """C3: passende Pool-Personen zu einer veroeffentlichten Stelle finden."""
+
+    def _sub(self, email, fams=None, locs=None, days=30):
+        import json as _j
+        from datetime import timedelta
+
+        from ..models import TalentPoolSubscription
+        return TalentPoolSubscription.objects.create(
+            email=email, consentId="c-" + email,
+            criteria=_j.dumps({"job_families": fams or [], "locations": locs or []}),
+            expiresAt=timezone.now() + timedelta(days=days))
+
+    def test_matches_by_family_and_location_only_active(self):
+        from ..talent_pool import pool_matches_for_job
+        world = make_world()
+        job = make_job(world, title="TP-Stelle")
+        treffer_fam = self._sub("fam@ex.org", fams=[str(world.job_family.id)])
+        self._sub("loc@ex.org", locs=[str(world.location.id)])
+        self._sub("fremd@ex.org", fams=["00000000-0000-0000-0000-000000000000"])
+        self._sub("alt@ex.org", fams=[str(world.job_family.id)], days=-1)  # abgelaufen
+        emails = {s.email for s in pool_matches_for_job(job)}
+        self.assertEqual(emails, {"fam@ex.org", "loc@ex.org"})
+        self.assertIn(treffer_fam.email, emails)
+
+    def test_publish_surfaces_pool_message(self):
+        world = make_world()
+        self._sub("pool@ex.org", fams=[str(world.job_family.id)])
+        self.client.force_login(make_user("tp-rec", role="Recruiter"))
+        r = self.client.post(reverse('ats:create_job'), data={
+            "title": "TP-Publish", "description": "x",
+            "facility": str(world.facility.id), "location": str(world.location.id),
+            "job_family": str(world.job_family.id),
+            "workflow_state": str(world.published.id),
+            "pay_band": str(world.band.id)}, follow=True)
+        self.assertContains(r, "im Talent-Pool passen")
+
+
+class JobPoolMatchPageTestCase(TestCase):
+    """C3-UI: passende Talente je Stelle sehen, einzeln/gesammelt einladen."""
+
+    def _sub(self, email, world, fn="", ln=""):
+        import json as _j
+        from datetime import timedelta
+
+        from ..models import Applicant, TalentPoolSubscription
+        if fn or ln:
+            Applicant.objects.get_or_create(
+                email=email, defaults=dict(firstName=fn, lastName=ln))
+        return TalentPoolSubscription.objects.create(
+            email=email, consentId="c-" + email,
+            criteria=_j.dumps({"job_families": [str(world.job_family.id)]}),
+            expiresAt=timezone.now() + timedelta(days=30))
+
+    def setUp(self):
+        self.world = make_world()
+        self.job = make_job(self.world, title="Pool-Seite")
+        self.a = self._sub("anna@ex.org", self.world, "Anna", "Berg")
+        self.b = self._sub("ben@ex.org", self.world, "Ben", "Krause")
+        self.rec = make_user("jp-rec", role="Recruiter")
+        self.client.force_login(self.rec)
+        self.url = reverse('ats:job_pool_matches', args=[self.job.id])
+
+    def test_page_lists_resolved_names(self):
+        r = self.client.get(self.url)
+        self.assertContains(r, "Anna Berg")
+        self.assertContains(r, "Ben Krause")
+
+    def test_bulk_invite_all(self):
+        from ..models import TalentPoolContact
+        r = self.client.post(self.url, data={
+            "sub_ids": [str(self.a.id), str(self.b.id)]}, follow=True)
+        self.assertContains(r, "2 Talent(e) zur Bewerbung eingeladen")
+        self.assertEqual(TalentPoolContact.objects.filter(jobPosting=self.job).count(), 2)
+
+    def test_invite_is_once_only(self):
+        from ..models import TalentPoolContact
+        self.client.post(self.url, data={"sub_ids": [str(self.a.id)]})
+        # zweite Ansprache derselben Person zur selben Stelle -> kein Doppel
+        self.client.post(self.url, data={"sub_ids": [str(self.a.id)]})
+        self.assertEqual(TalentPoolContact.objects.filter(
+            jobPosting=self.job, subscription=self.a).count(), 1)
+
+    def test_single_invite_leaves_others_open(self):
+        from ..models import TalentPoolContact
+        self.client.post(self.url, data={"sub_ids": [str(self.a.id)]})
+        contacted = set(TalentPoolContact.objects
+                        .filter(jobPosting=self.job)
+                        .values_list("subscription_id", flat=True))
+        self.assertEqual(contacted, {self.a.id})
+
+    def test_bola_foreign_job_denied(self):
+        from ..models import Location, UserScope
+        other = Location.objects.create(name="Muenchen")
+        foreign = make_job(self.world, title="Fremd", location=other)
+        sc = UserScope.objects.create(user=self.rec, full_access=False)
+        sc.locations.add(self.world.location)
+        r = self.client.get(reverse('ats:job_pool_matches', args=[foreign.id]))
+        self.assertEqual(r.status_code, 404)

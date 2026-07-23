@@ -767,6 +767,18 @@
         /* Einmal-Aktionen: erledigter Zustand eines Aktions-Buttons */
         .btn-done { opacity: .65; cursor: default; pointer-events: none; }
 
+        /* Systemmeldungen */
+        .message-bar { max-width: 1200px; margin: 16px auto 0; padding: 0 24px;
+            display: flex; flex-direction: column; gap: 8px; }
+        .message { display: flex; align-items: center; gap: 10px;
+            padding: 12px 16px; border-radius: var(--border-radius-sm);
+            font-size: 14px; border: 1px solid; }
+        .message-info { background: rgba(20,184,166,.12); border-color: rgba(20,184,166,.4); color: var(--text-main); }
+        .message-success { background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.4); color: var(--text-main); }
+        .message-warning { background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.4); color: var(--text-main); }
+        .message-error { background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.45); color: var(--text-main); }
+        .message a { color: var(--primary-light); }
+
         /* B1: Globale Suche im Header */
         .global-search {
             display: flex; align-items: center; gap: 8px;
@@ -916,6 +928,19 @@
             </ul>
         </div>
     </header>
+
+    {% if messages %}
+    <!-- Systemmeldungen (Publish-Gate, Talent-Pool-Hinweis, …). Waren bisher
+         nirgends gerendert – Warnungen aus den Views blieben unsichtbar. -->
+    <div class="message-bar" role="status" aria-live="polite">
+        {% for message in messages %}
+        <div class="message message-{{ message.tags|default:'info' }}">
+            <i class="fa-solid {% if 'error' in message.tags %}fa-circle-exclamation{% elif 'warning' in message.tags %}fa-triangle-exclamation{% else %}fa-circle-info{% endif %}"></i>
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
     <main id="main">
         {% block content %}{% endblock %}

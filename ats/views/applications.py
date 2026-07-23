@@ -10,7 +10,7 @@ import json
 import logging
 import os as _os
 
-from django.contrib.auth.models import Group
+from django.contrib import messages
 from django.core.files.storage import default_storage
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -36,19 +36,18 @@ from ..models import (
     Location,
     Message,
     Organization,
-    Page,
-    SystemSetting,
     TalentPoolSubscription,
     WorkflowState,
     get_interview_kinds,
 )
 from ..permissions import any_staff_required, can_access_application, recruiter_required, scope_applications, scope_jobs
+from .admin_pages import gemma_status
 from .common import seed_data_if_empty
 from .governance import _pending_steps_for
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "reorder_board", "bulk_update_status", "application_messages", "application_vote", "talent_pool_view", "tasks_view"]
+__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "reorder_board", "bulk_update_status", "application_messages", "application_vote", "talent_pool_view", "job_pool_matches", "tasks_view"]
 
 
 @ensure_csrf_cookie
@@ -115,15 +114,10 @@ def dashboard(request):
         'rejected': len(columns['REJECTED']),
     }
 
-    # CMS Pages, Workflows, Email Templates and global SystemSettings/Variables
-    all_pages = Page.objects.all().order_by('navOrder')
+    # Workflow-Zustaende fuer die Auswahl im Stellen-Editor. CMS-Seiten,
+    # E-Mail-Vorlagen, Variablen und Pipelines wurden mit B2 auf eigene
+    # Seiten verlagert und werden hier nicht mehr geladen.
     all_workflows = WorkflowState.objects.all().order_by('name')
-    app_workflows = AppWorkflowDef.objects.all().select_related('facility').order_by('name')
-
-    from ..models import EmailTemplate
-    all_email_templates = EmailTemplate.objects.all().order_by('name')
-    all_system_settings = SystemSetting.objects.all().order_by('key')
-    ai_settings = {s.key: s.value for s in all_system_settings}
 
     # Selections for Job Postings creator
     facilities = Facility.objects.all()
@@ -142,40 +136,14 @@ def dashboard(request):
         latest_tpl_ids.setdefault(t.title.lower(), t.id)
     job_templates = JobTemplate.objects.filter(id__in=latest_tpl_ids.values()).order_by('title')
 
-    # Spambot-Zaehler (Honeypot)
-    honeypot_spam_count = AuditLog.objects.filter(action="SUBMIT_APPLICATION", metadataJson__contains="website_url").count()
-    if honeypot_spam_count == 0:
-        honeypot_spam_count = 14  # High-fidelity metrics fallback
-
-    # Check if local Gemma AI is reachable via socket check on 11434 (testing both host.docker.internal and 127.0.0.1)
-    gemma_status = 'OFFLINE'
-    import socket
-    for host in ["host.docker.internal", "127.0.0.1"]:
-        try:
-            s = socket.create_connection((host, 11434), timeout=2.0)
-            s.close()
-            gemma_status = 'ONLINE'
-            break
-        except Exception:
-            pass
-
-    # Predefined SuccessFactors schema mapping for direct mapper tab integration
-    sap_schema_fields = [
-        {'id': 'sf_candidate_id', 'label': 'Candidate ID (UUID)', 'type': 'String'},
-        {'id': 'sf_first_name', 'label': 'First Name', 'type': 'String'},
-        {'id': 'sf_last_name', 'label': 'Last Name', 'type': 'String'},
-        {'id': 'sf_email', 'label': 'E-Mail Address', 'type': 'String'},
-        {'id': 'sf_job_req_id', 'label': 'Job Requisition ID', 'type': 'String'},
-        {'id': 'sf_score_rating', 'label': 'AI Screening Rating', 'type': 'String'},
-    ]
-    applications_to_sync = Application.objects.filter(status='INVITED').select_related('applicant', 'jobPosting')
+    # Rollen-Flag fuer die Benutzerfuehrung: Ein Recruiter soll nur seine
+    # taegliche Arbeit sehen (Bewerbungen, Stellen), nicht die Admin-/IT-/
+    # Management-Werkzeuge. Ein HR-Admin sieht alles, aber sauber getrennt.
+    is_hr_admin = (request.user.is_superuser
+                   or request.user.groups.filter(name='HR-Admin').exists())
 
     context = {
-        # Rollen-Flag fuer die Benutzerfuehrung: Ein Recruiter soll nur seine
-        # taegliche Arbeit sehen (Bewerbungen, Stellen), nicht die Admin-/IT-/
-        # Management-Werkzeuge. Ein HR-Admin sieht alles, aber sauber getrennt.
-        'is_hr_admin': (request.user.is_superuser
-                        or request.user.groups.filter(name='HR-Admin').exists()),
+        'is_hr_admin': is_hr_admin,
         'columns': columns,
         'interview_kinds': get_interview_kinds(),
         'active_jobs': active_jobs,
@@ -190,15 +158,7 @@ def dashboard(request):
         'slug': 'dashboard',
 
         # New Context Variables for Command Center
-        'all_pages': all_pages,
         'all_workflows': all_workflows,
-        # Rollen für den Automatik-Editor (Aufgaben-/Benachrichtigungs-Empfänger)
-        'all_roles': list(Group.objects.order_by('name')
-                          .values_list('name', flat=True)),
-        'app_workflows': app_workflows,
-        'all_email_templates': all_email_templates,
-        'all_system_settings': all_system_settings,
-        'ai_settings': ai_settings,
         'facilities': facilities,
         'departments': departments,
         'locations': locations,
@@ -208,12 +168,10 @@ def dashboard(request):
         'pay_bands': pay_bands,
         'board_sources': board_sources,
         'job_templates': job_templates,
-        'honeypot_spam_count': honeypot_spam_count,
-        'gemma_status': gemma_status,
-
-        # SAP SuccessFactors consolidated mapper vars
-        'sap_applications': applications_to_sync,
-        'sap_schema_fields': sap_schema_fields,
+        # Nur noch fuer das Statuszeichen am Seitenleisten-Link zur KI-Zentrale.
+        # Ein Recruiter sieht den Link nicht – dann entfaellt auch der
+        # Netzwerk-Test, der im ungluecklichen Fall Sekunden kostet.
+        'gemma_status': gemma_status() if is_hr_admin else '',
     }
     # --- "Heute wichtig" (UC-PW-06/UM-06): vorhandene Signale gebuendelt ------
     _now = timezone.now()
@@ -929,6 +887,37 @@ def application_vote(request, app_id):
     return redirect('ats:approvals')
 
 
+# --- C3: Passende Pool-Talente zu EINER Stelle (einladen, einzeln/gesammelt) --
+@recruiter_required
+def job_pool_matches(request, job_id):
+    """Passende Talent-Pool-Personen zu einer Stelle: Namen sehen, Profil
+    ansehen, einzeln ODER gesammelt einladen.
+
+    Alltag: „alle einladen" mit einem Klick. Ausnahme: vorher ins Profil
+    schauen. BOLA: nur Stellen im Zugriffsbereich; die Einmal-Aktion
+    (unique_together) verhindert Doppel-Ansprachen je Stelle."""
+    job = get_object_or_404(
+        scope_jobs(request.user, JobPosting.objects.filter(id=job_id)))
+    from ..talent_pool import invite_pool_person, pool_candidates_for_job
+
+    if request.method == 'POST':
+        raw_ids = request.POST.getlist('sub_ids')  # gesammelt ODER einzeln
+        sent = 0
+        for sub in TalentPoolSubscription.objects.filter(id__in=raw_ids):
+            if invite_pool_person(sub, job, request.user):
+                sent += 1
+        if sent:
+            messages.success(
+                request, f"{sent} Talent(e) zur Bewerbung eingeladen.")
+        return redirect('ats:job_pool_matches', job_id=job.id)
+
+    candidates = pool_candidates_for_job(job)
+    return render(request, 'job_pool_matches.html',
+                  {'job': job, 'candidates': candidates,
+                   'open_count': sum(1 for c in candidates
+                                     if not c['contacted_at'])})
+
+
 # --- B11: Talent-Pool-Übersicht --------------------------------------------
 @recruiter_required
 def talent_pool_view(request):
@@ -945,31 +934,13 @@ def talent_pool_view(request):
         workflowState__name='published').select_related('jobFamily', 'location')))
 
     if request.method == 'POST' and request.POST.get('contact_sub_id'):
+        from ..talent_pool import invite_pool_person
         sub = get_object_or_404(TalentPoolSubscription,
                                 id=request.POST.get('contact_sub_id'))
         job = next((j for j in published
                     if str(j.id) == request.POST.get('job_id')), None)  # Scope!
-        if job and sub.is_active:
-            _, created = TalentPoolContact.objects.get_or_create(
-                subscription=sub, jobPosting=job,
-                defaults={'sentBy': request.user})
-            if created:
-                try:
-                    from django.core.mail import send_mail
-                    send_mail(
-                        f'Eine Stelle, die zu Ihnen passen könnte: {job.title}',
-                        (f'Guten Tag,\n\nSie sind in unserem Talent-Pool – und wir '
-                         f'haben eine neue Stelle, die zu Ihren bisherigen '
-                         f'Bewerbungen passt:\n\n{job.title}'
-                         f'{" – " + job.location.name if job.location else ""}\n'
-                         f'Details und Bewerbung: /jobs/{job.id}/\n\n'
-                         'Kein Interesse mehr? In Ihrem Bewerbungsportal können Sie '
-                         'jederzeit aus dem Talent-Pool austreten.\n\nFreundliche Grüße'),
-                        None, [sub.email], fail_silently=True)
-                except Exception:
-                    logger.exception('Talent-Pool-Ansprache fehlgeschlagen')
-                write_audit('TALENT_POOL_CONTACTED', user=request.user,
-                            subscription=str(sub.id), job_id=str(job.id))
+        if job:
+            invite_pool_person(sub, job, request.user)
         return redirect('ats:talent_pool')
 
     now = timezone.now()

@@ -840,8 +840,11 @@ class AutomationFormEditorTestCase(TestCase):
 
     def test_editor_is_rendered_instead_of_raw_json_field(self):
         """Der Baukasten ist da – und der Hinweis auf die Human-in-the-Loop-
-        Grenze steht sichtbar im Formular."""
-        r = self.client.get(reverse('ats:dashboard'))
+        Grenze steht sichtbar im Formular.
+
+        Seit B2 liegt der Baukasten auf der eigenen Seite „Prozess Flow
+        Manager" statt in einem versteckten Dashboard-Tab."""
+        r = self.client.get(reverse('ats:process_page'))
         self.assertContains(r, 'id="automation-rows"')
         self.assertContains(r, 'automation-add')
         self.assertContains(r, "Zusagen und Absagen trifft immer ein Mensch")
@@ -849,6 +852,6 @@ class AutomationFormEditorTestCase(TestCase):
         self.assertNotContains(r, "Vertragsentwürfe")
 
     def test_roles_are_offered_to_the_editor(self):
-        r = self.client.get(reverse('ats:dashboard'))
+        r = self.client.get(reverse('ats:process_page'))
         self.assertContains(r, 'automation-roles-data')
         self.assertContains(r, 'Recruiter')

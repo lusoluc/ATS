@@ -434,3 +434,38 @@ class GuardrailPostgresOnlyInProductionTestCase(TestCase):
             os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
             "docker-compose.yml"), encoding="utf-8").read()
         self.assertIn("postgres:16", compose)
+
+
+class GuardrailTemplateCommentTestCase(TestCase):
+    """Wächter: mehrzeilige {# … #}-Kommentare in Templates.
+
+    Djangos Inline-Kommentar {# … #} ist NUR einzeilig. Ein über mehrere
+    Zeilen gehender {# … #}-Block wird NICHT als Kommentar erkannt und landet
+    als sichtbarer Text auf der Seite (echter Bug, im B2-Umbau passiert).
+    Dieser Test findet die ganze FehlerKLASSE, egal in welchem Template."""
+
+    def test_no_multiline_inline_comments(self):
+        import os
+        import re
+
+        base = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+            __file__))), "templates")
+        # Ein {# ohne schliessendes #} in derselben Zeile ist der Anfang eines
+        # (unzulaessigen) mehrzeiligen Inline-Kommentars.
+        opener = re.compile(r"\{#(?![^\n]*#\})")
+        offender = []
+        for root, _dirs, files in os.walk(base):
+            for name in files:
+                if not name.endswith(".html"):
+                    continue
+                path = os.path.join(root, name)
+                with open(path, encoding="utf-8") as fh:
+                    for lineno, line in enumerate(fh, 1):
+                        if opener.search(line):
+                            rel = os.path.relpath(path, base)
+                            offender.append(f"{rel}:{lineno}")
+        self.assertEqual(
+            offender, [],
+            "Mehrzeiliger {# … #}-Kommentar (leckt als Text) – "
+            "stattdessen {% comment %}…{% endcomment %} nutzen: "
+            + ", ".join(offender))

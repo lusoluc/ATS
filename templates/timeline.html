@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}Verlauf · {{ title }} · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap" style="max-width:820px;">
+  <a href="{% url 'ats:dashboard' %}{{ back_anchor }}" style="color:var(--text-muted); text-decoration:none; font-size:13px;">
+    <i class="fa-solid fa-arrow-left"></i> Zurück zum Board
+  </a>
+  <h1 class="page-title" style="margin-top:8px;">
+    <i class="fa-solid fa-clock-rotate-left"></i> Aktionsverlauf
+  </h1>
+  <p class="page-lead">
+    <strong>{{ title }}</strong>{% if subtitle %} · {{ subtitle }}{% endif %}<br>
+    Chronologisch, älteste Aktion zuerst. Was das Team getan hat und was
+    {% if kind == 'job' %}die Bewerbenden getan haben{% else %}die Person getan hat{% endif %} – an einem Ort.
+  </p>
+
+  <div style="display:flex; gap:16px; flex-wrap:wrap; margin:12px 0 20px; font-size:12px; color:var(--text-muted);">
+    <span><span class="tl-key tl-key-intern"></span> Team / intern</span>
+    <span><span class="tl-key tl-key-bewerber"></span> Bewerber:in</span>
+    <span><span class="tl-key tl-key-system"></span> System / Automatik</span>
+  </div>
+
+  {% if events %}
+  <ol class="tl-list">
+    {% for e in events %}
+    <li class="tl-item tl-{{ e.actor_kind }}">
+      <span class="tl-dot" aria-hidden="true"><i class="fa-solid {{ e.icon }}"></i></span>
+      <div class="tl-card">
+        <div class="tl-head">
+          <span class="tl-title">{{ e.title }}</span>
+          <time class="tl-time" datetime="{{ e.when|date:'c' }}" title="{{ e.when|date:'d.m.Y H:i' }} Uhr">
+            {{ e.when|date:'d.m.Y H:i' }}
+          </time>
+        </div>
+        {% if e.detail %}<div class="tl-detail">{{ e.detail }}</div>{% endif %}
+        <div class="tl-actor"><i class="fa-solid fa-user" style="opacity:.6;"></i> {{ e.actor }}</div>
+      </div>
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <div class="card"><p class="empty-state">Noch keine Aktionen erfasst.</p></div>
+  {% endif %}
+</div>
+
+<style>
+  /* Legenden-Punkte */
+  .tl-key { display:inline-block; width:10px; height:10px; border-radius:50%; vertical-align:middle; margin-right:4px; }
+  .tl-key-intern   { background: var(--accent); }
+  .tl-key-bewerber { background: #0ea5e9; }
+  .tl-key-system   { background: var(--text-muted); }
+
+  .tl-list { list-style:none; margin:0; padding:0; position:relative; }
+  /* durchgehende Leitlinie */
+  .tl-list::before {
+    content:""; position:absolute; left:15px; top:6px; bottom:6px;
+    width:2px; background: var(--border-color);
+  }
+  .tl-item { position:relative; padding:0 0 14px 44px; }
+  .tl-dot {
+    position:absolute; left:0; top:2px; width:32px; height:32px;
+    border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:13px; color:#fff; box-shadow:0 0 0 3px var(--bg-color);
+  }
+  .tl-intern   .tl-dot { background: var(--accent); }
+  .tl-bewerber .tl-dot { background: #0ea5e9; }
+  .tl-system   .tl-dot { background: #6b7280; }
+
+  .tl-card {
+    border:1px solid var(--border-color); border-radius: var(--border-radius-sm, 8px);
+    padding:10px 14px; background: var(--surface-color);
+  }
+  .tl-head { display:flex; justify-content:space-between; align-items:baseline; gap:12px; flex-wrap:wrap; }
+  .tl-title { font-weight:600; color: var(--text-main); }
+  .tl-time  { font-size:12px; color: var(--text-muted); white-space:nowrap; font-variant-numeric: tabular-nums; }
+  .tl-detail { margin-top:4px; font-size:13px; color: var(--text-main); white-space:pre-line; }
+  .tl-actor  { margin-top:6px; font-size:12px; color: var(--text-muted); }
+
+  /* Linke Kante der Karte je Spur - ruhige, klare Zuordnung ohne Farbflut */
+  .tl-intern   .tl-card { border-left:3px solid var(--accent); }
+  .tl-bewerber .tl-card { border-left:3px solid #0ea5e9; }
+  .tl-system   .tl-card { border-left:3px solid #9ca3af; }
+</style>
+{% endblock %}

@@ -43,6 +43,7 @@ module = [
     "ats.pay_transparency",
     "ats.permissions",
     "ats.talent_pool",
+    "ats.timeline",
 ]
 disallow_untyped_defs = true
 check_untyped_defs = true

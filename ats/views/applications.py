@@ -47,7 +47,7 @@ from .governance import _pending_steps_for
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "reorder_board", "bulk_update_status", "application_messages", "application_vote", "talent_pool_view", "job_pool_matches", "tasks_view"]
+__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "reorder_board", "bulk_update_status", "application_messages", "application_vote", "talent_pool_view", "job_pool_matches", "application_timeline", "job_timeline", "tasks_view"]
 
 
 @ensure_csrf_cookie
@@ -916,6 +916,50 @@ def job_pool_matches(request, job_id):
                   {'job': job, 'candidates': candidates,
                    'open_count': sum(1 for c in candidates
                                      if not c['contacted_at'])})
+
+
+# --- Aktionsverlauf: die ganze Geschichte an EINEM Ort ----------------------
+@any_staff_required
+def application_timeline(request, app_id):
+    """Chronologischer Verlauf einer Bewerbung: wer hat wann was getan -
+    intern UND vom Bewerber. Taegliches HR-Werkzeug (Stand erfassen,
+    Entscheidungen nachvollziehen), auch fuer Urlaubsvertretungen.
+
+    Nur-Lesen; BOLA: nur Bewerbungen im Zugriffsbereich.
+    """
+    from ..timeline import application_events
+    app = get_object_or_404(Application, id=app_id)
+    if not can_access_application(request.user, app):
+        raise Http404("Nicht im Zugriffsbereich.")
+    name = f"{app.applicant.firstName} {app.applicant.lastName}".strip()
+    return render(request, 'timeline.html', {
+        'events': application_events(app),
+        'title': name or 'Bewerbung',
+        'subtitle': app.jobPosting.title,
+        'kind': 'application',
+        'back_anchor': f"#card-{app.id}",
+    })
+
+
+@any_staff_required
+def job_timeline(request, job_id):
+    """Chronologischer Verlauf einer Stelle: Anlage, jede eingehende
+    Bewerbung und deren Meilensteine (Einladung/Absage/Einstellung), mit
+    Namen. Ueberblick fuer Vertretung und Alltag gleichermassen.
+
+    Nur-Lesen; BOLA: nur Stellen im Zugriffsbereich.
+    """
+    from ..timeline import job_events
+    job = get_object_or_404(
+        scope_jobs(request.user, JobPosting.objects.filter(id=job_id)))
+    return render(request, 'timeline.html', {
+        'events': job_events(job),
+        'title': job.title,
+        'subtitle': (f"{job.location.city} · " if job.location_id else "")
+        + "Stellen-Verlauf",
+        'kind': 'job',
+        'back_anchor': "",
+    })
 
 
 # --- B11: Talent-Pool-Übersicht --------------------------------------------

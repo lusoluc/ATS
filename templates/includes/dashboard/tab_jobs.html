@@ -47,6 +47,10 @@
                                     <button class="btn-search" style="padding: 4px 10px; height: auto; font-size: 11px; margin: 0; border-radius: var(--border-radius-sm);" onclick="editJobPosting('{{ job.id|escapejs }}', '{{ job.title|escapejs }}', '{{ job.description|escapejs }}', '{{ job.tasksJson|as_json|escapejs }}', '{{ job.requirementsJson|as_json|escapejs }}', '{{ job.screeningQuestionsJson|as_json|escapejs }}', '{{ job.facility.id|escapejs }}', '{{ job.department.id|default:''|escapejs }}', '{{ job.location.id|escapejs }}', '{{ job.jobFamily.id|escapejs }}', '{{ job.contactPerson.id|default:''|escapejs }}', '{{ job.jobTemplate.id|default:''|escapejs }}', '{{ job.workflowState.id|escapejs }}', '{% for b in job.benefits.all %}{{ b.id }},{% endfor %}', '{{ job.panelUserIdsJson|as_json|escapejs }}', '{{ job.panelQuorum|default_if_none:''|escapejs }}', '{{ job.panelDeadlineDays|default_if_none:''|escapejs }}', '{{ job.interview_rounds_csv|escapejs }}', '{{ job.payBand.id|default:''|escapejs }}', '{{ job.headcount|escapejs }}')">
                                         <i class="fa-solid fa-pen-to-square"></i> Bearbeiten
                                     </button>
+                                    <!-- Aktionsverlauf der Stelle: wer/was/wann, auch fuer Vertretung -->
+                                    <a class="btn-search" href="{% url 'ats:job_timeline' job.id %}" style="padding: 4px 10px; height: auto; font-size: 11px; margin: 0 0 0 6px; border-radius: var(--border-radius-sm); display:inline-block;" title="Aktionsverlauf dieser Stelle">
+                                        <i class="fa-solid fa-clock-rotate-left"></i> Verlauf
+                                    </a>
                                 </td>
                             </tr>
                         {% empty %}

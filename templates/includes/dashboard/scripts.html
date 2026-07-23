@@ -739,6 +739,10 @@
         // WP3: Nachrichten-Verlauf zur Bewerbung (UC-TK-10)
         const msgBtn = document.getElementById('modal-btn-messages');
         if (msgBtn) { msgBtn.href = `/recruiter/applications/${appId}/messages/`; }
+
+        // Aktionsverlauf: chronologische Historie dieser Bewerbung
+        const histBtn = document.getElementById('modal-btn-history');
+        if (histBtn) { histBtn.href = `/recruiter/applications/${appId}/verlauf/`; }
         
         loadCandidateFeedback(appId);
         document.getElementById('candidateModal').style.display = 'flex';

@@ -83,8 +83,40 @@ fällt das frühere „L5" weg — es war dasselbe Ziel.)
   - Vollständigkeit der Bewerbung, Herkunftskanal (schwach)
   - Interview-Feedback fließt NUR als Label-Verfeinerung ein (liegt erst nach
     dem Gespräch vor), nie als Vorfilter-Merkmal
-- **Pro Jobfamilie gelernt.** „Gut zur Stelle" heißt bei Nachtpflege etwas
-  anderes als bei IT. Global lernen wäre wertlos.
+- **Pro Kontext gelernt, nicht nur pro Beruf.** „Gut zur Stelle" heißt bei
+  Nachtpflege etwas anderes als bei IT — aber auch: Station 3 in Hamburg
+  bewertet anders als die Geriatrie in Lüneburg. Jede Abteilung hat eigene
+  Schwerpunkte, jeder Standort einen eigenen Arbeitsmarkt. Der Lern-Kontext ist
+  deshalb das Tripel **(Jobfamilie, Standort, Abteilung)**, nicht die Jobfamilie
+  allein. Nur so stimmt am Ende die Gesamt-Erfolgsquote.
+
+**Spezifitäts-Leiter gegen dünne Daten.** Je enger der Kontext, desto treffender
+— aber desto weniger Entscheidungen liegen vor. Deshalb lernt das System auf der
+spezifischsten Ebene, die genug Daten hat, und fällt sonst zurück. Dieselbe
+Leiter, die SecurATS schon bei Gremien und Freigabe-Regeln nutzt
+(`resolve_panel`, `resolve_requisition_rule`) — ein Muster, das die Fachabteilung
+bereits kennt:
+
+    Abteilung + Jobfamilie          (am treffendsten)
+      ↓ zu wenig Daten
+    Einrichtung + Jobfamilie
+      ↓
+    Standort + Jobfamilie
+      ↓
+    Jobfamilie
+      ↓
+    Organisation (Notnagel)
+
+Die genutzte Ebene wird immer mit angezeigt: „gelernt auf Ebene *Abteilung
+Station 3 · Pflege*, 34 Entscheidungen" — oder ehrlich „nur auf Ebene
+*Jobfamilie Pflege* (Abteilung hat erst 6 Entscheidungen)". Der Recruiter sieht
+damit sofort, wie belastbar die Einordnung ist.
+
+**Warum das den Ausschlag gibt:** Dieselbe Bewerberin kann für die IT-Abteilung
+in Berlin ein A und für die Verwaltung in Hamburg ein C sein. Wer nur den Beruf
+betrachtet, mittelt diese Unterschiede weg und lernt Durchschnitt statt Passung.
+Bewertet wird also immer das Paar aus **Person und Kontext** (Beruf + Standort +
+Abteilung).
 
 **Wie lernen wir?** In zwei Stufen, transparent zuerst:
 
@@ -119,6 +151,11 @@ gehalten:
 4. **Fairness-Drift:** auch ohne geschützte Merkmale als Eingabe überwachen,
    ob das Score unbeabsichtigt mit einem Näherungsmerkmal korreliert. Zuhause
    im Fairness-Cockpit.
+
+Alle vier Metriken werden **je Kontext-Ebene** geführt (Abteilung/Standort/
+Jobfamilie). Nur so lässt sich sagen, wo das Lernen trägt und wo es noch
+Durchschnitt produziert — und nur die Ebenen, die den Backtest bestehen, werden
+überhaupt angezeigt.
 
 **Die Ehrlichkeits-Schranke:** Das gelernte Score wird nur angezeigt, wenn es
 im Backtest die naive Grundlinie (rein regelbasiert) schlägt. Schlägt es sie
@@ -160,3 +197,90 @@ L1 zuerst — sofort nützlich, schafft die Datengrundlage und das Vertrauen.
 Dann L2 (Steckbrief) und L4 (Editor-Hinweise) parallel. L3 zuletzt und in
 Stufen (erst gewichtet-transparent, dann optional lokales Modell), erst wenn
 genug Entscheidungen vorliegen und die Messung trägt.
+
+---
+
+# L1 — Umsetzungsplan (implementierungsreif)
+
+Erste Stufe, weil sie sofort Nutzen bringt, kein Risiko trägt und die
+Datengrundlage für L3 schafft. Grundsatz aus der Abstimmung: **keine Kennzahl
+ohne Vorschlag und Aktion.**
+
+## Bausteine
+
+### 1. Rechenkern `ats/insights.py`
+
+Neues Modul, voll typisiert (mypy-strict-Liste), je Funktion eine Abfrage,
+keine N+1. Liefert Rohzahlen — keine Formulierung, keine UI.
+
+| Funktion | Liefert | Quelle |
+|---|---|---|
+| `funnel_by_context()` | je Kontext (Jobfamilie / Standort / Abteilung): Anzahl je Stufe (Neu → Prüfung → Eingeladen → Eingestellt), Abbruchquote je Übergang | `Application.status` + `STATUS_CHANGE`-Audit |
+| `channel_effectiveness()` | je Quelle: Bewerbungen, Einladungen, Einstellungen, Quote | `Application.source` + Status |
+| `screening_question_impact(context)` | je Frage im Kontext: Durchfallquote, Einladungsquote bei erfüllt vs. nicht erfüllt | `screeningAnswersJson` gegen `JobPosting.screeningQuestionsJson` |
+| `stage_bottlenecks()` | durchschnittliche Liegezeit je Prozessstufe, langsamste Stufe | Zeitstempel der `STATUS_CHANGE`-Kette, Freigabe-/Bedarfs-Schritte |
+
+**Kontext-Ebene:** Jede Funktion nimmt einen Kontext (Jobfamilie, optional
+Standort und Abteilung) und liefert neben dem Ergebnis die Ebene, auf der
+gerechnet wurde — nach der Spezifitäts-Leiter aus dem L3-Kapitel. Ein
+gemeinsamer Helfer `resolve_learning_scope(job)` löst sie auf, damit L1 bis L4
+dieselbe Logik nutzen.
+
+**Mindestmenge:** Jede Funktion liefert zusätzlich `sample_size`. Unter 20
+abgeschlossenen Vorgängen auf der jeweiligen Ebene gibt es KEINE Aussage,
+sondern ehrlich „zu wenig Daten (7 von 20) — nächst breitere Ebene genutzt".
+Rauschen als Erkenntnis zu verkaufen wäre derselbe Fehler wie die alten
+RAG-Buttons.
+
+### 2. Vorschlags-Schicht `ats/suggestions.py`
+
+Übersetzt Rohzahlen in **Vorschlag + Aktion**. Ein Vorschlag ist:
+
+```
+Suggestion(
+  text="Screening-Frage „Führerschein Klasse C" lässt 62 % durchfallen.",
+  reason="Bei vergleichbaren Stellen ohne diese Frage gab es 2,4× mehr Einladungen.",
+  action_label="Frage prüfen",
+  action_url="/recruiter/... (Stellen-Editor, Frage markiert)",
+  severity="warn",
+  sample_size=48,
+)
+```
+
+Regeln (Schwellen bewusst konservativ, im Code dokumentiert):
+- Durchfallquote einer Pflichtfrage > 50 % → „zu streng?" mit Link zum
+  Fragen-Baukasten der betroffenen Stellen
+- Kanal mit ≥ 20 Bewerbungen und 0 Einstellungen → „Budget prüfen" mit Link
+  zu Kanäle & Kampagnen
+- Stufe mit Liegezeit > 2× Median → „Engpass" mit Link zur Governance/Frist
+- Jobfamilie mit Abbruch > 70 % zwischen zwei Stufen → „Prozess prüfen"
+
+### 3. Anzeige
+
+- **Analytics-Seite:** neuer Block „Erkenntnisse & Vorschläge" ganz oben —
+  maximal fünf, nach Wirkung sortiert, jeder mit genau einem Aktions-Button.
+  Kein Diagramm-Friedhof.
+- **Am Ort der Entscheidung (Vorgriff auf L4):** die Frage-Vorschläge
+  erscheinen zusätzlich direkt im Fragen-Baukasten des Stellen-Editors.
+- Nichts wird automatisch geändert. Der Vorschlag füllt nur vor.
+
+### 4. Tests
+
+- Rechenkern: Trichter, Kanal, Frage-Wirkung, Engpass je gegen aufgebaute
+  Testdaten; Mindestmengen-Schranke (unter 20 → keine Aussage).
+- Vorschlags-Schicht: löst die richtige Regel aus, formuliert Aktion + Link.
+- Ansicht: Analytics rendert Vorschläge, Recruiter sieht nur Erlaubtes (BOLA).
+
+## Reihenfolge der Umsetzung
+
+1. `ats/insights.py` + Tests (reine Rechnung, keine UI) — isoliert prüfbar.
+2. `ats/suggestions.py` + Tests (Regeln und Texte).
+3. Analytics-Block mit Aktions-Buttons + Browser-Verifikation.
+4. Einhängen im Fragen-Baukasten (Brücke zu L4).
+
+## Danach
+
+L2 (Bewerber-Steckbrief) und L4 (Editor-Hinweise) bauen auf denselben
+Rechenkern auf. L3 (gelerntes A/B/C/D-Scoring) braucht zusätzlich die
+Merkmals-/Label-Extraktion und die Messstrecke aus dem Kapitel oben — erst
+sinnvoll, wenn L1 im Alltag läuft und genug Entscheidungen vorliegen.

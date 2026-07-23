@@ -303,6 +303,10 @@
             <i class="fa-solid fa-briefcase"></i> Stellenanzeigen
         </div>
 
+        <a class="sidebar-link" href="{% url 'ats:inbox' %}">
+            <i class="fa-solid fa-layer-group"></i> Sammel-Postfach
+        </a>
+
         {% if is_hr_admin %}
         {% comment %}
         Verwaltung liegt seit B2 auf eigenen Seiten (echte Links statt

@@ -47,7 +47,7 @@ from .governance import _pending_steps_for
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "reorder_board", "bulk_update_status", "application_messages", "draft_reply", "application_vote", "talent_pool_view", "job_pool_matches", "application_timeline", "job_timeline", "tasks_view"]
+__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "reorder_board", "bulk_update_status", "application_messages", "draft_reply", "inbox_view", "open_question_clusters", "application_vote", "talent_pool_view", "job_pool_matches", "application_timeline", "job_timeline", "tasks_view"]
 
 
 @ensure_csrf_cookie
@@ -805,6 +805,70 @@ def bulk_update_status(request):
                     oldStatus=old, newStatus=new_status)
         updated += 1
     return JsonResponse({'success': True, 'updated': updated, 'skipped': skipped})
+
+
+# --- Sammel-Postfach: offene Bewerber-Fragen nach Anliegen gebuendelt --------
+def open_question_clusters(user):
+    """Offene Fragen (Bewerbung, deren LETZTE Nachricht INBOUND ist), gebuendelt
+    nach Anliegen. Ein Query fuer die jeweils letzte Nachricht je Bewerbung
+    (kein N+1); Klassifikation regelbasiert ueber die ganze Nachricht.
+
+    Rueckgabe: Liste von Cluster-Dicts in Anzeige-Reihenfolge, nur nicht-leere.
+    """
+    from django.db.models import OuterRef, Subquery
+
+    from ..inbox_intents import (
+        INTENT_ICONS,
+        INTENT_LABELS,
+        INTENT_ORDER,
+        analyze,
+    )
+    latest = (Message.objects.filter(application=OuterRef('pk'))
+              .order_by('-createdAt'))
+    apps = (scope_applications(user, Application.objects.all())
+            .select_related('applicant', 'jobPosting')
+            .annotate(
+                last_dir=Subquery(latest.values('direction')[:1]),
+                last_content=Subquery(latest.values('content')[:1]),
+                last_at=Subquery(latest.values('createdAt')[:1]))
+            .filter(last_dir='INBOUND'))
+
+    grouped: dict[str, list] = {intent: [] for intent in INTENT_ORDER}
+    for app in apps:
+        analysis = analyze(app.last_content or '')
+        grouped[analysis.bucket].append({
+            'app': app,
+            'name': f"{app.applicant.firstName} {app.applicant.lastName}".strip(),
+            'job': app.jobPosting.title,
+            'question': (app.last_content or '')[:160],
+            'when': app.last_at,
+            'reason': analysis.reason,
+            'auto_safe': analysis.auto_safe,
+        })
+
+    clusters = []
+    for intent in INTENT_ORDER:
+        items = sorted(grouped[intent], key=lambda i: i['when'] or app.createdAt)
+        if items:
+            clusters.append({
+                'intent': intent,
+                'label': INTENT_LABELS[intent],
+                'icon': INTENT_ICONS[intent],
+                'items': items,
+                'count': len(items),
+            })
+    return clusters
+
+
+@recruiter_required
+def inbox_view(request):
+    """Themen-Postfach: offene Bewerber-Fragen nach Anliegen gebuendelt, damit
+    aehnliche Fragen gesammelt beantwortet werden koennen (Alltags-Entlastung).
+    Nur-Lesen; BOLA ueber scope_applications.
+    """
+    clusters = open_question_clusters(request.user)
+    total = sum(c['count'] for c in clusters)
+    return render(request, 'inbox.html', {'clusters': clusters, 'total': total})
 
 
 # --- B6: Nachrichten-Verlauf je Bewerbung -----------------------------------

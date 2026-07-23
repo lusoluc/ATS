@@ -106,6 +106,17 @@ _ADDITIONAL_MARKERS = [
     "eine andere frage", "was mich noch",
 ]
 
+# Woerter, die einen Satzteil als Frage/Bitte kennzeichnen. Dient dazu, einen
+# NICHT adressierten Anliegen-Teil zu erkennen (Frage ohne erkanntes Thema) -
+# nicht, um Fragezeichen zu zaehlen. Eine reine Mehrfachfrage zum SELBEN Thema
+# ist kein zusammengesetzter Fall.
+_REQUEST_WORDS = [
+    "wie", "was", "wann", "wo", "warum", "wieso", "welche", "welchen",
+    "koennen sie", "koennt ihr", "haben sie", "bieten sie", "gibt es",
+    "ist es moeglich", "waere es moeglich", "wuerde", "duerfte", "bitte",
+    "frage", "moechte ich wissen", "wollte ich fragen",
+]
+
 # Ab hier gilt eine Nachricht als zu lang/komplex fuer eine sichere
 # Auto-Einordnung - lange Texte tragen meist mehr als ein Anliegen.
 _LONG_MESSAGE_CHARS = 600
@@ -146,6 +157,32 @@ def _scores(norm: str) -> dict[str, int]:
     }
 
 
+def _total_hits(norm: str) -> int:
+    return sum(1 for kws in _KEYWORDS.values() for kw in kws if kw in norm)
+
+
+def _has_unaddressed_request(text: str) -> bool:
+    """Enthaelt die Nachricht einen Frage-/Bitte-Teil OHNE erkennbares Anliegen?
+
+    Das ist der Kern der Ganze-Nachricht-Analyse: eine Standard-Frage plus
+    etwas Unerkanntes ("... und bieten Sie eine Betriebswohnung an?") muss
+    auffallen. Eine Mehrfachfrage zum SELBEN Thema loest NICHT aus, weil jeder
+    Teil ein Anliegen-Stichwort traegt.
+    """
+    import re
+    for raw in re.split(r"[?!.\n]+", text or ""):
+        seg = raw.strip()
+        if not seg:
+            continue
+        norm = _normalize(seg)
+        is_request = any(
+            norm.startswith(w) or f" {w}" in f" {norm}"
+            for w in _REQUEST_WORDS)
+        if is_request and _total_hits(norm) == 0:
+            return True
+    return False
+
+
 def classify_rule_based(text: str) -> str:
     """Bestes einzelnes Anliegen per Schluesselwort-Scoring (0 Treffer -> OTHER).
 
@@ -174,9 +211,11 @@ def analyze(text: str,
     Fragen, sehr lang) landen als OTHER = individuelle Pruefung und sind nie
     auto_safe - eine Standard-Antwort darf das Besondere nicht verschlucken.
 
-    ai_classifier: optionaler Haken. Wird NUR befragt, wenn die Regel nichts
-    erkennt (primary == OTHER, nicht zusammengesetzt). Gibt er ein gueltiges
-    Anliegen zurueck, wird es uebernommen (used_ai=True).
+    ai_classifier: optionaler Haken. Wird NUR fuer eine VOLLSTAENDIG unerkannte
+    Einzelnachricht befragt (kein Stichwort getroffen, kein Zusatz-Marker, nicht
+    zu lang). Loest er sie in EIN Anliegen auf, gilt sie als adressiert. Steht
+    dagegen ein erkannter Teil NEBEN etwas Unklarem, bleibt es beim Menschen -
+    die KI hebt diese Grenze nicht auf.
     """
     norm = _normalize(text)
     scores = _scores(norm)
@@ -185,28 +224,33 @@ def analyze(text: str,
 
     multi = len(matched) > 1
     has_marker = any(m in norm for m in _ADDITIONAL_MARKERS)
-    many_questions = (text or "").count("?") >= 2
+    unaddressed = _has_unaddressed_request(text)
     too_long = len((text or "").strip()) > _LONG_MESSAGE_CHARS
-    compound = multi or has_marker or many_questions or too_long
 
+    # KI-Rettung nur fuer den voellig unbekannten Einzelfall: nichts erkannt,
+    # kein Mehrfach-/Zusatz-Signal, nicht zu lang. Erfolg macht die Nachricht
+    # "adressiert" - der unaddressed-Verdacht ist damit ausgeraeumt.
+    used_ai = False
+    if (primary == INTENT_OTHER and not matched and not has_marker
+            and not too_long and ai_classifier is not None):
+        guess = ai_classifier(text)
+        if guess in _KEYWORDS:
+            primary = guess
+            matched = [guess]
+            unaddressed = False
+            used_ai = True
+
+    compound = multi or has_marker or unaddressed or too_long
     reason = ""
     if compound:
         if multi:
             reason = "mehrere Anliegen erkannt"
         elif has_marker:
             reason = "enthält einen Zusatz wie „außerdem“ oder „zusätzlich“"
-        elif many_questions:
-            reason = "mehrere Fragen in einer Nachricht"
+        elif unaddressed:
+            reason = "enthält eine zusätzliche, unklare Frage"
         else:
             reason = "ungewöhnlich lange Nachricht"
-
-    used_ai = False
-    if primary == INTENT_OTHER and not compound and ai_classifier is not None:
-        guess = ai_classifier(text)
-        if guess in _KEYWORDS:
-            primary = guess
-            matched = [guess]
-            used_ai = True
 
     # Zusammengesetzt ODER unerkannt -> Catch-all/individuelle Pruefung.
     bucket = INTENT_OTHER if (compound or primary == INTENT_OTHER) else primary

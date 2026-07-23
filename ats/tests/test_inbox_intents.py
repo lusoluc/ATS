@@ -94,6 +94,20 @@ class AnalyzeTestCase(SimpleTestCase):
         self.assertTrue(a.compound)
         self.assertFalse(a.auto_safe)
 
+    def test_same_topic_multi_question_stays_clean(self):
+        """Zwei Fragezeichen zum SELBEN Thema sind KEIN zusammengesetzter Fall."""
+        a = analyze("Sind meine Unterlagen vollständig angekommen? "
+                    "Fehlt noch etwas?")
+        self.assertEqual(a.bucket, INTENT_DOCUMENTS)
+        self.assertFalse(a.compound)
+
+    def test_standard_plus_unrecognized_is_compound(self):
+        """Standard-Frage + unerkannte Zusatzfrage -> individuelle Prüfung."""
+        a = analyze("Wie ist der Stand? Bieten Sie eine Betriebswohnung an?")
+        self.assertEqual(a.bucket, INTENT_OTHER)
+        self.assertTrue(a.compound)
+        self.assertFalse(a.auto_safe)
+
     def test_very_long_message_routes_to_other(self):
         long_text = "Wie ist der Stand? " + ("x" * 650)
         a = analyze(long_text)

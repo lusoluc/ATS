@@ -47,7 +47,7 @@ from .governance import _pending_steps_for
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "reorder_board", "bulk_update_status", "application_messages", "draft_reply", "inbox_view", "open_question_clusters", "batch_reply", "application_vote", "talent_pool_view", "job_pool_matches", "application_timeline", "job_timeline", "tasks_view"]
+__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "reorder_board", "bulk_update_status", "application_messages", "draft_reply", "inbox_view", "open_question_clusters", "batch_reply", "save_reply_snippet", "application_vote", "talent_pool_view", "job_pool_matches", "application_timeline", "job_timeline", "tasks_view"]
 
 
 @ensure_csrf_cookie
@@ -824,7 +824,16 @@ def open_question_clusters(user):
         INTENT_ORDER,
         analyze,
     )
+    from ..models import TextSnippet
     from ..reply_drafts import batch_template
+
+    # Gespeicherte Antwort-Bausteine je Anliegen (Kategorie REPLY_<Intent>).
+    # Der juengste ist der Auto-Vorschlag - so wird der Default mit der Zeit
+    # das, was HR tatsaechlich nutzt (Bruecke zur lernenden Optimierung).
+    reply_snips: dict[str, list] = {}
+    for s in (TextSnippet.objects.filter(category__startswith='REPLY_')
+              .order_by('-createdAt')):
+        reply_snips.setdefault(s.category, []).append(s)
     latest = (Message.objects.filter(application=OuterRef('pk'))
               .order_by('-createdAt'))
     apps = (scope_applications(user, Application.objects.all())
@@ -854,13 +863,16 @@ def open_question_clusters(user):
     for intent in INTENT_ORDER:
         items = sorted(grouped[intent], key=lambda i: i['when'] or app.createdAt)
         if items:
+            snips = reply_snips.get(f"REPLY_{intent}", [])
             clusters.append({
                 'intent': intent,
                 'label': INTENT_LABELS[intent],
                 'icon': INTENT_ICONS[intent],
                 'items': items,
                 'count': len(items),
-                'template': batch_template(intent),
+                # Auto-Vorschlag: juengster gespeicherter Baustein, sonst Default.
+                'template': snips[0].content if snips else batch_template(intent),
+                'snippets': snips,
             })
     return clusters
 
@@ -874,6 +886,26 @@ def inbox_view(request):
     clusters = open_question_clusters(request.user)
     total = sum(c['count'] for c in clusters)
     return render(request, 'inbox.html', {'clusters': clusters, 'total': total})
+
+
+@recruiter_required
+def save_reply_snippet(request):
+    """Speichert die aktuelle Sammel-Vorlage als wiederverwendbaren Baustein
+    fuer dieses Anliegen (Stufe 2). Der juengste Baustein wird zum
+    Auto-Vorschlag - so waechst die Bibliothek aus echten Antworten."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST erforderlich'}, status=405)
+    from ..inbox_intents import INTENT_LABELS
+    from ..models import TextSnippet
+    intent = (request.POST.get('intent') or '').strip()[:20]
+    content = (request.POST.get('content') or '').strip()[:4000]
+    if intent not in INTENT_LABELS or intent == 'OTHER' or not content:
+        return JsonResponse({'error': 'Ungültiges Anliegen oder leerer Text.'},
+                            status=400)
+    TextSnippet.objects.create(category=f"REPLY_{intent}", content=content)
+    write_audit('REPLY_SNIPPET_SAVED', user=request.user, intent=intent)
+    return JsonResponse({'ok': True,
+                         'note': 'Als Vorlage gespeichert – ab jetzt Vorschlag für dieses Anliegen.'})
 
 
 @recruiter_required

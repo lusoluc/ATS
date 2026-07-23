@@ -63,7 +63,15 @@
       </ul>
 
       <div class="ib-compose">
-        <label class="form-label" style="font-size:12px;">Sammel-Antwort (Vorlage – Platzhalter <code>[[Vorname]]</code>, <code>[[Stelle]]</code>, <code>[[Stand]]</code> werden je Person ersetzt)</label>
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+          <label class="form-label" style="font-size:12px; margin:0;">Sammel-Antwort (Vorlage – Platzhalter <code>[[Vorname]]</code>, <code>[[Stelle]]</code>, <code>[[Stand]]</code> werden je Person ersetzt)</label>
+          {% if c.snippets %}
+          <select class="filter-select ib-snippet-pick" style="max-width:240px; height:32px; font-size:12px;" aria-label="Gespeicherten Baustein einsetzen">
+            <option value="">Gespeicherter Baustein …</option>
+            {% for s in c.snippets %}<option value="{{ s.content|escapejs }}">{{ s.content|truncatechars:45 }}</option>{% endfor %}
+          </select>
+          {% endif %}
+        </div>
         <textarea name="template" rows="7" class="form-textarea ib-template" style="width:100%;">{{ c.template }}</textarea>
         <div class="ib-preview-wrap">
           <div class="ib-preview-label">Vorschau für <span class="ib-preview-name">–</span>:</div>
@@ -72,6 +80,9 @@
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:10px;">
           <button type="submit" class="btn btn-primary" data-done-label="Antworten gesendet">
             <i class="fa-solid fa-paper-plane"></i> An <span class="ib-count">{{ c.count }}</span> Ausgewählte senden
+          </button>
+          <button type="button" class="btn-search ib-save-snippet" style="height:34px; font-size:12px; padding:0 12px;" data-save-url="{% url 'ats:save_reply_snippet' %}">
+            <i class="fa-solid fa-bookmark"></i> Als Vorlage speichern
           </button>
           <span class="ib-note" style="font-size:11px; color:var(--text-muted);">Wird je Person personalisiert. Nichts wird automatisch versendet – Sie lösen es aus.</span>
         </div>
@@ -143,6 +154,31 @@
       }
       boxes.forEach(b => b.addEventListener('change', refresh));
       if (tpl) tpl.addEventListener('input', refresh);
+
+      // Stufe 2: gespeicherten Baustein einsetzen
+      const pick = form.querySelector('.ib-snippet-pick');
+      if (pick) pick.addEventListener('change', function () {
+        if (this.value) { tpl.value = this.value; refresh(); this.value = ''; }
+      });
+
+      // Stufe 2: aktuelle Vorlage als Baustein speichern
+      const saveBtn = form.querySelector('.ib-save-snippet');
+      if (saveBtn) saveBtn.addEventListener('click', function () {
+        const token = form.querySelector('[name=csrfmiddlewaretoken]').value;
+        const body = new URLSearchParams({
+          intent: form.dataset.intent, content: tpl.value });
+        saveBtn.disabled = true;
+        fetch(saveBtn.dataset.saveUrl, {
+          method: 'POST',
+          headers: {'X-CSRFToken': token, 'Content-Type': 'application/x-www-form-urlencoded'},
+          body: body.toString(),
+        })
+          .then(r => r.json())
+          .then(d => { saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> ' + (d.ok ? 'Gespeichert' : 'Fehler'); })
+          .catch(() => { saveBtn.innerHTML = '<i class="fa-solid fa-xmark"></i> Fehler'; })
+          .finally(() => { setTimeout(() => { saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fa-solid fa-bookmark"></i> Als Vorlage speichern'; }, 2500); });
+      });
       refresh();
     });
   })();

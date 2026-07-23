@@ -131,8 +131,8 @@ def save_app_workflow(request):
                 metadataJson=json.dumps({"workflowId": str(wf.id), "name": wf.name})
             )
 
-        return redirect('ats:dashboard')
-    return redirect('ats:dashboard')
+        return redirect('ats:process_page')
+    return redirect('ats:process_page')
 
 
 @hr_admin_required
@@ -162,8 +162,8 @@ def save_workflow_state(request):
                 metadataJson=json.dumps(metadata)
             )
 
-        return redirect('ats:dashboard')
-    return redirect('ats:dashboard')
+        return redirect('ats:process_page')
+    return redirect('ats:process_page')
 
 
 @hr_admin_required
@@ -200,8 +200,8 @@ def save_email_template(request):
                 metadataJson=json.dumps({"templateId": str(template.id), "name": template.name})
             )
 
-        return redirect('ats:dashboard')
-    return redirect('ats:dashboard')
+        return redirect('ats:templates_page')
+    return redirect('ats:templates_page')
 
 
 @hr_admin_required
@@ -231,8 +231,8 @@ def save_system_setting(request):
                 metadataJson=json.dumps(metadata)
             )
 
-        return redirect('ats:dashboard')
-    return redirect('ats:dashboard')
+        return redirect('ats:templates_page')
+    return redirect('ats:templates_page')
 
 
 # --- B15: Screening-Fragen-Bank --------------------------------------------

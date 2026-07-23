@@ -222,25 +222,6 @@
         background: rgba(255, 255, 255, 0.02);
     }
 
-    /* Interactive console mapping styles */
-    .odata-console {
-        background: #111a2e;
-        border: 1px solid rgba(20, 184, 166, 0.3);
-        border-radius: var(--border-radius-sm);
-        padding: 20px;
-        font-family: 'Courier New', Courier, monospace;
-        font-size: 13px;
-        color: var(--accent-light);
-        height: 250px;
-        overflow-y: auto;
-        box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
-    }
-
-    .odata-log-entry {
-        margin-bottom: 8px;
-        line-height: 1.4;
-    }
-
     /* Modal styling */
     .modal {
         display: none;
@@ -298,45 +279,9 @@
         color: var(--primary-light);
     }
 
-    /* ROI Calculator Slider Cards */
-    .roi-grid {
-        display: grid;
-        grid-template-columns: 1fr 1.2fr;
-        gap: 30px;
-    }
-
-    .slider-card {
-        background: rgba(11, 13, 25, 0.4);
-        border: 1px solid var(--glass-border);
-        border-radius: var(--border-radius-md);
-        padding: 24px;
-        margin-bottom: 20px;
-    }
-
-    .roi-range-input {
-        width: 100%;
-        height: 6px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 5px;
-        outline: none;
-        accent-color: var(--accent);
-        cursor: pointer;
-    }
-
-    .roi-result-card {
-        background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(20, 184, 166, 0.1) 100%);
-        border: 1px solid rgba(20, 184, 166, 0.3);
-        border-radius: var(--border-radius-md);
-        padding: 24px;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-    }
-
     @media (max-width: 992px) {
         .dashboard-grid { grid-template-columns: 1fr; }
         .kanban-board { grid-template-columns: 1fr; }
-        .roi-grid { grid-template-columns: 1fr; }
     }
 </style>
 
@@ -359,32 +304,37 @@
         </div>
 
         {% if is_hr_admin %}
+        {% comment %}
+        Verwaltung liegt seit B2 auf eigenen Seiten (echte Links statt
+        In-Page-Tabs). Das Dashboard zeigt nur noch die taegliche Arbeit;
+        die Seiten selbst sind serverseitig auf HR-Admin beschraenkt.
+        {% endcomment %}
         <span class="sidebar-group-title" style="margin-top:16px; display:block;">Verwaltung</span>
 
-        <div class="sidebar-link" onclick="switchTab(this, 'stats-tab')">
+        <a class="sidebar-link" href="{% url 'ats:stats_page' %}">
             <i class="fa-solid fa-chart-line"></i> KPIs & Inklusions-ROI
-        </div>
+        </a>
 
-        <div class="sidebar-link" onclick="switchTab(this, 'process-tab')">
+        <a class="sidebar-link" href="{% url 'ats:process_page' %}">
             <i class="fa-solid fa-arrows-spin"></i> Prozess Flow Manager
-        </div>
-        
-        <div class="sidebar-link" onclick="switchTab(this, 'templates-tab')">
+        </a>
+
+        <a class="sidebar-link" href="{% url 'ats:templates_page' %}">
             <i class="fa-solid fa-envelope-open-text"></i> E-Mail & Variablen
-        </div>
-        
-        <div class="sidebar-link" onclick="switchTab(this, 'cms-tab')">
+        </a>
+
+        <a class="sidebar-link" href="{% url 'ats:cms_page' %}">
             <i class="fa-solid fa-file-signature"></i> CMS Seiten-Editor
-        </div>
-        
-        <div class="sidebar-link" onclick="switchTab(this, 'gemma-tab')">
+        </a>
+
+        <a class="sidebar-link" href="{% url 'ats:ki_page' %}">
             <i class="fa-solid fa-robot"></i> KI-Zentrale & Spam
             <span class="badge {% if gemma_status == 'ONLINE' %}badge-accent{% else %}badge-primary{% endif %}" style="padding: 2px 6px; font-size: 9px; margin-left: auto;">{{ gemma_status }}</span>
-        </div>
-        
-        <div class="sidebar-link" onclick="switchTab(this, 'sap-tab')">
+        </a>
+
+        <a class="sidebar-link" href="{% url 'ats:hris_page' %}">
             <i class="fa-solid fa-cloud-arrow-up"></i> HRIS / SAP-Anbindung
-        </div>
+        </a>
         {% endif %}
 
         <div style="margin:12px 8px 4px; font-size:11px; letter-spacing:1px; color:#64748b; text-transform:uppercase;">Termine &amp; Menschen</div>
@@ -448,16 +398,12 @@
         </div>
         {% endif %}
         
+        {% comment %}
+        Nur noch die taegliche Arbeit. Die Verwaltungs-Sichten liegen seit
+        B2 auf eigenen Seiten (siehe Seitenleiste, Gruppe „Verwaltung").
+        {% endcomment %}
         {% include 'includes/dashboard/tab_kanban.html' %}
         {% include 'includes/dashboard/tab_jobs.html' %}
-        {% if is_hr_admin %}
-        {% include 'includes/dashboard/tab_process.html' %}
-        {% include 'includes/dashboard/tab_cms.html' %}
-        {% include 'includes/dashboard/tab_templates.html' %}
-        {% include 'includes/dashboard/tab_sap.html' %}
-        {% include 'includes/dashboard/tab_ki.html' %}
-        {% include 'includes/dashboard/tab_stats.html' %}
-        {% endif %}
 
     </div>
 </div>

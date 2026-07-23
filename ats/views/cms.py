@@ -80,8 +80,8 @@ def save_page(request):
                 metadataJson=json.dumps({"pageId": str(page.id), "slug": page.slug})
             )
 
-        return redirect('ats:dashboard')
-    return redirect('ats:dashboard')
+        return redirect('ats:cms_page')
+    return redirect('ats:cms_page')
 
 
 @hr_admin_required

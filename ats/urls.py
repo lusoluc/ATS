@@ -39,6 +39,15 @@ urlpatterns = [
     path('recruiter/baukasten/<str:kind>/<uuid:obj_id>/', views.blocks_editor, name='blocks_editor'),
     path('recruiter/interview-formate/', views.interview_formats_manage, name='interview_formats'),
 
+    # B2: Verwaltungs-Bereiche als eigene Seiten (frueher Tabs im Dashboard).
+    # Alle sechs sind serverseitig auf HR-Admin beschraenkt.
+    path('recruiter/kpis/', views.stats_page, name='stats_page'),
+    path('recruiter/prozess-flow/', views.process_page, name='process_page'),
+    path('recruiter/email-vorlagen/', views.templates_page, name='templates_page'),
+    path('recruiter/cms/', views.cms_page, name='cms_page'),
+    path('recruiter/ki-zentrale/', views.ki_page, name='ki_page'),
+    path('recruiter/hris/', views.hris_page, name='hris_page'),
+
     # API Feeds & Integrations
     path('healthz/', views.healthz, name='healthz'),  # WP7
     path('healthz/ai/', views.healthz_ai, name='healthz_ai'),

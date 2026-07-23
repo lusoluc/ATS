@@ -1,0 +1,14 @@
+{% extends 'admin_pages/_layout.html' %}
+{% block title %}KI-Zentrale & Spam · SecurATS{% endblock %}
+{% block admin_body %}
+<h1 class="page-title"><i class="fa-solid fa-robot"></i> KI-Zentrale &amp; Spam</h1>
+<p class="page-lead">Die lokale KI testen, Regelwerke pflegen und nachvollziehen, was sie tatsächlich getan hat.</p>
+{% include 'includes/dashboard/tab_ki.html' %}
+{% endblock %}
+
+{% block admin_scripts %}
+<script>
+    // Das Diagnose-Terminal wurde bisher beim Tab-Wechsel befuellt.
+    window.addEventListener('DOMContentLoaded', function () { refreshAILogs(); });
+</script>
+{% endblock %}

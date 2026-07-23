@@ -1,0 +1,15 @@
+{% extends 'admin_pages/_layout.html' %}
+{% block title %}KPIs & Inklusions-ROI · SecurATS{% endblock %}
+{% block admin_body %}
+<h1 class="page-title"><i class="fa-solid fa-chart-line"></i> KPIs &amp; Inklusions-ROI</h1>
+<p class="page-lead">Funnel-Zahlen aus Ihrem Zugriffsbereich und der Rechner für Pflichtquote und Ausgleichsabgabe.</p>
+{% include 'includes/dashboard/tab_stats.html' %}
+{% endblock %}
+
+{% block admin_scripts %}
+<script>
+    // Der Rechner wurde bisher beim Tab-Wechsel angestossen. Auf einer eigenen
+    // Seite gibt es keinen Wechsel mehr, also einmal beim Laden rechnen.
+    window.addEventListener('DOMContentLoaded', function () { calculateInclusionROI(); });
+</script>
+{% endblock %}

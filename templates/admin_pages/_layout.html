@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% comment %}
+Gemeinsame Huelle der sechs Verwaltungs-Seiten (B2).
+Die eingebundenen Partials stammen aus dem frueheren Dashboard-Tabsatz und
+bringen ihre Tab-Huelle noch mit; auf einer eigenen Seite gibt es keine Tabs
+mehr, deshalb wird der Inhalt hier dauerhaft sichtbar geschaltet. Die
+Stil-Regeln darunter standen bisher im Dashboard-Kopf und werden hier nur fuer
+die Elemente wiederholt, die diese Seiten tatsaechlich nutzen.
+{% endcomment %}
+{% block content %}
+<style>
+    /* Ohne Tab-Navigation ist der Inhalt immer der Inhalt. */
+    .tab-content { display: block; }
+
+    /* Breiter als die schmalen Stammdaten-Seiten: die Verwaltungs-Sichten
+       arbeiten durchgehend mit zwei Spalten (Formular + Liste). */
+    .page-wrap { max-width: 1280px; }
+
+    .admin-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-decoration: none;
+        margin-bottom: var(--space-3);
+    }
+    .admin-back:hover { color: #fff; }
+
+    .premium-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 16px;
+    }
+
+    .premium-table th, .premium-table td {
+        padding: 14px 16px;
+        text-align: left;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .premium-table th {
+        color: var(--text-muted);
+        font-size: 13px;
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+    }
+
+    .premium-table td {
+        font-size: 14px;
+        color: #e5e7eb;
+    }
+
+    .premium-table tr:hover {
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Nur von der KPI-Seite genutzt (Inklusions-ROI-Rechner) */
+    .roi-grid {
+        display: grid;
+        grid-template-columns: 1fr 1.2fr;
+        gap: 30px;
+    }
+
+    .slider-card {
+        background: rgba(11, 13, 25, 0.4);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-md);
+        padding: 24px;
+        margin-bottom: 20px;
+    }
+
+    .roi-range-input {
+        width: 100%;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 5px;
+        outline: none;
+        accent-color: var(--accent);
+        cursor: pointer;
+    }
+
+    .roi-result-card {
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(20, 184, 166, 0.1) 100%);
+        border: 1px solid rgba(20, 184, 166, 0.3);
+        border-radius: var(--border-radius-md);
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    @media (max-width: 992px) {
+        .roi-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="page-wrap">
+    <a class="admin-back" href="{% url 'ats:dashboard' %}">
+        <i class="fa-solid fa-arrow-left"></i> Zurück zum HR-Portal
+    </a>
+    {% block admin_body %}{% endblock %}
+</div>
+
+{% comment %}
+Die Bedienlogik dieser Seiten (CMS-Editor, Prozess-Baukasten, KI-Terminal,
+ROI-Rechner) liegt weiterhin im gemeinsamen Dashboard-Skript. Alle Zugriffe
+darin auf Board-Elemente sind gegen ein fehlendes Element abgesichert, daher
+laeuft es hier ohne Kanban fehlerfrei.
+{% endcomment %}
+{% include 'includes/dashboard/scripts.html' %}
+{% block admin_scripts %}{% endblock %}
+{% endblock %}

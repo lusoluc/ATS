@@ -681,8 +681,8 @@ def save_ai_settings(request):
                 metadataJson=json.dumps({"keys": list(settings_dict.keys())})
             )
 
-        return redirect('ats:dashboard')
-    return redirect('ats:dashboard')
+        return redirect('ats:ki_page')
+    return redirect('ats:ki_page')
 
 
 # --- Einladen: lokaler KI-Feinschliff fuer Nachrichten -------------------------

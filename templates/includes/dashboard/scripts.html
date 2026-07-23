@@ -1,12 +1,13 @@
 <script>
     let activeApplicationId = null;
 
-    // Switch between dashboard tabs
+    // Wechsel zwischen den beiden Arbeits-Ansichten des Dashboards
+    // (Bewerbungsprozesse / Stellenanzeigen). Die Verwaltungs-Bereiche sind
+    // seit B2 eigene Seiten und laufen nicht mehr ueber diese Funktion.
     function switchTab(clickedEl, tabId) {
-        // Ein Recruiter sieht die Admin-Tabs nicht. Falls ein frueher (als
-        // Admin) gespeicherter Tab wie 'gemma-tab' nicht mehr existiert,
-        // nicht auf einen leeren Bildschirm laufen, sondern zurueck auf die
-        // taegliche Arbeit (Kanban).
+        // Ein gespeicherter Tab kann veraltet sein – etwa 'gemma-tab' aus der
+        // Zeit vor der Aufteilung. Dann nicht auf einen leeren Bildschirm
+        // laufen, sondern zurueck auf die taegliche Arbeit (Kanban).
         let target = document.getElementById(tabId);
         if (!target) {
             tabId = 'kanban-tab';
@@ -29,13 +30,6 @@
 
         // Save active tab for reloads
         localStorage.setItem('activeTab', tabId);
-
-        // Run specific loaders if needed
-        if (tabId === 'stats-tab') {
-            calculateInclusionROI();
-        } else if (tabId === 'gemma-tab') {
-            refreshAILogs();
-        }
     }
 
     // Drag-and-Drop implementation
@@ -1481,7 +1475,7 @@
         });
     }
 
-    // AGG Checker Tool inside Tab 7 (KI-Zentrale)
+    // AGG-Checker auf der Seite „KI-Zentrale & Spam"
     function runAGGChecker() {
         const text = document.getElementById('agg-text').value;
         const box = document.getElementById('agg-response-box');
@@ -1866,7 +1860,7 @@
         document.getElementById('roi-total-saving').innerText = `${totalROI.toLocaleString()} € / Jahr`;
     }
 
-    // Toggle prompt textareas in KI-Steuerungszentrum
+    // Regelwerk-Felder ein-/ausblenden (Seite „KI-Zentrale & Spam")
     function togglePromptTextarea(checkId, containerId) {
         const check = document.getElementById(checkId);
         const container = document.getElementById(containerId);
@@ -1964,32 +1958,38 @@
 
     // DOMContentLoaded setup for tab preservation & drag-drop
     window.addEventListener('DOMContentLoaded', () => {
-        // Tab preservation
-        const storedTab = localStorage.getItem('activeTab');
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlTab = urlParams.get('tab');
-        const targetTabId = urlTab || storedTab || 'kanban-tab';
-        
-        // Find sidebar link corresponding to targetTabId
-        const sidebarLink = Array.from(document.querySelectorAll('.sidebar-link'))
-            .find(link => link.getAttribute('onclick')?.includes(targetTabId));
-            
-        if (sidebarLink) {
-            switchTab(sidebarLink, targetTabId);
-        } else if (targetTabId !== 'kanban-tab') {
-            // Gespeicherter Tab ist fuer diese Rolle ausgeblendet: zurueck
-            // auf die taegliche Arbeit, statt gar nichts zu aktivieren.
-            const kanbanLink = document.querySelector(".sidebar-link[onclick*='kanban-tab']");
-            if (kanbanLink) switchTab(kanbanLink, 'kanban-tab');
-        }
+        // Dieses Skript laeuft auch auf den Verwaltungs-Seiten, die kein
+        // Board haben. Alles Board-Bezogene deshalb nur, wenn es ein Board
+        // ueberhaupt gibt.
+        if (document.getElementById('kanban-tab')) {
+            // Tab preservation
+            const storedTab = localStorage.getItem('activeTab');
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlTab = urlParams.get('tab');
+            const targetTabId = urlTab || storedTab || 'kanban-tab';
 
-        // B1: Sprung aus der globalen Suche direkt auf die Karte (#card-<id>)
-        if (window.location.hash.startsWith('#card-')) {
-            const card = document.getElementById(window.location.hash.slice(1));
-            if (card) {
-                card.scrollIntoView({ block: 'center' });
-                card.style.outline = '2px solid var(--accent)';
-                setTimeout(() => openCandidateCard(card), 200);
+            // Find sidebar link corresponding to targetTabId
+            const sidebarLink = Array.from(document.querySelectorAll('.sidebar-link'))
+                .find(link => link.getAttribute('onclick')?.includes(targetTabId));
+
+            if (sidebarLink) {
+                switchTab(sidebarLink, targetTabId);
+            } else if (targetTabId !== 'kanban-tab') {
+                // Gespeicherter Tab existiert nicht mehr (oder ist fuer diese
+                // Rolle ausgeblendet): zurueck auf die taegliche Arbeit,
+                // statt gar nichts zu aktivieren.
+                const kanbanLink = document.querySelector(".sidebar-link[onclick*='kanban-tab']");
+                if (kanbanLink) switchTab(kanbanLink, 'kanban-tab');
+            }
+
+            // B1: Sprung aus der globalen Suche direkt auf die Karte (#card-<id>)
+            if (window.location.hash.startsWith('#card-')) {
+                const card = document.getElementById(window.location.hash.slice(1));
+                if (card) {
+                    card.scrollIntoView({ block: 'center' });
+                    card.style.outline = '2px solid var(--accent)';
+                    setTimeout(() => openCandidateCard(card), 200);
+                }
             }
         }
 

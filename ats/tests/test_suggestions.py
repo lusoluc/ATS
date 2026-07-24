@@ -7,12 +7,14 @@ duenner Datenlage (Mindestmenge nicht erreicht).
 from datetime import timedelta
 
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 
 from ..audit import write_audit
 from ..models import AuditLog
 from ..suggestions import CHANNEL_MIN_APPS, build_suggestions
 from .factories import make_application, make_job, make_world
+from .utils import make_user
 
 
 def _advance(app, new_status, when=None):
@@ -127,3 +129,39 @@ class SortingTestCase(TestCase):
             self.assertTrue(s.action_label)
             self.assertTrue(s.action_url)
             self.assertTrue(s.reason)
+
+
+class AnalyticsBlockTestCase(TestCase):
+    def setUp(self):
+        self.world = make_world()
+        self.job = make_job(self.world)
+        self.rec = make_user("an-rec", role="Recruiter")
+        self.client.force_login(self.rec)
+        self.url = reverse('ats:analytics')
+
+    def test_empty_state_when_no_data(self):
+        r = self.client.get(self.url)
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "Erkenntnisse")
+        self.assertContains(r, "Noch keine belastbaren Erkenntnisse")
+
+    def test_shows_channel_suggestion_with_action(self):
+        for _ in range(CHANNEL_MIN_APPS):
+            _decided(self.job, source='PRINT_AD', final='REJECTED',
+                     reached=['IN_REVIEW'])
+        r = self.client.get(self.url)
+        self.assertContains(r, "PRINT_AD")
+        self.assertContains(r, "Kanäle prüfen")
+        self.assertContains(r, reverse('ats:source_channels'))
+
+    def test_bola_hides_foreign_data(self):
+        from ..models import Location, UserScope
+        other = Location.objects.create(name="Kiel")
+        foreign_job = make_job(self.world, title="Fremd", location=other)
+        for _ in range(CHANNEL_MIN_APPS):
+            _decided(foreign_job, source='PRINT_AD', final='REJECTED')
+        sc = UserScope.objects.create(user=self.rec, full_access=False)
+        sc.locations.add(self.world.location)
+        r = self.client.get(self.url)
+        # Kanal-Erkenntnis stammt aus fremdem Standort -> nicht sichtbar
+        self.assertNotContains(r, "PRINT_AD")

@@ -5,6 +5,33 @@
   <h1 style="color:#fff;"><i class="fa-solid fa-chart-column"></i> Erfolgs- & Insight-Dashboard</h1>
   <p style="color:#94a3b8;">Alle Auswertungen lokal berechnet – keine Cloud-BI. (Sichtbereich = Ihre Standorte.)</p>
 
+  <!-- L1: Erkenntnisse & Vorschläge – jede Zahl mit konkretem nächstem Schritt -->
+  <div style="background:#0f1830;border:1px solid #24365f;border-radius:14px;padding:20px;margin:20px 0;">
+    <h2 style="color:#fff;font-size:18px;margin:0 0 4px;"><i class="fa-solid fa-lightbulb" style="color:#fbbf24;"></i> Erkenntnisse &amp; Vorschläge</h2>
+    <p style="color:#94a3b8;font-size:13px;margin:0 0 14px;">Aus Ihren echten Entscheidungen abgeleitet – jede Erkenntnis mit einem konkreten nächsten Schritt.</p>
+    {% if insights %}
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      {% for s in insights %}
+      <div style="display:flex;gap:14px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;background:#111a2e;border:1px solid #1f2a44;border-left:4px solid {% if s.severity == 'alert' %}#ef4444{% elif s.severity == 'warn' %}#f59e0b{% else %}#38bdf8{% endif %};border-radius:10px;padding:14px;">
+        <div style="min-width:0;flex:1;">
+          <div style="color:#fff;font-weight:600;">{{ s.text }}</div>
+          <div style="color:#94a3b8;font-size:13px;margin-top:4px;">{{ s.reason }}</div>
+          <div style="color:#64748b;font-size:11px;margin-top:6px;"><i class="fa-solid fa-database"></i> Basis: {{ s.sample_size }} Vorgänge</div>
+        </div>
+        <a href="{{ s.action_url }}" class="btn-cta" style="height:36px;font-size:13px;padding:0 16px;white-space:nowrap;display:inline-flex;align-items:center;">
+          {{ s.action_label }} <i class="fa-solid fa-arrow-right" style="margin-left:6px;"></i>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+    {% if insights_truncated %}
+    <p style="color:#64748b;font-size:11px;margin:10px 0 0;">Hinweis: Es wurden die aktivsten Stellen geprüft; bei sehr vielen Stellen sind nicht alle einbezogen.</p>
+    {% endif %}
+    {% else %}
+    <p style="color:#94a3b8;font-size:14px;margin:0;"><i class="fa-solid fa-circle-info"></i> Noch keine belastbaren Erkenntnisse – dafür braucht es genügend abgeschlossene Vorgänge (ab 20 je Kontext). Das System meldet sich, sobald die Datenlage trägt.</p>
+    {% endif %}
+  </div>
+
   <div style="display:flex;gap:16px;flex-wrap:wrap;margin:20px 0;">
     <div style="flex:1;min-width:180px;background:#111a2e;border:1px solid #1f2a44;border-radius:12px;padding:18px;">
       <div style="font-size:32px;font-weight:700;color:#fff;">{{ total }}</div>

@@ -64,41 +64,57 @@ def build_suggestions(job: JobPosting,
     `base` erlaubt eine BOLA-Vorfilterung der Bewerbungen. Ergebnis nach
     Wirkung sortiert; die Anzeige kappt auf die wichtigsten.
     """
+    out = job_suggestions(job, base) + global_suggestions(base)
+    out.sort(key=lambda s: (_SEVERITY_RANK.get(s.severity, 3),
+                            -s.sample_size))
+    return out
+
+
+def job_suggestions(job: JobPosting,
+                    base: "QuerySet[Application] | None" = None) -> list[Suggestion]:
+    """Kontextbezogene Vorschlaege (Frage-Durchfall, Prozess-Abbruch) - NUR bei
+    belastbarer Datenlage (Leiter + Mindestmenge)."""
     out: list[Suggestion] = []
     scope = resolve_learning_scope(job, base)
+    if not scope.sufficient:
+        return out
 
-    # Nur bei belastbarer Datenlage kontextbezogene Aussagen treffen.
-    if scope.sufficient:
-        for imp in screening_question_impact(job, scope):
-            if imp.fail_rate > FAIL_THRESHOLD and imp.answered >= MIN_ANSWERED:
-                gap = imp.invite_rate_pass - imp.invite_rate_fail
-                reason = ("Eine Pflichtfrage, die mehr als die Hälfte "
-                          "ausschließt, ist oft zu streng.")
-                if gap > 0.2:
-                    reason += (" Wer sie erfüllte, wurde deutlich häufiger "
-                               "eingeladen – das Kriterium trennt, aber es "
-                               "engt den Zulauf stark ein.")
-                out.append(Suggestion(
-                    text=(f"Screening-Frage „{imp.question}“ lässt "
-                          f"{_pct(imp.fail_rate)} % durchfallen."),
-                    reason=reason, action_label="Frage prüfen",
-                    action_url=reverse('ats:screening_questions'),
-                    severity="warn", sample_size=imp.answered))
+    for imp in screening_question_impact(job, scope):
+        if imp.fail_rate > FAIL_THRESHOLD and imp.answered >= MIN_ANSWERED:
+            gap = imp.invite_rate_pass - imp.invite_rate_fail
+            reason = ("Eine Pflichtfrage, die mehr als die Hälfte "
+                      "ausschließt, ist oft zu streng.")
+            if gap > 0.2:
+                reason += (" Wer sie erfüllte, wurde deutlich häufiger "
+                           "eingeladen – das Kriterium trennt, aber es "
+                           "engt den Zulauf stark ein.")
+            out.append(Suggestion(
+                text=(f"Screening-Frage „{imp.question}“ lässt "
+                      f"{_pct(imp.fail_rate)} % durchfallen."),
+                reason=reason, action_label="Frage prüfen",
+                action_url=reverse('ats:screening_questions'),
+                severity="warn", sample_size=imp.answered))
 
-        funnel = funnel_by_context(scope)
-        for i, t in enumerate(funnel.transitions):
-            prev_count = funnel.stages[i]["count"]
-            if t["drop_rate"] > FUNNEL_DROP and prev_count >= MIN_ANSWERED:
-                out.append(Suggestion(
-                    text=(f"Zwischen „{t['from']}“ und „{t['to']}“ brechen "
-                          f"{_pct(t['drop_rate'])} % ab."),
-                    reason="Ein so hoher Abbruch an einer Stufe deutet auf "
-                           "einen Prozess- oder Anforderungs-Engpass.",
-                    action_label="Prozess ansehen",
-                    action_url=reverse('ats:analytics'),
-                    severity="warn", sample_size=prev_count))
+    funnel = funnel_by_context(scope)
+    for i, t in enumerate(funnel.transitions):
+        prev_count = funnel.stages[i]["count"]
+        if t["drop_rate"] > FUNNEL_DROP and prev_count >= MIN_ANSWERED:
+            out.append(Suggestion(
+                text=(f"Zwischen „{t['from']}“ und „{t['to']}“ brechen "
+                      f"{_pct(t['drop_rate'])} % ab."),
+                reason="Ein so hoher Abbruch an einer Stufe deutet auf "
+                       "einen Prozess- oder Anforderungs-Engpass.",
+                action_label="Prozess ansehen",
+                action_url=reverse('ats:analytics'),
+                severity="warn", sample_size=prev_count))
+    return out
 
-    # Kanal-Wirkung: global (bzw. im BOLA-Rahmen), unabhaengig vom Kontext.
+
+def global_suggestions(
+        base: "QuerySet[Application] | None" = None) -> list[Suggestion]:
+    """Kontext-unabhaengige Vorschlaege (Kanal-Budget, Prozess-Engpass) im
+    gegebenen (BOLA-)Rahmen."""
+    out: list[Suggestion] = []
     for ch in channel_effectiveness(base):
         if ch.applications >= CHANNEL_MIN_APPS and ch.hired == 0:
             out.append(Suggestion(
@@ -110,7 +126,6 @@ def build_suggestions(job: JobPosting,
                 action_url=reverse('ats:source_channels'),
                 severity="warn", sample_size=ch.applications))
 
-    # Engpass: langsamste Stufe deutlich ueber dem Median.
     bott = stage_bottlenecks(base)
     if bott.slowest and bott.slowest.samples >= BOTTLENECK_MIN_SAMPLES:
         # Median der UEBRIGEN Stufen (ohne die langsamste) als Vergleich -
@@ -125,7 +140,35 @@ def build_suggestions(job: JobPosting,
                 action_label="Fristen ansehen",
                 action_url=reverse('ats:governance'),
                 severity="info", sample_size=bott.slowest.samples))
-
-    out.sort(key=lambda s: (_SEVERITY_RANK.get(s.severity, 3),
-                            -s.sample_size))
     return out
+
+
+def aggregate_suggestions(
+        jobs: "list[JobPosting]",
+        base: "QuerySet[Application] | None" = None,
+        limit: int = 5, max_jobs: int = 40) -> "tuple[list[Suggestion], bool]":
+    """Vorschlaege fuers Dashboard: globale einmal + kontextbezogene je Stelle,
+    dedupliziert und nach Wirkung gekappt.
+
+    `max_jobs` deckelt die Rechenlast; ist die Stellenzahl groesser, sagt das
+    zweite Rueckgabe-Flag ehrlich, dass nicht alle geprueft wurden (kein
+    stilles Abschneiden).
+    """
+    import re
+    truncated = len(jobs) > max_jobs
+    collected = list(global_suggestions(base))
+    for job in jobs[:max_jobs]:
+        collected.extend(job_suggestions(job, base))
+    collected.sort(key=lambda s: (_SEVERITY_RANK.get(s.severity, 3),
+                                  -s.sample_size))
+    # Gleichartige Erkenntnisse (gleiche Aktion, gleicher Satz bis auf die
+    # Zahl) zu EINER zusammenfassen - die wirksamste (zuerst sortierte) bleibt.
+    out: list[Suggestion] = []
+    seen: set[tuple[str, str]] = set()
+    for s in collected:
+        key = (s.action_label, re.sub(r"\d+", "#", s.text))
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(s)
+    return out[:limit], truncated

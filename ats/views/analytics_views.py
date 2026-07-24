@@ -141,7 +141,15 @@ def analytics_view(request):
     stage_rows = requisition_stage_stats(_req_qs)
     from ..pay_transparency import transparency_overview
     pay_overview = transparency_overview()
+
+    # L1: „Erkenntnisse & Vorschläge" – Zahl plus konkreter naechster Schritt.
+    # Im BOLA-Rahmen des Nutzers (apps ist bereits gescoped; Stellen ebenso).
+    from ..suggestions import aggregate_suggestions
+    _sugg_jobs = list(scope_jobs(request.user, JobPosting.objects.all()))
+    insights, insights_truncated = aggregate_suggestions(_sugg_jobs, apps)
     return render(request, 'analytics.html', {
+        'insights': insights,
+        'insights_truncated': insights_truncated,
         'pay_overview': pay_overview,
         'stage_rows': stage_rows,
         'total': total,

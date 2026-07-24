@@ -50,6 +50,7 @@ module = [
     "ats.profile_summary",
     "ats.reply_drafts",
     "ats.scoring",
+    "ats.scoring_eval",
     "ats.talent_pool",
     "ats.timeline",
 ]

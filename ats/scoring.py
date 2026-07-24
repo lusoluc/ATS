@@ -156,12 +156,9 @@ def learn_for_job(job: JobPosting,
     return learn_context_model(scope)
 
 
-def grade_application(app: Application,
-                      model: LearnedModel) -> tuple[str, list[str]]:
-    """Note A/B/C/D + Begruendung. Die Begruendung nennt die Merkmale, die
-    (mit positivem Gewicht) fuer die Note sprachen - erklaerbar, keine Black
-    Box."""
-    feats = _features_for_app(app)
+def grade_features(feats: dict[str, float],
+                   model: LearnedModel) -> tuple[str, list[str]]:
+    """Note A/B/C/D + Begruendung aus einem Merkmalsvektor (erklaerbar)."""
     score = _raw_score(feats, model.weights)
     a, b, c = model.thresholds
     if score >= a:
@@ -183,3 +180,10 @@ def grade_application(app: Application,
     if not reasons:
         reasons.append("Keine trennscharfen Merkmale im Kontext gelernt.")
     return grade, reasons
+
+
+def grade_application(app: Application,
+                      model: LearnedModel) -> tuple[str, list[str]]:
+    """Note A/B/C/D + Begruendung fuer eine Bewerbung. Keine Black Box - die
+    Begruendung nennt die Merkmale, die fuer die Note sprachen."""
+    return grade_features(_features_for_app(app), model)

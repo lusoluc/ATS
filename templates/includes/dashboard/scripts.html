@@ -765,7 +765,28 @@
         if (histBtn) { histBtn.href = `/recruiter/applications/${appId}/verlauf/`; }
         
         loadCandidateFeedback(appId);
+        loadCandidateSummary(appId);
         document.getElementById('candidateModal').style.display = 'flex';
+    }
+
+    function loadCandidateSummary(appId) {
+        const txt = document.getElementById('modal-steckbrief-text');
+        const chips = document.getElementById('modal-steckbrief-chips');
+        const aiTag = document.getElementById('modal-steckbrief-ai');
+        if (!txt) return;
+        txt.textContent = 'Lädt…'; if (chips) chips.innerHTML = ''; if (aiTag) aiTag.textContent = '';
+        const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        fetch(`/recruiter/applications/${appId}/steckbrief.json`)
+          .then(r => r.json())
+          .then(d => {
+            txt.textContent = d.text || 'Keine Angaben.';
+            if (aiTag) aiTag.textContent = d.used_ai ? '· KI-formuliert' : '';
+            if (chips && Array.isArray(d.bullets)) {
+                chips.innerHTML = d.bullets.map(b =>
+                    `<span style="font-size:11px; background:rgba(255,255,255,0.08); border:1px solid var(--glass-border); border-radius:12px; padding:2px 9px; color:#e5e7eb;">${esc(b)}</span>`).join('');
+            }
+          })
+          .catch(() => { txt.textContent = 'Steckbrief konnte nicht geladen werden.'; });
     }
 
     function loadCandidateFeedback(appId) {

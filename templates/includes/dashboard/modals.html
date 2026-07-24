@@ -27,6 +27,18 @@ MODALS & OVERLAYS
                         </div>
                     </div>
 
+                    <!-- L2: Steckbrief – schnelles, faktentreues Bild beim Öffnen -->
+                    <div id="modal-steckbrief" style="background: rgba(20,184,166,0.08); border: 1px solid rgba(20,184,166,0.3); border-radius: var(--border-radius-sm); padding: 14px 16px; margin-bottom: 20px;">
+                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                            <i class="fa-solid fa-id-card" style="color: var(--accent-light);"></i>
+                            <strong style="color:#fff; font-size:14px;">Steckbrief</strong>
+                            <span id="modal-steckbrief-ai" style="font-size:10px; color:var(--text-muted);"></span>
+                        </div>
+                        <p id="modal-steckbrief-text" style="font-size:13px; color:#e5e7eb; line-height:1.5; margin:0;">Lädt…</p>
+                        <div id="modal-steckbrief-chips" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;"></div>
+                        <p style="font-size:10px; color:var(--text-muted); margin:8px 0 0;">Automatisch aus den vorhandenen Angaben – bitte im Zweifel die Unterlagen prüfen.</p>
+                    </div>
+
                     <h3 style="color: #fff; font-size: 16px; margin-bottom: 12px;"><i class="fa-solid fa-file-invoice"></i> Anschreiben</h3>
                     <p id="modal-coverletter" style="font-size: 14px; color: #d1d5db; background: rgba(0, 0, 0, 0.2); padding: 16px; border-radius: var(--border-radius-sm); max-height: 180px; overflow-y: auto; margin-bottom: 24px; white-space: pre-line; border: 1px solid var(--glass-border);"></p>
                     

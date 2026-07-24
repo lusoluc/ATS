@@ -47,7 +47,7 @@ from .governance import _pending_steps_for
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "reorder_board", "bulk_update_status", "application_messages", "draft_reply", "inbox_view", "open_question_clusters", "batch_reply", "save_reply_snippet", "reclassify_message", "application_vote", "talent_pool_view", "job_pool_matches", "application_timeline", "job_timeline", "tasks_view"]
+__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "reorder_board", "bulk_update_status", "application_messages", "draft_reply", "application_summary", "inbox_view", "open_question_clusters", "batch_reply", "save_reply_snippet", "reclassify_message", "application_vote", "talent_pool_view", "job_pool_matches", "application_timeline", "job_timeline", "tasks_view"]
 
 
 @ensure_csrf_cookie
@@ -1107,6 +1107,57 @@ def draft_reply(request, app_id):
         logger.exception("KI-Antwort-Entwurf nicht verfügbar")
     return JsonResponse({'draft': baseline, 'used_ai': False,
                          'note': 'Lokale KI nicht erreichbar – Status-Vorlage.'})
+
+
+@any_staff_required
+def application_summary(request, app_id):
+    """L2: faktentreuer Steckbrief zu einer Bewerbung - schnelles Bild beim
+    Öffnen der Karte. Die harten Fakten (Chips) sind deterministisch; die
+    lokale KI darf den Fließtext NUR umformulieren, nichts erfinden.
+    Fail-safe: ohne KI bleibt der deterministische Text. BOLA-geschützt.
+    """
+    app = get_object_or_404(
+        Application.objects.select_related('applicant', 'jobPosting'),
+        id=app_id)
+    if not can_access_application(request.user, app):
+        raise Http404("Nicht im Zugriffsbereich.")
+
+    from ..profile_summary import build_facts, facts_to_bullets, facts_to_text
+    facts = build_facts(app)
+    text = facts_to_text(facts)
+    bullets = facts_to_bullets(facts)
+    result = {'text': text, 'bullets': bullets,
+              'ai_score': facts.ai_score, 'used_ai': False}
+
+    # Optionale lokale Umformulierung - strikt nur umformulieren. Hinter dem
+    # AI-Opt-in: ist die KI-Assistenz aus (Default), kommt der deterministische
+    # Text SOFORT zurueck (kein Ollama-Verbindungsversuch, kein Modal-Hänger).
+    from ..models import SystemSetting
+    if not SystemSetting.objects.filter(
+            key='AI_SCORING_ENABLED', value='1').exists():
+        return JsonResponse(result)
+
+    from ..ai_safety import wrap_untrusted
+    from .ai import get_ai_model, get_ollama_url, make_ollama_request
+    payload = {
+        "model": get_ai_model(),
+        "system": ("Formuliere die folgenden Fakten zu einer Bewerbung in ein "
+                   "bis zwei sachliche, fluessige Saetze um. Erfinde NICHTS, "
+                   "fuege nichts hinzu, lass keine Zahl und kein Kriterium weg, "
+                   "keine Wertung. Antworte nur mit dem umformulierten Text."),
+        "prompt": wrap_untrusted(text),
+        "stream": False,
+        "options": {"temperature": 0.2},
+        "keep_alive": "10m",
+    }
+    try:
+        ok, data = make_ollama_request(get_ollama_url(), payload, timeout=15.0)
+        if ok and (data.get('response') or '').strip():
+            result['text'] = data['response'].strip()[:800]
+            result['used_ai'] = True
+    except Exception:
+        logger.exception("Steckbrief-Umformulierung nicht verfügbar")
+    return JsonResponse(result)
 
 
 @any_staff_required

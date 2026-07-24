@@ -47,6 +47,7 @@ module = [
     "ats.insights",
     "ats.suggestions",
     "ats.permissions",
+    "ats.profile_summary",
     "ats.reply_drafts",
     "ats.talent_pool",
     "ats.timeline",

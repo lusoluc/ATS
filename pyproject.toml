@@ -49,6 +49,7 @@ module = [
     "ats.permissions",
     "ats.profile_summary",
     "ats.reply_drafts",
+    "ats.scoring",
     "ats.talent_pool",
     "ats.timeline",
 ]

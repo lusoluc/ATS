@@ -1,413 +1,313 @@
-# SecurATS — Funktionsübersicht
+# SecurATS — Was es löst, und wie
 
-**Bewerbermanagement für Pflege & Sozialwirtschaft.** Ein durchgängiges ATS mit
-lokaler KI-Assistenz, revisionssicherer Historie und einem klaren Prinzip: der
-Mensch entscheidet, das System unterstützt — und lernt mit der Zeit aus echten
-Entscheidungen, nie aus Extra-Klicks.
+SecurATS nimmt einer HR-Abteilung im Pflege- und Sozialsektor die Verwaltung ab,
+damit mehr Zeit für Menschen bleibt — von der Ausschreibung bis zur Einstellung.
+**Der Mensch entscheidet, das System unterstützt und wird mit der Zeit besser** —
+aus echten Entscheidungen, lokal gerechnet und rechtssicher.
 
 | | |
 |---|---|
-| **Stand** | 24.07.2026 |
 | **Sektor** | Pflege / Sozialwirtschaft |
+| **Betrieb** | lokal — keine Cloud-BI, keine Cloud-KI |
 | **Rahmen** | DSGVO · EU-AI-Act · EU-Entgelttransparenz (RL 2023/970) |
-| **KI** | lokal (Gemma), opt-in, erklärbar, fallback-sicher |
+| **Stand** | 24.07.2026 |
 
-Zwei Prinzipien ziehen sich durch die gesamte Lern- und KI-Funktionalität:
+**Vier Prinzipien tragen die Plattform:**
 
-1. **Aus Entscheidungen lernen, nicht aus Extra-Klicks.** Recruiter laden
-   ohnehin ein, sagen ab, stellen ein — genau das ist das Trainingssignal.
-2. **Keine Kennzahl ohne Handlung.** Jede Erkenntnis kommt mit Vorschlag und
-   Button. Die Auswertung ist der Auslöser; das Produkt ist der nächste Schritt.
-
----
-
-## Teil 1 — In dieser Session geschaffen
-
-Jede Funktion mit Tests hinterlegt, live geprüft, in getrennten Commits.
-*neu* = Neubau, *Bestand+* = vorhandene Funktion erweitert.
-
-| Funktion | Bereich | Kurzbeschreibung | Status |
-|---|---|---|---|
-| Aktionsverlauf / Timeline | Nachvollziehbarkeit | Chronologische Historie je Bewerbung und je Stelle — intern & vom Bewerber, an einem Ort. | neu |
-| KI-Antwort-Entwurf (C4) | Kommunikation | Höflicher, status-passender Antwort-Vorschlag auf eine einzelne Bewerber-Nachricht. | neu |
-| Sammel-Postfach | Kommunikation | Offene Fragen nach Anliegen gebündelt (Stand / Unterlagen / Termin / Ablauf / Rückzug / Sonstiges). | neu |
-| Cluster-Antwort | Kommunikation | Eine geprüfte Vorlage, pro Person personalisiert an alle Ausgewählten gesendet. | neu |
-| Textbausteine + Auto-Vorschlag | Kommunikation | Gespeicherte Antworten je Anliegen; die zuletzt genutzte wird zum Default-Vorschlag. | neu |
-| Auto-Antwort + Governance | Kommunikation | Vollautomatische Antwort nur für sichere Anliegen (Stand/Ablauf), streng begrenzt, auditiert. | neu |
-| Lernende Einsortierung | Lernfunktion | Korrigiert HR eine Nachricht in den richtigen Topf, lernt das System daraus (Ehrlichkeits-Gate). | neu |
-| L1 · Erkenntnisse & Vorschläge | Lernfunktion | Jede Kennzahl mit konkretem nächstem Schritt (Frage lockern / Kanal prüfen / Engpass). | neu |
-| L2 · Bewerber-Steckbrief | Lernfunktion | Faktentreue Kurzzusammenfassung beim Öffnen der Karte — drei Sekunden statt drei Minuten. | neu |
-| L4 · Editor-Hinweise | Lernfunktion | Frage- und Anforderungs-Hinweise direkt am Feld im Stellen-Editor. | neu |
-| L3 · Gelerntes Scoring | Lernfunktion | Erklärbares A/B/C/D aus echten Entscheidungen, mit Messstrecke & Ehrlichkeits-Schranke, opt-in. | neu |
-| Dashboard entrümpelt (B2) | Bedienung | Verwaltungs-Tabs zu eigenen Seiten ausgelagert; das Board zeigt nur die tägliche Arbeit. | Bestand+ |
-| Talent-Pool-Werkzeug (C3) | Sourcing | Beim Veröffentlichen passende Pool-Personen anzeigen und mit einem Klick einladen. | Bestand+ |
-| Nachrichten-Bar + Wächter-Test | Qualität | Django-Meldungen plattformweit sichtbar; Test gegen mehrzeilige Kommentar-Lecks. | neu |
+- **Mensch entscheidet.** Gelernte Signale sind erklärbare Empfehlungen.
+  Automatisch wirken nur objektive K.O.-Kriterien.
+- **Aus Arbeit lernen, nicht aus Klicks.** Einladen, absagen, einstellen ist
+  ohnehin die Arbeit — genau das ist das Trainingssignal.
+- **Keine Zahl ohne Handlung.** Jede Erkenntnis kommt mit konkretem nächstem
+  Schritt und Button.
+- **Ehrlich statt beeindruckend.** Gelernte Bewertung erscheint nur, wenn sie
+  messbar besser ist als die Regel — sonst bleibt sie aus.
 
 ---
 
-## Teil 2 — Alle Funktionen im Detail
+## Überblick: Problem → Lösung
 
-Jede Funktion mit drei Angaben: **Wie** sie funktioniert, **Warum** sie so
-gebaut ist, **Wann** sie im Alltag genutzt wird.
+Die häufigsten Herausforderungen einer Recruiting-Abteilung im Sozialsektor —
+und wie SecurATS sie löst. Details in den Abschnitten darunter.
 
-### A — Öffentliches Karriereportal
+| Herausforderung | Lösung in SecurATS | Ergebnis |
+|---|---|---|
+| **Zu wenige Bewerbungen** (Fachkräftemangel) | Niederschwelliges Bewerben (Handy-Foto als CV genügt), Multiposting, Kampagnen mit Quellen-Tracking, Talent-Pool-Reaktivierung, Job-Alerts | Mehr & passendere Bewerbungen, je Kanal nachvollziehbar |
+| **Bewerber springen ab** (zu langsam) | Self-Service-Portal ohne Konto, schnelle Antworten, Liegenbleiber-Radar | Weniger Absprünge, höhere Zufriedenheit |
+| **Sichten dauert, viel Bauchgefühl** | Faktentreuer Steckbrief (3-Sekunden-Bild), K.O.-Automatik, strukturiertes Feedback, gelerntes A/B/C/D-Scoring | Schneller, fundierter, dokumentiert |
+| **Rückfragen fressen den Tag** | Sammel-Postfach bündelt gleiche Fragen; eine Vorlage geht personalisiert an alle; Sicheres wird automatisch beantwortet | Deutlich weniger Kommunikations-Aufwand |
+| **Niemand weiß, wo es klemmt** | Lokale Analytik mit konkreten Vorschlägen; chronologischer Aktionsverlauf je Bewerbung/Stelle | Engpässe sichtbar + nächster Schritt |
+| **Anzeigen rechtlich riskant / schwer lesbar** | KI-AGG-Check, Leichte Sprache, Lern-Hinweise am Feld | Diskriminierungsarm, barrierefrei, wirksamer |
+| **Entgelttransparenz-Pflicht** | Tarif-native Entgeltbänder, Publish-Gate, öffentliche Spanne, Frageverbots-Wächter | Compliance strukturell erzwungen |
+| **Nachweispflicht & Datenschutz** | Audit-Hash-Kette, verschlüsselte Bewerberdaten, Bereichs-Zugriff, erklärbare KI | Prüfsicher & datensparsam |
+| **Vertretung kennt den Stand nicht** | Aktionsverlauf (wer/was/wann), befristete Vertretungs-Rechte | Übergabe in Sekunden |
+| **Gespräche koordinieren = Mail-Chaos** | Frei buchbare Slots, Formate, Team-Einladung, ICS-Export, No-Show-Erfassung | Kein Ping-Pong, messbare Formate |
+| **Insellösung ohne HR-Anschluss** | Feeds (StepStone, BA-XML), SAP/HRIS-Mapper, CSV-Import | Kein Doppelpflegen |
+| **System wird nicht besser mit der Zeit** | Lernen aus dem Statusverlauf je Kontext (Beruf, Standort, Abteilung) — gemessen, erklärbar, opt-in | Treffsicherer, ohne Blackbox |
+| **Cloud-KI = Datenschutz-/Kostenrisiko** | Alle KI lokal (Gemma), opt-in, fallback-sicher | Keine Daten verlassen das Haus |
 
-Die Außenseite: wo Bewerber Stellen finden, sich bewerben und ihren Prozess
-selbst begleiten — ohne Konto, aber sicher.
+---
 
-**Stellenportal & Detailseite** · `home` · `job_list` · `job_detail`
-- **Wie:** Öffentliche Übersicht aller veröffentlichten Stellen mit Detailseite
-  je Anzeige (Aufgaben, Anforderungen, Benefits, **öffentliche Entgeltspanne**,
-  Ansprechpartner).
-- **Warum:** Erste Anlaufstelle der Bewerber; die Spanne ist Pflicht
-  (EU-Entgelttransparenz) und schafft Vertrauen.
-- **Wann:** Dauerhaft öffentlich; Ziel jeder Kampagne und jedes Job-Alerts.
+## 01 · Genug Bewerber gewinnen
 
-**Bewerbungsformular** · `bewerben`
-- **Wie:** CV-Upload (Foto genügt), Anschreiben, dynamische Screening-Fragen.
-  **K.O.-Kriterien** lehnen automatisch ab, Pflichtfelder werden serverseitig
-  geprüft, Honeypot filtert Spam-Bots.
-- **Warum:** Niederschwellig für die Zielgruppe, aber sauber validiert — keine
-  halbe Bewerbung, kein unvalidierter Upload im Speicher.
-- **Wann:** Jede eingehende Bewerbung; K.O.-Fragen sparen die offensichtlichen
-  Absagen.
+Im Sozialsektor ist der Engpass selten die Auswahl, sondern der Zulauf. SecurATS
+senkt jede Hürde beim Bewerben und macht sichtbar, welcher Weg tatsächlich
+Einstellungen bringt.
 
-**Kandidatenportal (Magic-Link)** · `candidate_portal`
-- **Wie:** Ein tokenbasierter Link ohne Passwort. Bewerber buchen/verschieben/
-  sagen Termine ab, schreiben Nachrichten, ziehen zurück oder korrigieren Daten
-  — alles auditiert, mit Rate-Limit gegen Missbrauch.
-- **Warum:** Self-Service entlastet die HR und gibt Bewerbern Kontrolle, ohne
-  Konto-Hürde.
-- **Wann:** Nach dem Einladen; der Link steht in der Einladungs-Mail.
+**Niederschwelliges Bewerben** — *Bewerbungsformular · Karriereportal*
+- **Problem:** Pflegekräfte bewerben sich vom Handy, oft ohne fertigen CV. Jede
+  Pflichtangabe kostet Bewerbungen.
+- **So gelöst:** Ein Foto des Lebenslaufs genügt; nur das Nötigste ist Pflicht.
+  Dynamische Screening-Fragen filtern harte Ausschlusskriterien (K.O.)
+  automatisch, Spam-Bots werden unsichtbar abgefangen, jede Eingabe serverseitig
+  geprüft.
+- **Ergebnis:** Mehr abgeschlossene Bewerbungen; die HR sieht nur, was die
+  Grundvoraussetzungen erfüllt.
 
-**Kampagnen, Landingpages & Kanäle** · `landing_page` · `source_channels` · `job_alert`
-- **Wie:** Je Kampagne ein Link + QR-Code (`?src=…`); jede Bewerbung trägt ihre
-  Quelle. Einrichtungsprofile, CMS-Seiten und Job-Alerts (Double-Opt-in) runden
-  den Außenauftritt ab.
-- **Warum:** Beantwortet „war die Jobmesse erfolgreich?" mit Menge *und* Qualität
-  (Einladungsquote je Kanal) — Basis der Kanal-Analytik.
-- **Wann:** Bei Aushängen, Messen, Anzeigen; die Auswertung steuert das Budget.
+**Reichweite & Kampagnen mit Herkunfts-Nachweis** — *Multiposting · Landingpages · Kanäle · Job-Alerts*
+- **Problem:** „War die Jobmesse das Geld wert?" lässt sich meist nicht
+  beantworten — die Quelle einer Bewerbung geht verloren.
+- **So gelöst:** Jede Kampagne bekommt Link + QR-Code; jede Bewerbung trägt ihre
+  Quelle. Stellen fließen automatisch an StepStone und die Arbeitsagentur;
+  Interessenten abonnieren passende Job-Alerts (Double-Opt-in).
+- **Ergebnis:** Budget geht dorthin, wo nicht nur viele, sondern *eingeladene*
+  Bewerbungen entstehen.
 
-### B — Bewerbungs-Management (Kanban-Board)
+**Den eigenen Talent-Pool reaktivieren** — *Talent-Pool · Match je Stelle*
+- **Problem:** Gute Absagen von gestern werden vergessen — obwohl sie für die
+  Stelle von morgen passen und eingewilligt haben.
+- **So gelöst:** Beim Veröffentlichen meldet SecurATS passende Pool-Personen
+  (datensparsam aus früheren Bewerbungen). Namen sichtbar, alle vorausgewählt,
+  ein Klick lädt alle ein; im Ausnahmefall vorher ins Profil schauen.
+  Doppel-Ansprache ausgeschlossen.
+- **Ergebnis:** Schnellbesetzung aus vorhandenem, einwilligendem Interesse — ohne
+  neue Kampagne.
 
-Das tägliche Arbeitszentrum der HR: Bewerbungen sichten, bewegen, entscheiden —
-jeder Klick arbeitsrelevant.
+## 02 · Bewerber nicht verlieren
 
-**Kanban-Board & Status** · `dashboard` · `update_status` · `reorder_board` · `bulk_update_status`
-- **Wie:** Spalten je Status (Neu → Prüfung → Eingeladen → Eingestellt /
-  Abgelehnt), Drag & Drop, Sammel-Statuswechsel. Jeder Wechsel schreibt einen
-  verketteten Audit-Eintrag.
-- **Warum:** Ein Bild des gesamten Verfahrens; die Statushistorie ist zugleich
-  das Lern-Signal für das Scoring (L3).
-- **Wann:** Ständig — das Board ist die Startseite der HR.
+Wer Tage auf Antwort wartet, ist bei der Konkurrenz.
 
-**Kandidaten-Modal** · `download_cv` · `add_note` · `application_feedback_json`
-- **Wie:** Lebenslauf direkt im Fenster (keine Kopie auf den Laptop), interne
-  Notizen, Screening-Antworten, Interview-Feedback, **Steckbrief** und die drei
-  häufigsten Entscheidungen (Prüfen / Einladen / Absagen) an einem Ort.
-- **Warum:** Entscheiden, wo gelesen wird — spart Klicks und streut keine
-  Bewerber-PII als Datei-Kopien.
-- **Wann:** Bei jeder Sichtung einer einzelnen Bewerbung.
+**Self-Service-Portal ohne Konto** — *Kandidatenportal (Magic-Link)*
+- **Problem:** Terminabstimmung per Mail zieht sich; ein weiteres Login schreckt
+  ab.
+- **So gelöst:** Ein passwortloser Link führt ins persönliche Portal: Termine
+  buchen/verschieben/absagen, Fragen stellen, zurückziehen, Daten korrigieren —
+  alles revisionssicher protokolliert, mit Missbrauchsschutz.
+- **Ergebnis:** Kürzere Wege, weniger HR-Rückfragen, moderner erster Eindruck.
 
-**Suche, Wiederbewerber & Liegenbleiber (B1 · C1 · C2)** · `global_search`
-- **Wie:** Globale Header-Suche (Name/E-Mail/Stelle) über den verschlüsselten
-  Blind-Index; Board-Filter; ein Signal, wenn sich jemand erneut bewirbt, und
-  ein Radar für Karten, die zu lange unbewegt liegen.
-- **Warum:** Macht sichtbar, was schon in den Daten steht — ohne dass jemand
-  danach suchen muss.
-- **Wann:** Beim schnellen Finden und bei der täglichen Triage.
+**Nichts bleibt liegen** — *Liegenbleiber-Radar · Wiederbewerber-Signal*
+- **Problem:** Einzelne Bewerbungen versanden; dass sich jemand schon einmal
+  beworben hat, sieht niemand.
+- **So gelöst:** Ein Radar markiert zu lange unbewegte Karten; ein Signal weist
+  auf Wiederbewerber hin (über den verschlüsselten Personen-Index) — ohne
+  Extra-Pflege.
+- **Ergebnis:** Keine vergessenen Bewerber, kontextreichere Entscheidungen.
 
-### C — Auswahlprozess
+## 03 · Schneller & fundierter sichten
 
-Von der Einladung bis zur Entscheidung — strukturiert, dokumentiert, mit klaren
-Freigabewegen.
+Die Sichtung ist der Zeitfresser und die Fehlerquelle.
 
-**Gespräche & Slots** · `schedule_interview` · `slot_create` · `interviews_ics` · `interview_outcome`
-- **Wie:** Termine direkt oder als frei wählbare Slots (Bewerber bucht selbst),
-  mehrere Gesprächsformate (Telefon bis Probearbeit), Team-Einladung,
-  ICS-Kalenderexport, No-Show-Erfassung.
-- **Warum:** Verteilte Teams stimmen sich ohne Mail-Ping-Pong ab; No-Show-Quoten
-  und Format-Vergleiche werden messbar.
-- **Wann:** Sobald eine Bewerbung eingeladen wird.
-
-**Interview-Feedback** · `save_interview_feedback`
-- **Wie:** Je Runde eine strukturierte Rückmeldung: Empfehlung, Kriterien-Noten,
-  Stärken und — als eigenes, nicht übersehbares Feld — **Bedenken**.
-- **Warum:** Die zweite Runde und die finale Entscheidung stehen auf
-  Dokumentiertem, nicht auf Flurfunk. Keine Sorge geht verloren.
-- **Wann:** Direkt nach jedem Gespräch.
-
-**Gremium, Freigaben & Bedarf** · `application_vote` · `approvals_inbox` · `governance_view` · `staffing_requests`
-- **Wie:** Sichtungs-Gremien stimmen dafür/dagegen (Quorum, Frist),
-  Personalbedarf wird strukturiert gemeldet und freigegeben. Das Gremium löst
-  sich über eine **Spezifitäts-Leiter** auf (Abteilung › Einrichtung › Standort
-  › Jobfamilie › Organisation).
-- **Warum:** Höhere Positionen brauchen einen kontrollierten Mehr-Augen-Weg;
-  Einladungen erst nach Mehrheit (Override nur mit Audit).
-- **Wann:** Bei Leitungs-/Fachpositionen und wo eine Freigabe vorgeschrieben ist.
-
-**Vertretungen (B8)** · `delegations`
-- **Wie:** Zeitlich befristete Delegation von Rechten (ALL / Einrichtung /
-  Stelle); das Zeitfenster wird serverseitig geprüft.
-- **Warum:** Urlaub und Fluktuation dürfen Verfahren nicht blockieren — aber nur
-  im klar begrenzten Rahmen.
-- **Wann:** Bei Abwesenheit; zusammen mit dem Aktionsverlauf die Basis jeder
-  Urlaubsvertretung.
-
-### D — Sammel-Antworten & Postfach *(neu)*
-
-Ähnliche Bewerber-Fragen gebündelt statt einzeln beantworten — die große
-Entlastung, in fünf aufeinander aufbauenden Stufen.
-
-**Anliegen-Erkennung & Sammel-Postfach** · `inbox`
-- **Wie:** Eingehende Fragen werden regelbasiert in Anliegen einsortiert (Stand
-  / Unterlagen / Termin / Ablauf / Rückzug) und gebündelt angezeigt. Die **ganze
-  Nachricht** wird bewertet: eine Standard-Frage *plus* etwas Unerkanntes landet
-  in „Sonstiges / individuelle Prüfung".
-- **Warum:** 12 Leute fragen dasselbe — das gehört zusammen. Der Catch-all sorgt
-  dafür, dass nichts durchs Raster fällt.
-- **Wann:** Täglich zur gebündelten Abarbeitung offener Fragen.
-
-**Cluster-Antwort** · `batch_reply`
-- **Wie:** Eine Vorlage prüfen, Vorschau je Person, mit einem Klick an alle
-  Ausgewählten senden — jede Antwort mit Name, Stelle und Stand personalisiert.
-  Senden-einmal verhindert Doppel-Nachrichten.
-- **Warum:** Kein Massenversand-Look; es liest sich individuell, kostet aber
-  einen Bruchteil der Zeit.
-- **Wann:** Sobald sich in einem Anliegen mehrere offene Fragen sammeln.
-
-**Textbausteine, Auto-Vorschlag & Einzel-Entwurf (C4)** · `save_reply_snippet` · `draft_reply`
-- **Wie:** Eigene Antworten je Anliegen speichern; die zuletzt genutzte wird zum
-  vorausgefüllten Vorschlag. Für einzelne Nachrichten erzeugt „KI-Antwort
-  entwerfen" einen status-passenden Entwurf (lokal, fällt auf eine Vorlage
-  zurück).
-- **Warum:** HR sitzt nie vor dem leeren Feld; die Bibliothek wächst aus echten
-  Antworten.
-- **Wann:** Bei wiederkehrenden Formulierungen und bei individuellen Antworten.
-
-**Auto-Antwort + Governance** · `save_auto_reply_settings`
-- **Wie:** Vollautomatische Antwort **nur** für sichere, eindeutige
-  Kommunikations-Anliegen (Stand/Ablauf), nie für Entscheidungen oder
-  zusammengesetzte Nachrichten. Jede Auto-Antwort ist als automatisch
-  gekennzeichnet, nennt den Weg zum Menschen und wird auditiert. Freischaltung je
-  Anliegen in der KI-Zentrale.
-- **Warum:** Schnelle Antwort hebt die Bewerber-Zufriedenheit — aber
-  Einladung/Absage bleiben menschlich (EU AI Act).
-- **Wann:** Ab Werk für Stand + Ablauf aktiv; jederzeit abschaltbar.
-
-**Lernende Einsortierung** · `reclassify_message`
-- **Wie:** Verschiebt HR eine falsch einsortierte Nachricht in den richtigen
-  Topf, wird das als Signal in der Audit-Kette festgehalten. Ein
-  Ehrlichkeits-Gate lernt ein Wort erst, wenn es in mehreren Korrekturen
-  eindeutig auf dasselbe Anliegen zeigt; eine Einzel-Korrektur wirkt sofort für
-  genau diese Nachricht.
-- **Warum:** Das Postfach wird mit der Zeit besser — aus echtem Verhalten, ohne
-  Extra-Klicks. Lernen weitet die Auto-Antwort nie aus.
-- **Wann:** Immer wenn die Einsortierung danebenlag (arbeitsrelevant + Lernsignal).
-
-### E — Aktionsverlauf / Timeline *(neu)*
-
-**Chronologische Historie je Bewerbung & Stelle** · `application_timeline` · `job_timeline`
-- **Wie:** Führt zusammen, was schon in den Daten steht — Audit-Kette (interne
-  Entscheidungen), Nachrichten (mit Inhalt), Gespräche, Feedback — zu einer
-  Zeitleiste mit drei Spuren: Team, Bewerber:in, System. Quellenscharf, damit
-  nichts doppelt erscheint.
-- **Warum:** Auf einen Blick sehen, wer was wann getan hat: schneller
-  Stand-Überblick, lückenlose Nachvollziehbarkeit, ganze Geschichte bei
-  Rückfragen.
-- **Wann:** Tägliches HR-Werkzeug — und der schnelle Einstieg jeder
-  Urlaubsvertretung.
-
-### F — Talent-Pool
-
-**Pool-Übersicht & Match je Stelle (C3)** · `talent_pool` · `job_pool_matches`
-- **Wie:** Beim Veröffentlichen meldet SecurATS passende Pool-Personen (über
-  Jobfamilie/Standort aus früheren Bewerbungen, datensparsam). Namen sichtbar,
-  alle offenen vorausgewählt, „Ausgewählte einladen" als Ein-Klick-Alltag;
-  Ausnahme: Profil vorher ansehen. Doppel-Ansprache ausgeschlossen.
-- **Warum:** Aus dem passiven Archiv wird ein aktives Werkzeug — Einwilligung
-  heißt gelegentliche, passende Ansprache, nicht Dauerwerbung.
-- **Wann:** Bei jeder neuen Ausschreibung mit passendem Pool.
-
-### G — Entgelttransparenz (E1–E4)
-
-Umsetzung der EU-Richtlinie 2023/970 — tarif-nativ und in den Prozess eingebaut,
-nicht als Nachtrag.
-
-**Entgeltbänder, Publish-Gate & öffentliche Spanne** · `pay_bands` · `create_job` · `hr_ba_xml_feed`
-- **Wie:** Tarif-native Entgeltbänder (z. B. TVöD-P); ohne Band **keine
-  Veröffentlichung** (Gate, nicht umgehbar). Die Spanne erscheint in der Anzeige
-  und im BA-XML-Feed für die Arbeitsagentur.
-- **Warum:** Art. 5 verlangt die Spanne vor der Bewerbung; das Gate stellt
-  Compliance strukturell sicher.
-- **Wann:** Bei jeder Veröffentlichung; Bänder pflegt HR-Admin einmalig.
-
-**Frageverbots-Wächter & Konsistenz** · `pay_transparency` · `analytics`
-- **Wie:** Screening-Fragen nach der Gehaltshistorie werden erkannt und geblockt
-  (auditiert); eine Konsistenz-Analytik prüft die Spannen (Art. 4) und
-  dokumentiert Compliance.
-- **Warum:** Die Richtlinie verbietet die Frage nach der bisherigen Vergütung —
-  das darf nicht versehentlich in einer Stelle landen.
-- **Wann:** Beim Anlegen von Fragen und in der laufenden Compliance-Auswertung.
-
-### H — KI-Assistenz (lokal, Gemma)
-
-Alle KI läuft **lokal** (keine Cloud, keine Bewerber-Daten nach außen), ist
-opt-in und fällt bei nicht erreichbarer KI immer sauber auf einen regelbasierten
-Weg zurück.
-
-**AGG-Check & Leichte Sprache** · `gemma_agg_check` · `gemma_translate_simple_german`
-- **Wie:** Der Anzeigentext wird auf AGG-Risiken geprüft (Alter/Geschlecht/
-  Herkunft …) mit optimiertem Vorschlag; auf Wunsch Übersetzung in Leichte
-  Sprache.
-- **Warum:** Diskriminierungsarme, barrierefreie Anzeigen — direkt beim
-  Schreiben, nicht im Nachhinein.
-- **Wann:** Beim Verfassen/Bearbeiten einer Stelle.
-
-**Prozess-Berater, Ton-Overlay & Feinschliff** · `suggest_process` · `apply_template_tone` · `polish_message`
-- **Wie:** Regelbasierte Screening-/Prozess-Vorschläge (immer verfügbar) plus
-  optionale KI-Zusatzfragen; Umformulierung in eine Ziel-Tonalität
-  (Sie/Du/herzlich/nüchtern) ohne Faktenänderung; Feinschliff von Nachrichten.
-- **Warum:** Trennt Inhalt von Tonalität und liefert bewährte Bausteine — der
-  Mensch bleibt Autor.
-- **Wann:** Beim Aufsetzen von Stellen und beim Verfassen von Nachrichten.
-
-**KI-Zentrale** · `ki_page` · `get_ai_execution_logs` · `validate_ai_prompt`
-- **Wie:** Verbindungstest, Regelwerk, Ausführungs-Protokoll (was die KI
-  tatsächlich getan hat), Prompt-Validierung — und die Governance-Schalter für
-  Auto-Antwort und gelerntes Scoring.
-- **Warum:** Nachvollziehbarkeit und ein Ort, an dem HR-Admin die KI kontrolliert.
-- **Wann:** Bei Einrichtung, Diagnose und Freischaltung von KI-Funktionen.
-
-### I — Lernfunktion (L1–L4) *(neu)*
-
-Das Herzstück der neuen Arbeit: SecurATS lernt mit der Zeit, welche Bewerber
-passen und wie der Prozess besser wird — aus echten Entscheidungen, transparent
-und gemessen. (Roadmap: `LEARNING_ROADMAP.md`.)
-
-**L1 · Erkenntnisse & Vorschläge** · `analytics` · `screening_questions`
-- **Wie:** Ein Rechenkern (`ats/insights.py`) wertet Trichter, Kanäle,
-  Frage-Wirkung und Engpässe je Kontext aus (Spezifitäts-Leiter, Mindestmenge
-  20). Die Vorschlags-Schicht (`ats/suggestions.py`) macht daraus konkrete
-  Schritte mit Button: „Frage lässt 62 % durchfallen — **prüfen**?", „Kanal 40
-  Bewerbungen, 0 Einstellungen — **Budget prüfen**?".
-- **Warum:** Eine Zahl ohne Handlung ist Deko. Unter belastbarer Datenlage:
-  ehrlich „zu wenig Daten".
-- **Wann:** Ganz oben auf der Analytics-Seite; die Frage-/Anforderungs-Hinweise
-  zusätzlich im Editor.
-
-**L2 · Bewerber-Steckbrief** · `application_summary`
-- **Wie:** Beim Öffnen einer Karte eine **faktentreue** Kurzzusammenfassung
-  (`ats/profile_summary.py`): erfüllte Pflichtkriterien, Anforderungs-Erwähnungen
-  im Anschreiben, Vollständigkeit, Wiederbewerber. Harte Fakten als Chips; die
+**Der Steckbrief: drei Sekunden statt drei Minuten** — *Bewerber-Steckbrief*
+- **Problem:** Für jedes Profil Anschreiben, Screening-Antworten und CV lesen
+  kostet Minuten — mal hundert Bewerbungen.
+- **So gelöst:** Beim Öffnen einer Karte erscheint eine faktentreue
+  Kurzzusammenfassung: erfüllte Pflichtkriterien, aufgegriffene Anforderungen,
+  Vollständigkeit, Wiederbewerber. Die harten Fakten stehen als Chips fest; die
   lokale KI darf nur umformulieren, nichts erfinden.
-- **Warum:** Drei Sekunden statt drei Minuten Lesen — ein schnelles Bild, keine
-  Rangliste.
-- **Wann:** Bei jeder Sichtung einer Bewerbung im Modal.
+- **Ergebnis:** In Sekunden ein belastbares Bild — keine Rangliste.
 
-**L4 · Editor-Hinweise** · `job_question_hints`
-- **Wie:** Direkt am Feld im Stellen-Editor: „Diese Frage ließ 60 % durchfallen —
-  lockern?" und „N vergleichbare Stellen ohne diese Anforderung wurden X Tage
-  schneller besetzt — streichen?". „Streichen" entfernt die Zeile; wirksam wird
-  erst das Speichern.
-- **Warum:** Die Hilfe sitzt am Ort der Entstehung — nicht in einem Report, den
-  keiner öffnet.
-- **Wann:** Beim Bearbeiten einer Stelle.
+**Entscheidungen, die dokumentiert stehen** — *Interview-Feedback · Kandidaten-Modal*
+- **Problem:** Die finale Entscheidung steht oft auf Flurfunk; eine Sorge geht
+  verloren, weil niemand sie notiert.
+- **So gelöst:** Je Gesprächsrunde strukturierte Rückmeldung mit Empfehlung,
+  Kriterien-Noten, Stärken und einem eigenen, nicht übersehbaren Bedenken-Feld.
+  Prüfen/Einladen/Absagen direkt im Modal.
+- **Ergebnis:** Nachvollziehbare Auswahl; keine Sorge fällt unter den Tisch.
 
-**L3 · Gelerntes A/B/C/D-Scoring** · `learned_scoring`
-- **Wie:** Ein transparentes, gewichtetes Modell (`ats/scoring.py`) lernt je
-  Kontext (Jobfamilie/Standort/Abteilung), welche stellenrelevanten Merkmale mit
-  einer Einladung zusammenhängen — Label ist die reale Entscheidung. Eine
-  **Messstrecke** (`ats/scoring_eval.py`: Backtest gegen die regelbasierte
-  Grundlinie, Kalibrierung) entscheidet: angezeigt wird das gelernte Score nur,
-  wenn es die Regel *schlägt* (Ehrlichkeits-Schranke). Jede Note ist begründet.
-- **Warum:** Das bestehende Score wird besser statt eines zweiten Rankings; keine
-  Black Box, keine geschützten Merkmale.
-- **Wann:** Standardmäßig **aus**. Aktivierung ist eine bewusste, auditierte
-  Entscheidung des Trägers — nach Rechtsgutachten (EU AI Act, Hochrisiko).
+**Das Scoring wird treffsicherer — erklärbar** — *Gelerntes A/B/C/D-Scoring*
+- **Problem:** Ein starres Regel-Scoring passt nicht überall: „gut zur Stelle"
+  heißt in der Nachtpflege in Hamburg etwas anderes als in der Verwaltung in
+  Lüneburg.
+- **So gelöst:** Aus den tatsächlichen Entscheidungen lernt SecurATS je Kontext
+  (Beruf, Standort, Abteilung), welche stellenrelevanten Merkmale zur Einladung
+  führten — nie geschützte Merkmale. Jede Note kommt mit Begründung; angezeigt
+  nur, wenn im Rückblick messbar besser als die Regel (siehe Abschnitt 11).
+- **Ergebnis:** Eine Empfehlung, die zum jeweiligen Haus passt — als Hilfe, nicht
+  als Automatik.
 
-### J — Analytics & Steuerung
+## 04 · Kommunikation ohne Zeitfresser
 
-**Erfolgs-Dashboard** · `analytics` · `analytics_export` · `analytics_ask`
-- **Wie:** Lokal berechnet (keine Cloud-BI), im Sichtbereich des Nutzers:
-  Trichter, Quellen, Score-Verteilung, Standort-Vergleich, Zeitreihen, Kosten je
-  Einstellung, Time-to-Fill-Prognose, Anomalien — plus eine Freitext-Frage an die
-  Daten. Ganz oben die L1-Erkenntnisse.
-- **Warum:** Steuern mit Zahlen, die im Haus bleiben; Leitung sieht mehr
-  (Benchmark/Kosten) als eine Standort-Recruiterin.
-- **Wann:** Für Reporting, Budget- und Prozess-Entscheidungen.
+Zwölf Menschen fragen dasselbe.
 
-**Fairness-Cockpit** · `analytics (fairness)`
-- **Wie:** Überwacht Mensch-über-Modell-Quote (Overrides) und Fairness-Drift —
-  auch ohne geschützte Merkmale als Eingabe.
-- **Warum:** Vertrauen ins System braucht sichtbare Kontrolle, dass es nicht
-  unbeabsichtigt verzerrt.
-- **Wann:** Begleitend, besonders wenn gelerntes Scoring aktiv ist.
+**Sammel-Postfach & Cluster-Antwort** — *Themen-Postfach · personalisierte Sammel-Antwort*
+- **Problem:** Rückfragen kommen einzeln über den Tag verteilt und werden einzeln
+  beantwortet — obwohl viele identisch sind.
+- **So gelöst:** Offene Fragen werden nach Anliegen gebündelt (Stand, Unterlagen,
+  Termin, Ablauf, Rückzug). HR prüft *eine* Vorlage und sendet sie mit einem
+  Klick an alle — je Person mit Name, Stelle und Stand personalisiert. Bewusst
+  wird die ganze Nachricht bewertet: Standard-Frage *plus* etwas Besonderes landet
+  in „Sonstiges" zur individuellen Prüfung, damit nichts verschluckt wird.
+- **Ergebnis:** Ein Bruchteil der Zeit, individuelle Wirkung.
 
-### K — Verwaltung & Stammdaten
+**Auto-Antwort — nur für Sicheres** — *Automatische Antwort mit Governance*
+- **Problem:** „Wann höre ich von Ihnen?" muss schnell beantwortet werden — aber
+  nichts darf automatisch eine Zu- oder Absage sein.
+- **So gelöst:** Vollautomatisch beantwortet werden nur reine
+  Kommunikations-Anliegen (Stand, Ablauf) — nie eine Entscheidung, nie eine
+  zusammengesetzte Nachricht. Jede Auto-Antwort ist als automatisch
+  gekennzeichnet, nennt den Weg zum Menschen und wird protokolliert; Freischaltung
+  je Anliegen, jederzeit abschaltbar.
+- **Ergebnis:** Sofort-Antwort steigert die Zufriedenheit; heikle Fälle bleiben
+  menschlich.
 
-**Stammdaten & Vorlagen** · `locations` · `categories` · `contacts` · `snippets` · `job_templates` · `screening_questions`
-- **Wie:** Standorte, Kategorien, Ansprechpartner, Textbausteine, Stellen-Vorlagen
-  (mit Versionierung), Screening-Fragen-Registry, Benefits, Gremien-Defaults — als
-  eigene, HR-Admin-geschützte Seiten (seit B2 aus dem Board ausgelagert).
-- **Warum:** Das Board bleibt schlank; Verwaltung stört den täglichen
-  Bewerber-Workflow nicht.
-- **Wann:** Bei Einrichtung und Pflege — selten, aber zentral.
+## 05 · Den Prozess verstehen & verbessern
 
-**CMS, Medien & E-Mail-Vorlagen** · `pages_manage` · `media_manage` · `templates_page`
-- **Wie:** Inhaltsseiten (Baukasten), Medien-Bibliothek und E-Mail-Vorlagen mit
-  Variablen — für Karriereportal und Kommunikation.
-- **Warum:** Außenauftritt und Standard-Kommunikation ohne Entwickler pflegbar.
-- **Wann:** Bei Portal-Änderungen und wiederkehrenden Mails.
+Zahlen ohne Handlung werden ignoriert.
 
-### L — Sicherheit, Compliance & Governance
+**Erkenntnisse mit konkretem nächsten Schritt** — *Analytics · Vorschläge · Editor-Hinweise*
+- **Problem:** Dashboards zeigen Kurven, aber niemand weiß, was zu tun ist. Die
+  Zeit bis zur Besetzung ist zu lang, und keiner sieht warum.
+- **So gelöst:** Aus vorhandenen Daten leitet SecurATS konkrete Vorschläge ab:
+  „Diese Pflichtfrage lässt 62 % durchfallen — prüfen?", „Kanal mit 40
+  Bewerbungen, 0 Einstellungen — Budget prüfen?", „Stufe X ist der Engpass". Die
+  Hinweise sitzen dort, wo entschieden wird — auch direkt im Stellen-Editor am
+  Feld. Lokal berechnet; bei dünner Datenlage ehrlich „zu wenig Daten".
+- **Ergebnis:** Der Prozess verbessert sich Schritt für Schritt, ohne
+  Analyse-Projekt.
 
-Kein aufgesetztes Feature, sondern die Grundlage, auf der alles andere steht.
+**Aktionsverlauf: die ganze Geschichte an einem Ort** — *Timeline je Bewerbung & Stelle*
+- **Problem:** Bei Rückfragen (oder in der Vertretung) muss man sich durch
+  Notizen, Nachrichten und Termine klicken, um den Stand zu verstehen.
+- **So gelöst:** Ein chronologischer Verlauf führt zusammen, was schon in den
+  Daten steht — interne Entscheidungen, Nachrichten, Gespräche, Feedback — in drei
+  Spuren: Team, Bewerber:in, System.
+- **Ergebnis:** Wer/was/wann auf einen Blick — tägliche Entlastung und sofortige
+  Übergabe.
 
-**Revisionssichere Audit-Kette** · `audit_log` · `audit_export`
-- **Wie:** Jede relevante Aktion schreibt einen Audit-Eintrag, der seinen
-  Vorgänger hasht (Hash-Kette in fester Sequenz-Ordnung). Nachträgliche Änderung/
-  Löschung bricht die Kette und ist per Prüfung erkennbar. CSV-Export je
-  Bewerbung.
-- **Warum:** Manipulationssicherer Nachweis — Pflicht für ein Verfahren, das
-  Menschen bewertet.
-- **Wann:** Automatisch bei jeder Aktion; für Audits und DSGVO-Auskünfte.
+## 06 · Bessere, rechtssichere Stellenanzeigen
 
-**Zugriffsschutz & PII-Verschlüsselung** · BOLA-Scoping · Blind-Index
-- **Wie:** Jede Recruiterin sieht nur ihren Bereich (Standorte/Einrichtungen);
-  jede View trägt ihren eigenen Auth-Decorator (keine globale Login-Middleware als
-  Single Point of Failure). Bewerber-PII (Name, E-Mail, Telefon, Anschreiben) ist
-  at-rest verschlüsselt; Lookups laufen über einen deterministischen Blind-Index.
-- **Warum:** Datensparsamkeit und Zugriffsbeschränkung nach DSGVO — auch bei
-  einem Datenbank-Leck bleiben die Klartext-Daten geschützt.
-- **Wann:** Durchgängig, unsichtbar.
+**Diskriminierungsarm, barrierefrei, wirksam** — *KI-AGG-Check · Leichte Sprache · Ton · Lern-Hinweise*
+- **Problem:** Anzeigen enthalten unbeabsichtigt AGG-riskante Formulierungen oder
+  zu strenge Anforderungen, die gute Bewerber abschrecken — und sind oft schwer
+  verständlich.
+- **So gelöst:** Ein lokaler AGG-Check prüft den Text beim Schreiben und schlägt
+  eine neutrale Formulierung vor; auf Knopfdruck eine Fassung in Leichter Sprache
+  und eine Umformulierung in die gewünschte Tonalität (ohne Fakten zu ändern). Am
+  Anforderungsfeld: „Vergleichbare Stellen ohne diese Anforderung wurden X Tage
+  schneller besetzt — streichen?"
+- **Ergebnis:** Rechtsärmere, zugänglichere Anzeigen, die schneller besetzen.
 
-**EU-AI-Act-Haltung** · durchgängig
-- **Wie:** Bewerber-Bewertung gilt als Hochrisiko (Anhang III). Deshalb: Mensch
-  entscheidet, gelernte Signale sind Empfehlung; automatisch wirken nur objektive
-  K.O.-Kriterien; Erklärbarkeit, Messbarkeit, Audit, Opt-in — und Rechtsgutachten
-  vor dem Livegang gelernter Bewertung.
-- **Warum:** Rechtssicherheit und Fairness sind nicht verhandelbar.
-- **Wann:** Bei jeder KI-/Lernfunktion, besonders L3.
+## 07 · Entgelttransparenz (EU-Richtlinie 2023/970)
 
-### M — Integrationen & Import
+**Compliance in den Prozess eingebaut, nicht als Nachtrag** — *Entgeltbänder · Publish-Gate · Frageverbots-Wächter*
+- **Problem:** Die Richtlinie verlangt eine Entgeltspanne *vor* der Bewerbung und
+  verbietet die Frage nach der bisherigen Vergütung — Verstöße passieren leicht
+  versehentlich.
+- **So gelöst:** Tarif-native Entgeltbänder (z. B. TVöD-P); ohne Band keine
+  Veröffentlichung (nicht umgehbares Gate). Die Spanne erscheint öffentlich in der
+  Anzeige und im XML-Feed für die Arbeitsagentur. Screening-Fragen nach der
+  Gehaltshistorie werden erkannt und geblockt; eine Konsistenz-Analytik
+  dokumentiert die Bewertung (Art. 4).
+- **Ergebnis:** Die Richtlinie wird strukturell eingehalten — durch Bauweise, nicht
+  durch Disziplin.
 
-**Multiposting & HRIS** · `stepstone_feed` · `hr_ba_xml_feed` · `sap_sf_mapper`
-- **Wie:** Feeds für StepStone und die Bundesagentur (BA-XML, inkl.
-  Entgeltspanne); ein Feld-Mapper für SAP SuccessFactors / HRIS (zeigt die
-  Zuordnung; die Übertragung macht ein Befehl bei gesetztem Endpoint).
-- **Warum:** Reichweite ohne Doppelpflege; saubere Übergabe an nachgelagerte
-  HR-Systeme.
-- **Wann:** Bei Veröffentlichung (Multiposting) und Einstellung (HRIS-Übergabe).
+## 08 · Datenschutz, Nachweis & KI-Governance
 
-**Datenimport & Betriebsüberwachung** · `data_import` · `healthz` · `healthz_ai`
-- **Wie:** CSV-Import mit Vorlage für den Umzug bestehender Daten; Health-
-  Endpunkte für System und KI-Verfügbarkeit.
-- **Warum:** Schneller Start ohne manuelles Nacherfassen; Betrieb bleibt
-  beobachtbar.
-- **Wann:** Beim Onboarding und im laufenden Betrieb (Monitoring).
+Ein Verfahren, das Menschen bewertet, braucht ein tragfähiges Fundament.
+
+**Revisionssicherer Nachweis** — *Audit-Hash-Kette*
+- **Problem:** Bei Streit oder Prüfung muss belegbar sein, wer wann was entschied
+  — ohne dass Einträge nachträglich änderbar sind.
+- **So gelöst:** Jede relevante Aktion schreibt einen Audit-Eintrag, der seinen
+  Vorgänger hasht (Hash-Kette). Nachträgliche Änderung/Löschung bricht die Kette
+  und ist erkennbar. Export je Bewerbung.
+- **Ergebnis:** Manipulationssicherer, prüffester Nachweis.
+
+**Datensparsam & zugriffsbeschränkt** — *PII-Verschlüsselung · Bereichs-Zugriff*
+- **Problem:** Bewerberdaten sind besonders schützenswert; nicht jede Recruiterin
+  darf alles sehen; ein Datenbank-Leck wäre fatal.
+- **So gelöst:** Name, E-Mail, Telefon, Anschreiben verschlüsselt gespeichert
+  (Suche über einen verschlüsselten Index). Jede Nutzerin sieht nur ihren Bereich;
+  der Zugriffsschutz sitzt an jeder Funktion, nicht in einer einzelnen
+  ausfallgefährdeten Stelle.
+- **Ergebnis:** DSGVO-konform; selbst bei einem Leck bleiben Klartextdaten
+  geschützt.
+
+**KI, die man verantworten kann** — *EU-AI-Act-Haltung*
+- **Problem:** Bewerber-Bewertung ist nach EU AI Act Hochrisiko — undurchsichtige
+  KI wäre rechtlich und ethisch untragbar.
+- **So gelöst:** Der Mensch entscheidet; gelernte Signale sind erklärbare
+  Empfehlungen. Keine geschützten Merkmale als Eingabe; automatisch wirken nur
+  objektive K.O.-Kriterien. Gelernte Bewertung ist standardmäßig aus, nur nach
+  Messnachweis und dokumentierter Freigabe (Rechtsgutachten) aktivierbar — jede
+  Aktivierung wird protokolliert.
+- **Ergebnis:** KI-Unterstützung mit Rechtssicherheit und Fairness als
+  Voraussetzung.
+
+## 09 · Zusammenarbeit im Team
+
+**Gremien, Freigaben & Bedarf** — *Sichtungs-Gremium · Freigabe-Wege · Personalbedarf*
+- **Problem:** Bei Leitungs- und Fachpositionen braucht es einen kontrollierten
+  Mehr-Augen-Weg — der aber nicht ewig versanden darf.
+- **So gelöst:** Ein Gremium stimmt dafür/dagegen (Quorum, Frist); Einladungen
+  erst nach Mehrheit (Übersteuern nur mit Audit). Personalbedarf wird strukturiert
+  gemeldet und freigegeben. Das zuständige Gremium löst sich automatisch über eine
+  Spezifitäts-Leiter auf (Abteilung › Einrichtung › Standort › Jobfamilie ›
+  Organisation).
+- **Ergebnis:** Kontrolle ohne Stillstand; klare Verantwortung.
+
+**Gespräche koordinieren & Vertretung** — *Slots & Self-Booking · ICS · Delegationen*
+- **Problem:** Termine per Mail abstimmen ist zäh; bei Urlaub bleibt Arbeit liegen
+  oder verwaist.
+- **So gelöst:** Freie Slots, die Bewerber selbst buchen; mehrere Gesprächsformate;
+  das Interview-Team wird informiert und erinnert; Kalender-Export (ICS);
+  No-Show-Erfassung. Für Abwesenheiten gibt es zeitlich befristete
+  Vertretungs-Rechte — serverseitig geprüft.
+- **Ergebnis:** Weniger Koordinationsaufwand; Urlaub blockiert kein Verfahren.
+
+## 10 · Anschluss statt Insellösung
+
+**Integrationen & Datenumzug** — *StepStone · Arbeitsagentur (BA-XML) · SAP/HRIS · CSV-Import*
+- **Problem:** Stellen doppelt pflegen, Eingestellte manuell ins HR-System
+  übertragen, Altdaten mühsam nacherfassen — das kostet und erzeugt Fehler.
+- **So gelöst:** Feeds veröffentlichen Stellen automatisch bei StepStone und der
+  Arbeitsagentur (BA-XML, inkl. Entgeltspanne). Ein Feld-Mapper bereitet die
+  Übergabe an SAP SuccessFactors/HRIS vor. Ein CSV-Import mit Vorlage bringt
+  bestehende Daten ins System; Health-Endpunkte machen den Betrieb beobachtbar.
+- **Ergebnis:** Reichweite ohne Doppelpflege, saubere Übergaben, schneller Start.
+
+## 11 · Wie das Lernen funktioniert
+
+Das Besondere an SecurATS ist nicht, *dass* es KI nutzt, sondern *wie*:
+transparent, gemessen und mit einer eingebauten Bremse gegen Selbsttäuschung.
+
+**Woraus gelernt wird — ohne Extra-Aufwand.** Recruiter laden ohnehin ein, sagen
+ab und stellen ein. Genau dieser Statusverlauf ist das Trainingssignal — kein
+Klick, der nicht sowieso Arbeit wäre. (Deshalb bewusst keine „Daumen hoch/runter"-
+Knöpfe, die nur Aufwand wären.)
+
+**Pro Kontext, nicht pauschal.** Dieselbe Person kann für die eine Abteilung ein A
+und für die andere ein C sein. SecurATS lernt je Kontext-Tripel (Beruf, Standort,
+Abteilung) und nimmt die spezifischste Ebene mit genug Entscheidungen — sonst
+fällt es eine Stufe breiter (dasselbe Muster wie bei den Freigabe-Gremien). Die
+genutzte Ebene wird immer angezeigt.
+
+**Erklärbar & gemessen.** Das gelernte Score ist eine gewichtete Summe
+stellenrelevanter Kriterien — jede Note nennt ihre Gründe. Eine Messstrecke prüft
+laufend per Backtest (auf älteren Daten lernen, auf neueren prüfen), ob die
+Empfehlung die reale Einladung besser trifft als die einfache Regel, und ob
+A-Bewerber tatsächlich häufiger eingeladen werden als C (Kalibrierung).
+
+**Die Bremse.** Das gelernte Score wird **nur angezeigt, wenn es die Regel
+schlägt** — sonst bleibt es aus. Ein Modell, das nur so tut, kommt gar nicht erst
+zum Vorschein. Anti-Blender-Prinzip, angewandt auf KI.
+
+**Lokal, opt-in, fallback-sicher.** Alle KI läuft lokal (Gemma) — keine
+Bewerberdaten verlassen das Haus, keine Cloud-Kosten. Ist die KI nicht erreichbar,
+fällt jede Funktion sauber auf einen regelbasierten Weg zurück; der Ablauf bricht
+nie. Gelernte Bewertung ist standardmäßig aus und wird bewusst freigeschaltet.
 
 ---
 
-*SecurATS · Funktionsübersicht · Stand 24.07.2026 — lokal berechnet,
+*SecurATS · Was es löst, und wie · Stand 24.07.2026 — lokal berechnet,
 Mensch-im-Loop, revisionssicher.*

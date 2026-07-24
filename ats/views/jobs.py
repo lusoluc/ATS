@@ -271,14 +271,15 @@ def toggle_job_active(request, job_id):
 
 @recruiter_required
 def job_question_hints(request, job_id):
-    """L1-4: gelernte Hinweise zu den Screening-Fragen dieser Stelle, fuer den
-    Fragen-Baukasten (Hilfe am Ort der Entscheidung). Liefert je Frage-Text
-    einen Hinweis, wenn die Frage zu viele durchfallen laesst. BOLA via
-    scope_jobs; nur Anzeige, aendert nichts."""
+    """L1-4/L4: gelernte Editor-Hinweise dieser Stelle. `hints` = je
+    Screening-Frage (zu viele durchgefallen), `req_hints` = je Anforderung
+    (vergleichbare Stellen ohne sie schneller besetzt). BOLA via scope_jobs;
+    nur Anzeige, aendert nichts - wirksam wird erst das Speichern."""
     job = get_object_or_404(
         scope_jobs(request.user, JobPosting.objects.filter(id=job_id)))
-    from ..suggestions import question_hints
-    return JsonResponse({'hints': question_hints(job)})
+    from ..suggestions import question_hints, requirement_hints
+    return JsonResponse({'hints': question_hints(job),
+                         'req_hints': requirement_hints(job)})
 
 
 @hr_admin_required

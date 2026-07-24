@@ -11,6 +11,7 @@ anderes als in der Geriatrie in Lueneburg. Deshalb loest resolve_learning_scope
 die spezifischste Ebene auf, die genug Entscheidungen hat, und faellt sonst die
 Leiter hinauf - dasselbe Muster wie bei Gremien und Freigabe-Regeln.
 """
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
 
@@ -250,6 +251,107 @@ def screening_question_impact(job: JobPosting,
             fail_rate=round(fail_n / answered, 3),
             invite_rate_pass=round(pass_inv / pass_n, 3) if pass_n else 0.0,
             invite_rate_fail=round(fail_inv / fail_n, 3) if fail_n else 0.0))
+    return out
+
+
+# Fuellwoerter fuers Anforderungs-Matching (Wort steckt in mehreren Anforderungen).
+_REQ_STOP = {
+    "und", "oder", "mit", "von", "der", "die", "das", "den", "dem", "ein",
+    "eine", "fuer", "sowie", "sehr", "gute", "guter", "jahre", "jahren",
+    "mind", "mindestens", "idealerweise", "kenntnisse", "erfahrung",
+    "erfahrungen", "abgeschlossene", "abgeschlossenes",
+}
+
+# Schwellen fuer die Anforderungs-Wirkung (konservativ).
+REQ_MIN_GROUP = 3      # je Gruppe (mit/ohne) mind. so viele besetzte Stellen
+REQ_MIN_DAYS = 5       # ... und mind. so viel schneller ohne die Anforderung
+
+
+def _req_tokens(text: str) -> set[str]:
+    t = (text or "").lower()
+    for a, b in (("ä", "ae"), ("ö", "oe"), ("ü", "ue"), ("ß", "ss")):
+        t = t.replace(a, b)
+    return {w for w in re.split(r"[^a-z0-9]+", t)
+            if len(w) >= 4 and w not in _REQ_STOP}
+
+
+def _job_has_requirement(req_lines: list[str], needle_tokens: set[str]) -> bool:
+    if not needle_tokens:
+        return False
+    hay = _req_tokens(" ".join(str(r) for r in (req_lines or [])))
+    return bool(needle_tokens & hay)
+
+
+@dataclass
+class RequirementImpact:
+    requirement: str
+    jobs_with: int
+    jobs_without: int
+    avg_ttf_with: float
+    avg_ttf_without: float
+    days_faster_without: float
+
+
+def requirement_impact(job: JobPosting) -> list[RequirementImpact]:
+    """Je Anforderung der Stelle: hatten vergleichbare Stellen (gleiche
+    Jobfamilie) sie, und wurden die OHNE sie schneller besetzt?
+
+    Vergleicht die Zeit bis zur Besetzung (erster Einstellungs-Zeitpunkt minus
+    Stellen-Anlage) besetzter vergleichbarer Stellen mit vs. ohne die
+    Anforderung. Nur bei genug Datenlage je Gruppe und spuerbarem Unterschied.
+    """
+    from django.db.models import Min
+
+    reqs = [str(r).strip() for r in (job.requirementsJson or [])
+            if str(r).strip()]
+    if not reqs or not job.jobFamily_id:
+        return []
+
+    comparable = list(JobPosting.objects
+                      .filter(jobFamily_id=job.jobFamily_id)
+                      .exclude(id=job.id)
+                      .values_list("id", "createdAt", "requirementsJson"))
+    if not comparable:
+        return []
+
+    # Erst-Einstellung je vergleichbarer Stelle in EINER Abfrage.
+    job_ids = [c[0] for c in comparable]
+    first_hire: dict = {}
+    for row in (Application.objects
+                .filter(jobPosting_id__in=job_ids, status="HIRED",
+                        hiredAt__isnull=False)
+                .values("jobPosting_id").annotate(fh=Min("hiredAt"))):
+        first_hire[row["jobPosting_id"]] = row["fh"]
+
+    # Zeit bis Besetzung je besetzter Stelle (Tage) + deren Anforderungen.
+    filled: list[tuple[float, list]] = []
+    for jid, created, req_json in comparable:
+        fh = first_hire.get(jid)
+        if fh is None:
+            continue
+        ttf = max(0.0, (fh - created).total_seconds() / 86400.0)
+        filled.append((ttf, req_json or []))
+
+    out: list[RequirementImpact] = []
+    for req in reqs:
+        toks = _req_tokens(req)
+        with_ttf = [ttf for ttf, rj in filled
+                    if _job_has_requirement(rj, toks)]
+        without_ttf = [ttf for ttf, rj in filled
+                       if not _job_has_requirement(rj, toks)]
+        if len(with_ttf) < REQ_MIN_GROUP or len(without_ttf) < REQ_MIN_GROUP:
+            continue
+        avg_with = sum(with_ttf) / len(with_ttf)
+        avg_without = sum(without_ttf) / len(without_ttf)
+        faster = avg_with - avg_without
+        if faster >= REQ_MIN_DAYS:
+            out.append(RequirementImpact(
+                requirement=req, jobs_with=len(with_ttf),
+                jobs_without=len(without_ttf),
+                avg_ttf_with=round(avg_with, 1),
+                avg_ttf_without=round(avg_without, 1),
+                days_faster_without=round(faster, 1)))
+    out.sort(key=lambda i: i.days_faster_without, reverse=True)
     return out
 
 

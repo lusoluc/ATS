@@ -225,6 +225,33 @@
         });
     }
 
+    function renderReqHints() {
+        const box = document.getElementById('req-hints');
+        if (!box) return;
+        const hints = window.reqHints || {};
+        const keys = Object.keys(hints);
+        if (!keys.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+        const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        box.style.display = 'block';
+        box.innerHTML = '<div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;"><i class="fa-solid fa-lightbulb" style="color:#fbbf24;"></i> Hinweise zu Anforderungen (aus vergleichbaren Stellen)</div>' +
+            keys.map(req => `
+              <div class="req-hint-row" style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:#fbbf24; background:rgba(245,158,11,.10); border:1px solid rgba(245,158,11,.25); border-radius:var(--border-radius-sm); padding:6px 10px; margin-top:4px;">
+                <span style="flex:1;"><strong>„${esc(req)}"</strong>: ${esc(hints[req])}</span>
+                <button type="button" class="btn-search" style="height:26px; font-size:11px; padding:0 10px; white-space:nowrap;" data-req="${esc(req)}" onclick="reqStrike(this)">Streichen</button>
+              </div>`).join('');
+    }
+
+    function reqStrike(btn) {
+        const req = btn.getAttribute('data-req');
+        const ta = document.getElementById('job-reqs-inp');
+        if (ta) {
+            ta.value = ta.value.split('\n')
+                .filter(line => line.trim() !== req.trim()).join('\n');
+        }
+        // Hinweis entfernen, damit er nicht erneut erscheint
+        if (window.reqHints) { delete window.reqHints[req]; renderReqHints(); }
+    }
+
     function qbMove(i, dir) {
         const qs = qbRead();
         const j = i + dir;
@@ -905,7 +932,9 @@
         document.getElementById('job-reqs-inp').value = '';
         document.getElementById('job-screening').value = '';
         window.qbHints = {};   // neue Stelle: keine gelernten Hinweise
+        window.reqHints = {};
         qbRender();
+        if (typeof renderReqHints === 'function') renderReqHints();
         qbCancel();
         document.getElementById('panel_quorum').value = '';
         document.getElementById('panel_deadline_days').value = '';
@@ -1006,10 +1035,15 @@
         qbRender();
         qbCancel();
 
-        // L1-4: gelernte Frage-Hinweise dieser Stelle nachladen und einblenden
+        // L1-4/L4: gelernte Editor-Hinweise dieser Stelle nachladen
+        window.reqHints = {};
+        renderReqHints();
         fetch(`/recruiter/jobs/${id}/frage-hinweise/`)
-            .then(r => r.ok ? r.json() : {hints: {}})
-            .then(d => { window.qbHints = d.hints || {}; qbRender(); })
+            .then(r => r.ok ? r.json() : {hints: {}, req_hints: {}})
+            .then(d => {
+                window.qbHints = d.hints || {}; qbRender();
+                window.reqHints = d.req_hints || {}; renderReqHints();
+            })
             .catch(() => {});
 
         // Change modal title and button text

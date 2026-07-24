@@ -16,6 +16,7 @@ from django.urls import reverse
 from .insights import (
     channel_effectiveness,
     funnel_by_context,
+    requirement_impact,
     resolve_learning_scope,
     screening_question_impact,
     stage_bottlenecks,
@@ -125,6 +126,22 @@ def question_hints(job: JobPosting,
                 f"Diese Frage ließ {_pct(imp.fail_rate)} % durchfallen "
                 f"(auf {imp.answered} Vorgängen) – zu streng? Erwägen Sie, "
                 f"sie zu lockern oder optional zu machen.")
+    return hints
+
+
+def requirement_hints(job: JobPosting) -> dict[str, str]:
+    """L4: je Anforderung der Stelle ein Hinweis-Text, wenn vergleichbare
+    Stellen ohne sie spuerbar schneller besetzt wurden. Fuer den Stellen-Editor
+    (Hilfe am Ort der Entstehung). Leer bei duenner Datenlage."""
+    hints: dict[str, str] = {}
+    for imp in requirement_impact(job):
+        total = imp.jobs_with + imp.jobs_without
+        hints[imp.requirement] = (
+            f"{imp.jobs_with} vergleichbare Stellen hatten diese Anforderung; "
+            f"die {imp.jobs_without} ohne sie wurden im Schnitt "
+            f"{imp.days_faster_without:.0f} Tage schneller besetzt "
+            f"(von {total} besetzten Stellen). Als Wunsch statt Muss "
+            f"formulieren oder streichen?")
     return hints
 
 

@@ -45,6 +45,7 @@ module = [
     "ats.inbox_intents",
     "ats.inbox_learning",
     "ats.insights",
+    "ats.suggestions",
     "ats.permissions",
     "ats.reply_drafts",
     "ats.talent_pool",

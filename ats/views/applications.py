@@ -1129,6 +1129,15 @@ def application_summary(request, app_id):
     result = {'text': text, 'bullets': bullets,
               'ai_score': facts.ai_score, 'used_ai': False}
 
+    # L3: gelernte Einordnung NUR wenn freigeschaltet + Kontext belastbar +
+    # Backtest schlaegt die Grundlinie (sonst gar nicht) - erklaerbar.
+    from ..scoring_eval import learned_grade
+    lg = learned_grade(app)
+    if lg is not None:
+        grade, reasons, ctx = lg
+        result['learned'] = {'grade': grade, 'reasons': reasons,
+                             'context': ctx}
+
     # Optionale lokale Umformulierung - strikt nur umformulieren. Hinter dem
     # AI-Opt-in: ist die KI-Assistenz aus (Default), kommt der deterministische
     # Text SOFORT zurueck (kein Ollama-Verbindungsversuch, kein Modal-Hänger).

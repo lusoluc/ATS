@@ -47,6 +47,8 @@ urlpatterns = [
     path('recruiter/cms/', views.cms_page, name='cms_page'),
     path('recruiter/ki-zentrale/', views.ki_page, name='ki_page'),
     path('recruiter/ki-zentrale/auto-antwort/', views.save_auto_reply_settings, name='save_auto_reply_settings'),
+    path('recruiter/lernendes-scoring/', views.learned_scoring_view, name='learned_scoring'),  # L3
+    path('recruiter/lernendes-scoring/speichern/', views.save_learned_scoring_settings, name='save_learned_scoring'),
     path('recruiter/hris/', views.hris_page, name='hris_page'),
 
     # API Feeds & Integrations

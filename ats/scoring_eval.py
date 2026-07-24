@@ -25,7 +25,7 @@ from .insights import (
     _status_events,
     resolve_learning_scope,
 )
-from .models import JobPosting
+from .models import Application, JobPosting
 from .scoring import _features_for_app, fit_model, grade_features
 
 # Mindestgroessen fuer eine belastbare Messung.
@@ -161,3 +161,34 @@ def is_trustworthy(scope: LearningScope) -> tuple[bool, str]:
 
 def evaluate_job(job: JobPosting) -> BacktestResult:
     return backtest(resolve_learning_scope(job))
+
+
+# --- Governance: standardmaessig AUS, Opt-in je Betrieb -----------------------
+LEARNED_SCORING_ENABLED_KEY = "LEARNED_SCORING_ENABLED"
+
+
+def is_scoring_enabled() -> bool:
+    """Ist das gelernte Scoring freigeschaltet? Default AUS (Opt-in; EU AI Act
+    Hochrisiko - Aktivierung ist eine bewusste, dokumentierte Entscheidung)."""
+    from .models import SystemSetting
+    return SystemSetting.objects.filter(
+        key=LEARNED_SCORING_ENABLED_KEY, value="1").exists()
+
+
+def learned_grade(app: Application) -> "tuple[str, list[str], str] | None":
+    """Gelernte Einordnung (Note, Begruendung, Kontext-Ebene) fuer eine
+    Bewerbung - ODER None. Drei Tore, alle muessen offen sein:
+    freigeschaltet, Kontext belastbar UND vertrauenswuerdig (Backtest schlaegt
+    Grundlinie). Sonst bleibt das bestehende Score unveraendert."""
+    if not is_scoring_enabled():
+        return None
+    from .scoring import grade_application, learn_context_model
+    scope = resolve_learning_scope(app.jobPosting)
+    ok, _ = is_trustworthy(scope)
+    if not ok:
+        return None
+    model = learn_context_model(scope)
+    if model is None:
+        return None
+    grade, reasons = grade_application(app, model)
+    return grade, reasons, scope.label

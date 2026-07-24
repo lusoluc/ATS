@@ -812,6 +812,21 @@
                 chips.innerHTML = d.bullets.map(b =>
                     `<span style="font-size:11px; background:rgba(255,255,255,0.08); border:1px solid var(--glass-border); border-radius:12px; padding:2px 9px; color:#e5e7eb;">${esc(b)}</span>`).join('');
             }
+            // L3: gelernte Einordnung (nur wenn Server sie liefert = freigeschaltet + belastbar)
+            const learned = document.getElementById('modal-learned');
+            if (learned) {
+                if (d.learned && d.learned.grade) {
+                    const reasons = (d.learned.reasons || []).map(esc).join(' · ');
+                    learned.innerHTML = `<strong style="color:#fff;"><i class="fa-solid fa-graduation-cap" style="color:var(--accent-light);"></i> Gelernte Einordnung: ${esc(d.learned.grade)}</strong>`
+                        + ` <span style="color:var(--text-muted);">(${esc(d.learned.context)})</span>`
+                        + (reasons ? `<div style="margin-top:3px;">${reasons}</div>` : '')
+                        + `<div style="font-size:10px; color:var(--text-muted); margin-top:4px;">Empfehlung, keine Entscheidung – nur sichtbar, weil im Rückblick treffsicherer als die Regel.</div>`;
+                    learned.style.display = 'block';
+                } else {
+                    learned.style.display = 'none';
+                    learned.innerHTML = '';
+                }
+            }
           })
           .catch(() => { txt.textContent = 'Steckbrief konnte nicht geladen werden.'; });
     }

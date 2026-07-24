@@ -38,7 +38,7 @@ from ..models import (
 )
 from ..permissions import hr_admin_required, scope_applications, scope_jobs
 
-__all__ = ["stats_page", "process_page", "templates_page", "cms_page", "ki_page", "hris_page", "save_auto_reply_settings"]
+__all__ = ["stats_page", "process_page", "templates_page", "cms_page", "ki_page", "hris_page", "save_auto_reply_settings", "learned_scoring_view", "save_learned_scoring_settings"]
 
 
 def gemma_status() -> str:
@@ -166,6 +166,51 @@ def save_auto_reply_settings(request):
                 enabled=(master == '1'), intents=chosen)
     messages.success(request, "Einstellungen der Auto-Antwort gespeichert.")
     return redirect('ats:ki_page')
+
+
+@hr_admin_required
+def learned_scoring_view(request):
+    """L3-Governance + Messstrecke: je Kontext den Backtest (gelernt vs.
+    regelbasierte Grundlinie), die Kalibrierung und das Vertrauens-Verdikt -
+    damit die Entscheidung zum Freischalten INFORMIERT faellt. Standardmaessig
+    aus (EU AI Act, Hochrisiko)."""
+    from ..insights import resolve_learning_scope
+    from ..models import JobFamily, JobPosting
+    from ..scoring_eval import backtest, is_scoring_enabled
+    families = list(JobFamily.objects.all()[:40])
+    rows = []
+    for fam in families:
+        job = JobPosting.objects.filter(jobFamily=fam).first()
+        if not job:
+            continue
+        bt = backtest(resolve_learning_scope(job))
+        rows.append({'family': fam.name, 'bt': bt})
+    rows.sort(key=lambda r: (not r['bt'].beats_baseline, -r['bt'].total))
+    return render(request, 'admin_pages/learned_scoring.html', {
+        'enabled': is_scoring_enabled(), 'rows': rows})
+
+
+@hr_admin_required
+def save_learned_scoring_settings(request):
+    """Hauptschalter fuers gelernte Scoring. Aktivieren ist eine bewusste,
+    auditierte Entscheidung; ohne bestaetigtes Rechtsgutachten bleibt es aus."""
+    from ..audit import write_audit
+    from ..scoring_eval import LEARNED_SCORING_ENABLED_KEY
+    if request.method != 'POST':
+        return redirect('ats:learned_scoring')
+    enable = bool(request.POST.get('enable'))
+    confirmed = bool(request.POST.get('legal_confirmed'))
+    if enable and not confirmed:
+        messages.warning(request, "Aktivierung nur mit bestätigtem "
+                                  "Rechtsgutachten (Kästchen ankreuzen).")
+        return redirect('ats:learned_scoring')
+    SystemSetting.objects.update_or_create(
+        key=LEARNED_SCORING_ENABLED_KEY,
+        defaults={'value': '1' if enable else '0'})
+    write_audit('LEARNED_SCORING_TOGGLED', user=request.user, enabled=enable)
+    messages.success(request, "Gelerntes Scoring "
+                     + ("aktiviert." if enable else "deaktiviert."))
+    return redirect('ats:learned_scoring')
 
 
 @hr_admin_required

@@ -1,0 +1,85 @@
+{% extends 'admin_pages/_layout.html' %}
+{% block title %}Lernendes Scoring · SecurATS{% endblock %}
+{% block admin_body %}
+<h1 class="page-title"><i class="fa-solid fa-graduation-cap"></i> Lernendes Scoring</h1>
+<p class="page-lead">
+  Das A/B/C/D-Score kann aus den tatsächlichen Entscheidungen lernen. Diese
+  Seite zeigt, ob das gelernte Score in jedem Kontext belastbar ist – und
+  aktiviert wird es nur bewusst.
+</p>
+
+<div class="glass-card" style="margin-bottom:24px; border:1px solid rgba(239,68,68,0.35);">
+  <h3 style="font-size:16px; color:#fff; margin:0 0 6px;"><i class="fa-solid fa-scale-balanced" style="color:#fca5a5;"></i> Governance – bitte lesen</h3>
+  <p style="color:var(--text-muted); font-size:13px; margin:0 0 12px;">
+    Bewerber-Bewertung ist nach EU AI Act (Anhang III) <strong>Hochrisiko</strong>.
+    Das gelernte Score ist eine <strong>Empfehlung, keine automatische Entscheidung</strong>;
+    es nutzt ausschließlich stellenrelevante, keine geschützten Merkmale, jede
+    Note ist begründet. Es wird <strong>nur angezeigt, wenn es im Rückblick
+    treffsicherer ist als die Regel</strong> (Ehrlichkeits-Schranke). Vor der
+    Aktivierung ist ein Rechtsgutachten einzuholen.
+  </p>
+  <form method="post" action="{% url 'ats:save_learned_scoring' %}">
+    {% csrf_token %}
+    <label style="display:flex; align-items:center; gap:10px; font-size:14px; color:#fff; cursor:pointer; margin-bottom:8px;">
+      <input type="checkbox" name="enable" value="1" style="accent-color:var(--accent); width:18px; height:18px;" {% if enabled %}checked{% endif %}>
+      <strong>Gelerntes Scoring aktiv</strong>
+      <span style="font-size:12px; color:var(--text-muted);">(Default: aus)</span>
+    </label>
+    <label style="display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-muted); cursor:pointer; margin-bottom:12px;">
+      <input type="checkbox" name="legal_confirmed" value="1" {% if enabled %}checked{% endif %}>
+      Ein Rechtsgutachten liegt vor und die Aktivierung ist dokumentiert.
+    </label>
+    <button type="submit" class="btn-cta" style="height:36px; font-size:13px; padding:0 16px;">
+      <i class="fa-solid fa-floppy-disk"></i> Speichern
+    </button>
+    <span style="margin-left:10px; font-size:12px; color:{% if enabled %}#22c55e{% else %}var(--text-muted){% endif %};">
+      Status: {% if enabled %}aktiv{% else %}aus{% endif %}
+    </span>
+  </form>
+</div>
+
+<div class="glass-card">
+  <h3 style="font-size:16px; color:#fff; margin:0 0 4px;"><i class="fa-solid fa-flask"></i> Messstrecke je Kontext</h3>
+  <p style="color:var(--text-muted); font-size:13px; margin:0 0 14px;">
+    Backtest: auf älteren Entscheidungen gelernt, auf neueren geprüft. Nur wo
+    „vertrauenswürdig" steht, würde das gelernte Score überhaupt angezeigt.
+  </p>
+  {% if rows %}
+  <div style="overflow-x:auto;">
+  <table class="premium-table">
+    <thead>
+      <tr>
+        <th>Kontext</th><th>Ebene</th><th>Entsch.</th>
+        <th>Treffer gelernt</th><th>Treffer Regel</th>
+        <th>Kalibrierung (Einladungsquote A→D)</th><th>Verdikt</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td><strong>{{ r.family }}</strong></td>
+        <td style="font-size:12px; color:var(--text-muted);">{{ r.bt.scope_label }}</td>
+        <td>{{ r.bt.total }}</td>
+        <td>{% if r.bt.learned_precision != None %}{{ r.bt.learned_precision }}{% else %}–{% endif %}</td>
+        <td>{% if r.bt.baseline_precision != None %}{{ r.bt.baseline_precision }}{% else %}–{% endif %}</td>
+        <td style="font-size:12px;">
+          {% for b in r.bt.calibration %}<span title="Band {{ b.grade }}: {{ b.count }} Fälle" style="margin-right:8px;">{{ b.grade }} {{ b.invite_rate }}</span>{% endfor %}
+          {% if not r.bt.calibration %}–{% endif %}
+        </td>
+        <td>
+          {% if r.bt.beats_baseline %}
+            <span class="badge badge-accent" style="font-size:11px;"><i class="fa-solid fa-check"></i> vertrauenswürdig</span>
+          {% else %}
+            <span class="badge" style="background:rgba(148,163,184,0.15); color:#94a3b8; font-size:11px;" title="{{ r.bt.reason }}">noch nicht</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="empty-state">Noch keine Kontexte mit Stellen vorhanden.</p>
+  {% endif %}
+</div>
+{% endblock %}

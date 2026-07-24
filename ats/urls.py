@@ -99,6 +99,7 @@ urlpatterns = [
     path('recruiter/best-performers/ingest/', views.ingest_best_performers, name='ingest_best_performers'),
     path('recruiter/best-performers/', views.best_performer_profiles, name='best_performer_profiles'),
     path('recruiter/jobs/<uuid:job_id>/toggle/', views.toggle_job_active, name='toggle_job_active'),                           # B14
+    path('recruiter/jobs/<uuid:job_id>/frage-hinweise/', views.job_question_hints, name='job_question_hints'),  # L1-4
     path('recruiter/locations/<uuid:loc_id>/archive/', views.archive_location, name='archive_location'),
     path('recruiter/interviews/', views.interviews_view, name='interviews'),                        # B9
     path('recruiter/interviews/slots/', views.slot_create, name='slot_create'),

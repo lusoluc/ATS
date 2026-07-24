@@ -110,6 +110,24 @@ def job_suggestions(job: JobPosting,
     return out
 
 
+def question_hints(job: JobPosting,
+                   base: "QuerySet[Application] | None" = None) -> dict[str, str]:
+    """Je K.O.-Frage der Stelle ein Hinweis-Text - fuer den Fragen-Baukasten
+    (Bruecke zu L4: Hilfe am Ort der Entscheidung). Nur bei belastbarer
+    Datenlage und ueber der Durchfall-Schwelle; leer sonst."""
+    scope = resolve_learning_scope(job, base)
+    if not scope.sufficient:
+        return {}
+    hints: dict[str, str] = {}
+    for imp in screening_question_impact(job, scope):
+        if imp.fail_rate > FAIL_THRESHOLD and imp.answered >= MIN_ANSWERED:
+            hints[imp.question] = (
+                f"Diese Frage ließ {_pct(imp.fail_rate)} % durchfallen "
+                f"(auf {imp.answered} Vorgängen) – zu streng? Erwägen Sie, "
+                f"sie zu lockern oder optional zu machen.")
+    return hints
+
+
 def global_suggestions(
         base: "QuerySet[Application] | None" = None) -> list[Suggestion]:
     """Kontext-unabhaengige Vorschlaege (Kanal-Budget, Prozess-Engpass) im

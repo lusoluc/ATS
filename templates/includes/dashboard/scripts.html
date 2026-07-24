@@ -202,6 +202,26 @@
                 row.appendChild(b);
             });
             list.appendChild(row);
+
+            // L1-4: gelernter Hinweis am Ort der Entscheidung – wenn diese Frage
+            // in der Historie zu viele durchfallen ließ, direkt hier zeigen.
+            const hint = (window.qbHints || {})[q.question];
+            if (hint) {
+                const h = document.createElement('div');
+                h.style.cssText = 'display:flex; align-items:flex-start; gap:8px; font-size:12px; color:#fbbf24; background:rgba(245,158,11,.10); border:1px solid rgba(245,158,11,.25); border-radius:var(--border-radius-sm); padding:6px 10px; margin:2px 0 6px;';
+                const msg = document.createElement('span');
+                msg.style.cssText = 'flex:1;';
+                msg.innerHTML = `<i class="fa-solid fa-lightbulb"></i> ${hint}`;
+                const act = document.createElement('button');
+                act.type = 'button';
+                act.className = 'btn-search';
+                act.style.cssText = 'height:26px; font-size:11px; padding:0 10px; white-space:nowrap;';
+                act.textContent = 'Frage lockern';
+                act.onclick = () => qbShowEditor(i);
+                h.appendChild(msg);
+                h.appendChild(act);
+                list.appendChild(h);
+            }
         });
     }
 
@@ -863,6 +883,7 @@
         document.getElementById('job-tasks-inp').value = '';
         document.getElementById('job-reqs-inp').value = '';
         document.getElementById('job-screening').value = '';
+        window.qbHints = {};   // neue Stelle: keine gelernten Hinweise
         qbRender();
         qbCancel();
         document.getElementById('panel_quorum').value = '';
@@ -960,8 +981,15 @@
 
         // Screening questions
         document.getElementById('job-screening').value = screeningQuestionsJson;
+        window.qbHints = {};   // alte Hinweise verwerfen
         qbRender();
         qbCancel();
+
+        // L1-4: gelernte Frage-Hinweise dieser Stelle nachladen und einblenden
+        fetch(`/recruiter/jobs/${id}/frage-hinweise/`)
+            .then(r => r.ok ? r.json() : {hints: {}})
+            .then(d => { window.qbHints = d.hints || {}; qbRender(); })
+            .catch(() => {});
 
         // Change modal title and button text
         document.querySelector('#jobCreatorModal h2').innerHTML = '<i class="fa-solid fa-pen-to-square" style="color: var(--accent);"></i> Stellenangebot bearbeiten';

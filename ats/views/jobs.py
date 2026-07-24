@@ -30,7 +30,7 @@ from ..permissions import hr_admin_required, recruiter_required, scope_jobs
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["create_job", "toggle_job_active", "job_templates_view", "delete_job_template", "job_template_detail", "restore_job_template", "update_job_posting_template"]
+__all__ = ["create_job", "toggle_job_active", "job_question_hints", "job_templates_view", "delete_job_template", "job_template_detail", "restore_job_template", "update_job_posting_template"]
 
 
 @recruiter_required
@@ -267,6 +267,18 @@ def toggle_job_active(request, job_id):
     write_audit("JOB_DEACTIVATED" if now_active else "JOB_ACTIVATED",
                 user=request.user, job=job.title)
     return JsonResponse({'success': True, 'active': not now_active})
+
+
+@recruiter_required
+def job_question_hints(request, job_id):
+    """L1-4: gelernte Hinweise zu den Screening-Fragen dieser Stelle, fuer den
+    Fragen-Baukasten (Hilfe am Ort der Entscheidung). Liefert je Frage-Text
+    einen Hinweis, wenn die Frage zu viele durchfallen laesst. BOLA via
+    scope_jobs; nur Anzeige, aendert nichts."""
+    job = get_object_or_404(
+        scope_jobs(request.user, JobPosting.objects.filter(id=job_id)))
+    from ..suggestions import question_hints
+    return JsonResponse({'hints': question_hints(job)})
 
 
 @hr_admin_required

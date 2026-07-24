@@ -150,18 +150,29 @@ def _normalize(text: str) -> str:
     return lowered
 
 
-def _scores(norm: str) -> dict[str, int]:
-    return {
-        intent: sum(1 for kw in kws if kw in norm)
-        for intent, kws in _KEYWORDS.items()
-    }
+Keywords = "dict[str, list[str]] | None"
 
 
-def _total_hits(norm: str) -> int:
-    return sum(1 for kws in _KEYWORDS.values() for kw in kws if kw in norm)
+def _scores(norm: str, extra: "dict[str, list[str]] | None" = None) -> dict[str, int]:
+    out: dict[str, int] = {}
+    for intent, kws in _KEYWORDS.items():
+        hits = sum(1 for kw in kws if kw in norm)
+        if extra and extra.get(intent):
+            hits += sum(1 for kw in extra[intent] if kw and kw in norm)
+        out[intent] = hits
+    return out
 
 
-def _has_unaddressed_request(text: str) -> bool:
+def _total_hits(norm: str, extra: "dict[str, list[str]] | None" = None) -> int:
+    base = sum(1 for kws in _KEYWORDS.values() for kw in kws if kw in norm)
+    if extra:
+        base += sum(1 for kws in extra.values() for kw in kws
+                    if kw and kw in norm)
+    return base
+
+
+def _has_unaddressed_request(text: str,
+                             extra: "dict[str, list[str]] | None" = None) -> bool:
     """Enthaelt die Nachricht einen Frage-/Bitte-Teil OHNE erkennbares Anliegen?
 
     Das ist der Kern der Ganze-Nachricht-Analyse: eine Standard-Frage plus
@@ -178,19 +189,21 @@ def _has_unaddressed_request(text: str) -> bool:
         is_request = any(
             norm.startswith(w) or f" {w}" in f" {norm}"
             for w in _REQUEST_WORDS)
-        if is_request and _total_hits(norm) == 0:
+        if is_request and _total_hits(norm, extra) == 0:
             return True
     return False
 
 
-def classify_rule_based(text: str) -> str:
+def classify_rule_based(text: str,
+                        extra: "dict[str, list[str]] | None" = None) -> str:
     """Bestes einzelnes Anliegen per Schluesselwort-Scoring (0 Treffer -> OTHER).
 
-    Bewusst nur das primaere Anliegen; ob die Nachricht zusammengesetzt ist,
-    beantwortet analyze().
+    `extra`: gelernte Zusatz-Stichwoerter je Anliegen (Stufe 5), gleichwertig
+    zu den Regeln gewichtet. Bewusst nur das primaere Anliegen; ob die
+    Nachricht zusammengesetzt ist, beantwortet analyze().
     """
     norm = _normalize(text)
-    scores = _scores(norm)
+    scores = _scores(norm, extra)
     best = max(scores.values(), default=0)
     if best == 0:
         return INTENT_OTHER
@@ -204,7 +217,8 @@ def classify_rule_based(text: str) -> str:
 
 
 def analyze(text: str,
-            ai_classifier: "Callable[[str], str | None] | None" = None) -> Analysis:
+            ai_classifier: "Callable[[str], str | None] | None" = None,
+            extra_keywords: "dict[str, list[str]] | None" = None) -> Analysis:
     """Bewertet die GANZE Nachricht und entscheidet den Postfach-Topf.
 
     Zusammengesetzte Nachrichten (mehrere Anliegen, Zusatz-Marker, mehrere
@@ -218,13 +232,13 @@ def analyze(text: str,
     die KI hebt diese Grenze nicht auf.
     """
     norm = _normalize(text)
-    scores = _scores(norm)
+    scores = _scores(norm, extra_keywords)
     matched = [i for i, s in scores.items() if s > 0]
-    primary = classify_rule_based(text)
+    primary = classify_rule_based(text, extra_keywords)
 
     multi = len(matched) > 1
     has_marker = any(m in norm for m in _ADDITIONAL_MARKERS)
-    unaddressed = _has_unaddressed_request(text)
+    unaddressed = _has_unaddressed_request(text, extra_keywords)
     too_long = len((text or "").strip()) > _LONG_MESSAGE_CHARS
 
     # KI-Rettung nur fuer den voellig unbekannten Einzelfall: nichts erkannt,

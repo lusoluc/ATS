@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}Sammel-Postfach · SecurATS{% endblock %}
 {% block content %}
-<div class="page-wrap" style="max-width:900px;">
+<div class="page-wrap" style="max-width:900px;" data-reclass-url="{% url 'ats:reclassify_message' %}">
   <h1 class="page-title"><i class="fa-solid fa-layer-group"></i> Sammel-Postfach</h1>
   <p class="page-lead">
     Offene Bewerber-Fragen, nach Anliegen gebündelt – damit ähnliche Fragen
@@ -33,9 +33,15 @@
           <div class="ib-q">„{{ it.question }}{% if it.question|length >= 160 %}…{% endif %}“</div>
           <div class="ib-when">{{ it.when|date:'d.m.Y H:i' }} Uhr</div>
         </div>
-        <a href="{% url 'ats:application_messages' it.app.id %}" class="btn-search ib-answer">
-          <i class="fa-solid fa-reply"></i> Antworten
-        </a>
+        <div style="display:flex; gap:6px; align-items:center; flex-shrink:0;">
+          <select class="ib-reclass" data-message-id="{{ it.message_id }}" aria-label="Anliegen ändern" title="In ein anderes Anliegen verschieben">
+            <option value="">↳ Anliegen ändern…</option>
+            {% for ic in intent_choices %}{% if ic.code != c.intent %}<option value="{{ ic.code }}">{{ ic.label }}</option>{% endif %}{% endfor %}
+          </select>
+          <a href="{% url 'ats:application_messages' it.app.id %}" class="btn-search ib-answer">
+            <i class="fa-solid fa-reply"></i> Antworten
+          </a>
+        </div>
       </li>
       {% endfor %}
     </ul>
@@ -55,9 +61,15 @@
               <span class="ib-when" style="display:block;">{{ it.when|date:'d.m.Y H:i' }} Uhr</span>
             </span>
           </label>
-          <a href="{% url 'ats:application_messages' it.app.id %}" class="btn-search ib-answer" title="Einzeln ansehen">
-            <i class="fa-solid fa-up-right-from-square"></i>
-          </a>
+          <div style="display:flex; gap:6px; align-items:center; flex-shrink:0;">
+            <select class="ib-reclass" data-message-id="{{ it.message_id }}" aria-label="Anliegen ändern" title="In ein anderes Anliegen verschieben">
+              <option value="">↳ Anliegen ändern…</option>
+              {% for ic in intent_choices %}{% if ic.code != c.intent %}<option value="{{ ic.code }}">{{ ic.label }}</option>{% endif %}{% endfor %}
+            </select>
+            <a href="{% url 'ats:application_messages' it.app.id %}" class="btn-search ib-answer" title="Einzeln ansehen">
+              <i class="fa-solid fa-up-right-from-square"></i>
+            </a>
+          </div>
         </li>
         {% endfor %}
       </ul>
@@ -115,6 +127,9 @@
   .ib-q { color:var(--text-main); font-size:13px; margin-top:3px; }
   .ib-when { color:var(--text-muted); font-size:11px; margin-top:3px; font-variant-numeric:tabular-nums; }
   .ib-answer { flex-shrink:0; padding:6px 12px; height:auto; font-size:12px; }
+  .ib-reclass { font-size:11px; height:30px; max-width:150px; background:var(--surface-color);
+                color:var(--text-muted); border:1px solid var(--border-color);
+                border-radius:var(--border-radius-sm); padding:0 6px; }
   .ib-compose { margin-top:12px; padding-top:12px; border-top:1px dashed var(--border-color); }
   .ib-compose code { background:rgba(255,255,255,0.08); padding:0 4px; border-radius:4px; font-size:11px; }
   .ib-preview-wrap { margin-top:8px; }
@@ -125,6 +140,25 @@
 </style>
 
 <script>
+  // Stufe 5: Anliegen einer Nachricht aendern (Sofort-Korrektur + Lern-Signal).
+  (function () {
+    const url = document.querySelector('.page-wrap').dataset.reclassUrl;
+    document.querySelectorAll('.ib-reclass').forEach(function (sel) {
+      sel.addEventListener('change', function () {
+        if (!this.value) return;
+        const body = new URLSearchParams({
+          message_id: this.dataset.messageId, to_intent: this.value });
+        this.disabled = true;
+        fetch(url, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: body.toString(),
+        }).then(() => window.location.reload())
+          .catch(() => { this.disabled = false; });
+      });
+    });
+  })();
+
   (function () {
     function fill(tpl, cb) {
       return tpl

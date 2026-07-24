@@ -47,7 +47,7 @@ from .governance import _pending_steps_for
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "reorder_board", "bulk_update_status", "application_messages", "draft_reply", "inbox_view", "open_question_clusters", "batch_reply", "save_reply_snippet", "application_vote", "talent_pool_view", "job_pool_matches", "application_timeline", "job_timeline", "tasks_view"]
+__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "reorder_board", "bulk_update_status", "application_messages", "draft_reply", "inbox_view", "open_question_clusters", "batch_reply", "save_reply_snippet", "reclassify_message", "application_vote", "talent_pool_view", "job_pool_matches", "application_timeline", "job_timeline", "tasks_view"]
 
 
 @ensure_csrf_cookie
@@ -824,6 +824,7 @@ def open_question_clusters(user):
         INTENT_ORDER,
         analyze,
     )
+    from ..inbox_learning import learned_keywords, message_overrides
     from ..models import TextSnippet
     from ..reply_drafts import batch_template
 
@@ -834,28 +835,36 @@ def open_question_clusters(user):
     for s in (TextSnippet.objects.filter(category__startswith='REPLY_')
               .order_by('-createdAt')):
         reply_snips.setdefault(s.category, []).append(s)
+    # Stufe 5: gelernte Zusatz-Stichwoerter (aus HR-Korrekturen) fliessen in
+    # die Klassifikation ein; Sofort-Korrekturen je Nachricht ueberschreiben.
+    learned = learned_keywords()
     latest = (Message.objects.filter(application=OuterRef('pk'))
               .order_by('-createdAt'))
-    apps = (scope_applications(user, Application.objects.all())
-            .select_related('applicant', 'jobPosting')
-            .annotate(
-                last_dir=Subquery(latest.values('direction')[:1]),
-                last_content=Subquery(latest.values('content')[:1]),
-                last_at=Subquery(latest.values('createdAt')[:1]))
-            .filter(last_dir='INBOUND'))
+    apps = list(scope_applications(user, Application.objects.all())
+                .select_related('applicant', 'jobPosting')
+                .annotate(
+                    last_id=Subquery(latest.values('id')[:1]),
+                    last_dir=Subquery(latest.values('direction')[:1]),
+                    last_content=Subquery(latest.values('content')[:1]),
+                    last_at=Subquery(latest.values('createdAt')[:1]))
+                .filter(last_dir='INBOUND'))
+    overrides = message_overrides([str(a.last_id) for a in apps])
 
     grouped: dict[str, list] = {intent: [] for intent in INTENT_ORDER}
     for app in apps:
-        analysis = analyze(app.last_content or '')
-        grouped[analysis.bucket].append({
+        analysis = analyze(app.last_content or '', extra_keywords=learned)
+        # Sofort-Korrektur gewinnt vor der (gelernten) Regel.
+        bucket = overrides.get(str(app.last_id), analysis.bucket)
+        grouped[bucket].append({
             'app': app,
+            'message_id': app.last_id,
             'name': f"{app.applicant.firstName} {app.applicant.lastName}".strip(),
             'first_name': app.applicant.firstName,
             'job': app.jobPosting.title,
             'status': status_label(app.status),
             'question': (app.last_content or '')[:160],
             'when': app.last_at,
-            'reason': analysis.reason,
+            'reason': '' if str(app.last_id) in overrides else analysis.reason,
             'auto_safe': analysis.auto_safe,
         })
 
@@ -883,9 +892,43 @@ def inbox_view(request):
     aehnliche Fragen gesammelt beantwortet werden koennen (Alltags-Entlastung).
     Nur-Lesen; BOLA ueber scope_applications.
     """
+    from ..inbox_intents import INTENT_LABELS, INTENT_ORDER
     clusters = open_question_clusters(request.user)
     total = sum(c['count'] for c in clusters)
-    return render(request, 'inbox.html', {'clusters': clusters, 'total': total})
+    return render(request, 'inbox.html', {
+        'clusters': clusters, 'total': total,
+        'intent_choices': [{'code': i, 'label': INTENT_LABELS[i]}
+                           for i in INTENT_ORDER]})
+
+
+@recruiter_required
+def reclassify_message(request):
+    """HR verschiebt eine falsch einsortierte Nachricht ins richtige Anliegen.
+
+    Arbeitsrelevant (die Nachricht landet im richtigen Topf) UND zugleich das
+    Lern-Signal (Stufe 5): der Audit-Eintrag speist die gelernten Stichwoerter.
+    Wirkt sofort fuer diese Nachricht (message_overrides); ins Regelwerk geht
+    es erst mit genug gleichlautender Evidenz.
+    """
+    if request.method != 'POST':
+        return redirect('ats:inbox')
+    from ..inbox_intents import INTENT_LABELS, analyze
+    from ..inbox_learning import RECLASSIFY_ACTION
+    to_intent = (request.POST.get('to_intent') or '').strip()
+    if to_intent not in INTENT_LABELS:
+        messages.warning(request, "Unbekanntes Anliegen.")
+        return redirect('ats:inbox')
+    msg = get_object_or_404(Message, id=request.POST.get('message_id'))
+    if not can_access_application(request.user, msg.application):
+        raise Http404("Nicht im Zugriffsbereich.")
+    from_bucket = analyze(msg.content or '').bucket
+    write_audit(RECLASSIFY_ACTION, user=request.user,
+                application_id=msg.application_id, message_id=str(msg.id),
+                to_intent=to_intent, from_bucket=from_bucket,
+                excerpt=(msg.content or '')[:200])
+    messages.success(
+        request, f'Nachricht nach „{INTENT_LABELS[to_intent]}" verschoben.')
+    return redirect('ats:inbox')
 
 
 @recruiter_required

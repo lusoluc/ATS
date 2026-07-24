@@ -112,6 +112,7 @@ urlpatterns = [
     path('recruiter/postfach/', views.inbox_view, name='inbox'),  # Sammel-Postfach
     path('recruiter/postfach/sammel-antwort/', views.batch_reply, name='batch_reply'),
     path('recruiter/postfach/baustein-speichern/', views.save_reply_snippet, name='save_reply_snippet'),
+    path('recruiter/postfach/anliegen-aendern/', views.reclassify_message, name='reclassify_message'),
     path('job-alert/', views.job_alert_subscribe, name='job_alert'),
     path('preise/', views.pricing_view, name='pricing'),  # P0.3 (nur DEMO_MODE)
     path('job-alert/confirm/<str:token>/', views.job_alert_confirm, name='job_alert_confirm'),

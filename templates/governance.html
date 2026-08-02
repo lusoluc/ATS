@@ -30,6 +30,7 @@
 
   <div class="card">
     <h2 style="margin:0 0 var(--space-3); font-size:17px;">Audit-Aktivität (Aktionen, aggregiert)</h2>
+    <div class="table-scroll">
     <table class="data-table">
       <thead><tr><th>Aktion</th><th>Anzahl</th></tr></thead>
       <tbody>
@@ -37,6 +38,7 @@
         {% empty %}<tr><td colspan="2" class="empty-state">Noch keine Einträge.</td></tr>{% endfor %}
       </tbody>
     </table>
+    </div>
     <p style="color:var(--text-muted); font-size:12px; margin-top: var(--space-3);">Einzelne Einträge (mit Nutzer-/Vorgangsbezug) sind bewusst der rollenbeschränkten Audit-Ansicht vorbehalten.</p>
   </div>
 </div>

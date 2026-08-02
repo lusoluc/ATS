@@ -13,6 +13,7 @@
       <input name="altText" class="input" required placeholder="Alt-Text: Was ist auf dem Bild zu sehen? *">
       <button type="submit" class="btn btn-primary">Hochladen</button>
     </form>
+    <div class="table-scroll">
     <table class="data-table">
       <thead><tr><th>Name</th><th>Typ</th><th>Datum</th><th></th></tr></thead>
       <tbody>
@@ -26,6 +27,7 @@
       {% empty %}<tr><td colspan="4" class="empty-state">Noch keine Medien.</td></tr>{% endfor %}
       </tbody>
     </table>
+    </div>
   </div>
 </div>
 {% endblock %}

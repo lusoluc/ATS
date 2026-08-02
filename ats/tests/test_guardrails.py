@@ -469,3 +469,42 @@ class GuardrailTemplateCommentTestCase(TestCase):
             "Mehrzeiliger {# … #}-Kommentar (leckt als Text) – "
             "stattdessen {% comment %}…{% endcomment %} nutzen: "
             + ", ".join(offender))
+
+
+class GuardrailTableScrollTestCase(TestCase):
+    """Wächter: jede Tabelle braucht einen Scroll-Wrapper.
+
+    base.html setzt body{overflow-x:hidden} – eine ueberbreite Tabelle wird
+    dadurch am schmalen Viewport ABGESCHNITTEN statt scrollbar (real passiert:
+    Entscheider-Seiten am Handy, Persona Dr. Winter/Voigt). Deshalb muss jedes
+    <table in einem Wrapper mit .table-scroll (oder inline overflow-x) stehen.
+    Dieser Test findet die ganze FehlerKLASSE fuer alle heutigen und
+    kuenftigen Templates."""
+
+    def test_every_table_has_scroll_wrapper(self):
+        import os
+
+        base = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+            __file__))), "templates")
+        offender = []
+        for root, _dirs, files in os.walk(base):
+            for name in files:
+                if not name.endswith(".html"):
+                    continue
+                path = os.path.join(root, name)
+                with open(path, encoding="utf-8") as fh:
+                    lines = fh.readlines()
+                for i, line in enumerate(lines):
+                    if "<table" not in line:
+                        continue
+                    # Wrapper in derselben oder einer der 3 Zeilen davor?
+                    window = "".join(lines[max(0, i - 3):i + 1])
+                    if "table-scroll" in window or "overflow-x" in window:
+                        continue
+                    rel = os.path.relpath(path, base)
+                    offender.append(f"{rel}:{i + 1}")
+        self.assertEqual(
+            offender, [],
+            "Tabelle ohne Scroll-Wrapper (wird am schmalen Viewport "
+            "abgeschnitten) – <div class=\"table-scroll\"> davor setzen: "
+            + ", ".join(offender))

@@ -84,6 +84,7 @@
     </div>
     <div class="card">
       <h2 style="font-size:16px; margin:0 0 var(--space-3);"><i class="fa-solid fa-clock" style="color:var(--accent-light);"></i> Nächste Gespräche</h2>
+      <div class="table-scroll">
       <table class="data-table"><tbody>
         {% for iv in upcoming %}
         <tr><td style="white-space:nowrap;">{{ iv.scheduledAt|date:"d.m. H:i" }}</td>
@@ -93,6 +94,7 @@
       </tbody></table>
       {% if round_rows %}
       <h3 style="font-size:14px; margin: var(--space-3) 0 var(--space-2);"><i class="fa-solid fa-stairs" style="color:var(--primary-light);"></i> Gesprächsrunden ({{ round_rows|length }})</h3>
+      <div class="table-scroll">
       <table class="data-table">
         <tbody>
         {% for row in round_rows %}
@@ -183,10 +185,12 @@
         {% endfor %}
         </tbody>
       </table>
+      </div>
       {% endif %}
 
       {% if pending_outcomes %}
       <h3 style="font-size:14px; margin: var(--space-3) 0 var(--space-2);"><i class="fa-solid fa-clipboard-check" style="color:var(--warning);"></i> Ergebnis erfassen ({{ pending_outcomes|length }})</h3>
+      <div class="table-scroll">
       <table class="data-table"><tbody>
         {% for iv in pending_outcomes %}
         <tr>
@@ -212,6 +216,7 @@
       </tbody></table>
       {% endif %}
             <h3 style="font-size:14px; margin: var(--space-3) 0 var(--space-2);">Freie Slots</h3>
+      <div class="table-scroll">
       <table class="data-table"><tbody>
         {% for sl in free_slots %}
         <tr><td style="white-space:nowrap;">{{ sl.startTime|date:"d.m. H:i" }}</td>

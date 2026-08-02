@@ -12,6 +12,7 @@
         {% for a in actions %}<option value="{{ a }}" {% if a == active_action %}selected{% endif %}>{{ a }}</option>{% endfor %}
       </select>
     </form>
+    <div class="table-scroll">
     <table class="data-table">
       <thead><tr><th>Zeitpunkt</th><th>Aktion</th><th>Benutzer</th><th>Application</th><th>Details</th></tr></thead>
       <tbody>
@@ -26,6 +27,7 @@
         {% empty %}<tr><td colspan="5" class="empty-state">Noch keine Einträge.</td></tr>{% endfor %}
       </tbody>
     </table>
+    </div>
   </div>
 </div>
 {% endblock %}

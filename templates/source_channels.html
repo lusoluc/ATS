@@ -58,6 +58,7 @@
   {% if freie %}
   <div class="card">
     <h2 style="font-size:15px; margin:0 0 var(--space-2);">Weitere Quellen (Import / Direkteingabe)</h2>
+    <div class="table-scroll">
     <table class="data-table"><thead><tr><th>Quelle</th><th>Bewerbungen</th><th>Eingeladen</th><th>Quote</th></tr></thead><tbody>
       {% for f in freie %}<tr><td>{{ f.source }}</td><td>{{ f.total }}</td><td>{{ f.invited }}</td><td>{{ f.quote }}&nbsp;%</td></tr>{% endfor %}
     </tbody></table>

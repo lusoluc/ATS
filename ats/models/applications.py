@@ -438,6 +438,9 @@ class InterviewFeedback(models.Model):
     recommendation = models.CharField(max_length=20,
                                       choices=INTERVIEW_RECOMMENDATIONS)
     ratingsJson = models.JSONField(default=dict)   # {"Kriterium": 1..4}
+    # Leitfaden-Abdeckung (Voice-Studien-Learning): welche Themen des
+    # Stellen-Leitfadens wurden in DIESEM Gespraech behandelt?
+    guideCoverageJson = models.JSONField(default=list)
     strengths = models.TextField(blank=True, default="")
     concerns = models.TextField(blank=True, default="")   # Bedenken
     comment = models.TextField(blank=True, default="")

@@ -953,6 +953,7 @@
         qbCancel();
         document.getElementById('panel_quorum').value = '';
         document.getElementById('panel_deadline_days').value = '';
+        document.getElementById('interview_guide').value = '';
         document.getElementById('interview_rounds').value = '';
         
         // Reset selections to first option
@@ -978,13 +979,14 @@
         openJobCreatorModal();
     }
 
-    function editJobPosting(id, title, description, tasksJson, requirementsJson, screeningQuestionsJson, facilityId, departmentId, locationId, jobFamilyId, contactPersonId, jobTemplateId, workflowStateId, benefitsSelectedCsv, panelUserIdsJson, panelQuorum, panelDeadlineDays, interviewRoundsCsv, payBandId, headcount) {
+    function editJobPosting(id, title, description, tasksJson, requirementsJson, screeningQuestionsJson, facilityId, departmentId, locationId, jobFamilyId, contactPersonId, jobTemplateId, workflowStateId, benefitsSelectedCsv, panelUserIdsJson, panelQuorum, panelDeadlineDays, interviewRoundsCsv, payBandId, headcount, interviewGuideCsv) {
         // headcount wird seit dem Umzug ins Wizard-Formular immer mitgesendet
         // und muss deshalb beim Bearbeiten vorbefuellt werden
         document.getElementById('headcount').value = headcount || 1;
         document.getElementById('panel_quorum').value = panelQuorum || '';
         document.getElementById('panel_deadline_days').value = panelDeadlineDays || '';
         document.getElementById('interview_rounds').value = interviewRoundsCsv || '';
+        document.getElementById('interview_guide').value = interviewGuideCsv || '';
         // Gremium der Stelle vorbefuellen – sonst wuerde jedes Bearbeiten die
         // Auswahl stillschweigend loeschen (panel_members_present wird immer gesendet).
         try {

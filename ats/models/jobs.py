@@ -150,6 +150,24 @@ class JobPosting(models.Model):
         # Spaeter Import: bricht den Zyklus jobs <-> applications auf Modulebene.
         from .applications import interview_rounds
         return ", ".join(interview_rounds(self))
+
+    # Voice-Studien-Learning "kontrollierte Varianz": Der messbare Vorteil
+    # KI-gefuehrter Interviews war die konsequente Leitfaden-Treue - alle
+    # Bewerbenden bekommen ein gleich gruendliches, vergleichbares Gespraech.
+    # Dieselbe Konsistenz geben wir MENSCHLICHEN Interviews: Themen-Leitfaden
+    # je Stelle, im Feedback als abhakbare Checkliste mit Abdeckungs-Anzeige.
+    interviewGuideJson = models.JSONField(default=list)
+
+    @property
+    def interview_guide(self):
+        parsed = self.interviewGuideJson or []
+        if not isinstance(parsed, list):
+            return []
+        return [str(t).strip()[:80] for t in parsed if str(t).strip()][:12]
+
+    @property
+    def interview_guide_csv(self):
+        return ", ".join(self.interview_guide)
     benefits = models.ManyToManyField(Benefit, related_name='jobPostings', blank=True)
 
     @property

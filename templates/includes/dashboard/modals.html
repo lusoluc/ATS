@@ -417,6 +417,14 @@ MODALS & OVERLAYS
                 </div>
 
                 <div class="form-group">
+                    <!-- N1 (Voice-Studien-Learning "kontrollierte Varianz"):
+                         gleiche Leitfaden-Treue fuer menschliche Interviews. -->
+                    <label class="form-label" for="interview_guide">Interview-Leitfaden: Themen, die jedes Gespräch abdecken soll (kommasepariert, optional)</label>
+                    <input type="text" id="interview_guide" name="interview_guide" class="form-input" placeholder="z. B. Fachliche Erfahrung, Schichtbereitschaft, Teamarbeit, Gehaltsvorstellung, Rückfragen">
+                    <p style="font-size:11px; color: var(--text-muted); margin-top:4px;">Erscheint im Feedback-Formular als Checkliste – so bekommt jede:r Bewerber:in ein gleich gründliches, vergleichbares Gespräch.</p>
+                </div>
+
+                <div class="form-group">
                     <label class="form-label">Screening-Fragen</label>
                     <div style="display:flex; gap:8px; align-items:center; margin:6px 0;">
                         <button type="button" class="btn-search" style="padding:4px 10px; height:auto; font-size:11px; margin:0; border-radius: var(--border-radius-sm);" onclick="usePreviousProcess(this)" title="Screening-Fragen, Aufgaben und Anforderungen der jüngsten Stelle gleicher Jobfamilie (bevorzugt gleiche Einrichtung) übernehmen"><i class="fa-solid fa-clock-rotate-left"></i> Bewährten Prozess übernehmen</button>

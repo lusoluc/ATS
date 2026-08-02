@@ -84,7 +84,7 @@
     </div>
     <div class="card">
       <h2 style="font-size:16px; margin:0 0 var(--space-3);"><i class="fa-solid fa-clock" style="color:var(--accent-light);"></i> Nächste Gespräche</h2>
-      <div class="table-scroll">
+      <div class="table-scroll m-stack">
       <table class="data-table"><tbody>
         {% for iv in upcoming %}
         <tr><td style="white-space:nowrap;">{{ iv.scheduledAt|date:"d.m. H:i" }}</td>
@@ -94,7 +94,7 @@
       </tbody></table></div>
       {% if round_rows %}
       <h3 style="font-size:14px; margin: var(--space-3) 0 var(--space-2);"><i class="fa-solid fa-stairs" style="color:var(--primary-light);"></i> Gesprächsrunden ({{ round_rows|length }})</h3>
-      <div class="table-scroll">
+      <div class="table-scroll m-stack">
       <table class="data-table">
         <tbody>
         {% for row in round_rows %}
@@ -108,7 +108,7 @@
               {% endfor %}
             </div>
           </td>
-          <td style="white-space:nowrap;">
+          <td class="td-actions">
             {% if not row.state.complete %}
             <form method="post" action="{% url 'ats:advance_interview_round' row.app.id %}" style="display:inline;">
               {% csrf_token %}
@@ -142,6 +142,11 @@
                     <div style="font-size:13px;"><strong>{{ f.author.get_full_name|default:f.author.username }}</strong> · {{ f.recommendation_label }}{% if f.overall_score is not None %} · <strong>{{ f.overall_score }} %</strong> gesamt{% endif %}
                       {% for crit, val in f.ratings.items %}<span class="badge" style="font-size:11px;">{{ crit }}: {{ val }} %</span>{% endfor %}
                     </div>
+                    {% with guide=row.app.jobPosting.interview_guide %}{% if guide %}
+                    <div style="font-size:11px; margin-top:3px; color:{% if f.guideCoverageJson|length == guide|length %}var(--accent-light){% else %}var(--text-muted){% endif %};">
+                      <i class="fa-solid fa-list-check"></i> Leitfaden: {{ f.guideCoverageJson|length }}/{{ guide|length }} Themen behandelt
+                    </div>
+                    {% endif %}{% endwith %}
                     {% if f.strengths %}<div style="font-size:12px; margin-top:3px;"><i class="fa-solid fa-plus" style="color:var(--accent);"></i> {{ f.strengths }}</div>{% endif %}
                     {% if f.concerns %}<div style="font-size:12px; margin-top:3px; color:var(--danger-light);"><i class="fa-solid fa-triangle-exclamation"></i> <strong>Bedenken:</strong> {{ f.concerns }}</div>{% endif %}
                     {% if f.comment %}<div style="font-size:12px; margin-top:3px; color:var(--text-muted);">{{ f.comment }}</div>{% endif %}
@@ -157,11 +162,27 @@
                   <input type="hidden" name="next" value="{% url 'ats:interviews' %}">
                   <input type="hidden" name="round" value="{{ row.state.done }}">
                   <div style="font-size:12px; margin-bottom:6px; color:var(--text-muted);">{% if row.my_feedback %}Ihr Feedback zu Runde {{ row.state.done|add:1 }} bearbeiten{% else %}Ihr Feedback zu Runde {{ row.state.done|add:1 }}{% endif %} · <span style="color:var(--text-muted);">mehrere Kolleg:innen können unabhängig bewerten</span></div>
+                  {% with guide=row.app.jobPosting.interview_guide %}
+                  {% if guide %}
+                  <!-- N1: Leitfaden-Checkliste (Voice-Studien-Learning) - jedes
+                       Gespraech deckt dieselben Themen ab, vergleichbar fuer alle. -->
+                  <div style="margin-bottom:10px; padding:8px 12px; border:1px solid var(--glass-border); border-radius:var(--border-radius-sm);">
+                    <div style="font-size:12px; color:var(--text-muted); margin-bottom:6px;"><i class="fa-solid fa-list-check" style="color:var(--accent-light);"></i> Leitfaden – im Gespräch behandelt:</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:6px 16px;">
+                      {% for topic in guide %}
+                      <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;">
+                        <input type="checkbox" name="guide_topic" value="{{ topic }}" {% if topic in row.my_feedback.guideCoverageJson %}checked{% endif %} style="accent-color:var(--accent);"> {{ topic }}
+                      </label>
+                      {% endfor %}
+                    </div>
+                  </div>
+                  {% endif %}
+                  {% endwith %}
                   <div style="display:flex; flex-direction:column; gap:8px; max-width:460px; margin-bottom:8px;">
                     {% for crit in feedback_criteria %}
-                    <label style="display:flex; align-items:center; gap:10px; font-size:13px;">
-                      <span style="flex:0 0 150px;">{{ crit }}</span>
-                      <input type="range" name="rate_{{ crit }}" min="0" max="100" step="5" value="{% with cur=row.my_feedback.ratings %}{{ cur|dictkey:crit|default:70 }}{% endwith %}" class="fb-slider" style="flex:1;" oninput="this.nextElementSibling.textContent=this.value+' %'">
+                    <label style="display:flex; align-items:center; gap:10px; font-size:13px; flex-wrap:wrap;">
+                      <span style="flex:1 1 140px;">{{ crit }}</span>
+                      <input type="range" name="rate_{{ crit }}" min="0" max="100" step="5" value="{% with cur=row.my_feedback.ratings %}{{ cur|dictkey:crit|default:70 }}{% endwith %}" class="fb-slider" style="flex:2 1 140px;" oninput="this.nextElementSibling.textContent=this.value+' %'">
                       <output style="flex:0 0 44px; text-align:right; font-weight:600;">{% with cur=row.my_feedback.ratings %}{{ cur|dictkey:crit|default:70 }}{% endwith %} %</output>
                     </label>
                     {% endfor %}
@@ -190,14 +211,14 @@
 
       {% if pending_outcomes %}
       <h3 style="font-size:14px; margin: var(--space-3) 0 var(--space-2);"><i class="fa-solid fa-clipboard-check" style="color:var(--warning);"></i> Ergebnis erfassen ({{ pending_outcomes|length }})</h3>
-      <div class="table-scroll">
+      <div class="table-scroll m-stack">
       <table class="data-table"><tbody>
         {% for iv in pending_outcomes %}
         <tr>
           <td style="white-space:nowrap;">{{ iv.scheduledAt|date:"d.m. H:i" }}</td>
           <td>{{ iv.application.applicant.firstName }} {{ iv.application.applicant.lastName }}<br>
               <span style="color:var(--text-muted); font-size:12px;">{{ iv.kind_label }} · {{ iv.application.jobPosting.title }}</span></td>
-          <td style="white-space:nowrap;">
+          <td class="td-actions">
             <form method="post" action="{% url 'ats:interview_outcome' iv.id %}" style="display:inline;">{% csrf_token %}
               <input type="hidden" name="outcome" value="COMPLETED">
               <button type="submit" class="btn-icon" title="Stattgefunden" aria-label="Stattgefunden"><i class="fa-solid fa-check" style="color:var(--success);"></i></button>
@@ -216,7 +237,7 @@
       </tbody></table></div>
       {% endif %}
             <h3 style="font-size:14px; margin: var(--space-3) 0 var(--space-2);">Freie Slots</h3>
-      <div class="table-scroll">
+      <div class="table-scroll m-stack">
       <table class="data-table"><tbody>
         {% for sl in free_slots %}
         <tr><td style="white-space:nowrap;">{{ sl.startTime|date:"d.m. H:i" }}</td>

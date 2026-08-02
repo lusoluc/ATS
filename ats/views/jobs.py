@@ -60,6 +60,12 @@ def create_job(request):
         rounds_list = [r.strip()[:60] for r in
                        request.POST.get('interview_rounds', '').split(',')
                        if r.strip()][:6]
+        # N1: Interview-Leitfaden (Themen, kommasepariert) - gleiche Semantik
+        # wie die Runden: nur aendern, wenn das Feld mitgesendet wurde.
+        guide_sent = 'interview_guide' in request.POST
+        guide_list = [t.strip()[:80] for t in
+                      request.POST.get('interview_guide', '').split(',')
+                      if t.strip()][:12]
         description = request.POST.get('description', '').strip()
 
         tasks_raw = request.POST.get('tasks', '')
@@ -114,6 +120,8 @@ def create_job(request):
                     job.panelDeadlineDays = panel_deadline
                 if rounds_sent:
                     job.interviewRoundsJson = rounds_list
+                if guide_sent:
+                    job.interviewGuideJson = guide_list
                 job.description = description
                 job.tasksJson = tasks
                 job.requirementsJson = requirements
@@ -134,6 +142,7 @@ def create_job(request):
                     headcount=headcount or 1,
                     panelQuorum=panel_quorum,
                     interviewRoundsJson=rounds_list,
+                    interviewGuideJson=guide_list,
                     panelDeadlineDays=panel_deadline,
                     description=description,
                     tasksJson=tasks,

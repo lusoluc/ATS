@@ -303,3 +303,29 @@ def notify_due_requisition_steps(req: "StaffingRequest") -> int:
                     roles=roles, recipients=len(recipients))
     return len(recipients)
 
+
+
+# --- Mitbestimmung: § 99 BetrVG (Zustimmungsverweigerung des Betriebsrats) ---
+# Der Betriebsrat kann die Zustimmung zu einer Einstellung nur aus den sechs
+# Gruenden des § 99 Abs. 2 BetrVG verweigern - und muss sie begruenden.
+# SecurATS macht daraus einen strukturierten Widerspruch statt eines formlosen
+# "Ablehnen": Grund waehlen + Begruendung, beides revisionssicher im Audit.
+W99_GROUNDS = {
+    "1": "Verstoß gegen Gesetz, Tarifvertrag oder Betriebsvereinbarung (Nr. 1)",
+    "2": "Verstoß gegen eine Auswahlrichtlinie (Nr. 2)",
+    "3": "Besorgnis der Kündigung oder Benachteiligung anderer Beschäftigter (Nr. 3)",
+    "4": "Benachteiligung der/des Betroffenen ohne Rechtfertigung (Nr. 4)",
+    "5": "Unterlassene oder fehlerhafte innerbetriebliche Ausschreibung (Nr. 5)",
+    "6": "Störung des Betriebsfriedens durch gesetzwidriges Verhalten (Nr. 6)",
+}
+
+# Gesetzliche Aeusserungsfrist des Betriebsrats: eine Woche (§ 99 Abs. 3).
+# Bewusst NUR Anzeige/Frist-Hinweis - keine automatische Zustimmungsfiktion
+# (die waere eine eigene rechtliche Entscheidung des Traegers).
+W99_DEADLINE_DAYS = 7
+
+
+def is_betriebsrat_step(step: object) -> bool:
+    """Ist diese Freigabe-Stufe eine Betriebsrats-Stufe? (Rollenname)"""
+    role = (getattr(step, 'assignedRoleId', '') or '')
+    return 'betriebsrat' in role.lower()

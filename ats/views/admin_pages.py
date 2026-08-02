@@ -193,21 +193,30 @@ def learned_scoring_view(request):
 @hr_admin_required
 def save_learned_scoring_settings(request):
     """Hauptschalter fuers gelernte Scoring. Aktivieren ist eine bewusste,
-    auditierte Entscheidung; ohne bestaetigtes Rechtsgutachten bleibt es aus."""
+    auditierte Entscheidung mit ZWEI Voraussetzungen: Rechtsgutachten UND
+    Zustimmung des Betriebsrats - eine leistungs-/verhaltensbewertende
+    Automatik ist nach § 87 Abs. 1 Nr. 6 BetrVG mitbestimmungspflichtig."""
     from ..audit import write_audit
     from ..scoring_eval import LEARNED_SCORING_ENABLED_KEY
     if request.method != 'POST':
         return redirect('ats:learned_scoring')
     enable = bool(request.POST.get('enable'))
-    confirmed = bool(request.POST.get('legal_confirmed'))
-    if enable and not confirmed:
-        messages.warning(request, "Aktivierung nur mit bestätigtem "
-                                  "Rechtsgutachten (Kästchen ankreuzen).")
+    legal = bool(request.POST.get('legal_confirmed'))
+    br = bool(request.POST.get('br_confirmed'))
+    if enable and not (legal and br):
+        missing = []
+        if not legal:
+            missing.append("Rechtsgutachten")
+        if not br:
+            missing.append("Betriebsrats-Zustimmung (§ 87 Abs. 1 Nr. 6 BetrVG)")
+        messages.warning(request, "Aktivierung nur mit bestätigter "
+                         + " und ".join(missing) + " – Kästchen ankreuzen.")
         return redirect('ats:learned_scoring')
     SystemSetting.objects.update_or_create(
         key=LEARNED_SCORING_ENABLED_KEY,
         defaults={'value': '1' if enable else '0'})
-    write_audit('LEARNED_SCORING_TOGGLED', user=request.user, enabled=enable)
+    write_audit('LEARNED_SCORING_TOGGLED', user=request.user, enabled=enable,
+                legal_confirmed=legal, br_confirmed=br)
     messages.success(request, "Gelerntes Scoring "
                      + ("aktiviert." if enable else "deaktiviert."))
     return redirect('ats:learned_scoring')

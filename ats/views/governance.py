@@ -104,6 +104,24 @@ def approvals_inbox(request):
         if action == 'return' and not comment:
             # UC-JF-07: Rückfrage ohne Begründung ist sinnlos
             return redirect('ats:approvals')
+
+        # § 99 Abs. 2 BetrVG: Der Betriebsrat verweigert die Zustimmung nur
+        # aus den sechs gesetzlichen Gruenden - und MUSS begruenden. Ein
+        # formloses "Ablehnen" ohne Grund/Begruendung ist fuer BR-Stufen
+        # deshalb gesperrt; Grund + Text wandern strukturiert ins Audit.
+        from ..approvals import W99_GROUNDS, is_betriebsrat_step
+        w99_selected = [g for g in request.POST.getlist('w99_grounds')
+                        if g in W99_GROUNDS]
+        if action == 'reject' and is_betriebsrat_step(step):
+            if not w99_selected or not comment:
+                messages.warning(
+                    request, "Zustimmungsverweigerung nach § 99 BetrVG "
+                    "braucht mindestens einen Grund (Abs. 2) und eine "
+                    "Begründung.")
+                return redirect('ats:approvals')
+            grounds_text = "; ".join(W99_GROUNDS[g] for g in w99_selected)
+            comment = (f"Widerspruch § 99 Abs. 2 BetrVG – Gründe: "
+                       f"{grounds_text}. {comment}")[:2000]
         acting = next((w for w in _pending_steps_for(request.user)
                        if w.id == step.id), None)
         via = getattr(acting, 'via_delegation', None) if acting else None
@@ -143,7 +161,8 @@ def approvals_inbox(request):
             ticket.save(update_fields=['status', 'updatedAt'])
         write_audit(f"APPROVAL_{step.status}", user=request.user,
                     jobPosting=ticket.jobPosting.title, step=step.stepOrder,
-                    comment=comment[:200])
+                    comment=comment[:200],
+                    **({'w99_grounds': w99_selected} if w99_selected else {}))
         return redirect('ats:approvals')
 
     try:
@@ -153,14 +172,20 @@ def approvals_inbox(request):
         sla_days = 7
     now = timezone.now()
     rows = []
+    from ..approvals import W99_DEADLINE_DAYS, W99_GROUNDS, is_betriebsrat_step
     for step in _pending_steps_for(request.user):
         age = (now - step.approvalTicket.createdAt).days
+        # BR-Stufen laufen auf der GESETZLICHEN Wochenfrist (§ 99 Abs. 3),
+        # nicht auf dem hausinternen SLA - die Frist ist keine Hausregel.
+        is_br = is_betriebsrat_step(step)
+        limit = W99_DEADLINE_DAYS if is_br else sla_days
         rows.append({
             'step': step,
             'job': step.approvalTicket.jobPosting,
             'age_days': age,
-            'due_in': sla_days - age,
-            'overdue': age > sla_days,
+            'due_in': limit - age,
+            'overdue': age > limit,
+            'is_br': is_br,
         })
     # Sichtungs-Gremium: Bewerbungen, bei denen MEINE Stimme aussteht
     from ..models import ApplicationVote
@@ -190,7 +215,8 @@ def approvals_inbox(request):
                   for a in panel_apps]
     return render(request, 'approvals.html',
                   {'rows': rows, 'sla_days': sla_days,
-                   'panel_rows': panel_rows})
+                   'panel_rows': panel_rows,
+                   'w99_grounds': W99_GROUNDS})
 
 
 @any_staff_required

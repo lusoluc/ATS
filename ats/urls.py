@@ -82,6 +82,7 @@ urlpatterns = [
     path('recruiter/audit/', views.audit_log_view, name='audit_log'),
     path('recruiter/approvals/', views.approvals_inbox, name='approvals'),  # WP6
     path('recruiter/governance/', views.governance_view, name='governance'),  # WP6                              # B2
+    path('recruiter/governance/roi-export.csv', views.roi_export, name='roi_export'),  # P5
     path('recruiter/talent-pool/', views.talent_pool_view, name='talent_pool'),
     path('recruiter/jobs/<uuid:job_id>/talent-pool/', views.job_pool_matches, name='job_pool_matches'),  # C3
     path('recruiter/applications/<uuid:app_id>/verlauf/', views.application_timeline, name='application_timeline'),  # Aktionsverlauf

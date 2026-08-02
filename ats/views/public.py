@@ -37,6 +37,7 @@ from ..models import (
     Page,
     SystemSetting,
 )
+from ..models.applications import disability_value_disclosed
 from .ai import evaluate_with_local_gemma, get_ollama_url
 from .common import _remember_campaign_src, campaign_expired, exclude_filled, seed_data_if_empty
 
@@ -850,7 +851,7 @@ def candidate_portal(request, token):
         'steps': ['Eingegangen', 'In Prüfung', 'Eingeladen', 'Entscheidung'],
         # § 164: Zustand der freiwilligen Angabe (verschluesselt -> in Python)
         'disability_disclosed': any(
-            (a.severeDisability or '').strip() for a in applications),
+            disability_value_disclosed(a.severeDisability) for a in applications),
         'has_active_application': any(
             a.status not in ('REJECTED', 'WITHDRAWN') for a in applications),
     })

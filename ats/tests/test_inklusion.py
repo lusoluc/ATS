@@ -211,3 +211,35 @@ class GovernanceInclusionTestCase(TestCase):
         r = self.client.get(reverse('ats:governance'))
         self.assertContains(r, "Einladungsquote mit Angabe vs. ohne")
         self.assertContains(r, "100 % vs. 0 %")
+
+
+class UndecryptableValueGuardTestCase(TestCase):
+    """Waechter: roher Fernet-Ciphertext (Key-Wechsel-Altlast) zaehlt NIE als
+    Angabe - weder in Kennzahlen noch im Steckbrief noch im Portal-Zustand."""
+
+    def _plant_ciphertext(self, app):
+        # EncryptedCharField gibt unentschluesselbare Werte roh zurueck;
+        # wir legen so einen Altwert direkt per SQL an (ORM wuerde ihn
+        # korrekt verschluesseln und damit den Fall verfehlen).
+        from django.db import connection
+        with connection.cursor() as cur:
+            cur.execute(
+                "UPDATE ats_application SET severeDisability = %s WHERE id = %s",
+                ['gAAAAABkaputt-alter-key-ciphertext', str(app.id)])
+
+    def test_helper_accepts_only_ja(self):
+        from ..models.applications import disability_value_disclosed
+        self.assertTrue(disability_value_disclosed('JA'))
+        self.assertTrue(disability_value_disclosed(' ja '))
+        self.assertFalse(disability_value_disclosed(''))
+        self.assertFalse(disability_value_disclosed(None))
+        self.assertFalse(disability_value_disclosed('gAAAAABxyz'))
+
+    def test_ciphertext_not_counted_in_aggregate(self):
+        from ..views.governance import _inclusion_aggregate
+        world = make_world()
+        job = make_job(world)
+        self._plant_ciphertext(make_application(job))
+        make_application(job, severeDisability='JA')
+        agg = _inclusion_aggregate()
+        self.assertEqual(agg['disclosed'], 1)   # nur die echte Angabe

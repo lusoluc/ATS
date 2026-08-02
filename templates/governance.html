@@ -4,6 +4,15 @@
 <div class="page-wrap">
   <h1 class="page-title"><i class="fa-solid fa-landmark"></i> Governance-Cockpit</h1>
   <p class="page-lead">Datenminimierte Kontroll-Sicht für Betriebsrat, Schwerbehindertenvertretung und Datenschutz: ausschließlich Aggregate – keine Namen, keine Einzelfälle.</p>
+  {% if can_export %}
+  <!-- P5 (CFO): Kennzahlen dort exportierbar, wo sie stehen - nur Leitung,
+       BR/SBV sehen die Seite ohne Knopf. Inhalt = dieselben Aggregate. -->
+  <p style="margin:-8px 0 16px;">
+    <a class="btn-secondary" href="{% url 'ats:roi_export' %}" style="font-size:13px;">
+      <i class="fa-solid fa-file-csv"></i> ROI-/Inklusions-Kennzahlen als CSV (Controlling)
+    </a>
+  </p>
+  {% endif %}
 
   <div class="card">
     <h2 style="margin:0 0 var(--space-3); font-size:17px;">Verfahren im Überblick</h2>

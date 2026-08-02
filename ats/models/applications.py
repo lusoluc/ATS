@@ -14,6 +14,18 @@ from .system import SystemSetting
 # 4. APPLICATION DOMAIN (ATS & Workflow)
 # ============================================================================
 
+def disability_value_disclosed(value: "str | None") -> bool:
+    """§ 164: Zaehlt ein severeDisability-Wert als erteilte Angabe?
+
+    Die Anwendung schreibt ausschliesslich 'JA' (oder leer). Alles andere -
+    insbesondere roher Fernet-Ciphertext, den EncryptedCharField bei einem
+    Key-Wechsel unentschluesselt zurueckgibt - ist KEINE Angabe. Ohne diese
+    Schranke wuerden kaputte Altwerte still als Schwerbehinderten-Angabe in
+    SBV-Kennzahlen, Steckbrief-Chip und Portal-Anzeige einfliessen.
+    """
+    return (value or "").strip().upper() == "JA"
+
+
 class ApplicantManager(models.Manager):
     """Lookups über den Blind-Index statt über die verschlüsselte E-Mail-Spalte."""
 
@@ -91,6 +103,9 @@ class Application(models.Model):
     # Gleichstellung. Art.-9-DSGVO-Datum -> verschluesselt at-rest, nur durch
     # ausdrueckliches Ankreuzen gesetzt ('JA', sonst leer). Loest die
     # SBV-Unterrichtung aus. NIEMALS Eingabe fuer Scoring/Lernen (Waechter-Test).
+    # Lesen IMMER ueber disability_value_disclosed(): EncryptedCharField gibt
+    # bei Key-Wechsel den rohen Ciphertext zurueck - der darf nie als Angabe
+    # zaehlen (sonst kippen SBV-Kennzahlen und Portal-Anzeige still).
     severeDisability = EncryptedCharField(max_length=10, blank=True, default="")
 
     createdAt = models.DateTimeField(default=timezone.now)

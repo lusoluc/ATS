@@ -18,6 +18,7 @@ from datetime import datetime
 from django.utils import timezone
 
 from .models import Application
+from .models.applications import disability_value_disclosed
 
 # Fuellwoerter, die beim Anforderungs-Abgleich nichts kennzeichnen.
 _STOP = {
@@ -107,7 +108,7 @@ def build_facts(app: Application, now: "datetime | None" = None) -> SteckbriefFa
         days_since=max(0, (now - app.createdAt).days),
         repeat_count=repeat_count,
         ai_score=app.aiScore or None,
-        disability_disclosed=bool((app.severeDisability or "").strip()))
+        disability_disclosed=disability_value_disclosed(app.severeDisability))
 
 
 def facts_to_bullets(facts: SteckbriefFacts) -> list[str]:

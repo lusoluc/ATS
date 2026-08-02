@@ -28,11 +28,11 @@ from ..models import (
     TalentPoolSubscription,
     WorkflowState,
 )
-from ..permissions import any_staff_required, has_full_access, hr_admin_required, recruiter_required
+from ..permissions import HR_ADMIN, any_staff_required, has_full_access, hr_admin_required, recruiter_required
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["_pending_steps_for", "approvals_inbox", "governance_view", "panel_defaults_view", "panel_preview", "delegations_view", "audit_log_view", "audit_export", "staffing_requests_view", "_previous_process", "process_previous"]
+__all__ = ["_pending_steps_for", "approvals_inbox", "governance_view", "roi_export", "panel_defaults_view", "panel_preview", "delegations_view", "audit_log_view", "audit_export", "staffing_requests_view", "_previous_process", "process_previous"]
 
 
 def _pending_steps_for(user):
@@ -242,19 +242,39 @@ def governance_view(request):
     ai_logged = AuditLog.objects.filter(action='AI_EXECUTION').count()
     consents = TalentPoolSubscription.objects.count()
 
-    # § 164 SGB IX / SBV-Kennzahlen (Katrin Sommer): NUR Aggregate. Das Feld
-    # ist verschluesselt (Art. 9) -> Auswertung entschluesselt in Python, nie
-    # per SQL-Filter. Quoten erst ab 5 Faellen je Gruppe (Anonymitaet).
+    inclusion = _inclusion_aggregate()
+
+    return render(request, 'governance.html', {
+        'total': total, 'by_status': by_status,
+        'audit_counts': audit_counts, 'chain': chain,
+        'anonymized': anonymized, 'ai_logged': ai_logged,
+        'consents': consents, 'inclusion': inclusion,
+        # Export nur Leitung (Rollen-Check wie hr_admin_required, NICHT
+        # has_full_access: das ist BOLA-Scoping und gilt auch fuer Viewer
+        # ohne Einschraenkung): BR/SBV sehen die Seite, aber keinen Knopf.
+        'can_export': request.user.is_superuser
+        or request.user.groups.filter(name=HR_ADMIN).exists(),
+    })
+
+
+def _inclusion_aggregate():
+    """§ 164 SGB IX / SBV-Kennzahlen (Katrin Sommer): NUR Aggregate.
+
+    Das Feld ist verschluesselt (Art. 9) -> Auswertung entschluesselt in
+    Python, nie per SQL-Filter. Quoten erst ab 5 Faellen je Gruppe
+    (Anonymitaet). Eine Wahrheit fuer Governance-Seite UND ROI-Export.
+    """
+    from ..models.applications import disability_value_disclosed
     _INVITED = ('INVITED', 'HIRED')
     disclosed_n = disclosed_inv = other_n = other_inv = 0
-    for status, dis in apps.values_list('status', 'severeDisability'):
-        if (dis or '').strip():
+    for status, dis in Application.objects.values_list('status', 'severeDisability'):
+        if disability_value_disclosed(dis):
             disclosed_n += 1
             disclosed_inv += 1 if status in _INVITED else 0
         else:
             other_n += 1
             other_inv += 1 if status in _INVITED else 0
-    inclusion = {
+    return {
         'disclosed': disclosed_n,
         'sbv_notified': AuditLog.objects.filter(action='SBV_NOTIFIED').count(),
         'rates_visible': disclosed_n >= 5 and other_n >= 5,
@@ -263,12 +283,75 @@ def governance_view(request):
         'other_rate': round(100 * other_inv / other_n) if other_n else None,
     }
 
-    return render(request, 'governance.html', {
-        'total': total, 'by_status': by_status,
-        'audit_counts': audit_counts, 'chain': chain,
-        'anonymized': anonymized, 'ai_logged': ai_logged,
-        'consents': consents, 'inclusion': inclusion,
-    })
+
+@hr_admin_required
+def roi_export(request):
+    """P5 (CFO Braun, UC-AR-13): Kennzahlen als CSV fuer Excel/Controlling.
+
+    Ausschliesslich Aggregate - keine Namen, keine Einzelfaelle. Flussgroessen
+    (Bewerbungen, Einstellungen, Automatisierung) auf die letzten 365 Tage
+    bezogen, Inklusion als Bestand wie auf der Governance-Seite. Jede
+    Annahme steht als eigene Zeile im Export, nicht versteckt in der Zahl.
+    """
+    import csv
+
+    from django.db.models import Sum
+
+    from ..models import SourceChannel
+
+    year_ago = timezone.now() - datetime.timedelta(days=365)
+    apps_new = Application.objects.filter(createdAt__gte=year_ago).count()
+    hired_qs = Application.objects.filter(status='HIRED', updatedAt__gte=year_ago)
+    hires = hired_qs.count()
+    hire_days = [max((a.updatedAt - a.createdAt).days, 0) for a in hired_qs]
+    avg_days = round(sum(hire_days) / len(hire_days)) if hire_days else None
+
+    cost_total = SourceChannel.objects.aggregate(s=Sum('costAmount'))['s']
+    cost_per_hire = round(float(cost_total) / hires, 2) if cost_total and hires else None
+
+    def _acts(action: str) -> int:
+        return AuditLog.objects.filter(action=action, createdAt__gte=year_ago).count()
+
+    inclusion = _inclusion_aggregate()
+
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = 'attachment; filename="securats-roi-inklusion.csv"'
+    response.write('\ufeff')  # BOM: Umlaute in Excel
+    writer = csv.writer(response, delimiter=';')
+    writer.writerow(['Bereich', 'Kennzahl', 'Wert', 'Erläuterung'])
+    rows = [
+        ('Besetzung', 'Bewerbungen eingegangen', apps_new, 'letzte 365 Tage'),
+        ('Besetzung', 'Einstellungen', hires, 'letzte 365 Tage'),
+        ('Besetzung', 'Ø Tage bis Einstellung', avg_days if avg_days is not None else '',
+         'Eingang bis Status EINGESTELLT'),
+        ('Kanalkosten', 'Kampagnenkosten gesamt', cost_total or 0,
+         'Summe der an Kanälen hinterlegten Kosten'),
+        ('Kanalkosten', 'Kosten je Einstellung', cost_per_hire if cost_per_hire is not None else '',
+         'Kampagnenkosten / Einstellungen (Näherung)'),
+        ('Entlastung', 'Automatische Antworten', _acts('AUTO_REPLY_SENT'),
+         'sofort beantwortete Bewerberfragen (letzte 365 Tage)'),
+        ('Entlastung', 'Sammel-Antworten (Versandvorgänge)', _acts('BATCH_REPLY_SENT'),
+         'einmal geprüft, an alle Betroffenen gesendet'),
+        ('Entlastung', 'Serien-Nachrichten (Empfänger)', _acts('SERIES_MESSAGE_SENT'),
+         'z. B. Ausbildungs-/Event-Einladungen'),
+        ('Entlastung', 'DSGVO-Anonymisierungen', _acts('ANONYMIZE_DSGVO'),
+         'automatische Aufbewahrungs-Läufe'),
+        ('Inklusion', 'Bewerbungen mit § 164-Angabe', inclusion['disclosed'],
+         'freiwillige Angabe, Bestand gesamt'),
+        ('Inklusion', 'SBV-Unterrichtungen versendet', inclusion['sbv_notified'],
+         '§ 164 Abs. 1 SGB IX'),
+    ]
+    if inclusion['rates_visible']:
+        rows.append(('Inklusion', 'Einladungsquote mit/ohne Angabe',
+                     f"{inclusion['disclosed_rate']} % / {inclusion['other_rate']} %",
+                     'nur Aggregat, ab 5 Fällen je Gruppe'))
+    else:
+        rows.append(('Inklusion', 'Einladungsquote mit/ohne Angabe', '',
+                     'unter Anonymitätsschwelle (5 Fälle je Gruppe)'))
+    for row in rows:
+        writer.writerow(row)
+    write_audit('ROI_EXPORT', user=request.user, rows=len(rows))
+    return response
 
 
 @hr_admin_required

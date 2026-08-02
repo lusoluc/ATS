@@ -47,7 +47,10 @@
       width:100%;min-height:44px;padding:10px 12px;border-radius:10px;font-size:15px;
       background:var(--bg-color);border:1px solid var(--border-color);color:var(--text-main);}
     a{color:var(--primary);text-decoration:none;}
-    .pipeline { display:flex; margin:12px 0 2px; width:100%; }
+    /* flex statt width:100%: laesst Badge/Button daneben Platz und bricht am
+       schmalen Screen sauber um, statt den Zurueckziehen-Button in die
+       Status-Leiste zu quetschen (gemeldeter Optik-Bug). */
+    .pipeline { display:flex; margin:12px 0 2px; flex:1 1 240px; min-width:0; }
     .p-step { flex:1; text-align:center; position:relative; min-width:0; }
     .p-dot { width:13px; height:13px; border-radius:50%; margin:0 auto 5px;
         background:var(--surface-hover); border:2px solid var(--border-color);
@@ -93,7 +96,7 @@
             <div style="font-weight:600;">{{ r.job }}</div>
             <div class="muted">eingegangen am {{ r.created|date:"d.m.Y" }}</div>
           </div>
-          <div style="display:flex;align-items:center;gap:10px;">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <span class="badge b-{{ r.status }}">{{ r.label }}</span>
             <div class="pipeline" role="img" aria-label="Bewerbungsfortschritt: {{ r.label }}">
               <div class="p-step {% if r.status == 'NEW' %}current{% else %}done{% endif %}">

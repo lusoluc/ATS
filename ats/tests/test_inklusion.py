@@ -113,6 +113,81 @@ class ScoringGuardTestCase(TestCase):
                              f"{mod} darf die freiwillige Angabe nicht nutzen")
 
 
+class PortalDisclosureTestCase(TestCase):
+    """P1: Widerruf/Abgabe der freiwilligen Angabe im Kandidatenportal
+    (Art. 7 Abs. 3 DSGVO: Widerruf so einfach wie Erteilung)."""
+
+    def setUp(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from ..models import ApplicantToken
+        self.world = make_world()
+        self.job = make_job(self.world, title="Pflegefachkraft")
+        self.app = make_application(self.job, severeDisability='JA',
+                                    status='IN_REVIEW')
+        self.tok = ApplicantToken.objects.create(
+            token="sbv-portal-token", applicant=self.app.applicant,
+            expiresAt=timezone.now() + timedelta(days=30))
+        self.url = reverse('ats:candidate_portal', args=[self.tok.token])
+
+    def test_portal_shows_revoke_when_disclosed(self):
+        r = self.client.get(self.url)
+        self.assertContains(r, "Angabe zurücknehmen")
+
+    def test_revoke_clears_field_and_audits_without_health_data(self):
+        self.client.post(self.url, data={'form': 'disability',
+                                         'action': 'revoke'})
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.severeDisability, '')
+        audit = AuditLog.objects.filter(
+            action='SBV_DISCLOSURE_REVOKED').first()
+        self.assertIsNotNone(audit)
+        self.assertNotIn('JA', audit.metadataJson)
+
+    def test_grant_sets_field_and_notifies_sbv(self):
+        # erst widerrufen, dann nachtraeglich wieder abgeben
+        self.app.severeDisability = ''
+        self.app.save(update_fields=['severeDisability'])
+        sbv, _ = Group.objects.get_or_create(name='SBV')
+        member = make_user("sbv-p1", role="Recruiter")
+        member.email = "sbv-p1@haus.example"
+        member.save(update_fields=['email'])
+        member.groups.add(sbv)
+        mail.outbox = []
+        self.client.post(self.url, data={'form': 'disability',
+                                         'action': 'grant'})
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.severeDisability, 'JA')
+        self.assertTrue(any("SBV" in m.subject for m in mail.outbox))
+        self.assertTrue(AuditLog.objects.filter(
+            action='SBV_NOTIFIED').exists())
+
+    def test_grant_skips_closed_applications(self):
+        closed = make_application(self.job, status='REJECTED')
+        # gleicher Bewerber wie self.app? Nein - eigener. Token gehoert zu
+        # self.app.applicant; closed haengt an anderem Bewerber und darf
+        # unberuehrt bleiben (BOLA des Portals: nur eigene Bewerbungen).
+        self.client.post(self.url, data={'form': 'disability',
+                                         'action': 'grant'})
+        closed.refresh_from_db()
+        self.assertEqual(closed.severeDisability, '')
+
+    def test_own_closed_application_not_granted(self):
+        own_closed = Application.objects.create(
+            applicant=self.app.applicant, jobPosting=self.job,
+            status='REJECTED')
+        self.app.severeDisability = ''
+        self.app.save(update_fields=['severeDisability'])
+        self.client.post(self.url, data={'form': 'disability',
+                                         'action': 'grant'})
+        own_closed.refresh_from_db()
+        self.app.refresh_from_db()
+        self.assertEqual(own_closed.severeDisability, '')   # zu bleibt zu
+        self.assertEqual(self.app.severeDisability, 'JA')   # aktiv bekommt sie
+
+
 class GovernanceInclusionTestCase(TestCase):
     def setUp(self):
         self.rec = make_user("gi-rec", role="Recruiter")

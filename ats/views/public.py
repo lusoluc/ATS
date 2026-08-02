@@ -554,6 +554,50 @@ def candidate_portal(request, token):
                         application_id=str(applications.first().id) if applications else None)
         return redirect('ats:candidate_portal', token=token)
 
+    # § 164 SGB IX + Art. 7 Abs. 3 DSGVO: die freiwillige Angabe einer
+    # Schwerbehinderung/Gleichstellung muss so einfach widerrufbar sein, wie
+    # sie erteilt wurde - und auch nachtraeglich abgebbar. Wirkt auf ALLE
+    # Bewerbungen dieser Person. Audits bewusst ohne Gesundheitsdaten.
+    if request.method == 'POST' and request.POST.get('form') == 'disability':
+        if request.POST.get('action') == 'revoke':
+            for app in applications:
+                if (app.severeDisability or '').strip():
+                    app.severeDisability = ''
+                    app.save(update_fields=['severeDisability', 'updatedAt'])
+            write_audit('SBV_DISCLOSURE_REVOKED',
+                        application_id=str(applications.first().id)
+                        if applications else None)
+        elif request.POST.get('action') == 'grant':
+            first_active = None
+            for app in applications:
+                if app.status not in ('REJECTED', 'WITHDRAWN'):
+                    app.severeDisability = 'JA'
+                    app.save(update_fields=['severeDisability', 'updatedAt'])
+                    first_active = first_active or app
+            if first_active is not None:
+                # SBV unterrichten wie bei Abgabe im Bewerbungsformular
+                try:
+                    from django.contrib.auth.models import Group as _Group
+                    _sbv, _ = _Group.objects.get_or_create(name='SBV')
+                    _mails = [u.email for u in _sbv.user_set.all() if u.email]
+                    if _mails:
+                        from django.core.mail import send_mail as _send
+                        _send(
+                            "SBV-Beteiligung: nachträgliche Angabe – "
+                            f"{first_active.jobPosting.title}",
+                            ("Zu einer laufenden Bewerbung wurde nachträglich "
+                             "eine Schwerbehinderung/Gleichstellung angegeben. "
+                             "Bitte beziehen Sie sich nach § 164/§ 178 Abs. 2 "
+                             "SGB IX ein: /recruiter/dashboard/#card-"
+                             f"{first_active.id}"),
+                            None, _mails, fail_silently=True)
+                    write_audit('SBV_NOTIFIED',
+                                application_id=str(first_active.id),
+                                recipients=len(_mails))
+                except Exception:
+                    logger.exception('SBV-Unterrichtung fehlgeschlagen')
+        return redirect('ats:candidate_portal', token=token)
+
     # Kontaktdaten aktualisieren (UC-AY-09): Telefon direkt (risikoarm);
     # E-Mail-Aenderung nur als Anfrage – die E-Mail ist Identitaetsanker
     # (Magic-Link, Blind-Index, Opt-ins) und wird nach Ruecksprache durchs
@@ -804,6 +848,11 @@ def candidate_portal(request, token):
                 email=applicant.email, expiresAt__gte=timezone.now()).first(),
         'has_rejected': applications.filter(status='REJECTED').exists(),
         'steps': ['Eingegangen', 'In Prüfung', 'Eingeladen', 'Entscheidung'],
+        # § 164: Zustand der freiwilligen Angabe (verschluesselt -> in Python)
+        'disability_disclosed': any(
+            (a.severeDisability or '').strip() for a in applications),
+        'has_active_application': any(
+            a.status not in ('REJECTED', 'WITHDRAWN') for a in applications),
     })
 
 

@@ -231,6 +231,32 @@
         </form>
       </div>
     </div>
+
+    <!-- § 164 SGB IX + Art. 7 Abs. 3 DSGVO: freiwillige Angabe – Widerruf so
+         einfach wie die Erteilung, am selben Ort, ein Klick. -->
+    {% if disability_disclosed or has_active_application %}
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+        <div>
+          <div style="font-weight:600; font-size:14px;">Freiwillige Angabe: Schwerbehinderung/Gleichstellung</div>
+          {% if disability_disclosed %}
+          <p class="muted" style="font-size:12px; margin:4px 0 0;">Ihre Angabe liegt vor – unsere Schwerbehindertenvertretung ist nach § 164 SGB IX einbezogen. Sie können die Angabe hier jederzeit mit einem Klick zurücknehmen; sie wird dann sofort gelöscht.</p>
+          {% else %}
+          <p class="muted" style="font-size:12px; margin:4px 0 0;">Völlig freiwillig und ohne Nachteile: Mit Ihrer Angabe beziehen wir unsere Schwerbehindertenvertretung in Ihr Verfahren ein (§ 164 SGB IX). Verschlüsselt gespeichert, fließt in keine automatische Bewertung ein, hier jederzeit widerrufbar.</p>
+          {% endif %}
+        </div>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="form" value="disability">
+          {% if disability_disclosed %}
+          <button type="submit" name="action" value="revoke">Angabe zurücknehmen</button>
+          {% else %}
+          <button type="submit" name="action" value="grant" style="border-color:#14532d; color:#6ee7b7;">Angabe machen</button>
+          {% endif %}
+        </form>
+      </div>
+    </div>
+    {% endif %}
     <div class="card">
       <details>
         <summary style="cursor:pointer; color:#94a3b8; font-size:13px;">Meine Kontaktdaten</summary>

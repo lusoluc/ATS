@@ -47,7 +47,7 @@ from .governance import _pending_steps_for
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "reorder_board", "bulk_update_status", "application_messages", "draft_reply", "application_summary", "inbox_view", "open_question_clusters", "batch_reply", "save_reply_snippet", "reclassify_message", "application_vote", "talent_pool_view", "job_pool_matches", "application_timeline", "job_timeline", "tasks_view"]
+__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "reorder_board", "bulk_update_status", "application_messages", "draft_reply", "application_summary", "inbox_view", "open_question_clusters", "batch_reply", "job_series_message", "save_reply_snippet", "reclassify_message", "application_vote", "talent_pool_view", "job_pool_matches", "application_timeline", "job_timeline", "tasks_view"]
 
 
 @ensure_csrf_cookie
@@ -929,6 +929,67 @@ def reclassify_message(request):
     messages.success(
         request, f'Nachricht nach „{INTENT_LABELS[to_intent]}" verschoben.')
     return redirect('ats:inbox')
+
+
+@recruiter_required
+def job_series_message(request, job_id):
+    """P3 (Ulrike Mayr, UC-UM-09): Serien-Nachricht an die Bewerber EINER
+    Stelle - z. B. Einladung zum Infotag oder Ausbildungs-Event.
+
+    Gleiche Mechanik wie die Sammel-Antwort: EINE geprüfte Vorlage, je Person
+    personalisiert ([[Vorname]]/[[Stelle]]/[[Stand]]), Vorschau, bewusstes
+    Ausloesen. Empfaenger sind die AKTIVEN Bewerbungen der Stelle
+    (abgeschlossene werden nie angeschrieben). Zustellung als Portal-Nachricht
+    UND E-Mail (fail-silent), Audit je Person.
+    """
+    from ..board_insights import status_label
+    from ..reply_drafts import personalize
+    job = get_object_or_404(
+        scope_jobs(request.user, JobPosting.objects.filter(id=job_id)))
+    active = list(Application.objects.filter(jobPosting=job)
+                  .exclude(status__in=['REJECTED', 'WITHDRAWN'])
+                  .select_related('applicant').order_by('createdAt'))
+
+    if request.method == 'POST':
+        template = (request.POST.get('template') or '').strip()[:4000]
+        chosen = set(request.POST.getlist('app_ids'))
+        if not template or not chosen:
+            messages.warning(request, "Keine Vorlage oder keine Auswahl.")
+            return redirect('ats:job_series_message', job_id=job.id)
+        sent = 0
+        for app in active:
+            if str(app.id) not in chosen:
+                continue
+            text = personalize(template, first_name=app.applicant.firstName,
+                               job_title=job.title, status=app.status)
+            Message.objects.create(application=app, direction='OUTBOUND',
+                                   content=text)
+            if app.applicant.email:
+                from django.core.mail import send_mail
+                send_mail(f"Neuigkeit zu Ihrer Bewerbung – {job.title}",
+                          text, None, [app.applicant.email],
+                          fail_silently=True)
+            write_audit('SERIES_MESSAGE_SENT', user=request.user,
+                        application_id=app.id)
+            sent += 1
+        if sent:
+            messages.success(request, f"Nachricht an {sent} Person(en) gesendet.")
+        return redirect('ats:job_series_message', job_id=job.id)
+
+    recipients = [{
+        'app': a,
+        'name': f"{a.applicant.firstName} {a.applicant.lastName}".strip(),
+        'first_name': a.applicant.firstName,
+        'status': status_label(a.status),
+    } for a in active]
+    default_template = (
+        "Guten Tag [[Vorname]],\n\n"
+        "zu Ihrer Bewerbung als [[Stelle]] haben wir eine Neuigkeit für Sie:\n\n"
+        "…\n\n"
+        "Freundliche Gruesse\nIhr Recruiting-Team")
+    return render(request, 'job_series_message.html', {
+        'job': job, 'recipients': recipients,
+        'default_template': default_template})
 
 
 @recruiter_required

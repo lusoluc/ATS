@@ -85,6 +85,7 @@ urlpatterns = [
     path('recruiter/jobs/<uuid:job_id>/talent-pool/', views.job_pool_matches, name='job_pool_matches'),  # C3
     path('recruiter/applications/<uuid:app_id>/verlauf/', views.application_timeline, name='application_timeline'),  # Aktionsverlauf
     path('recruiter/jobs/<uuid:job_id>/verlauf/', views.job_timeline, name='job_timeline'),  # Aktionsverlauf
+    path('recruiter/jobs/<uuid:job_id>/serien-nachricht/', views.job_series_message, name='job_series_message'),  # P3
     path('recruiter/aufgaben/', views.tasks_view, name='tasks'),   # Automatik-Aufgaben                    # B11
     path('recruiter/screening-questions/', views.screening_questions_view, name='screening_questions'),  # B15
     path('recruiter/screening-questions/<uuid:q_id>/archive/', views.archive_screening_question, name='archive_screening_question'),

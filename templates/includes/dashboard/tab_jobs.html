@@ -52,6 +52,10 @@
                                     <a class="btn-search" href="{% url 'ats:job_timeline' job.id %}" style="padding: 4px 10px; height: auto; font-size: 11px; margin: 0 0 0 6px; border-radius: var(--border-radius-sm); display:inline-block;" title="Aktionsverlauf dieser Stelle">
                                         <i class="fa-solid fa-clock-rotate-left"></i> Verlauf
                                     </a>
+                                    <!-- P3: Serien-Nachricht (Infotag/Event) an aktive Bewerber der Stelle -->
+                                    <a class="btn-search" href="{% url 'ats:job_series_message' job.id %}" style="padding: 4px 10px; height: auto; font-size: 11px; margin: 0 0 0 6px; border-radius: var(--border-radius-sm); display:inline-block;" title="Serien-Nachricht an alle aktiven Bewerber dieser Stelle">
+                                        <i class="fa-solid fa-bullhorn"></i> Nachricht an alle
+                                    </a>
                                 </td>
                             </tr>
                         {% empty %}

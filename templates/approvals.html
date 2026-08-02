@@ -39,7 +39,7 @@
   <div class="card" style="margin-top: var(--space-4);">
     <h2 style="font-size:16px; margin:0 0 var(--space-1);"><i class="fa-solid fa-users-rectangle" style="color:var(--accent-light);"></i> Sichtungs-Gremium</h2>
     <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--space-3);">Bewerbungen auf Stellen mit Gremium: Einladung erst nach absoluter Mehrheit dafür. Kommentare/Fragen landen in den internen Notizen der Bewerbung.</p>
-    <div class="table-scroll">
+    <div class="table-scroll m-stack">
     <table class="data-table"><thead><tr><th>Bewerbung</th><th>Stand</th><th>Meine Stimme</th></tr></thead><tbody>
       {% for r in panel_rows %}
       <tr>
@@ -78,7 +78,7 @@
         </td>
       </tr>
       {% endfor %}
-    </tbody></table>
+    </tbody></table></div>
   </div>
   {% endif %}
 {% endblock %}

@@ -24,7 +24,7 @@
     <div class="table-scroll">
     <table class="data-table"><thead><tr><th>Zeile</th><th>Grund</th></tr></thead><tbody>
       {% for line, reason in report.errors %}<tr><td>{{ line }}</td><td>{{ reason }}</td></tr>{% endfor %}
-    </tbody></table>
+    </tbody></table></div>
     {% endif %}
   </div>
   {% endif %}
@@ -111,7 +111,7 @@
       <div class="table-scroll">
       <table class="data-table"><thead><tr><th>Datei</th><th>E-Mail</th><th>Bewerbung</th><th>Typ</th></tr></thead><tbody>
         {% for m in cv_report.matched %}<tr><td>{{ m.0 }}</td><td>{{ m.1 }}</td><td>{{ m.2 }}</td><td>{{ m.3 }}</td></tr>{% endfor %}
-      </tbody></table>
+      </tbody></table></div>
       {% endif %}
       {% if cv_report.unmatched %}
       <p style="font-size:13px; color:var(--text-muted); margin-top:var(--space-2);">Ohne Treffer:</p>

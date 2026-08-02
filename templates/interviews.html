@@ -91,7 +91,7 @@
             <td>{{ iv.application.applicant.firstName }} {{ iv.application.applicant.lastName }}</td>
             <td style="color:var(--text-muted);">{{ iv.application.jobPosting.title }}</td></tr>
         {% empty %}<tr><td class="empty-state">Keine anstehenden Gespräche.</td></tr>{% endfor %}
-      </tbody></table>
+      </tbody></table></div>
       {% if round_rows %}
       <h3 style="font-size:14px; margin: var(--space-3) 0 var(--space-2);"><i class="fa-solid fa-stairs" style="color:var(--primary-light);"></i> Gesprächsrunden ({{ round_rows|length }})</h3>
       <div class="table-scroll">
@@ -213,7 +213,7 @@
           </td>
         </tr>
         {% endfor %}
-      </tbody></table>
+      </tbody></table></div>
       {% endif %}
             <h3 style="font-size:14px; margin: var(--space-3) 0 var(--space-2);">Freie Slots</h3>
       <div class="table-scroll">
@@ -224,7 +224,7 @@
             <td style="color:var(--text-muted);">{{ sl.jobPosting.title }}</td>
             <td style="color:var(--text-muted); font-size:12px;">{% if sl.createdBy %}{{ sl.createdBy.username }}{% endif %}</td></tr>
         {% empty %}<tr><td class="empty-state">Keine freien Slots – oben anlegen.</td></tr>{% endfor %}
-      </tbody></table>
+      </tbody></table></div>
     </div>
   </div>
 </div>

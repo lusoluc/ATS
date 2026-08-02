@@ -87,6 +87,11 @@ class Application(models.Model):
     privacyNoticeVersion = models.ForeignKey(PrivacyNoticeVersion, on_delete=models.SET_NULL, blank=True, null=True, related_name='applications')
     consentTalentPool = models.BooleanField(default=False)
     internalNotes = models.TextField(default="", blank=True)
+    # § 164 SGB IX / § 178 Abs. 2: FREIWILLIGE Angabe einer Schwerbehinderung/
+    # Gleichstellung. Art.-9-DSGVO-Datum -> verschluesselt at-rest, nur durch
+    # ausdrueckliches Ankreuzen gesetzt ('JA', sonst leer). Loest die
+    # SBV-Unterrichtung aus. NIEMALS Eingabe fuer Scoring/Lernen (Waechter-Test).
+    severeDisability = EncryptedCharField(max_length=10, blank=True, default="")
 
     createdAt = models.DateTimeField(default=timezone.now)
     updatedAt = models.DateTimeField(auto_now=True)

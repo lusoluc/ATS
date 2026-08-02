@@ -273,10 +273,20 @@
             </label>
         </div>
 
-        <div class="checkbox-group" style="margin-bottom: 30px;">
+        <div class="checkbox-group">
             <input type="checkbox" id="consent_pool" name="consent_pool" class="checkbox-input">
             <label for="consent_pool" class="checkbox-label">
                 <strong>Talent Pool:</strong> Ich möchte für zukünftige Stellenangebote berücksichtigt werden. Meine Daten werden für bis zu 12 Monate gespeichert. (Kann jederzeit widerrufen werden)
+            </label>
+        </div>
+
+        <!-- § 164 SGB IX: freiwillige Angabe – ausdrücklich optional, ohne
+             jeden Nachteil, löst die Einbindung der Schwerbehindertenvertretung
+             aus. Art.-9-Datum: verschlüsselt gespeichert, kein Scoring-Merkmal. -->
+        <div class="checkbox-group" style="margin-bottom: 30px;">
+            <input type="checkbox" id="disability_disclosure" name="disability_disclosure" class="checkbox-input">
+            <label for="disability_disclosure" class="checkbox-label">
+                <strong>Freiwillige Angabe:</strong> Bei mir liegt eine Schwerbehinderung oder Gleichstellung vor. Diese Angabe ist völlig freiwillig, hat keinerlei Nachteile und dient allein Ihren Rechten: Unsere Schwerbehindertenvertretung wird nach § 164 SGB IX in Ihr Verfahren einbezogen. Die Angabe wird verschlüsselt gespeichert und fließt in keine automatische Bewertung ein.
             </label>
         </div>
 

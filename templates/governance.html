@@ -28,6 +28,22 @@
     </ul>
   </div>
 
+  <!-- § 164 SGB IX: Inklusions-Kennzahlen fuer die SBV - nur Aggregate,
+       keine Einzelfaelle; Quoten erst ab 5 Faellen je Gruppe (Anonymitaet). -->
+  <div class="card">
+    <h2 style="margin:0 0 var(--space-3); font-size:17px;"><i class="fa-solid fa-universal-access" style="color:var(--accent-light);"></i> Inklusion (§ 164 SGB IX)</h2>
+    <ul class="list-reset">
+      <li class="list-row"><span>Bewerbungen mit freiwilliger Angabe (Schwerbehinderung/Gleichstellung)</span><span class="badge">{{ inclusion.disclosed }}</span></li>
+      <li class="list-row"><span>SBV-Unterrichtungen (§ 164) versendet</span><span class="badge">{{ inclusion.sbv_notified }}</span></li>
+      {% if inclusion.rates_visible %}
+      <li class="list-row"><span>Einladungsquote mit Angabe vs. ohne</span><span class="badge {% if inclusion.disclosed_rate < inclusion.other_rate %}badge-danger{% else %}badge-accent{% endif %}">{{ inclusion.disclosed_rate }} % vs. {{ inclusion.other_rate }} %</span></li>
+      {% else %}
+      <li class="list-row"><span>Einladungsquoten-Vergleich</span><span style="color:var(--text-muted); font-size:12px;">erst ab 5 Fällen je Gruppe (Anonymität)</span></li>
+      {% endif %}
+    </ul>
+    <p style="color:var(--text-muted); font-size:12px; margin:8px 0 0;">Die Angabe ist freiwillig, verschlüsselt gespeichert und fließt in keine automatische Bewertung ein. Liegt die Einladungsquote mit Angabe spürbar niedriger, ist das ein Prüf-Signal für die SBV.</p>
+  </div>
+
   <div class="card">
     <h2 style="margin:0 0 var(--space-3); font-size:17px;">Audit-Aktivität (Aktionen, aggregiert)</h2>
     <div class="table-scroll">

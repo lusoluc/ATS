@@ -242,11 +242,32 @@ def governance_view(request):
     ai_logged = AuditLog.objects.filter(action='AI_EXECUTION').count()
     consents = TalentPoolSubscription.objects.count()
 
+    # § 164 SGB IX / SBV-Kennzahlen (Katrin Sommer): NUR Aggregate. Das Feld
+    # ist verschluesselt (Art. 9) -> Auswertung entschluesselt in Python, nie
+    # per SQL-Filter. Quoten erst ab 5 Faellen je Gruppe (Anonymitaet).
+    _INVITED = ('INVITED', 'HIRED')
+    disclosed_n = disclosed_inv = other_n = other_inv = 0
+    for status, dis in apps.values_list('status', 'severeDisability'):
+        if (dis or '').strip():
+            disclosed_n += 1
+            disclosed_inv += 1 if status in _INVITED else 0
+        else:
+            other_n += 1
+            other_inv += 1 if status in _INVITED else 0
+    inclusion = {
+        'disclosed': disclosed_n,
+        'sbv_notified': AuditLog.objects.filter(action='SBV_NOTIFIED').count(),
+        'rates_visible': disclosed_n >= 5 and other_n >= 5,
+        'disclosed_rate': round(100 * disclosed_inv / disclosed_n)
+        if disclosed_n else None,
+        'other_rate': round(100 * other_inv / other_n) if other_n else None,
+    }
+
     return render(request, 'governance.html', {
         'total': total, 'by_status': by_status,
         'audit_counts': audit_counts, 'chain': chain,
         'anonymized': anonymized, 'ai_logged': ai_logged,
-        'consents': consents,
+        'consents': consents, 'inclusion': inclusion,
     })
 
 

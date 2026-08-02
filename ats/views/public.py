@@ -302,6 +302,9 @@ def bewerben(request, job_id):
                     ai_score, ai_rationale = evaluate_with_local_gemma(cover_letter, job.requirementsJson)
 
             # 8. Create Application
+            # § 164 SGB IX: freiwillige Angabe (Art. 9 -> verschluesselt,
+            # nur bei ausdruecklichem Ankreuzen, nie Scoring-Eingabe).
+            disability_disclosed = request.POST.get('disability_disclosure') == 'on'
             application = Application.objects.create(
                 applicant=applicant,
                 jobPosting=job,
@@ -312,6 +315,7 @@ def bewerben(request, job_id):
                 aiRationale=ai_rationale,
                 status=initial_status,
                 withdrawReason=withdraw_reason,
+                severeDisability='JA' if disability_disclosed else '',
                 consentTalentPool=consent_pool,
                 source=(request.POST.get('source') or request.GET.get('src')
                         or request.session.get('application_src')
@@ -357,6 +361,30 @@ def bewerben(request, job_id):
                 applicationId=str(application.id),
                 metadataJson=json.dumps({"jobTitle": job.title, "koFailed": ko_failed})
             )
+
+            # § 164 SGB IX: Bei freiwilliger Angabe wird die Schwerbehinderten-
+            # vertretung unmittelbar unterrichtet (Gruppe "SBV"). Fail-safe:
+            # ein Mail-Fehler darf die Bewerbung nie blockieren. Das Audit
+            # traegt bewusst KEINE Gesundheitsdaten, nur das Ereignis.
+            if disability_disclosed:
+                try:
+                    from django.contrib.auth.models import Group as _Group
+                    _sbv, _ = _Group.objects.get_or_create(name='SBV')
+                    _mails = [u.email for u in _sbv.user_set.all() if u.email]
+                    if _mails:
+                        from django.core.mail import send_mail as _send
+                        _send(
+                            f"SBV-Beteiligung: neue Bewerbung – {job.title}",
+                            ("Zu der Stelle ist eine Bewerbung mit freiwilliger "
+                             "Angabe einer Schwerbehinderung/Gleichstellung "
+                             "eingegangen. Bitte beziehen Sie sich nach "
+                             "§ 164/§ 178 Abs. 2 SGB IX ein: "
+                             f"/recruiter/dashboard/#card-{application.id}"),
+                            None, _mails, fail_silently=True)
+                    write_audit('SBV_NOTIFIED', application_id=application.id,
+                                recipients=len(_mails))
+                except Exception:
+                    logger.exception('SBV-Unterrichtung fehlgeschlagen')
 
             # B4: Magic-Link-Token für das passwortlose Status-Portal erzeugen
             import secrets as _secrets

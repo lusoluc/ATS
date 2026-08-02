@@ -50,6 +50,7 @@ urlpatterns = [
     path('recruiter/lernendes-scoring/', views.learned_scoring_view, name='learned_scoring'),  # L3
     path('recruiter/lernendes-scoring/speichern/', views.save_learned_scoring_settings, name='save_learned_scoring'),
     path('recruiter/hris/', views.hris_page, name='hris_page'),
+    path('recruiter/datenaufbewahrung/', views.retention_page, name='retention'),  # P4
 
     # API Feeds & Integrations
     path('healthz/', views.healthz, name='healthz'),  # WP7

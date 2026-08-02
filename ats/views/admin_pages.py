@@ -38,7 +38,7 @@ from ..models import (
 )
 from ..permissions import hr_admin_required, scope_applications, scope_jobs
 
-__all__ = ["stats_page", "process_page", "templates_page", "cms_page", "ki_page", "hris_page", "save_auto_reply_settings", "learned_scoring_view", "save_learned_scoring_settings"]
+__all__ = ["stats_page", "process_page", "templates_page", "cms_page", "ki_page", "hris_page", "save_auto_reply_settings", "retention_page", "learned_scoring_view", "save_learned_scoring_settings"]
 
 
 def gemma_status() -> str:
@@ -220,6 +220,42 @@ def save_learned_scoring_settings(request):
     messages.success(request, "Gelerntes Scoring "
                      + ("aktiviert." if enable else "deaktiviert."))
     return redirect('ats:learned_scoring')
+
+
+@hr_admin_required
+def retention_page(request):
+    """P4 (UC-AR-13/UC-MB-06): Loeschfrist als Verwaltungsseite statt
+    verstecktem SystemSetting - mit Trockenlauf-Vorschau (nur Zahlen, keine
+    Namen: die Seite dient DSB/HR-Admin, nicht der Einzelfall-Recherche)."""
+    from ..audit import write_audit
+    from ..retention import (
+        MAX_DAYS,
+        MIN_DAYS,
+        RETENTION_DAYS_KEY,
+        configured_retention_days,
+        dry_run_preview,
+    )
+    if request.method == 'POST':
+        try:
+            days = int(request.POST.get('days', ''))
+        except (TypeError, ValueError):
+            days = None
+        if days is None or not (MIN_DAYS <= days <= MAX_DAYS):
+            messages.warning(request, f"Frist muss zwischen {MIN_DAYS} und "
+                                      f"{MAX_DAYS} Tagen liegen.")
+            return redirect('ats:retention')
+        old = configured_retention_days()
+        SystemSetting.objects.update_or_create(
+            key=RETENTION_DAYS_KEY, defaults={'value': str(days)})
+        write_audit('RETENTION_POLICY_CHANGED', user=request.user,
+                    old_days=old, new_days=days)
+        messages.success(request, f"Löschfrist auf {days} Tage gesetzt.")
+        return redirect('ats:retention')
+    return render(request, 'admin_pages/retention.html', {
+        'days': configured_retention_days(),
+        'min_days': MIN_DAYS, 'max_days': MAX_DAYS,
+        'preview': dry_run_preview(),
+    })
 
 
 @hr_admin_required

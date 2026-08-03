@@ -44,7 +44,7 @@ from .common import _remember_campaign_src, campaign_expired, exclude_filled, se
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["home", "job_list", "job_detail", "bewerben", "candidate_portal", "page_detail", "facility_profile", "landing_page", "job_alert_subscribe", "job_alert_confirm", "job_alert_manage", "pricing_view", "healthz"]
+__all__ = ["home", "job_list", "job_detail", "bewerben", "candidate_portal", "page_detail", "facility_profile", "landing_page", "job_alert_subscribe", "job_alert_confirm", "job_alert_manage", "pricing_view", "healthz", "ai_transparency"]
 
 
 def home(request):
@@ -865,6 +865,33 @@ def candidate_portal(request, token):
             disability_value_disclosed(a.severeDisability) for a in applications),
         'has_active_application': any(
             a.status not in ('REJECTED', 'WITHDRAWN') for a in applications),
+    })
+
+
+# --- N3: KI-Transparenz (Art. 86 EU AI Act) ----------------------------------
+def ai_transparency(request):
+    """Oeffentliche Erklaerseite: welche automatischen Funktionen laufen,
+    was sie tun, wer entscheidet - und welche Rechte Bewerbende haben.
+
+    Dynamisch nach Konfiguration: erklaert wird NUR, was tatsaechlich aktiv
+    ist. Eine Seite, die abgeschaltete Funktionen beschreibt, waere genauso
+    irrefuehrend wie eine, die aktive verschweigt (Art. 86 EU AI Act:
+    Recht auf Erlaeuterung; Art. 22 Abs. 3 DSGVO: menschliche Ueberpruefung).
+    """
+    from ..auto_reply import enabled_intents
+    from ..inbox_intents import INTENT_LABELS
+    from ..scoring_eval import is_scoring_enabled as _learned_on
+    _fs = SystemSetting.objects.filter(key='FIRMA').first()
+    return render(request, 'ai_transparency.html', {
+        'nav_pages': Page.objects.filter(status="published",
+                                         navEnabled=True).order_by('navOrder'),
+        'company': (_fs.value if _fs else '') or 'SecurATS',
+        'ai_scoring': SystemSetting.objects.filter(
+            key='AI_SCORING_ENABLED', value='1').exists(),
+        'auto_reply_topics': [INTENT_LABELS.get(i, i)
+                              for i in sorted(enabled_intents())],
+        'learned_scoring': _learned_on(),
+        'slug': 'ki-transparenz',
     })
 
 

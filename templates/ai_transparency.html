@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}KI-Transparenz · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap" style="max-width:820px;">
+  <h1 class="page-title"><i class="fa-solid fa-scale-balanced"></i> Automatische Funktionen im Bewerbungsverfahren</h1>
+  <p class="page-lead">
+    Diese Seite erklärt, welche automatischen und KI-gestützten Funktionen
+    {{ company }} im Bewerbungsverfahren einsetzt – und welche Rechte Sie
+    dabei haben. Sie beschreibt den tatsächlichen, aktuellen Stand: Was hier
+    nicht steht, läuft auch nicht.
+  </p>
+
+  <div class="card">
+    <h2 style="margin:0 0 var(--space-3); font-size:17px;">Der Grundsatz: Menschen entscheiden</h2>
+    <p style="font-size:14px; margin:0;">
+      Keine Einladung und keine Ermessens-Absage wird von einer KI getroffen.
+      Automatische Hinweise dienen dem HR-Team als Lesehilfe – die Entscheidung
+      über Ihre Bewerbung trifft immer eine Person. Alle KI-Verarbeitung läuft
+      lokal auf Systemen des Unternehmens; Ihre Unterlagen werden nicht an
+      externe KI-Dienste übertragen.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2 style="margin:0 0 var(--space-3); font-size:17px;">Pflichtkriterien (ohne KI, regelbasiert)</h2>
+    <p style="font-size:14px; margin:0;">
+      Manche Stellen haben zwingende Voraussetzungen (z.&nbsp;B. eine bestimmte
+      Fahrerlaubnis oder Berufsurkunde). Diese stehen vorab in der
+      Stellenausschreibung und werden im Bewerbungsformular abgefragt. Ist eine
+      solche Voraussetzung laut Ihren eigenen Angaben nicht erfüllt, wird die
+      Bewerbung automatisch abgelehnt – Sie erfahren in Ihrem Bewerbungsportal
+      genau, um welches Kriterium es ging. Das ist eine feste Regel, keine KI,
+      und betrifft nie Ermessensfragen wie Eignung oder Erfahrung.
+    </p>
+  </div>
+
+  {% if auto_reply_topics %}
+  <div class="card">
+    <h2 style="margin:0 0 var(--space-3); font-size:17px;">Automatische Antworten auf Standardfragen</h2>
+    <p style="font-size:14px; margin:0 0 8px;">
+      Fragen zu diesen Themen beantwortet das System sofort automatisch,
+      damit Sie nicht auf eine Person warten müssen:
+    </p>
+    <ul style="font-size:14px; margin:0 0 8px 18px;">
+      {% for t in auto_reply_topics %}<li>{{ t }}</li>{% endfor %}
+    </ul>
+    <p style="font-size:14px; margin:0;">
+      Jede automatische Antwort ist als solche gekennzeichnet. Enthält Ihre
+      Nachricht zusätzlich ein individuelles Anliegen, landet sie trotzdem bei
+      einer Person – und Sie können jederzeit auf eine automatische Antwort
+      antworten, um das Team zu erreichen.
+    </p>
+  </div>
+  {% endif %}
+
+  {% if ai_scoring %}
+  <div class="card">
+    <h2 style="margin:0 0 var(--space-3); font-size:17px;">KI-Vorbewertung als Lesehilfe</h2>
+    <p style="font-size:14px; margin:0;">
+      Eine lokal betriebene KI liest Anschreiben und Anforderungen und schlägt
+      dem HR-Team eine Einordnung (A–D) mit Begründung vor. Dieser Hinweis
+      sortiert nichts aus: Er hilft beim Priorisieren der Sichtung, die
+      Bewertung und Entscheidung trifft das Team. Die freiwillige Angabe einer
+      Schwerbehinderung fließt in keine automatische Bewertung ein.
+    </p>
+  </div>
+  {% endif %}
+
+  {% if learned_scoring %}
+  <div class="card">
+    <h2 style="margin:0 0 var(--space-3); font-size:17px;">Gelernte Einordnung aus früheren Verfahren</h2>
+    <p style="font-size:14px; margin:0;">
+      Das System kann aus früheren Entscheidungen des Hauses lernen, welche
+      objektiven Merkmale (z.&nbsp;B. vollständige Unterlagen, erfüllte
+      Pflichtkriterien) mit erfolgreichen Verfahren zusammenhingen, und zeigt
+      dem HR-Team dazu einen Hinweis mit Begründung. Auch dieser Hinweis
+      entscheidet nichts. Die Funktion ist rechtlich geprüft, mit der
+      Mitarbeitervertretung abgestimmt und wird regelmäßig daraufhin getestet,
+      dass sie besser trifft als der Zufall – sonst bleibt sie stumm.
+    </p>
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <h2 style="margin:0 0 var(--space-3); font-size:17px;">Ihre Rechte</h2>
+    <ul style="font-size:14px; margin:0 0 0 18px;">
+      <li><strong>Erläuterung verlangen</strong> (Art. 86 EU AI Act): Sie können erfragen, welche Rolle automatische Funktionen bei einer Entscheidung über Ihre Bewerbung gespielt haben.</li>
+      <li><strong>Menschliche Überprüfung</strong> (Art. 22 Abs. 3 DSGVO): Bei der automatischen Pflichtkriterien-Absage können Sie eine Überprüfung durch eine Person verlangen und Ihren Standpunkt darlegen.</li>
+      <li><strong>Einfacher Weg dorthin:</strong> Schreiben Sie uns einfach über die Nachrichten-Funktion in Ihrem Bewerbungsportal – der Link steht in Ihrer Eingangsbestätigung.</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}

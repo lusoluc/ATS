@@ -295,6 +295,11 @@
           <i class="fa-solid fa-shield-halved" style="color: var(--accent-light);"></i>
           Ihre Unterlagen werden verschlüsselt gespeichert, verlassen unser Haus nicht und werden nach Ablauf der gesetzlichen Frist automatisch gelöscht. Den Stand Ihrer Bewerbung verfolgen Sie über einen persönlichen Link – ganz ohne Konto.
         </p>
+        {# N3 (Art. 86 EU AI Act): Transparenz VOR dem Absenden, genau dort, wo entschieden wird. #}
+        <p style="color: var(--text-muted); font-size: 12px; margin: 0 0 10px; display:flex; align-items:center; gap:8px;">
+          <i class="fa-solid fa-scale-balanced" style="color: var(--accent-light);"></i>
+          Welche automatischen Funktionen in diesem Verfahren laufen und welche Rechte Sie dabei haben: <a href="{% url 'ats:ai_transparency' %}" target="_blank" style="color:var(--accent-light);">KI-Transparenz</a>
+        </p>
         <button type="submit" class="btn-apply-now" style="width: 100%;">
             <i class="fa-solid fa-paper-plane"></i> Bewerbung jetzt absenden
         </button>

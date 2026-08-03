@@ -219,6 +219,26 @@ def dashboard(request):
     context['today_focus'] = today_focus
     context['gremium_error'] = request.GET.get('gremium', '')
 
+    # P6 (Standortleiter Rittmann, UC-HR-02/04/05): Wer nur einen Ausschnitt
+    # sieht, soll oben lesen KOENNEN, welchen - plus die zwei Zahlen, die
+    # seinen Besuch ausloesen (offene Stellen, laufende Verfahren). Freigaben
+    # stehen schon in "Heute wichtig". Kein Extra-Klick, keine eigene Seite.
+    my_scope = None
+    if not is_hr_admin:
+        _scope = getattr(request.user, 'scope', None)
+        if _scope is not None and not _scope.full_access:
+            _names = ([loc.name for loc in _scope.locations.all()]
+                      + [f.name for f in _scope.facilities.all()])
+            my_scope = {
+                'label': ", ".join(_names) or "eigener Bereich",
+                'open_jobs': active_jobs.filter(
+                    workflowState__name='published').count(),
+                'active_apps': sum(
+                    1 for a in _apps
+                    if a.status not in ('REJECTED', 'WITHDRAWN', 'HIRED')),
+            }
+    context['my_scope'] = my_scope
+
     # Offene Aufgaben aus der Prozess-Automatik (Badge in der Navigation):
     # nur eigene Rollen bzw. rollenlose, im eigenen Zugriffsbereich.
     from django.db.models import Q as _Q

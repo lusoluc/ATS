@@ -242,6 +242,9 @@ class GuardrailAuthDecoratorTestCase(TestCase):
         "page_detail", "facility_profile", "landing_page",
         "job_alert_subscribe", "job_alert_confirm", "job_alert_manage",
         "pricing_view",
+        # N3: KI-Transparenz (Art. 86 EU AI Act) ist bewusst oeffentlich -
+        # Bewerbende muessen sie OHNE Konto lesen koennen.
+        "ai_transparency",
     }
 
     def _iter_views(self):

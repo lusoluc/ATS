@@ -110,6 +110,7 @@ Seiten-Builder (B16), OData, weitere Analytics-/Governance-Ausbauten.
 | B16 visueller Seiten-Builder | „Kür" | **on hold → V3** | zahlender Kunde fordert es |
 | OData-Endpoint | „Kür" | **on hold → V3** | Kunde mit konkreter BI-Anforderung (CSV-Export existiert) |
 | Weitere Analytics-/Governance-Tiefe | laufend | **eingefroren** | Design-Partner-Feedback |
+| Voice-Agent / telefonisches Vorscreening | – | **on hold → V3** | ≥ 3 Design-Partner-Nennungen UND bestandener ASR-Bias-Test (Akzent/Dialekt/L2; AGG) – Learning aus der AI-Voice-Agent-Studie 2026 |
 | Compliance-Matrix-Pflege | laufend | läuft weiter (geringer Aufwand) | – |
 
 **Begründung des Einfrierens:** Nicht, weil diese Features schlecht wären –
@@ -188,3 +189,12 @@ besetzen" pro Aufwand.
 - A/B-Test zwischen Landingpage-Varianten
 - Offboarding/Vertrags-Track nach Einstellung (bewusst außerhalb des
   ATS-Kerns)
+- Voice-Agent / telefonisches Vorscreening: Die AI-Voice-Agent-Studie 2026
+  zeigt, dass der Nutzen aus der STRUKTUR kommt (fester Leitfaden, kontrollierte
+  Varianz) – die haben wir ohne Stimme umgesetzt (Interview-Leitfaden N1).
+  Ein Sprachkanal kommt erst mit Design-Partner-Evidenz UND bestandenem
+  ASR-Bias-Test: Spracherkennung diskriminiert messbar nach Akzent/Dialekt/
+  Zweitsprache – für unsere Zielgruppe (internationale Pflegekräfte) ein
+  AGG-Risiko, das vor jedem Pilot ausgeschlossen sein muss. Zusätzlich gilt
+  Wahlfreiheit: ein Sprachkanal ist immer ein ANGEBOT neben Formular/Text,
+  nie der einzige Weg.

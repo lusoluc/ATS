@@ -8,9 +8,13 @@
 **Alle 18 Punkte umgesetzt & getestet.** (Dieser Ursprungs-Backlog stammt aus der
 Stack-Konsolidierung; die seither entstandene Governance-Ebene – Stellenfreigabe,
 Gremien-Quorum, Gesprächsrunden – ist ein EIGENES Arbeitsfeld und unten als
-Abschnitt „Nach dem Backlog" geführt. Gesamt-Teststand aktuell: 300 grün.)
-- Vollständig: B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B13, B14, B15, B17, B18 + BOLA-Scoping.
-- Kern umgesetzt (Feinschliff offen): **B12** (Vorlagen-Bibliothek + KI-Tonalitäts-Overlay; Versionierung/Master-Hierarchie offen), **B16** (Seiten-Editor statt visuellem Drag-&-Drop-Builder), **B10** (Ordering backend-seitig; feines Drag-Reorder-JS im Dashboard offen).
+Abschnitt „Nach dem Backlog" geführt. Gesamt-Teststand aktuell: 748 Testmethoden
+in 40 Dateien, alle grün.)
+- Vollständig: B1–B15, B17, B18 + BOLA-Scoping – inkl. **B12** (Versionierung/
+  Wiederherstellen: `JobTemplate.version`/`parent`, `job_template_detail`) und
+  **B10** (positionsgenaues Drag&Drop mit persistierter Reihenfolge, `reorder_board`).
+- Kern umgesetzt (Feinschliff bewusst offen): **B16** (Seiten-Editor statt
+  visuellem Drag-&-Drop-Builder; visueller Builder hinter Evidenz-Gate).
 
 ## Wichtigste Erkenntnis
 Die **Datenmodelle existieren in Django bereits fast vollständig** (aus dem Prisma-
@@ -31,7 +35,7 @@ Aufwand: S/M/L.
 |---|---|---|---|---|---|
 | B1 ✅ | **Sicherer CV-Download** (auth + Rolle + Audit-Log; kein direkter `media/`-Zugriff) | `cms/applications/[id]/cv` | `Application.cvStorageId` | ❌ Endpoint fehlt (CV wird gespeichert, aber ungeschützt ausgeliefert) | M |
 | B2 ✅ | **Audit-Log-Viewer** (Filter, Export) | `cms/audit` | `AuditLog` ✅ | Modell ✅, UI ❌ | M |
-| B3 ✅ | **Retention/Löschung planbar** (Cron/Scheduling + Trockenlauf-Report) | `cms/cron/data-retention` | — | ◐ (Command `data_retention` vorhanden, Scheduling fehlt) | S |
+| B3 ✅ | **Retention/Löschung planbar** (Cron/Scheduling + Trockenlauf-Report) | `cms/cron/data-retention` | — | ✅ Command `data_retention` + Verwaltungsseite „Datenaufbewahrung" (Frist konfigurierbar, Trockenlauf-Vorschau, `ats/retention.py`); zeitliche Ausführung als geplanter Task beim Betreiber | S |
 
 ## P2 – Kandidaten-facing
 
@@ -39,13 +43,13 @@ Aufwand: S/M/L.
 |---|---|---|---|---|---|
 | B4 ✅ | **Magic-Link-Statusportal** (passwortloser Kandidaten-Login via Token, Status/Rückfragen) | `/bewerber/[token]` | `ApplicantToken` ✅, `Message` ✅ | Modell ✅, Views ❌ | L |
 | B5 ✅ | **Job-Alerts** (öffentliches Abo + Matching/Benachrichtigung) | `public/job-alerts`, `cms/job-alerts`, `/job-alert` | `JobAlertSubscription` ✅, `JobAlertLog` ✅ | Modell ✅, Endpoints/UI ❌ | M |
-| B6 ✅ | **Kandidaten-Nachrichten** (Verlauf, Vorlagen-Versand) | (Teil Portal/Detail) | `Message` ✅, `EmailTemplate` ✅ | ◐ (E-Mail-Vorlagen da, Verlaufs-UI ❌) | M |
+| B6 ✅ | **Kandidaten-Nachrichten** (Verlauf, Vorlagen-Versand) | (Teil Portal/Detail) | `Message` ✅, `EmailTemplate` ✅ | ✅ Nachrichten-Verlauf je Bewerbung, Sammel-Postfach mit Themen-Clustern, Aktionsverlauf je Bewerbung/Stelle (`ats/timeline.py`) | M |
 
 ## P3 – Recruiter-Produktivität
 
 | # | Feature | Frontend-Referenz | Django-Modell | Django-Ist | Aufwand |
 |---|---|---|---|---|---|
-| B7 ✅ | **Analytics/Insight-Dashboard ausbauen** (Quellen, Verweildauer je Phase, Prognosen, KI-Analyst – NORTHSTAR §4) | `cms/analytics` | (aggregiert) | ◐ (Dashboard-Tab „KPIs & Funnel" vorhanden) | L |
+| B7 ✅ | **Analytics/Insight-Dashboard ausbauen** (Quellen, Verweildauer je Phase, Prognosen, KI-Analyst – NORTHSTAR §4) | `cms/analytics` | (aggregiert) | ✅ eigene Analytics-Seite + „Erkenntnisse & Vorschläge" (`ats/insights.py`, `ats/suggestions.py`), Board-Signale (`ats/board_insights.py`), KI-Analyst `analytics_ask` | L |
 | B8 ✅ | **Delegationen** (Vertretung/Zuweisung von Bewerbungen) | `cms/delegations` | `RoleDelegation` ✅ | Modell ✅, UI ❌ | M |
 | B9 ✅ | **Interview-Kalender** (Ansicht + Slots) | `/admin/calendar` | `Interview` ✅, `InterviewSlot` ✅ | ◐ (`schedule_interview` da, Kalender-UI ❌) | M |
 | B10 ✅ | **Kanban-Move mit Reihenfolge** (Drag-&-Drop-Ordering) | `cms/applications/move` | `Application` ✅ | ◐ (`update_status` da, Ordering ❌) | S |
@@ -100,16 +104,35 @@ für regulierte Träger. Alle umgesetzt & getestet.
 | **Vertretung in der Kette („i. V.")** | Aktive Delegation entscheidet fällige Stufe; Selbstbedienungs-UI; Assistenz-Fall | 0039 | ✅ |
 | **Engpass-Kennzahl** | Analytics: Ø Wartetage je Freigabestufe, Engpass-Badge, parallel-korrekt | — | ✅ |
 | **Fälligkeits-Benachrichtigung** | Ereignis-Mail an Genehmiger + Vertretungen, sobald ihre Stufe fällig wird | — | ✅ |
+| **Aktionsverlauf/Timeline** | Chronik je Bewerbung & Stelle aus dem Audit-Log (`ats/timeline.py`) | — | ✅ |
+| **Sammel-Postfach + Auto-Antwort (Stufe 1–5)** | Themen-Cluster, Cluster-Antwort, Textbausteine, Auto-Antwort für sichere Anliegen, Lernen aus HR-Korrekturen | — | ✅ |
+| **Bewerber-Steckbrief** | Fakten-Zusammenfassung im Kandidaten-Modal (`ats/profile_summary.py`) | — | ✅ |
+| **Gelerntes Scoring (L3)** | Kontext-Modell + Ehrlichkeits-Backtest; nur mit Rechtsgutachten UND BR-Zustimmung aktivierbar | — | ✅ |
+| **Interview-Leitfaden + Abdeckung** | Themen je Stelle, Checkliste im Feedback (kontrollierte Varianz) | 0004 | ✅ |
+| **Serien-Nachricht** | Eine geprüfte Nachricht an alle aktiven Bewerbungen einer Stelle | — | ✅ |
+| **Inklusion/SBV (§ 164 SGB IX)** | Freiwillige Angabe (Art. 9, verschlüsselt) + Widerruf im Portal, SBV-Unterrichtung, Kennzahlen ab Anonymitätsschwelle | 0003 | ✅ |
+| **§ 99-BetrVG-Widerspruch** | BR-Stufen: Zustimmung verweigern nur mit Katalog-Grund + Begründung, Wochenfrist | — | ✅ |
+| **Datenaufbewahrung als Seite** | Frist konfigurierbar (30–1095 Tage) + Trockenlauf-Vorschau (`ats/retention.py`) | — | ✅ |
+| **ROI-/Inklusions-Export** | Kennzahlen-CSV für Controlling aus dem Governance-Cockpit, nur Leitung | — | ✅ |
+| **K.O.-Absage mit objektiven Gründen** | Portal + Absage nennen das vorab veröffentlichte Pflichtkriterium (`ats/questions.py`) | — | ✅ |
+| **KI-Transparenz-Seite** | `/ki-transparenz/` erklärt dynamisch die aktiven Funktionen (Art. 86 EU AI Act) | — | ✅ |
+| **„Mein Bereich"-Einstieg** | Standortleiter sehen ihren Ausschnitt + Kernzahlen über dem Board | — | ✅ |
+| **Mobil für Entscheider** | Tabellen scrollbar statt abgeschnitten, Karten-Stapelung, 44-px-Ziele auf Bedarf/Freigaben/Feedback | — | ✅ |
 
 ### Offen hinter Evidenz-Gate (bewusst NICHT gebaut)
 Diese Ideen sind aufgenommen, warten aber auf Design-Partner-Evidenz statt auf
 Spekulation:
 - **Freie Status-Pipelines je Jobkategorie** + Automatisierungs-Trigger (größter Brocken)
-- **Erinnerung bei Liegenbleiben** (Cron „seit X Tagen fällig", Einmal-Marker wie beim Gremium)
 - **Quorum innerhalb einer Parallelgruppe** („2 von 3 Bereichsleitungen")
 - **Trend/Ampel** für die Engpass-Kennzahl (je Quartal, je Einrichtung)
 - **Runde-an-Termin-Kopplung** (Interview-Ergebnis schließt Runde automatisch)
+- **Voice-Agent / telefonisches Vorscreening**: nur mit ≥ 3 Design-Partner-Nennungen
+  UND bestandenem ASR-Bias-Test (Akzent/Dialekt/L2-Sprecher; AGG-Risiko) – Learning
+  aus der AI-Voice-Agent-Studie 2026, siehe ROADMAP „Evidenz-Gates"
 - CV-Parsing-Feldbefüllung, 1-Klick LinkedIn/Xing-Import, Mehrfachbewerbung, A/B-Landingpages, Offboarding
+
+(Die frühere Idee „Erinnerung bei Liegenbleiben" ist umgesetzt: Liegenbleiber-Radar
+auf dem Board (`ats/board_insights.py`) + Aufgaben-Seite.)
 
 ### Real offen (außerhalb der Codebasis)
 Demo-Hosting, produktives SMTP, und – das wichtigste V0-Gate – **10 Discovery-Gespräche**

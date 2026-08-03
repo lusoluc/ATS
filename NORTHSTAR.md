@@ -446,6 +446,9 @@ deine Auswertung.
    Seiten je Standort/Einrichtung) ist erwünscht – Pflicht-Schritte (Freigaben,
    Betriebsrat, AGG-Check, DSGVO-Einwilligung) bleiben systemseitig erzwingbar und
    sind lokal **nicht** abschaltbar. Konfigurierbarkeit endet dort, wo Rechtssicherheit beginnt.
+9. **Wahlfreiheit Mensch/KI.** Automatische Interaktion mit Bewerbenden ist immer
+   ein Angebot neben dem Weg zum Menschen, nie der einzige Kanal – gekennzeichnet
+   (Art. 50 EU AI Act) und öffentlich erklärt (`/ki-transparenz/`, Art. 86).
 
 ---
 

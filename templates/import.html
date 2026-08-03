@@ -21,9 +21,10 @@
     </div>
     {% if report.errors %}
     <h3 style="margin: var(--space-4) 0 var(--space-2); font-size:14px; color: var(--danger-light);">{{ report.errors|length }} Fehlerzeile(n) – wurden nicht importiert:</h3>
+    <div class="table-scroll">
     <table class="data-table"><thead><tr><th>Zeile</th><th>Grund</th></tr></thead><tbody>
       {% for line, reason in report.errors %}<tr><td>{{ line }}</td><td>{{ reason }}</td></tr>{% endfor %}
-    </tbody></table>
+    </tbody></table></div>
     {% endif %}
   </div>
   {% endif %}
@@ -59,6 +60,7 @@
   <div class="card" style="margin-top: var(--space-4);">
     <h2 style="font-size:16px; margin:0 0 var(--space-1);"><i class="fa-solid fa-table-columns"></i> Spalten-Zuordnung prüfen</h2>
     <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--space-3);">So wurden die Spalten Ihrer Datei erkannt. Falsch oder unerkannt? Zuordnung unten ändern, Datei erneut wählen und den Testlauf wiederholen – die manuelle Zuordnung gewinnt gegen die Automatik.</p>
+    <div class="table-scroll">
     <table class="data-table">
       <thead><tr><th>Unser Feld</th><th>Ihre Spalte</th></tr></thead>
       <tbody>
@@ -76,6 +78,7 @@
         {% endfor %}
       </tbody>
     </table>
+    </div>
     {% if unmapped_headers %}
     <p style="font-size:13px; color:var(--warning); margin-top:var(--space-2);"><i class="fa-solid fa-triangle-exclamation"></i> Ohne Zuordnung (werden ignoriert): {{ unmapped_headers|join:", " }}</p>
     {% endif %}
@@ -105,9 +108,10 @@
         {{ cv_report.matched|length }} zuordenbar{% if not cv_dry %} · {{ cv_report.attached }} angehängt{% endif %} ·
         {{ cv_report.unmatched|length }} ohne Treffer · {{ cv_report.errors|length }} Fehler</p>
       {% if cv_report.matched %}
+      <div class="table-scroll">
       <table class="data-table"><thead><tr><th>Datei</th><th>E-Mail</th><th>Bewerbung</th><th>Typ</th></tr></thead><tbody>
         {% for m in cv_report.matched %}<tr><td>{{ m.0 }}</td><td>{{ m.1 }}</td><td>{{ m.2 }}</td><td>{{ m.3 }}</td></tr>{% endfor %}
-      </tbody></table>
+      </tbody></table></div>
       {% endif %}
       {% if cv_report.unmatched %}
       <p style="font-size:13px; color:var(--text-muted); margin-top:var(--space-2);">Ohne Treffer:</p>

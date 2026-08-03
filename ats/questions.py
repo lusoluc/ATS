@@ -62,3 +62,33 @@ def normalize_questions(raw_list):
         if q:
             out.append(q)
     return out
+
+
+# --- N2: Objektive Gruende fuer K.O.-Absagen ---------------------------------
+# WICHTIG (AGG): Automatisch benannt werden duerfen AUSSCHLIESSLICH nicht
+# erfuellte K.O.-Kriterien, die VOR der Bewerbung in der Ausschreibung
+# standen und die die Person selbst beantwortet hat. Ermessens-Absagen
+# (HR entscheidet sich fuer jemand anderen) bekommen NIE automatisch
+# formulierte Gruende - jede erfundene Begruendung waere ein Klagerisiko
+# und unehrlich gegenueber der Person.
+
+KO_REASON_PREFIX = "Automatische Ablehnung: K.O.-Kriterium nicht erfüllt: "
+
+
+def format_ko_reason(failed_questions):
+    """Ablehnungsgrund-Snapshot bei Einreichung (Fragen koennen sich spaeter
+    aendern - massgeblich ist, was die Person tatsaechlich gefragt wurde)."""
+    return KO_REASON_PREFIX + "; ".join(failed_questions)
+
+
+def ko_grounds(withdraw_reason):
+    """Objektive Gruende aus dem gespeicherten Ablehnungsgrund zurueckholen.
+
+    Nur K.O.-Absagen tragen welche; alles andere liefert [] - siehe
+    AGG-Hinweis oben.
+    """
+    text = withdraw_reason or ""
+    if not text.startswith(KO_REASON_PREFIX):
+        return []
+    return [g.strip() for g in text[len(KO_REASON_PREFIX):].split(";")
+            if g.strip()]

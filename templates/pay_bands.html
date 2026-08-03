@@ -22,6 +22,7 @@
       <input name="note" class="input" placeholder="Zusatz (z. B. zzgl. Schichtzulagen)" style="flex:2; min-width:200px;">
       <button type="submit" class="btn btn-primary">Hinzufügen</button>
     </form>
+    <div class="table-scroll">
     <table class="data-table">
       <thead><tr><th>Band</th><th>Tarifwerk</th><th>Spanne</th><th>Tarifhinweis</th><th>Bewertung (Art. 4)</th><th></th></tr></thead>
       <tbody>
@@ -60,6 +61,7 @@
       {% empty %}<tr><td colspan="6" class="empty-state">Noch keine Entgeltbänder. Ohne Band kann keine Stelle veröffentlicht werden.</td></tr>{% endfor %}
       </tbody>
     </table>
+    </div>
   </div>
 </div>
 {% endblock %}

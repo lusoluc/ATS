@@ -15,6 +15,7 @@
   <form method="post">
     {% csrf_token %}
     <div class="card" style="margin-bottom:var(--space-4);">
+      <div class="table-scroll">
       <table class="data-table">
         <thead>
           <tr>
@@ -53,6 +54,7 @@
           {% endfor %}
         </tbody>
       </table>
+      </div>
     </div>
 
     {% if open_count %}

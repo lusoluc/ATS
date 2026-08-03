@@ -8,7 +8,7 @@ ergänze oder verändere."*
 
 ## TL;DR – so bleibt alles abgesichert
 
-1. **Bei jeder Änderung lokal:** `python manage.py test` (≈ 6–7 Min, 396+ Tests).
+1. **Bei jeder Änderung lokal:** `python manage.py test` (748 Testmethoden in 40 Dateien; Stand 03.08.2026).
 2. **Automatisch bei jedem Push / Pull Request:** GitHub Actions (`.github/workflows/ci.yml`)
    läuft die volle Suite auf **PostgreSQL** plus einen schnellen Wächter-Vorlauf.
 3. **Beim Release-Tag `vX.Y.Z`:** `.github/workflows/release.yml` prüft Version/
@@ -20,7 +20,7 @@ gegen dasselbe Netz geprüft.
 ## Zwei Arten von Tests
 
 ### 1. Normale Tests (prüfen konkretes Verhalten)
-396+ Tests über Funktionen, Views, Workflows, DSGVO-Anonymisierung,
+748 Tests über Funktionen, Views, Workflows, DSGVO-Anonymisierung,
 Verschlüsselung, Audit-Kette usw. Sie fangen Regressionen in *bestehendem*
 Verhalten. Details der Abdeckungs-Arbeit: `TEST_COVERAGE.md`.
 
@@ -36,6 +36,10 @@ unbemerkt wiederholen. Sie stehen in `ats/tests/test_guardrails.py`.
 | `GuardrailNoCsrfExemptTestCase` | `@csrf_exempt` im Code | Audit (CSRF) |
 | `GuardrailNoRawSqlTestCase` | rohes SQL / `.extra()` / `RawSQL` in Views | Audit (SQL-Injection) |
 | `GuardrailProductionCacheTestCase` | prozess-lokaler Login-Lockout-Cache | Audit-Fund 6 (LocMemCache) |
+| `GuardrailPostgresOnlyInProductionTestCase` | SQLite im Produktivbetrieb | Betriebs-Härtung |
+| `GuardrailTemplateCommentTestCase` | mehrzeilige `{# … #}`-Kommentare (lecken als Text an Nutzer) | Portal-Fund N2 (bestätigt) |
+| `GuardrailTableScrollTestCase` | Tabellen ohne Scroll-Wrapper (am Phone abgeschnitten) + mehrdeutige Wrapper-Schlüsse | Mobile-Audit M1 |
+| `GuardrailPayTransparencyTestCase` (in `test_pay_transparency.py`) | Gehaltshistorien-Fragen in Screening-Fragen (Frageverbot EU-RL 2023/970) | E2 |
 
 **Wenn ein Wächter fehlschlägt:** Das ist ein *Feature*, kein Ärgernis. Nicht die
 Whitelist blind erweitern – erst prüfen, ob der neue Code wirklich so sein soll:
@@ -62,6 +66,14 @@ Auth-Wächter eine absichtlich ungeschützte View sofort meldet.
   (Tail-Truncation als bewusste Grenze dokumentiert); Blind-Index ist ein
   schlüsselabhängiger HMAC; Fernet-Ciphertext ist nicht-deterministisch; PII
   liegt verschlüsselt at-rest.
+- **Runde 4 – Persona-/Compliance-Pakete (M/R/S/P/N):** Mitbestimmung (§ 99
+  BetrVG: Katalog-Grund-Pflicht, Wochenfrist, BetrVG-Gate am gelernten Scoring),
+  Inklusion (§ 164 SGB IX: verschlüsselte Angabe, Widerruf, SBV-Mail ohne
+  Gesundheitsdaten im Audit, Ciphertext-Altwert-Wächter `disability_value_disclosed`),
+  Datenaufbewahrung (Frist-Leitplanken, Trockenlauf, § 164-Löschung),
+  ROI-Export (nur Leitung, keine Namen), K.O.-Absage-Gründe (nie Ermessens-
+  Begründungen), KI-Transparenz (dynamisch nach aktiven Funktionen),
+  Interview-Leitfaden, Serien-Nachricht, „Mein Bereich" (Scope-Anzeige).
 
 ## Zusätzliche automatische Prüfungen in der CI
 

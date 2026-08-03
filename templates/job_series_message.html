@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block title %}Serien-Nachricht · {{ job.title }} · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap" style="max-width:760px;">
+  <a href="{% url 'ats:dashboard' %}" style="color:var(--text-muted); text-decoration:none; font-size:13px;">
+    <i class="fa-solid fa-arrow-left"></i> Zurück zum Board
+  </a>
+  <h1 class="page-title" style="margin-top:8px;"><i class="fa-solid fa-bullhorn"></i> Serien-Nachricht</h1>
+  <p class="page-lead">
+    An die aktiven Bewerber:innen der Stelle <strong>{{ job.title }}</strong> –
+    z.&nbsp;B. Einladung zum Infotag oder eine Neuigkeit zum Verfahren.
+    Jede Nachricht wird je Person personalisiert; abgeschlossene Bewerbungen
+    werden nie angeschrieben.
+  </p>
+
+  {% if recipients %}
+  <form method="post" class="card" id="series-form">
+    {% csrf_token %}
+    <div class="table-scroll m-stack">
+    <table class="data-table">
+      <thead><tr><th style="width:32px;"><input type="checkbox" id="series-all" checked aria-label="Alle auswählen"></th><th>Name</th><th>Stand</th></tr></thead>
+      <tbody>
+        {% for r in recipients %}
+        <tr>
+          <td><input type="checkbox" name="app_ids" value="{{ r.app.id }}" class="series-check" data-vorname="{{ r.first_name }}" data-stand="{{ r.status }}" checked></td>
+          <td><strong>{{ r.name }}</strong></td>
+          <td style="color:var(--text-muted); font-size:13px;">{{ r.status }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table></div>
+
+    <label class="form-label" style="font-size:12px; margin-top:12px; display:block;">Nachricht (Platzhalter <code>[[Vorname]]</code>, <code>[[Stelle]]</code>, <code>[[Stand]]</code> werden je Person ersetzt)</label>
+    <textarea name="template" id="series-template" rows="8" class="form-textarea" style="width:100%;">{{ default_template }}</textarea>
+
+    <div style="margin-top:8px;">
+      <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">Vorschau für <span id="series-preview-name">–</span>:</div>
+      <div id="series-preview" style="background:var(--bg-color); border:1px solid var(--border-color); border-radius:var(--border-radius-sm); padding:10px 12px; font-size:13px; color:var(--text-main); white-space:pre-line; min-height:40px;" aria-live="polite"></div>
+    </div>
+
+    <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px;">
+      <button type="submit" class="btn btn-primary" data-done-label="Nachrichten gesendet">
+        <i class="fa-solid fa-paper-plane"></i> An <span id="series-count">{{ recipients|length }}</span> Ausgewählte senden
+      </button>
+      <span style="font-size:12px; color:var(--text-muted);">Zustellung ins Bewerber-Portal und per E-Mail. Sie lösen den Versand aus – nichts geht automatisch raus.</span>
+    </div>
+  </form>
+  {% else %}
+  <div class="card"><p class="empty-state">Keine aktiven Bewerbungen auf dieser Stelle.</p></div>
+  {% endif %}
+</div>
+
+<script>
+  (function () {
+    const boxes = [...document.querySelectorAll('.series-check')];
+    const all = document.getElementById('series-all');
+    const tpl = document.getElementById('series-template');
+    const preview = document.getElementById('series-preview');
+    const pName = document.getElementById('series-preview-name');
+    const count = document.getElementById('series-count');
+    function fill(cb) {
+      return tpl.value
+        .replaceAll('[[Vorname]]', cb.dataset.vorname || '')
+        .replaceAll('[[Stelle]]', '{{ job.title|escapejs }}')
+        .replaceAll('[[Stand]]', cb.dataset.stand || '');
+    }
+    function refresh() {
+      const checked = boxes.filter(b => b.checked);
+      if (count) count.textContent = checked.length;
+      const first = checked[0];
+      if (first) { preview.textContent = fill(first); pName.textContent = first.dataset.vorname || '–'; }
+      else { preview.textContent = '(niemand ausgewählt)'; pName.textContent = '–'; }
+    }
+    if (all) all.addEventListener('change', () => { boxes.forEach(b => b.checked = all.checked); refresh(); });
+    boxes.forEach(b => b.addEventListener('change', refresh));
+    if (tpl) tpl.addEventListener('input', refresh);
+    refresh();
+  })();
+</script>
+{% endblock %}

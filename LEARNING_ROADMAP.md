@@ -182,6 +182,9 @@ Bewerber-Bewertung im Beschäftigungskontext ist nach EU AI Act (Anhang III)
 
 - **Mensch entscheidet.** Gelernte Signale sind Empfehlung; automatisch wirken
   nur objektive K.O.-Kriterien.
+- **Wahlfreiheit.** Automatische Kanäle (Auto-Antwort, künftig evtl. Sprache)
+  sind Angebote neben dem Weg zum Menschen, nie Ersatz. Gekennzeichnet nach
+  Art. 50 EU AI Act; die Transparenz-Seite `/ki-transparenz/` erklärt den Stand.
 - **Keine geschützten Merkmale** als Eingabe. Datensparsamkeit bleibt.
 - **Erklärbarkeit.** Jede Note nennt ihre Gründe. Kein undurchsichtiger Score.
 - **Messbar.** Kein gelerntes Score ohne Backtest, Kalibrierung, Override-Quote.
@@ -190,6 +193,9 @@ Bewerber-Bewertung im Beschäftigungskontext ist nach EU AI Act (Anhang III)
   und dokumentiert frei.
 - **Rechtsgutachten** vor der Vermarktung als „KI-Feature" und vor dem lokalen
   Modell in L3.
+- **Kein Sprachkanal ohne Bias-Eval.** Spracherkennung diskriminiert messbar
+  nach Akzent/Zweitsprache; ein Voice-Feature braucht VOR dem Pilot einen
+  bestandenen ASR-Bias-Test (AI-Voice-Agent-Studie 2026; ROADMAP Evidenz-Gates).
 
 ## Reihenfolge
 

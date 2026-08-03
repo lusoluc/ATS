@@ -242,6 +242,9 @@ class GuardrailAuthDecoratorTestCase(TestCase):
         "page_detail", "facility_profile", "landing_page",
         "job_alert_subscribe", "job_alert_confirm", "job_alert_manage",
         "pricing_view",
+        # N3: KI-Transparenz (Art. 86 EU AI Act) ist bewusst oeffentlich -
+        # Bewerbende muessen sie OHNE Konto lesen koennen.
+        "ai_transparency",
     }
 
     def _iter_views(self):
@@ -468,4 +471,91 @@ class GuardrailTemplateCommentTestCase(TestCase):
             offender, [],
             "Mehrzeiliger {# … #}-Kommentar (leckt als Text) – "
             "stattdessen {% comment %}…{% endcomment %} nutzen: "
+            + ", ".join(offender))
+
+
+class GuardrailTableScrollTestCase(TestCase):
+    """Wächter: jede Tabelle braucht einen Scroll-Wrapper.
+
+    base.html setzt body{overflow-x:hidden} – eine ueberbreite Tabelle wird
+    dadurch am schmalen Viewport ABGESCHNITTEN statt scrollbar (real passiert:
+    Entscheider-Seiten am Handy, Persona Dr. Winter/Voigt). Deshalb muss jedes
+    <table in einem Wrapper mit .table-scroll (oder inline overflow-x) stehen.
+    Dieser Test findet die ganze FehlerKLASSE fuer alle heutigen und
+    kuenftigen Templates."""
+
+    def test_every_table_has_scroll_wrapper(self):
+        import os
+
+        base = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+            __file__))), "templates")
+        offender = []
+        for root, _dirs, files in os.walk(base):
+            for name in files:
+                if not name.endswith(".html"):
+                    continue
+                path = os.path.join(root, name)
+                with open(path, encoding="utf-8") as fh:
+                    lines = fh.readlines()
+                for i, line in enumerate(lines):
+                    if "<table" not in line:
+                        continue
+                    # Wrapper in derselben oder einer der 3 Zeilen davor?
+                    window = "".join(lines[max(0, i - 3):i + 1])
+                    if "table-scroll" in window or "overflow-x" in window:
+                        continue
+                    rel = os.path.relpath(path, base)
+                    offender.append(f"{rel}:{i + 1}")
+        self.assertEqual(
+            offender, [],
+            "Tabelle ohne Scroll-Wrapper (wird am schmalen Viewport "
+            "abgeschnitten) – <div class=\"table-scroll\"> davor setzen: "
+            + ", ".join(offender))
+
+    def test_wrapper_close_is_unambiguous(self):
+        """Der Wrapper-Schluss muss eindeutig dem Wrapper gehoeren.
+
+        Real passierter Bug: bei `</tbody></table>` in EINER Zeile fehlte der
+        Wrapper-`</div>`; der nachfolgende Card-`</div>` wurde vom Browser als
+        Wrapper-Schluss gepaart – alle Folge-Cards verschachtelten sich, das
+        Mobil-Layout brach. Konvention: nach `</table>` im Wrapper folgt der
+        `</div>` entweder INLINE (`</table></div>`) oder als eigene
+        Folgezeile, wenn `</table>` die Zeile beginnt."""
+        import os
+
+        base = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+            __file__))), "templates")
+        offender = []
+        for root, _dirs, files in os.walk(base):
+            for name in files:
+                if not name.endswith(".html"):
+                    continue
+                path = os.path.join(root, name)
+                with open(path, encoding="utf-8") as fh:
+                    lines = fh.readlines()
+                open_wrap = 0
+                for i, line in enumerate(lines):
+                    if 'class="table-scroll' in line:
+                        open_wrap += 1
+                        continue
+                    if "</table>" not in line or open_wrap == 0:
+                        continue
+                    open_wrap -= 1
+                    stripped = line.strip()
+                    after = line.split("</table>", 1)[1]
+                    if "</div>" in after:
+                        continue           # Inline-Schluss: eindeutig
+                    nxt = ""
+                    for j in range(i + 1, min(i + 3, len(lines))):
+                        if lines[j].strip():
+                            nxt = lines[j].strip()
+                            break
+                    if stripped.startswith("</table>") and nxt == "</div>":
+                        continue           # eigene Schlusszeile: eindeutig
+                    rel = os.path.relpath(path, base)
+                    offender.append(f"{rel}:{i + 1}")
+        self.assertEqual(
+            offender, [],
+            "Mehrdeutiger table-scroll-Schluss (naechster </div> gehoert "
+            "womoeglich der Card) – `</table></div>` inline schreiben: "
             + ", ".join(offender))

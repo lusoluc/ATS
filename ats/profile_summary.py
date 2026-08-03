@@ -18,6 +18,7 @@ from datetime import datetime
 from django.utils import timezone
 
 from .models import Application
+from .models.applications import disability_value_disclosed
 
 # Fuellwoerter, die beim Anforderungs-Abgleich nichts kennzeichnen.
 _STOP = {
@@ -57,6 +58,9 @@ class SteckbriefFacts:
     days_since: int = 0
     repeat_count: int = 1                                    # Bewerbungen dieser Person
     ai_score: "str | None" = None
+    # § 164 SGB IX: freiwillige Angabe - nur Anzeige/SBV-Einbindung,
+    # NIE Bewertungs-Eingabe.
+    disability_disclosed: bool = False
 
 
 def build_facts(app: Application, now: "datetime | None" = None) -> SteckbriefFacts:
@@ -103,7 +107,8 @@ def build_facts(app: Application, now: "datetime | None" = None) -> SteckbriefFa
         source=app.source or "DIRECT",
         days_since=max(0, (now - app.createdAt).days),
         repeat_count=repeat_count,
-        ai_score=app.aiScore or None)
+        ai_score=app.aiScore or None,
+        disability_disclosed=disability_value_disclosed(app.severeDisability))
 
 
 def facts_to_bullets(facts: SteckbriefFacts) -> list[str]:
@@ -125,6 +130,10 @@ def facts_to_bullets(facts: SteckbriefFacts) -> list[str]:
         out.append(f"{facts.doc_count} zusätzliche Nachweise")
     if facts.repeat_count >= 2:
         out.append(f"Bewirbt sich erneut ({facts.repeat_count} Bewerbungen)")
+    if facts.disability_disclosed:
+        # § 164 SGB IX: Hinweis fuer das Verfahren (SBV ist einbezogen) -
+        # bewusst neutral formuliert, keine Bewertungs-Aussage.
+        out.append("Schwerbehinderung angegeben – SBV einbezogen (§ 164 SGB IX)")
     return out
 
 

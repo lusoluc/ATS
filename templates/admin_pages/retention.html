@@ -1,0 +1,46 @@
+{% extends 'admin_pages/_layout.html' %}
+{% block title %}Datenaufbewahrung · SecurATS{% endblock %}
+{% block admin_body %}
+<h1 class="page-title"><i class="fa-solid fa-clock-rotate-left"></i> Datenaufbewahrung</h1>
+<p class="page-lead">
+  Abgesagte und zurückgezogene Bewerbungen ohne Talent-Pool-Einwilligung werden
+  nach Ablauf der Frist automatisch anonymisiert (DSGVO-Datenminimierung).
+  Hier stellen Sie die Frist ein und sehen vorab, was der nächste Lauf tun würde.
+</p>
+
+<div class="glass-card" style="margin-bottom:24px;">
+  <h3 style="font-size:16px; color:#fff; margin:0 0 10px;"><i class="fa-solid fa-sliders" style="color:var(--accent);"></i> Löschfrist</h3>
+  <form method="post" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+    {% csrf_token %}
+    <label for="ret-days" style="font-size:14px; color:#fff;">Anonymisieren nach</label>
+    <input id="ret-days" type="number" name="days" class="form-input" value="{{ days }}" min="{{ min_days }}" max="{{ max_days }}" style="width:110px;">
+    <span style="font-size:14px; color:var(--text-muted);">Tagen</span>
+    <button type="submit" class="btn-cta" style="height:38px; font-size:13px; padding:0 16px;"><i class="fa-solid fa-floppy-disk"></i> Speichern</button>
+  </form>
+  <p style="font-size:12px; color:var(--text-muted); margin:10px 0 0;">
+    Erlaubt: {{ min_days }}–{{ max_days }} Tage. Untergrenze wegen laufender
+    Nachweisfristen (AGG), Obergrenze wegen Datenminimierung. Jede Änderung wird
+    revisionssicher protokolliert.
+  </p>
+</div>
+
+<div class="glass-card">
+  <h3 style="font-size:16px; color:#fff; margin:0 0 10px;"><i class="fa-solid fa-flask" style="color:var(--accent);"></i> Trockenlauf-Vorschau</h3>
+  <p style="font-size:13px; color:var(--text-muted); margin:0 0 12px;">
+    Was der nächste Aufbewahrungs-Lauf (<code>data_retention</code>) mit der
+    aktuellen Frist von <strong style="color:#fff;">{{ preview.days }} Tagen</strong>
+    anonymisieren würde – nur Zahlen, keine Namen:
+  </p>
+  <ul class="list-reset">
+    <li class="list-row"><span>Betroffen gesamt</span><span class="badge {% if preview.total %}badge-accent{% endif %}">{{ preview.total }}</span></li>
+    <li class="list-row"><span>davon abgelehnt</span><span class="badge">{{ preview.rejected }}</span></li>
+    <li class="list-row"><span>davon zurückgezogen</span><span class="badge">{{ preview.withdrawn }}</span></li>
+  </ul>
+  <p style="font-size:12px; color:var(--text-muted); margin:10px 0 0;">
+    Anonymisiert werden Anschreiben, Screening-Antworten, Notizen, Lebenslauf-Datei
+    und die freiwillige § 164-Angabe; Name/E-Mail der Person, sofern keine andere
+    aktive Bewerbung existiert. Der Lauf selbst wird als geplanter Befehl
+    ausgeführt (<code>python manage.py data_retention</code>, optional <code>--dry-run</code>).
+  </p>
+</div>
+{% endblock %}

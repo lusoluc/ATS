@@ -17,6 +17,7 @@ urlpatterns = [
     path('jobs/<uuid:job_id>/', views.job_detail, name='job_detail'),
     path('jobs/<uuid:job_id>/bewerben/', views.bewerben, name='bewerben'),
     path('bewerber/<str:token>/', views.candidate_portal, name='candidate_portal'),  # B4 Magic-Link
+    path('ki-transparenz/', views.ai_transparency, name='ai_transparency'),  # N3 Art. 86 EU AI Act
 
     # Recruiter ATS Dashboard URLs
     path('recruiter/dashboard/', views.dashboard, name='dashboard'),
@@ -50,6 +51,7 @@ urlpatterns = [
     path('recruiter/lernendes-scoring/', views.learned_scoring_view, name='learned_scoring'),  # L3
     path('recruiter/lernendes-scoring/speichern/', views.save_learned_scoring_settings, name='save_learned_scoring'),
     path('recruiter/hris/', views.hris_page, name='hris_page'),
+    path('recruiter/datenaufbewahrung/', views.retention_page, name='retention'),  # P4
 
     # API Feeds & Integrations
     path('healthz/', views.healthz, name='healthz'),  # WP7
@@ -81,10 +83,12 @@ urlpatterns = [
     path('recruiter/audit/', views.audit_log_view, name='audit_log'),
     path('recruiter/approvals/', views.approvals_inbox, name='approvals'),  # WP6
     path('recruiter/governance/', views.governance_view, name='governance'),  # WP6                              # B2
+    path('recruiter/governance/roi-export.csv', views.roi_export, name='roi_export'),  # P5
     path('recruiter/talent-pool/', views.talent_pool_view, name='talent_pool'),
     path('recruiter/jobs/<uuid:job_id>/talent-pool/', views.job_pool_matches, name='job_pool_matches'),  # C3
     path('recruiter/applications/<uuid:app_id>/verlauf/', views.application_timeline, name='application_timeline'),  # Aktionsverlauf
     path('recruiter/jobs/<uuid:job_id>/verlauf/', views.job_timeline, name='job_timeline'),  # Aktionsverlauf
+    path('recruiter/jobs/<uuid:job_id>/serien-nachricht/', views.job_series_message, name='job_series_message'),  # P3
     path('recruiter/aufgaben/', views.tasks_view, name='tasks'),   # Automatik-Aufgaben                    # B11
     path('recruiter/screening-questions/', views.screening_questions_view, name='screening_questions'),  # B15
     path('recruiter/screening-questions/<uuid:q_id>/archive/', views.archive_screening_question, name='archive_screening_question'),

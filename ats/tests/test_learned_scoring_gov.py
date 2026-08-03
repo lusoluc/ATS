@@ -97,8 +97,11 @@ class GovernanceToggleTestCase(TestCase):
         self.assertFalse(SystemSetting.objects.filter(
             key=LEARNED_SCORING_ENABLED_KEY, value='1').exists())
 
-    def test_enable_with_confirmation(self):
-        self.client.post(self.url, data={'enable': '1', 'legal_confirmed': '1'})
+    def test_enable_with_confirmations(self):
+        # Seit Paket R braucht die Aktivierung BEIDE Bestaetigungen:
+        # Rechtsgutachten UND Betriebsrats-Zustimmung (§ 87 Abs. 1 Nr. 6).
+        self.client.post(self.url, data={'enable': '1', 'legal_confirmed': '1',
+                                         'br_confirmed': '1'})
         self.assertTrue(SystemSetting.objects.filter(
             key=LEARNED_SCORING_ENABLED_KEY, value='1').exists())
 

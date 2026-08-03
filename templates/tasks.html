@@ -25,6 +25,7 @@
 
   <h3 style="font-size:15px; margin-bottom: var(--space-2);">Offen</h3>
   {% if open_tasks %}
+  <div class="table-scroll">
   <table class="data-table" style="margin-bottom: var(--space-4);">
     <thead>
       <tr>
@@ -65,6 +66,7 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
   {% else %}
   <div class="card" style="margin-bottom: var(--space-4); color:var(--text-muted);">
     Keine offenen Aufgaben. Aufgaben entstehen automatisch, wenn eine Automatik-Regel
@@ -74,6 +76,7 @@
 
   {% if done_tasks %}
   <h3 style="font-size:15px; margin-bottom: var(--space-2);">Zuletzt erledigt</h3>
+  <div class="table-scroll">
   <table class="data-table">
     <thead>
       <tr><th>Aufgabe</th><th>Bewerbung</th><th>Erledigt von</th><th>Wann</th><th></th></tr>
@@ -97,6 +100,7 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
   {% endif %}
 </div>
 {% endblock %}

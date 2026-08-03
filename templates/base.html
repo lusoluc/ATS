@@ -743,6 +743,43 @@
 
         .empty-state { color: var(--text-muted); padding: var(--space-4); text-align: center; }
 
+        /* Ueberbreite Tabellen scrollen IN ihrem Kasten statt vom
+           body{overflow-x:hidden} abgeschnitten zu werden (Mobil/Vertretung:
+           Entscheider-Seiten muessen auch am Handy vollstaendig lesbar sein). */
+        .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .table-scroll > table { min-width: 100%; }
+
+        /* Entscheider-Tabellen: Zellen-Rollen als Klassen statt Inline-Stile,
+           damit die Phone-Query sie umdrehen kann (Inline schlaegt CSS). */
+        .td-actions { white-space: nowrap; }
+        .td-notes { max-width: 280px; }
+
+        /* Persona Dr. Winter/Voigt/Volkan: entscheiden am Handy.
+           <=560px: (1) Eingaben >=16px, sonst zoomt iOS beim Fokussieren rein;
+           (2) Buttons als echte Touch-Ziele; (3) .m-stack-Tabellen werden zu
+           gestapelten Karten - der Kern-Flow (lesen -> entscheiden) kommt ohne
+           Seitwaerts-Scrollen aus (Context-Aware UI, minimale Wege). */
+        @media (max-width: 560px) {
+            .input, .textarea, select.input, .form-input, .form-textarea,
+            .filter-select { font-size: 16px !important; }
+            .btn, .btn-primary, .btn-ghost, .btn-cta, .btn-secondary-cta {
+                min-height: 44px; }
+            .btn-icon { min-width: 44px; min-height: 44px; }
+            input[type=range].fb-slider { height: 32px; }
+            .td-actions { white-space: normal; }
+            .td-notes { max-width: none; }
+            .table-scroll.m-stack { overflow-x: visible; }
+            .m-stack table, .m-stack tbody, .m-stack tr, .m-stack td {
+                display: block; width: 100%; min-width: 0; box-sizing: border-box; }
+            .m-stack thead { display: none; }
+            .m-stack tr { border: 1px solid var(--border-color);
+                border-radius: var(--border-radius-sm);
+                padding: 10px 12px; margin-bottom: 12px; }
+            .m-stack td { border: 0; padding: 6px 0; }
+            .m-stack td form { width: 100%; }
+            .m-stack td form .btn { width: 100%; }
+        }
+
         .list-reset { list-style: none; padding: 0; margin: 0; }
         /* WCAG 3.3.1: Inline-Formularfehler */
         .form-error-summary { border: 1px solid var(--danger); background: rgba(239,68,68,.08);

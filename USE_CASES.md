@@ -374,22 +374,23 @@ Volkan ist Wohnbereichsleitung und vertritt die Pflegedienstleitung drei Wochen 
 | UC-JF-10 | …einen Mitbestimmungs-Nachweis exportieren | ✅ `/recruiter/audit/export.csv` (HR-Admin erstellt auf Anforderung) | CSV mit Zeitraum-/Aktions-Filter; Integritäts-Kopfzeile (Hash-Kette INTAKT/VERLETZT); Export selbst auditiert |
 | UC-JF-11 | …mich sicher anmelden | Login | Auth erforderlich |
 | UC-JF-12 | …keine unnötigen Bewerberdaten sehen | Scoping | Nur Notwendiges |
+| UC-JF-13 | …die Zustimmung nach § 99 Abs. 2 BetrVG förmlich verweigern | ✅ Freigaben › BR-Stufe: Katalog-Grund + Begründung Pflicht, Wochenfrist-Badge | test_mitbestimmung.py (10 Tests) |
 
 ### C2 · Katrin Sommer — Schwerbehindertenvertretung / Inklusion [KS]
 | ID | Use Case | Seite / Flow | QA-Prüfkriterium |
 |---|---|---|---|
 | UC-KS-01 | …bei relevanten Bewerbungen automatisch eingebunden werden | Workflow | Gate greift |
-| UC-KS-02 | …die Nutzung der Barrierefreiheits-Funktionen sehen | Analytics › Inklusion (Roadmap) | Nutzungszahlen sichtbar |
-| UC-KS-03 | …den Ausgleichsabgabe-ROI verfolgen | KPIs › Inklusions-ROI | Ersparnis berechnet |
-| UC-KS-04 | …schwerbehinderte Talente gezielt fördern | Kennzeichnung (Roadmap) | Markierung möglich |
+| UC-KS-02 | …die Nutzung der Barrierefreiheits-Funktionen sehen | ◐ Inklusions-Aggregate im Governance-Cockpit + ROI-Export; A11y-Nutzungszahlen offen | Aggregate sichtbar |
+| UC-KS-03 | …den Ausgleichsabgabe-ROI verfolgen | ✅ KPIs › Inklusions-ROI + Governance › ROI-Export (CSV) | Ersparnis berechnet |
+| UC-KS-04 | …schwerbehinderte Talente gezielt fördern | ✅ Freiwillige §-164-Angabe (Art. 9, verschlüsselt) + Widerruf im Portal, SBV-Unterrichtung, Steckbrief-Chip | test_inklusion.py; nie Scoring-Eingabe (Wächter) |
 | UC-KS-05 | …meine Einbindung nachweisen | Audit | Eintrag vorhanden |
 | UC-KS-06 | …eine Leichte-Sprache-Ausschreibung prüfen | KI › Leichte Sprache | Variante erzeugbar |
 | UC-KS-07 | …eine Freigabe/Kommentar abgeben | Workflow | Wirkt; protokolliert |
-| UC-KS-08 | …den Conversion-Uplift durch Barrierefreiheit sehen | Analytics (Roadmap) | Kennzahl sichtbar |
+| UC-KS-08 | …den Conversion-Uplift durch Barrierefreiheit sehen | Analytics (Roadmap; Evidenz-Gate) | Kennzahl sichtbar |
 | UC-KS-09 | …nur relevante Daten sehen | RBAC | Datenminimierung |
 | UC-KS-10 | …mich sicher anmelden | Login | Auth |
 | UC-KS-11 | …das barrierefreie Bewerberportal testen | Accessibility-Panel | A11y-Funktionen greifen |
-| UC-KS-12 | …einen Report zur Schwerbehinderten-Quote erstellen | Analytics-Export (Roadmap) | Export erzeugbar |
+| UC-KS-12 | …einen Report zur Schwerbehinderten-Quote erstellen | ◐ ROI-/Inklusions-Export (CSV, Quoten ab Anonymitätsschwelle) | test_roi_export.py |
 
 ### C3 · Michael Braun — Datenschutzbeauftragter (DSB) [MB]
 | ID | Use Case | Seite / Flow | QA-Prüfkriterium |
@@ -399,7 +400,7 @@ Volkan ist Wohnbereichsleitung und vertritt die Pflegedienstleitung drei Wochen 
 | UC-MB-03 | …die Einwilligungs-Abdeckung prüfen | PrivacyNotice/Consent | Version je Bewerbung |
 | UC-MB-04 | …bestätigen, dass keine externen Datenflüsse bestehen | Air-Gap | Kein Cloud-Call im Datenpfad |
 | UC-MB-05 | …die Verschlüsselung at-rest prüfen | Encrypted Fields | PII verschlüsselt gespeichert |
-| UC-MB-06 | …Löschfristen konfigurieren | Settings | Frist einstellbar (Roadmap UI) |
+| UC-MB-06 | …Löschfristen konfigurieren | ✅ Verwaltung › Datenaufbewahrung (Frist 30–1095 Tage, Trockenlauf-Vorschau, Audit je Änderung) | test_retention.py (12 Tests) |
 | UC-MB-07 | …eine Betroffenenauskunft erstellen | ✅ `export_applicant`-Command (DSGVO Art. 15) | Umgesetzt (WP2) |
 | UC-MB-08 | …Zugriffsprotokolle exportieren | ✅ `/recruiter/audit/export.csv` | s. UC-JF-10; z. B. `?action=READ_CV&von=…&bis=…` |
 | UC-MB-09 | …die Wirksamkeit des BOLA-Scopings prüfen | Scope-Test | Fremdzugriff → 404 |
@@ -476,7 +477,7 @@ Volkan ist Wohnbereichsleitung und vertritt die Pflegedienstleitung drei Wochen 
 | UC-BL-04 | …das Equal-Pay-/Haftungsrisiko im Blick haben | Compliance | Nachweise vorhanden |
 | UC-BL-05 | …Bußgeld-Vermeidung belegen | Audit/Compliance | Nachweisbar |
 | UC-BL-06 | …Effizienz-Kennzahlen sehen | Analytics | Durchlaufzeiten |
-| UC-BL-07 | …einen ROI-Report exportieren | Export (Roadmap) | Erzeugbar |
+| UC-BL-07 | …einen ROI-Report exportieren | ✅ Governance › ROI-/Inklusions-Export (CSV, nur Leitung, auditiert) | test_roi_export.py (6 Tests) |
 | UC-BL-08 | …mich anmelden und KPIs sehen | Login + KPIs | Schnell |
 | UC-BL-09 | …Standort-Kosten vergleichen | Analytics | Vergleich |
 | UC-BL-10 | …Trends sehen | Verlauf | Zeitreihe |
@@ -487,10 +488,10 @@ Volkan ist Wohnbereichsleitung und vertritt die Pflegedienstleitung drei Wochen 
 | ID | Use Case | Seite / Flow | QA-Prüfkriterium |
 |---|---|---|---|
 | UC-HR-01 | …nur meinen Standort sehen | BOLA | Scope greift |
-| UC-HR-02 | …die offenen Stellen meines Standorts sehen | Dashboard (scoped) | Nur eigener Standort |
+| UC-HR-02 | …die offenen Stellen meines Standorts sehen | ✅ Dashboard (scoped) + „Mein Bereich“-Block (Standortname, Stellen-/Verfahrens-Zahlen) | test_mein_bereich.py (4 Tests) |
 | UC-HR-03 | …den Pipeline-Status verfolgen | Kanban (scoped) | Übersicht |
 | UC-HR-04 | …Freigaben erteilen | Workflow | Freigabe wirkt |
-| UC-HR-05 | …die App ohne HR-Wissen bedienen | Usability | Ohne Schulung nutzbar |
+| UC-HR-05 | …die App ohne HR-Wissen bedienen | ✅ „Mein Bereich“-Einstieg + „Heute wichtig“ bündeln alles Handlungsrelevante oben | Browser-verifiziert als gescopter HM |
 | UC-HR-06 | …die KPIs meines Standorts sehen | Analytics (scoped) | Nur Standort |
 | UC-HR-07 | …mich für den Einmal-Zugriff anmelden | Login | Schnell |
 | UC-HR-08 | …keine Systemkonfiguration sehen | RBAC | 403 auf Konfig |
@@ -655,7 +656,7 @@ iterativ optimieren (Funktion, Click-Flow, Klarheit). Vorgehen je Seite:
 ### Seiten-/Routen-Inventar (Prüfobjekte)
 
 **Öffentlich (Karriereportal):**
-- `/` Startseite · `/jobs/` Stellenliste · `/jobs/<id>/` Stellendetail
+- `/` Startseite · `/jobs/` Stellenliste · `/jobs/<id>/` Stellendetail · `/ki-transparenz/` (Art. 86)
 - `/jobs/<id>/bewerben/` Bewerbungsformular · Erfolgsseite
 - `/bewerber/<token>/` Magic-Link-Statusportal
 - `/job-alert/` Job-Alert-Abo · `/pages/<slug>/` CMS-Seite
@@ -663,14 +664,21 @@ iterativ optimieren (Funktion, Click-Flow, Klarheit). Vorgehen je Seite:
 **Authentifizierung:**
 - `/recruiter/login/` · `/recruiter/logout/`
 
-**Recruiter-Dashboard (Tabs):**
-- Kanban · Jobs · Prozesse · CMS · E-Mail & Variablen · SAP · KI-Zentrale · KPIs/Statistiken
+**Recruiter-Dashboard (Arbeitsbereich):**
+- Kanban · Jobs · Sammel-Postfach (`/recruiter/postfach/` + Sammel-Antwort/Baustein/Anliegen) · „Heute wichtig“ · „Mein Bereich“ (gescopte Nutzer)
+
+**Verwaltungs-Seiten (seit B2 eigene Seiten statt Tabs, nur HR-Admin):**
+- `/recruiter/kpis/` · `/recruiter/prozess-flow/` · `/recruiter/email-vorlagen/` · `/recruiter/cms/`
+- `/recruiter/ki-zentrale/` · `/recruiter/lernendes-scoring/` · `/recruiter/hris/` · `/recruiter/datenaufbewahrung/`
 
 **Recruiter-Verwaltung (Sidebar):**
 - `/recruiter/analytics/` · `/recruiter/talent-pool/` · `/recruiter/screening-questions/`
 - `/recruiter/delegations/` · `/recruiter/categories/` · `/recruiter/locations/`
 - `/recruiter/job-templates/` (+ Ton-Overlay) · `/recruiter/interviews/`
-- `/recruiter/pages/` · `/recruiter/media/` · `/recruiter/audit/`
+- `/recruiter/pages/` · `/recruiter/media/` · `/recruiter/audit/` · `/recruiter/governance/` (+ `roi-export.csv`)
+- `/recruiter/aufgaben/` · `/recruiter/bedarf/` · `/recruiter/pay-bands/` · `/recruiter/kanaele/` · `/recruiter/gremien/`
+- `/recruiter/landingpages/` · `/recruiter/interview-formate/` · `/recruiter/best-performers/` · `/recruiter/import/`
+- `/recruiter/snippets/` · `/recruiter/contacts/` · `…/verlauf/` (Bewerbung/Stelle) · `…/serien-nachricht/` · `…/steckbrief.json`
 
 **Aktionen/Endpunkte:**
 - `…/cv/` CV-Download · `…/update-status/` · `…/add-note/` · `…/messages/`
@@ -695,9 +703,9 @@ iterativ optimieren (Funktion, Click-Flow, Klarheit). Vorgehen je Seite:
 | `/recruiter/login/` | UC-HF-02, UC-CV-09, UC-*-Login | ✅ | Django-Login, RBAC-Gruppen |
 | Dashboard › Kanban | UC-SB-05/06, UC-TK-*, UC-HR-03 | ✅ | Positionsgenaues Drag&Drop mit persistierter Reihenfolge (B10) ✅; Mehrfachauswahl + Sammel-Statuswechsel (UC-UM-08/09, mit Audit) ✅; sicherer CV-Download + Nachrichten-Button ✅ |
 | Dashboard › Jobs | UC-SB-01/04/17/19, UC-TK-07/13 | ✅ | **Ein-Klick-Deaktivierung/Aktivierung** je Anzeige (published↔draft, Audit, BOLA-getestet); Bearbeiten-Modal; Vorlagen + Ton-Overlay + Textbausteine in der Anlage |
-| Dashboard › Prozesse | UC-AR-01/02, UC-JF-04 | ❔ | (UC-JF-01 jetzt über automatisches Approval-Gate abgedeckt, s. `/recruiter/approvals/`) |
-| Dashboard › KI-Zentrale | UC-AR-03/04/05, UC-SO-06, UC-MN-02, UC-KV-05/13 | ❔ | |
-| Dashboard › KPIs | UC-KS-03, UC-BL-01, UC-CV-08 | ❔ | |
+| `/recruiter/prozess-flow/` | UC-AR-01/02, UC-JF-04 | ✅ | Eigene Seite (B2); Gate-Enforcement in test_jobs/test_board; UC-JF-01 über automatisches Approval-Gate |
+| `/recruiter/ki-zentrale/` | UC-AR-03/04/05, UC-SO-06, UC-MN-02, UC-KV-05/13 | ✅ | Eigene Seite (B2, hr_admin_required, 403-getestet); Auto-Antwort-Governance dort |
+| `/recruiter/kpis/` | UC-KS-03, UC-BL-01, UC-CV-08 | ✅ | Eigene Seite (B2); Inklusions-ROI-Rechner (test_board prüft „Ausgleichsabgabe“); CSV-Export via Governance |
 | `/recruiter/analytics/` | UC-SB-08/09, UC-CV-01..07, UC-BL-* | ✅ | §4.1 KPIs + §4.3: Time-to-Fill-Prognose, Anomalie-Hinweise mit Handlungsvorschlag, Fairness-Cockpit (datensparsam), Standort-Benchmark + Kosten/Einstellung (nur Leitung), CSV-Export (audit-protokolliert), lokaler KI-Analyst „Frag deine Daten" |
 | `/recruiter/talent-pool/` | UC-SB-13, UC-UM-04, UC-FA-04 | ✅ | Kompletter Lebenszyklus: Opt-in im Portal (Kriterien datensparsam aus eigenen Bewerbungen: Jobfamilie + Standort – bewusst KEIN Skill-Profil), Matching auf veröffentlichte Stellen im Scope, Ein-Klick-Hinweis mit Doppel-Ansprache-Sperre + Widerrufs-Hinweis in jeder Mail, Verfall nach 12 Monaten, Austritt jederzeit im Portal (alles getestet) |
 | `/recruiter/screening-questions/` | UC-AR-11, UC-UM-07 | ✅ | Fragen-Bank CRUD, Foundation ✅ |
@@ -720,10 +728,16 @@ iterativ optimieren (Funktion, Click-Flow, Klarheit). Vorgehen je Seite:
 | Portal › Kontaktdaten | UC-AY-09 | ✅ |
 | `/recruiter/audit/export.csv` | UC-JF-10, UC-MB-08, UC-NS-12 | ✅ | „Wartet auf mich"-Postfach: Reihenfolge-Logik, Freigeben/Rückfrage(Pflichtkommentar)/Ablehnen, SLA-Frist + überfällig-Badge, Audit; **automatisches Gate** (`Facility.requiresApproval` → Anzeige startet als draft mit Ticket+Kette aus `APPROVAL_CHAIN`), finale Freigabe **publiziert automatisch**, Toggle blockt bei offenem Gate (409), Wiedervorlage nach Rückfrage – alles getestet |
 | `/recruiter/governance/` | UC-JF-08, UC-MB-01/08, UC-KS-* | ✅ | Datenminimiert (nur Aggregate, per Test: keine Namen/E-Mails); Hashketten-Status, Retention-/KI-Log-Zähler, Consent-Abdeckung |
-| `…/cv/` CV-Download | UC-SB-07, UC-TK-09, UC-MB-01 | ❔ | |
-| `…/update-status/` | UC-SB-06, UC-TK-06/12 | ❔ | |
-| `…/messages/` | UC-TK-10, UC-PW-07, UC-FA-09, UC-KV-08 | ❔ | |
-| Django-Admin › UserScope | UC-AR-08, UC-MB-09, UC-NS-03 | ❔ | |
+| `…/cv/` CV-Download | UC-SB-07, UC-TK-09, UC-MB-01 | ✅ | Auth + Rolle + READ_CV-Audit; BOLA-getestet (test_security); Inline-Vorschau ohne Dateikopie |
+| `…/update-status/` | UC-SB-06, UC-TK-06/12 | ✅ | BOLA + Gremium-/Runden-Gates serverseitig; test_board |
+| `…/messages/` | UC-TK-10, UC-PW-07, UC-FA-09, UC-KV-08 | ✅ | Verlauf je Bewerbung + KI-Entwürfe (C4) + Sammel-Postfach; test_inbox/test_reply_drafts |
+| Django-Admin › UserScope | UC-AR-08, UC-MB-09, UC-NS-03 | ✅ | UserScopeAdmin (ats/admin.py); Wirksamkeit BOLA-getestet (test_security, test_mein_bereich) |
+
+| `/recruiter/datenaufbewahrung/` | UC-MB-02/06 | ✅ | Frist mit Leitplanken + Trockenlauf-Vorschau; Audit je Änderung; test_retention (12) |
+| `/recruiter/governance/roi-export.csv` | UC-BL-07/12, UC-KS-03/12 | ✅ | Nur Leitung; Aggregate ohne Namen; auditiert; test_roi_export (6) |
+| `/ki-transparenz/` | UC-MN-02, UC-KV-05, Art. 86 | ✅ | Öffentlich; dynamisch nach aktiven Funktionen; aus Formular+Portal verlinkt; test_ai_transparency (6) |
+| Portal › K.O.-Gründe | UC-LK-10, UC-RI-07 | ✅ | Nur vorab veröffentlichte Pflichtkriterien; nie Ermessens-Gründe (AGG-Wächter); test_ko_absage (8) |
+| Freigaben › BR-Stufe (§ 99) | UC-JF-13 | ✅ | Katalog-Grund + Begründung Pflicht, Wochenfrist-Badge; test_mitbestimmung (10) |
 
 > Status-Legende Matrix: ❔ ungeprüft · ✅ erfüllt · ◐ teilweise · ❌ Lücke.
 

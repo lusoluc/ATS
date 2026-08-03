@@ -47,7 +47,10 @@
       width:100%;min-height:44px;padding:10px 12px;border-radius:10px;font-size:15px;
       background:var(--bg-color);border:1px solid var(--border-color);color:var(--text-main);}
     a{color:var(--primary);text-decoration:none;}
-    .pipeline { display:flex; margin:12px 0 2px; width:100%; }
+    /* flex statt width:100%: laesst Badge/Button daneben Platz und bricht am
+       schmalen Screen sauber um, statt den Zurueckziehen-Button in die
+       Status-Leiste zu quetschen (gemeldeter Optik-Bug). */
+    .pipeline { display:flex; margin:12px 0 2px; flex:1 1 240px; min-width:0; }
     .p-step { flex:1; text-align:center; position:relative; min-width:0; }
     .p-dot { width:13px; height:13px; border-radius:50%; margin:0 auto 5px;
         background:var(--surface-hover); border:2px solid var(--border-color);
@@ -93,7 +96,7 @@
             <div style="font-weight:600;">{{ r.job }}</div>
             <div class="muted">eingegangen am {{ r.created|date:"d.m.Y" }}</div>
           </div>
-          <div style="display:flex;align-items:center;gap:10px;">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <span class="badge b-{{ r.status }}">{{ r.label }}</span>
             <div class="pipeline" role="img" aria-label="Bewerbungsfortschritt: {{ r.label }}">
               <div class="p-step {% if r.status == 'NEW' %}current{% else %}done{% endif %}">
@@ -126,6 +129,19 @@
             </div>
           {% endfor %}
         </div>
+        {% if r.ko_grounds %}
+        {% comment %} N2: Nur objektive, vorab veroeffentlichte K.O.-Kriterien
+           werden benannt - Ermessens-Absagen bekommen nie eine automatische
+           Begruendung (ats/questions.py). {% endcomment %}
+        <div style="border:1px solid var(--border-color); background:var(--bg-color); border-radius:10px; padding:10px 12px; margin:-6px 0 6px; font-size:13px;">
+          <strong>Warum hat es nicht gepasst?</strong>
+          <span class="muted">Die Stelle setzt laut Ausschreibung voraus:</span>
+          <ul style="margin:6px 0 0 18px; padding:0;">
+            {% for g in r.ko_grounds %}<li>{{ g }}</li>{% endfor %}
+          </ul>
+          <div class="muted" style="margin-top:6px;">Diese Voraussetzung war laut Ihren Angaben im Bewerbungsformular nicht erfüllt. Ändert sich das, freuen wir uns über eine neue Bewerbung.</div>
+        </div>
+        {% endif %}
         {% if r.interview_at %}
         <div style="border:1px solid #14532d; background:#0e3a2a; color:#6ee7b7; border-radius:10px; padding:10px 12px; margin:-6px 0 6px; font-size:14px;">
           <strong>✓ {{ r.interview_kind|default:"Ihr Gesprächstermin" }}:</strong> {{ r.interview_at|date:"l, d.m.Y" }} um {{ r.interview_at|date:"H:i" }} Uhr
@@ -231,6 +247,32 @@
         </form>
       </div>
     </div>
+
+    <!-- § 164 SGB IX + Art. 7 Abs. 3 DSGVO: freiwillige Angabe – Widerruf so
+         einfach wie die Erteilung, am selben Ort, ein Klick. -->
+    {% if disability_disclosed or has_active_application %}
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+        <div>
+          <div style="font-weight:600; font-size:14px;">Freiwillige Angabe: Schwerbehinderung/Gleichstellung</div>
+          {% if disability_disclosed %}
+          <p class="muted" style="font-size:12px; margin:4px 0 0;">Ihre Angabe liegt vor – unsere Schwerbehindertenvertretung ist nach § 164 SGB IX einbezogen. Sie können die Angabe hier jederzeit mit einem Klick zurücknehmen; sie wird dann sofort gelöscht.</p>
+          {% else %}
+          <p class="muted" style="font-size:12px; margin:4px 0 0;">Völlig freiwillig und ohne Nachteile: Mit Ihrer Angabe beziehen wir unsere Schwerbehindertenvertretung in Ihr Verfahren ein (§ 164 SGB IX). Verschlüsselt gespeichert, fließt in keine automatische Bewertung ein, hier jederzeit widerrufbar.</p>
+          {% endif %}
+        </div>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="form" value="disability">
+          {% if disability_disclosed %}
+          <button type="submit" name="action" value="revoke">Angabe zurücknehmen</button>
+          {% else %}
+          <button type="submit" name="action" value="grant" style="border-color:#14532d; color:#6ee7b7;">Angabe machen</button>
+          {% endif %}
+        </form>
+      </div>
+    </div>
+    {% endif %}
     <div class="card">
       <details>
         <summary style="cursor:pointer; color:#94a3b8; font-size:13px;">Meine Kontaktdaten</summary>
@@ -246,7 +288,8 @@
         </form>
       </details>
     </div>
-    <p class="muted" style="text-align:center;">Ihre Daten verlassen unser Haus nicht und werden nach Ablauf der gesetzlichen Frist automatisch gelöscht.</p>
+    <p class="muted" style="text-align:center;">Ihre Daten verlassen unser Haus nicht und werden nach Ablauf der gesetzlichen Frist automatisch gelöscht.<br>
+      <a href="{% url 'ats:ai_transparency' %}">Automatische Funktionen &amp; Ihre Rechte (KI-Transparenz)</a></p>
   {% endif %}
 </div>
 </body>

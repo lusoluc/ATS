@@ -49,6 +49,7 @@ module = [
     "ats.permissions",
     "ats.profile_summary",
     "ats.reply_drafts",
+    "ats.retention",
     "ats.scoring",
     "ats.scoring_eval",
     "ats.talent_pool",

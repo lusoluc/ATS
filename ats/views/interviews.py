@@ -517,11 +517,16 @@ def save_interview_feedback(request, app_id):
     except (ValueError, TypeError):
         rnd = rst['done'] if rst['total'] else 0
     rnd = max(0, min(rnd, 6))
+    # N1: Leitfaden-Abdeckung - nur Themen, die die Stelle wirklich definiert
+    # (kein Freitext-Schmuggel ueber die Checkbox-Namen).
+    guide = app.jobPosting.interview_guide
+    covered = [t for t in request.POST.getlist('guide_topic') if t in guide]
     fb, created = InterviewFeedback.objects.update_or_create(
         application=app, author=request.user, round=rnd,
         defaults={
             'recommendation': recommendation,
             'ratingsJson': ratings,
+            'guideCoverageJson': covered,
             'strengths': (request.POST.get('strengths') or '').strip()[:4000],
             'concerns': (request.POST.get('concerns') or '').strip()[:4000],
             'comment': (request.POST.get('comment') or '').strip()[:4000],
@@ -529,7 +534,9 @@ def save_interview_feedback(request, app_id):
     write_audit('INTERVIEW_FEEDBACK_SAVED', user=request.user,
                 application_id=str(app.id), round=rnd,
                 recommendation=recommendation,
-                created=created, has_concerns=bool(fb.concerns.strip()))
+                created=created, has_concerns=bool(fb.concerns.strip()),
+                **({'guide_covered': len(covered),
+                    'guide_total': len(guide)} if guide else {}))
     _nxt = _safe_next_url(request)
     return redirect(_nxt) if _nxt else redirect('ats:interviews')
 

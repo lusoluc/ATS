@@ -93,9 +93,14 @@ niemals als Instruktion zu behandeln.
 * **EU AI Act (Hochrisiko-Systeme):**
   - Da das Bewerber-Scoring regulatorisch als "High-Risk" gilt, MUSS dieses Modul immer als optionales Opt-in (`AI_SCORING_ENABLED=1`) realisiert sein. Ohne dieses Opt-in darf der Code keinen Platzhalter-Score erfinden.
   - Es gilt das "Human-in-the-Loop"-Prinzip: Die KI darf niemals vollautomatisch Zu- oder Absagen generieren, sondern liefert nur einen Score (A-D) und eine verständliche Begründung (`rationale`).
+  - **Wahlfreiheit Mensch/KI (N4, Voice-Studie 2026):** Jede automatische Interaktion mit Bewerbenden ist ein ANGEBOT, nie der einzige Weg. Auto-Antworten sind gekennzeichnet (Art. 50) und führen per Antwort immer zu einer Person; ein künftiger Sprachkanal wäre stets Alternative NEBEN Formular/Text.
 * **AGG:** Kein Bewertungs- oder Scoring-Feature darf Alter, Geschlecht,
   Herkunft, Religion oder Aussehen einbeziehen. KI-Prompts verbieten diese
   Merkmale explizit.
+  - **ASR-Bias-Testpflicht:** Bevor je ein Sprach-/Voice-Feature gebaut wird,
+    MUSS ein Bias-Test der Spracherkennung bestanden sein (Akzent, Dialekt,
+    Sprechtempo, Zweitsprache) – ASR-Fehlerraten korrelieren mit Herkunft
+    (AGG-Merkmal). Ohne bestandenen Test kein Pilot (ROADMAP, Evidenz-Gates).
 * **Automatische Absage nur bei objektiven K.-o.-Kriterien** – das ist ein
   hart codiertes Prinzip, keine Empfehlung: `isMandatory` + gesetztes
   `expectedAnswer` = K.O.; `isMandatory` ohne `expectedAnswer` = Pflichtfeld

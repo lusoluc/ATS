@@ -37,12 +37,14 @@ from ..models import (
     Page,
     SystemSetting,
 )
+from ..models.applications import disability_value_disclosed
+from ..questions import ko_grounds as _ko_grounds
 from .ai import evaluate_with_local_gemma, get_ollama_url
 from .common import _remember_campaign_src, campaign_expired, exclude_filled, seed_data_if_empty
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["home", "job_list", "job_detail", "bewerben", "candidate_portal", "page_detail", "facility_profile", "landing_page", "job_alert_subscribe", "job_alert_confirm", "job_alert_manage", "pricing_view", "healthz"]
+__all__ = ["home", "job_list", "job_detail", "bewerben", "candidate_portal", "page_detail", "facility_profile", "landing_page", "job_alert_subscribe", "job_alert_confirm", "job_alert_manage", "pricing_view", "healthz", "ai_transparency"]
 
 
 def home(request):
@@ -236,6 +238,7 @@ def bewerben(request, job_id):
 
         # 3. Evaluate screening questions
         ko_failed = False
+        ko_failed_questions = []   # N2: Snapshot der verfehlten Pflichtkriterien
         answers_dict = {}
 
         for q in screening_questions:
@@ -252,6 +255,10 @@ def bewerben(request, job_id):
             if (q.get('isMandatory') and q.get('expectedAnswer')
                     and ans != q.get('expectedAnswer')):
                 ko_failed = True
+                # N2: verfehltes Pflichtkriterium festhalten - die Absage
+                # nennt der Person spaeter GENAU diese vorab veroeffentlichten
+                # Kriterien (und nur diese, siehe ats/questions.py).
+                ko_failed_questions.append(q['question'])
 
         # 4. Handle CV File Upload
         cv_file = request.FILES.get('cv_file')
@@ -284,7 +291,8 @@ def bewerben(request, job_id):
             withdraw_reason = None
             if ko_failed:
                 initial_status = 'REJECTED'
-                withdraw_reason = 'Automatische Ablehnung: K.O. Kriterien nicht erfüllt.'
+                from ..questions import format_ko_reason
+                withdraw_reason = format_ko_reason(ko_failed_questions)
 
             # 7. KI-Screening – NUR wenn ausdrücklich aktiviert (ROADMAP P0.2 / AI Act):
             # SystemSetting AI_SCORING_ENABLED="1" schaltet das A–D-Scoring als
@@ -302,6 +310,9 @@ def bewerben(request, job_id):
                     ai_score, ai_rationale = evaluate_with_local_gemma(cover_letter, job.requirementsJson)
 
             # 8. Create Application
+            # § 164 SGB IX: freiwillige Angabe (Art. 9 -> verschluesselt,
+            # nur bei ausdruecklichem Ankreuzen, nie Scoring-Eingabe).
+            disability_disclosed = request.POST.get('disability_disclosure') == 'on'
             application = Application.objects.create(
                 applicant=applicant,
                 jobPosting=job,
@@ -312,6 +323,7 @@ def bewerben(request, job_id):
                 aiRationale=ai_rationale,
                 status=initial_status,
                 withdrawReason=withdraw_reason,
+                severeDisability='JA' if disability_disclosed else '',
                 consentTalentPool=consent_pool,
                 source=(request.POST.get('source') or request.GET.get('src')
                         or request.session.get('application_src')
@@ -357,6 +369,30 @@ def bewerben(request, job_id):
                 applicationId=str(application.id),
                 metadataJson=json.dumps({"jobTitle": job.title, "koFailed": ko_failed})
             )
+
+            # § 164 SGB IX: Bei freiwilliger Angabe wird die Schwerbehinderten-
+            # vertretung unmittelbar unterrichtet (Gruppe "SBV"). Fail-safe:
+            # ein Mail-Fehler darf die Bewerbung nie blockieren. Das Audit
+            # traegt bewusst KEINE Gesundheitsdaten, nur das Ereignis.
+            if disability_disclosed:
+                try:
+                    from django.contrib.auth.models import Group as _Group
+                    _sbv, _ = _Group.objects.get_or_create(name='SBV')
+                    _mails = [u.email for u in _sbv.user_set.all() if u.email]
+                    if _mails:
+                        from django.core.mail import send_mail as _send
+                        _send(
+                            f"SBV-Beteiligung: neue Bewerbung – {job.title}",
+                            ("Zu der Stelle ist eine Bewerbung mit freiwilliger "
+                             "Angabe einer Schwerbehinderung/Gleichstellung "
+                             "eingegangen. Bitte beziehen Sie sich nach "
+                             "§ 164/§ 178 Abs. 2 SGB IX ein: "
+                             f"/recruiter/dashboard/#card-{application.id}"),
+                            None, _mails, fail_silently=True)
+                    write_audit('SBV_NOTIFIED', application_id=application.id,
+                                recipients=len(_mails))
+                except Exception:
+                    logger.exception('SBV-Unterrichtung fehlgeschlagen')
 
             # B4: Magic-Link-Token für das passwortlose Status-Portal erzeugen
             import secrets as _secrets
@@ -524,6 +560,50 @@ def candidate_portal(request, token):
             TalentPoolSubscription.objects.filter(email=applicant.email).delete()
             write_audit('TALENT_POOL_LEFT',
                         application_id=str(applications.first().id) if applications else None)
+        return redirect('ats:candidate_portal', token=token)
+
+    # § 164 SGB IX + Art. 7 Abs. 3 DSGVO: die freiwillige Angabe einer
+    # Schwerbehinderung/Gleichstellung muss so einfach widerrufbar sein, wie
+    # sie erteilt wurde - und auch nachtraeglich abgebbar. Wirkt auf ALLE
+    # Bewerbungen dieser Person. Audits bewusst ohne Gesundheitsdaten.
+    if request.method == 'POST' and request.POST.get('form') == 'disability':
+        if request.POST.get('action') == 'revoke':
+            for app in applications:
+                if (app.severeDisability or '').strip():
+                    app.severeDisability = ''
+                    app.save(update_fields=['severeDisability', 'updatedAt'])
+            write_audit('SBV_DISCLOSURE_REVOKED',
+                        application_id=str(applications.first().id)
+                        if applications else None)
+        elif request.POST.get('action') == 'grant':
+            first_active = None
+            for app in applications:
+                if app.status not in ('REJECTED', 'WITHDRAWN'):
+                    app.severeDisability = 'JA'
+                    app.save(update_fields=['severeDisability', 'updatedAt'])
+                    first_active = first_active or app
+            if first_active is not None:
+                # SBV unterrichten wie bei Abgabe im Bewerbungsformular
+                try:
+                    from django.contrib.auth.models import Group as _Group
+                    _sbv, _ = _Group.objects.get_or_create(name='SBV')
+                    _mails = [u.email for u in _sbv.user_set.all() if u.email]
+                    if _mails:
+                        from django.core.mail import send_mail as _send
+                        _send(
+                            "SBV-Beteiligung: nachträgliche Angabe – "
+                            f"{first_active.jobPosting.title}",
+                            ("Zu einer laufenden Bewerbung wurde nachträglich "
+                             "eine Schwerbehinderung/Gleichstellung angegeben. "
+                             "Bitte beziehen Sie sich nach § 164/§ 178 Abs. 2 "
+                             "SGB IX ein: /recruiter/dashboard/#card-"
+                             f"{first_active.id}"),
+                            None, _mails, fail_silently=True)
+                    write_audit('SBV_NOTIFIED',
+                                application_id=str(first_active.id),
+                                recipients=len(_mails))
+                except Exception:
+                    logger.exception('SBV-Unterrichtung fehlgeschlagen')
         return redirect('ats:candidate_portal', token=token)
 
     # Kontaktdaten aktualisieren (UC-AY-09): Telefon direkt (risikoarm);
@@ -751,6 +831,10 @@ def candidate_portal(request, token):
         'created': a.createdAt,
         'stage': stage_of.get(a.status, 0),
         'rejected': a.status in ('REJECTED', 'WITHDRAWN'),
+        # N2: Bei K.O.-Absagen erfaehrt die Person das objektive, vorab
+        # veroeffentlichte Kriterium; Ermessens-Absagen liefern hier [].
+        'ko_grounds': (_ko_grounds(a.withdrawReason)
+                       if a.status == 'REJECTED' else []),
         'slots': _bookable_slots(a),
         'interview_at': booked[a.id].scheduledAt if a.id in booked else None,
         'interview_kind': booked[a.id].kind_label if a.id in booked else '',
@@ -776,6 +860,38 @@ def candidate_portal(request, token):
                 email=applicant.email, expiresAt__gte=timezone.now()).first(),
         'has_rejected': applications.filter(status='REJECTED').exists(),
         'steps': ['Eingegangen', 'In Prüfung', 'Eingeladen', 'Entscheidung'],
+        # § 164: Zustand der freiwilligen Angabe (verschluesselt -> in Python)
+        'disability_disclosed': any(
+            disability_value_disclosed(a.severeDisability) for a in applications),
+        'has_active_application': any(
+            a.status not in ('REJECTED', 'WITHDRAWN') for a in applications),
+    })
+
+
+# --- N3: KI-Transparenz (Art. 86 EU AI Act) ----------------------------------
+def ai_transparency(request):
+    """Oeffentliche Erklaerseite: welche automatischen Funktionen laufen,
+    was sie tun, wer entscheidet - und welche Rechte Bewerbende haben.
+
+    Dynamisch nach Konfiguration: erklaert wird NUR, was tatsaechlich aktiv
+    ist. Eine Seite, die abgeschaltete Funktionen beschreibt, waere genauso
+    irrefuehrend wie eine, die aktive verschweigt (Art. 86 EU AI Act:
+    Recht auf Erlaeuterung; Art. 22 Abs. 3 DSGVO: menschliche Ueberpruefung).
+    """
+    from ..auto_reply import enabled_intents
+    from ..inbox_intents import INTENT_LABELS
+    from ..scoring_eval import is_scoring_enabled as _learned_on
+    _fs = SystemSetting.objects.filter(key='FIRMA').first()
+    return render(request, 'ai_transparency.html', {
+        'nav_pages': Page.objects.filter(status="published",
+                                         navEnabled=True).order_by('navOrder'),
+        'company': (_fs.value if _fs else '') or 'SecurATS',
+        'ai_scoring': SystemSetting.objects.filter(
+            key='AI_SCORING_ENABLED', value='1').exists(),
+        'auto_reply_topics': [INTENT_LABELS.get(i, i)
+                              for i in sorted(enabled_intents())],
+        'learned_scoring': _learned_on(),
+        'slug': 'ki-transparenz',
     })
 
 

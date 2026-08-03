@@ -72,6 +72,7 @@
   <div class="card">
     <h2 style="margin:0 0 var(--space-1); font-size:18px;"><i class="fa-solid fa-chart-line" style="color:var(--primary-light);"></i> Time-to-Fill-Prognose (offene Stellen)</h2>
     <p style="color:var(--text-muted); font-size:12px; margin:0 0 var(--space-3);">Transparente Methode: historischer Durchschnitt bis zur Einladung je Jobfamilie{% if forecast.global_avg %} · Gesamtdurchschnitt {{ forecast.global_avg }} Tage{% endif %}.</p>
+    <div class="table-scroll">
     <table class="data-table">
       <thead><tr><th>Stelle</th><th>Standort</th><th>Prognose</th><th>Offen seit</th><th>Basis</th></tr></thead>
       <tbody>
@@ -86,12 +87,14 @@
       {% empty %}<tr><td colspan="5" class="empty-state">Keine offenen Stellen.</td></tr>{% endfor %}
       </tbody>
     </table>
+    </div>
   </div>
 
   {% if stage_rows %}
   <div class="card">
     <h2 style="font-size:16px; margin:0 0 var(--space-1);"><i class="fa-solid fa-filter-circle-xmark" style="color:var(--warning);"></i> Stellenfreigabe: Welche Stufe bremst?</h2>
     <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--space-3);">Ø Wartetage je Genehmigungsstufe (fällig bis entschieden). Die oberste Zeile ist der Engpass. Offene Zahlen = aktuell fällige, unentschiedene Anträge.</p>
+    <div class="table-scroll">
     <table class="data-table">
       <thead><tr><th>Stufe / Rolle</th><th>entschieden</th><th>Ø Wartetage</th><th>aktuell fällig</th><th>ältester offener</th></tr></thead>
       <tbody>
@@ -106,6 +109,7 @@
         {% endfor %}
       </tbody>
     </table>
+    </div>
   </div>
   {% endif %}
 
@@ -130,6 +134,7 @@
       <div><div style="font-size:24px; font-weight:700;">{{ pay_overview.family_conflicts|length }}</div><div style="color:var(--text-muted); font-size:12px;">Jobfamilien mit mehreren Bändern</div></div>
     </div>
     {% if pay_overview.family_conflicts %}
+    <div class="table-scroll">
     <table class="data-table" style="margin-top: var(--space-3);">
       <thead><tr><th>Jobfamilie</th><th>Band</th><th>Stellen</th></tr></thead>
       <tbody>
@@ -142,6 +147,7 @@
       {% endfor %}{% endfor %}
       </tbody>
     </table>
+    </div>
     {% endif %}
   </div>
 
@@ -176,6 +182,7 @@
   <!-- WP5: Standort-Benchmarking (nur Leitung) -->
   <div class="card">
     <h2 style="margin:0 0 var(--space-3); font-size:18px;"><i class="fa-solid fa-ranking-star" style="color:var(--primary-light);"></i> Standort-Benchmarking</h2>
+    <div class="table-scroll">
     <table class="data-table">
       <thead><tr><th>Standort</th><th>Bewerbungen</th><th>Eingeladen</th><th>Quote</th><th>Ø Dauer</th></tr></thead>
       <tbody>
@@ -184,8 +191,10 @@
       {% empty %}<tr><td colspan="5" class="empty-state">Noch keine Daten.</td></tr>{% endfor %}
       </tbody>
     </table>
+    </div>
     {% if costs %}
     <h3 style="margin:var(--space-4) 0 var(--space-2); font-size:15px;">Kosten pro Einstellung (aus SOURCE_COST_*-Einstellungen)</h3>
+    <div class="table-scroll">
     <table class="data-table">
       <thead><tr><th>Quelle</th><th>Kanalkosten</th><th>Einladungen</th><th>Kosten je Einladung</th></tr></thead>
       <tbody>
@@ -194,6 +203,7 @@
       {% endfor %}
       </tbody>
     </table>
+    </div>
     {% endif %}
   </div>
   {% endif %}
@@ -241,12 +251,14 @@ function askAnalytics(btn) {
   <div class="card" style="margin-top: var(--space-4);">
     <h2 style="font-size:16px; margin:0 0 var(--space-1);"><i class="fa-solid fa-file-lines"></i> Inhaltsseiten</h2>
     <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--space-3);">Aufrufe je veröffentlichter Seite (automatisch für jede neue Seite; technisches Grundrauschen enthalten). Kampagnen mit Trichter laufen bewusst über Landingpages.</p>
+    <div class="table-scroll">
     <table class="data-table">
       <thead><tr><th>Seite</th><th>Pfad</th><th>Aufrufe</th></tr></thead>
       <tbody>
         {% for r in page_rows %}<tr><td>{{ r.title }}</td><td style="color:var(--text-muted);">/pages/{{ r.slug }}/</td><td>{{ r.views }}</td></tr>{% endfor %}
       </tbody>
     </table>
+    </div>
   </div>
   {% endif %}
 
@@ -254,6 +266,7 @@ function askAnalytics(btn) {
   <div class="card" style="margin-top: var(--space-4);">
     <h2 style="font-size:16px; margin:0 0 var(--space-1);"><i class="fa-solid fa-flag"></i> Landingpages & Kampagnen</h2>
     <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--space-3);">Der volle Trichter je Kampagne: Aufrufe → Bewerbungen → Einladungen. Verwalten unter <a href="{% url 'ats:landing_pages' %}">Landingpages</a>; Aufrufe enthalten technisches Grundrauschen.</p>
+    <div class="table-scroll">
     <table class="data-table">
       <thead><tr><th>Kampagne</th><th>Aufrufe</th><th>Bewerbungen</th><th>Bewerbungs-Quote</th><th>Eingeladen</th><th>Einladungsquote</th><th>Eingestellt</th></tr></thead>
       <tbody>
@@ -270,6 +283,7 @@ function askAnalytics(btn) {
         {% endfor %}
       </tbody>
     </table>
+    </div>
   </div>
   {% endif %}
 {% endblock %}

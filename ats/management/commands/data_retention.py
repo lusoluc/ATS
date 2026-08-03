@@ -15,8 +15,10 @@ class Command(BaseCommand):
         parser.add_argument(
             '--days',
             type=int,
-            default=180,  # 6 months
-            help='Anonymize applications rejected older than this number of days.'
+            default=None,  # None = konfigurierte Frist (RETENTION_DAYS), sonst 180
+            help='Anonymize applications rejected older than this number of days. '
+                 'Default: SystemSetting RETENTION_DAYS (UI: Datenaufbewahrung), '
+                 'sonst 180.'
         )
         parser.add_argument(
             '--dry-run',
@@ -26,18 +28,20 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         days = options['days']
+        if days is None:
+            # UC-AR-13/UC-MB-06: Frist ist konfigurierbar (Seite
+            # "Datenaufbewahrung"); CLI-Angabe gewinnt bewusst.
+            from ats.retention import configured_retention_days
+            days = configured_retention_days()
         dry_run = options['dry_run']
 
         cutoff_date = timezone.now() - datetime.timedelta(days=days)
         self.stdout.write(self.style.WARNING(f"Staging anonymization for applications before: {cutoff_date}"))
 
-        # Find applications matching DSGVO criteria:
-        # Rejected or Withdrawn, older than cutoff, and did not consent to talent pool retention
-        apps_to_anonymize = Application.objects.filter(
-            status__in=['REJECTED', 'WITHDRAWN'],
-            updatedAt__lt=cutoff_date,
-            consentTalentPool=False
-        ).select_related('applicant')
+        # Kriterien zentral in ats/retention.py (eine Wahrheit fuer Command
+        # UND die Verwaltungsseite "Datenaufbewahrung" mit Trockenlauf).
+        from ats.retention import retention_queryset
+        apps_to_anonymize = retention_queryset(days).select_related('applicant')
 
         count = apps_to_anonymize.count()
         if count == 0:
@@ -71,6 +75,9 @@ class Command(BaseCommand):
                 app.screeningAnswersJson = {}
                 app.internalNotes = "Dieser Datensatz wurde gemäß DSGVO-Vorgaben anonymisiert."
                 app.cvStorageId = None
+                # Art.-9-Datum (§ 164-Angabe) wird selbstverstaendlich mit
+                # geloescht - Gesundheitsdaten ueberleben keine Anonymisierung.
+                app.severeDisability = ""
                 app.save()
 
                 # 2. Anonymize Applicant fields if they have no other active applications

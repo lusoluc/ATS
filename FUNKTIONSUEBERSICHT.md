@@ -10,9 +10,9 @@ aus echten Entscheidungen, lokal gerechnet und rechtssicher.
 | **Sektor** | Pflege / Sozialwirtschaft |
 | **Betrieb** | lokal — keine Cloud-BI, keine Cloud-KI |
 | **Rahmen** | DSGVO · EU-AI-Act · EU-Entgelttransparenz (RL 2023/970) |
-| **Stand** | 24.07.2026 |
+| **Stand** | 03.08.2026 |
 
-**Vier Prinzipien tragen die Plattform:**
+**Fünf Prinzipien tragen die Plattform:**
 
 - **Mensch entscheidet.** Gelernte Signale sind erklärbare Empfehlungen.
   Automatisch wirken nur objektive K.O.-Kriterien.
@@ -22,6 +22,9 @@ aus echten Entscheidungen, lokal gerechnet und rechtssicher.
   Schritt und Button.
 - **Ehrlich statt beeindruckend.** Gelernte Bewertung erscheint nur, wenn sie
   messbar besser ist als die Regel — sonst bleibt sie aus.
+- **Wahlfreiheit.** Automatische Antworten sind gekennzeichnet und immer nur ein
+  Angebot — der Weg zu einer Person bleibt in jedem Kanal offen; die Seite
+  /ki-transparenz/ erklärt öffentlich, was läuft (Art. 86 EU AI Act).
 
 ---
 
@@ -40,6 +43,10 @@ und wie SecurATS sie löst. Details in den Abschnitten darunter.
 | **Anzeigen rechtlich riskant / schwer lesbar** | KI-AGG-Check, Leichte Sprache, Lern-Hinweise am Feld | Diskriminierungsarm, barrierefrei, wirksamer |
 | **Entgelttransparenz-Pflicht** | Tarif-native Entgeltbänder, Publish-Gate, öffentliche Spanne, Frageverbots-Wächter | Compliance strukturell erzwungen |
 | **Nachweispflicht & Datenschutz** | Audit-Hash-Kette, verschlüsselte Bewerberdaten, Bereichs-Zugriff, erklärbare KI | Prüfsicher & datensparsam |
+| **Inklusions-Pflichten (§ 164 SGB IX)** | Freiwillige, verschlüsselte Angabe mit Ein-Klick-Widerruf, automatische SBV-Unterrichtung, Quoten-Kennzahlen ab Anonymitätsschwelle, ROI-Export fürs Controlling | SBV rechtzeitig im Boot, Zahlen ohne Einzelfall-Preisgabe |
+| **Mitbestimmung kostet Nächte** (§ 99 BetrVG) | BR-Stufen mit Katalog-Gründen + Wochenfrist direkt in der Freigabe-Inbox; KI-Funktionen nur mit dokumentierter BR-Zustimmung | Rechtssichere Beteiligung ohne Papier |
+| **Absagen frustrieren und bleiben unerklärt** | K.O.-Absagen nennen das vorab veröffentlichte Pflichtkriterium im Portal und in der Mail — Ermessens-Absagen bekommen nie automatische Begründungen | Fair, nachvollziehbar, AGG-sicher |
+| **Entscheider sind mobil, das System nicht** | Alle Entscheidungsseiten (Freigaben, Bedarf, Feedback) am Telefon bedienbar: scrollbare Tabellen, Karten-Stapelung, Daumen-große Ziele; „Mein Bereich“-Einstieg für Standortleiter | Freigabe zwischen zwei Terminen statt am Abend |
 | **Vertretung kennt den Stand nicht** | Aktionsverlauf (wer/was/wann), befristete Vertretungs-Rechte | Übergabe in Sekunden |
 | **Gespräche koordinieren = Mail-Chaos** | Frei buchbare Slots, Formate, Team-Einladung, ICS-Export, No-Show-Erfassung | Kein Ping-Pong, messbare Formate |
 | **Insellösung ohne HR-Anschluss** | Feeds (StepStone, BA-XML), SAP/HRIS-Mapper, CSV-Import | Kein Doppelpflegen |
@@ -124,6 +131,18 @@ Die Sichtung ist der Zeitfresser und die Fehlerquelle.
   Prüfen/Einladen/Absagen direkt im Modal.
 - **Ergebnis:** Nachvollziehbare Auswahl; keine Sorge fällt unter den Tisch.
 
+**Alle reden über dasselbe** — *Interview-Leitfaden mit Abdeckungs-Checkliste*
+- **Problem:** Jedes Gespräch läuft anders; hinterher sind Kandidaten nicht
+  vergleichbar, und wichtige Themen wurden mal gefragt, mal nicht (die
+  AI-Voice-Agent-Studie 2026 zeigt: der Qualitätsgewinn strukturierter
+  Interviews kommt aus der festen Struktur, nicht aus der Technik).
+- **So gelöst:** Je Stelle ein kurzer Themen-Leitfaden (bis 12 Punkte), gepflegt
+  im Stellen-Editor. Im Feedback-Formular hakt das Interview-Team ab, welche
+  Themen behandelt wurden; die Abdeckung („Leitfaden: 4/6 Themen") steht neben
+  der Empfehlung.
+- **Ergebnis:** Vergleichbare Gespräche, sichtbare Lücken — kontrollierte
+  Varianz statt Zufall.
+
 **Das Scoring wird treffsicherer — erklärbar** — *Gelerntes A/B/C/D-Scoring*
 - **Problem:** Ein starres Regel-Scoring passt nicht überall: „gut zur Stelle"
   heißt in der Nachtpflege in Hamburg etwas anderes als in der Verwaltung in
@@ -160,6 +179,16 @@ Zwölf Menschen fragen dasselbe.
 - **Ergebnis:** Sofort-Antwort steigert die Zufriedenheit; heikle Fälle bleiben
   menschlich.
 
+**Eine Nachricht an alle Bewerber einer Stelle** — *Serien-Nachricht*
+- **Problem:** „Der Infoabend ist verschoben" oder „Bitte Unterlagen bis Freitag"
+  müsste an 30 aktive Bewerbungen gleichzeitig — einzeln verschickt kostet das
+  einen Vormittag.
+- **So gelöst:** Direkt an der Stelle: Empfänger auswählen (nur aktive
+  Bewerbungen), eine Vorlage mit Platzhaltern schreiben, Live-Vorschau je Person,
+  ein Klick — zugestellt ins Portal und per Mail, je Person auditiert.
+- **Ergebnis:** Ausbildungs-Jahrgänge und Events lassen sich in Minuten statt
+  Stunden bespielen.
+
 ## 05 · Den Prozess verstehen & verbessern
 
 Zahlen ohne Handlung werden ignoriert.
@@ -183,6 +212,17 @@ Zahlen ohne Handlung werden ignoriert.
   Spuren: Team, Bewerber:in, System.
 - **Ergebnis:** Wer/was/wann auf einen Blick — tägliche Entlastung und sofortige
   Übergabe.
+
+**Kennzahlen fürs Controlling — ohne Namen** — *ROI-/Inklusions-Export (CSV)*
+- **Problem:** Die Geschäftsführung braucht Zahlen (Kosten je Einstellung,
+  Entlastung durch Automatisierung, Inklusions-Kennzahlen) — aber kein
+  Reporting-Projekt und keine Einzelfall-Daten.
+- **So gelöst:** Ein Klick im Governance-Cockpit (nur Leitung) erzeugt eine
+  Excel-taugliche CSV: Besetzung, Kanalkosten, automatisierte Antworten,
+  Inklusions-Aggregate. Jede Näherung steht als eigene Erläuterungs-Spalte
+  dabei; Quoten erscheinen erst ab der Anonymitätsschwelle. Der Export selbst
+  wird auditiert.
+- **Ergebnis:** Controlling-taugliche Zahlen in Sekunden — datensparsam.
 
 ## 06 · Bessere, rechtssichere Stellenanzeigen
 
@@ -233,6 +273,38 @@ Ein Verfahren, das Menschen bewertet, braucht ein tragfähiges Fundament.
 - **Ergebnis:** DSGVO-konform; selbst bei einem Leck bleiben Klartextdaten
   geschützt.
 
+**Löschfristen sichtbar steuern** — *Datenaufbewahrung mit Trockenlauf*
+- **Problem:** Die DSGVO verlangt fristgerechte Löschung — aber eine Frist, die
+  nur als Kommandozeilen-Parameter existiert, kann der Datenschutzbeauftragte
+  weder prüfen noch anpassen.
+- **So gelöst:** Eine Verwaltungsseite zeigt die Löschfrist (mit Leitplanken:
+  mindestens AGG-Nachweisfrist, höchstens drei Jahre) und eine
+  Trockenlauf-Vorschau, was der nächste Lauf anonymisieren würde — nur Zahlen,
+  keine Namen. Jede Änderung wird revisionssicher protokolliert; die
+  Anonymisierung löscht auch die freiwillige § 164-Angabe.
+- **Ergebnis:** Datenminimierung wird steuerbar und nachweisbar.
+
+**Bewerbende wissen, was automatisch läuft** — *KI-Transparenz-Seite (Art. 86 EU AI Act)*
+- **Problem:** Wer sich bewirbt, hat ein Recht zu erfahren, welche Rolle
+  automatische Systeme spielen — eine statische Datenschutzerklärung veraltet
+  und beschreibt oft Funktionen, die gar nicht aktiv sind.
+- **So gelöst:** Eine öffentliche Seite erklärt dynamisch NUR die tatsächlich
+  aktiven Funktionen (Auto-Antworten, Vorbewertung, gelernte Einordnung), den
+  Grundsatz „Menschen entscheiden" und die Rechte (Erläuterung, menschliche
+  Überprüfung). Verlinkt direkt am Absenden-Knopf des Formulars und im Portal.
+- **Ergebnis:** Ehrliche Transparenz statt Textbaustein — und ein
+  Vertrauens-Vorsprung.
+
+**Absagen, die den Grund nennen** — *K.O.-Absage mit objektiven Gründen*
+- **Problem:** Automatische Absagen ohne Begründung frustrieren — aber erfundene
+  Begründungen bei Ermessens-Entscheidungen wären ein AGG-Klagerisiko.
+- **So gelöst:** Scheitert eine Bewerbung an einem vorab veröffentlichten
+  Pflichtkriterium, nennen Portal und Absage GENAU dieses Kriterium („Die Stelle
+  setzt laut Ausschreibung voraus …") samt Einladung zur erneuten Bewerbung.
+  Ermessens-Absagen bekommen NIE automatisch formulierte Gründe — das ist als
+  Wächter im Code verankert und getestet.
+- **Ergebnis:** Fair und nachvollziehbar für Bewerbende, rechtssicher fürs Haus.
+
 **KI, die man verantworten kann** — *EU-AI-Act-Haltung*
 - **Problem:** Bewerber-Bewertung ist nach EU AI Act Hochrisiko — undurchsichtige
   KI wäre rechtlich und ethisch untragbar.
@@ -255,6 +327,42 @@ Ein Verfahren, das Menschen bewertet, braucht ein tragfähiges Fundament.
   Spezifitäts-Leiter auf (Abteilung › Einrichtung › Standort › Jobfamilie ›
   Organisation).
 - **Ergebnis:** Kontrolle ohne Stillstand; klare Verantwortung.
+
+**Mitbestimmung eingebaut (§ 99 BetrVG)** — *BR-Stufen mit Katalog-Gründen*
+- **Problem:** Verweigert der Betriebsrat die Zustimmung formlos, ist sie
+  unwirksam — und ohne Fristen-Blick verstreicht die Wochenfrist unbemerkt.
+- **So gelöst:** In der Freigabe-Inbox zeigen BR-Stufen „Zustimmen" statt
+  „Freigeben"; eine Verweigerung braucht zwingend einen der sechs gesetzlichen
+  Gründe (§ 99 Abs. 2) plus Begründung und wird so protokolliert. Statt SLA
+  läuft die gesetzliche Wochenfrist als Badge mit. KI-Funktionen mit
+  Verhaltensbezug (§ 87 Abs. 1 Nr. 6) lassen sich nur mit dokumentierter
+  BR-Zustimmung aktivieren.
+- **Ergebnis:** Rechtswirksame Beteiligung ohne Formfehler.
+
+**Inklusion mit System (§ 164 SGB IX)** — *SBV-Beteiligung · freiwillige Angabe · Kennzahlen*
+- **Problem:** Die SBV muss bei Bewerbungen schwerbehinderter Menschen unmittelbar
+  beteiligt werden — in der Praxis erfährt sie es oft zu spät oder nie; und die
+  Angabe ist ein besonders geschütztes Gesundheitsdatum.
+- **So gelöst:** Bewerbende können die Angabe freiwillig machen (verschlüsselt
+  gespeichert, NIE Scoring-Eingabe — als Wächter getestet) und im Portal mit
+  einem Klick widerrufen. Die SBV wird automatisch per Mail unterrichtet; das
+  Audit trägt nur das Ereignis, keine Gesundheitsdaten. Governance zeigt
+  Kennzahlen (Angaben, Unterrichtungen, Einladungsquoten) nur als Aggregat ab
+  fünf Fällen je Gruppe.
+- **Ergebnis:** § 164-Pflichten laufen automatisch — würdevoll für Bewerbende,
+  nachweisbar fürs Haus.
+
+**Standortleiter sehen sofort ihren Ausschnitt** — *„Mein Bereich"-Einstieg*
+- **Problem:** Wer nur gelegentlich freigibt (Standortleitung ohne HR-Funktion),
+  landet auf einem Dashboard und weiß nicht: Sehe ich alles — oder nur meinen
+  Standort? Und was ist heute wichtig?
+- **So gelöst:** Nutzer mit Bereichs-Zugriff sehen über dem Board eine Zeile:
+  „Mein Bereich: Lüneburg — 3 veröffentlichte Stellen, 10 Bewerbungen im
+  Verfahren"; Freigaben und Termine stehen direkt darunter. Alle
+  Entscheidungsseiten sind am Telefon bedienbar (scrollbare Tabellen,
+  Daumen-große Ziele).
+- **Ergebnis:** Der Fachbereich kann ohne HR-Schulung und zwischen zwei Terminen
+  mitarbeiten.
 
 **Gespräche koordinieren & Vertretung** — *Slots & Self-Booking · ICS · Delegationen*
 - **Problem:** Termine per Mail abstimmen ist zäh; bei Urlaub bleibt Arbeit liegen
@@ -309,5 +417,5 @@ nie. Gelernte Bewertung ist standardmäßig aus und wird bewusst freigeschaltet.
 
 ---
 
-*SecurATS · Was es löst, und wie · Stand 24.07.2026 — lokal berechnet,
+*SecurATS · Was es löst, und wie · Stand 03.08.2026 — lokal berechnet,
 Mensch-im-Loop, revisionssicher.*

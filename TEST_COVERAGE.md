@@ -118,3 +118,26 @@ Unique/Lookup. Ergänzt – als Wächter gegen spätere "Vereinfachungen":
 ### Entwarnung
 Dokument-Downloads (Zeugnisse etc.) waren bereits BOLA-getestet (anonym → Redirect,
 Recruiter → 200 + Audit; Dateiname aus DB, kein Pfad-Traversal). Kein Fund.
+
+## Runde 4: Persona-/Compliance-Pakete (M, R, S, P1–P6, N1–N3) — 748 Tests
+
+Mit den Persona-Paketen (Mobil, Mitbestimmung, Inklusion) und den Folgepaketen
+wuchs die Suite von 396 auf **748 Testmethoden in 40 Dateien**. Neue Testmodule
+mit Fokus:
+
+| Datei | Tests | Deckt ab |
+|---|---|---|
+| `test_inklusion.py` | 16 | § 164 SGB IX: verschlüsselte Angabe, Widerruf im Portal, SBV-Mail ohne Gesundheitsdaten, Governance-Aggregate ab Anonymitätsschwelle, Ciphertext-Altwert-Wächter |
+| `test_timeline.py` | 13 | Aktionsverlauf je Bewerbung/Stelle aus dem Audit-Log |
+| `test_retention.py` | 12 | Frist-Leitplanken + Audit, Trockenlauf-Kriterien, Command-Default aus Setting, § 164-Löschung bei Anonymisierung |
+| `test_mitbestimmung.py` | 10 | § 99 Abs. 2 BetrVG: Katalog-Grund-Pflicht, Wochenfrist, BetrVG-Gate am gelernten Scoring |
+| `test_ko_absage.py` | 8 | K.O.-Gründe-Snapshot, Portal-/Mail-Anzeige, AGG-Wächter (nie Ermessens-Begründungen, interne Gründe nie durchgereicht) |
+| `test_interview_guide.py` | 8 | Leitfaden je Stelle, Abdeckungs-Checkliste im Feedback |
+| `test_roi_export.py` | 6 | ROI-/Inklusions-CSV: nur Leitung, Aggregate ohne Namen, Audit |
+| `test_ai_transparency.py` | 6 | Art.-86-Seite: öffentlich, dynamisch je Setting, Verlinkungen |
+| `test_series_message.py` | 5 | Serien-Nachricht: nur aktive Bewerbungen, Personalisierung, Audit je Person |
+| `test_mein_bereich.py` | 4 | Scope-Block: nur für begrenzte Nicht-Admins, richtige Zählung |
+
+Dazu Wächter-Zuwachs in `test_guardrails.py`: Tabellen-Scroll-Wrapper +
+eindeutige Wrapper-Schlüsse (M1), mehrzeilige Template-Kommentare (bestätigt
+durch einen echten Fund in N2).

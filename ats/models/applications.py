@@ -14,6 +14,18 @@ from .system import SystemSetting
 # 4. APPLICATION DOMAIN (ATS & Workflow)
 # ============================================================================
 
+def disability_value_disclosed(value: "str | None") -> bool:
+    """§ 164: Zaehlt ein severeDisability-Wert als erteilte Angabe?
+
+    Die Anwendung schreibt ausschliesslich 'JA' (oder leer). Alles andere -
+    insbesondere roher Fernet-Ciphertext, den EncryptedCharField bei einem
+    Key-Wechsel unentschluesselt zurueckgibt - ist KEINE Angabe. Ohne diese
+    Schranke wuerden kaputte Altwerte still als Schwerbehinderten-Angabe in
+    SBV-Kennzahlen, Steckbrief-Chip und Portal-Anzeige einfliessen.
+    """
+    return (value or "").strip().upper() == "JA"
+
+
 class ApplicantManager(models.Manager):
     """Lookups über den Blind-Index statt über die verschlüsselte E-Mail-Spalte."""
 
@@ -87,6 +99,14 @@ class Application(models.Model):
     privacyNoticeVersion = models.ForeignKey(PrivacyNoticeVersion, on_delete=models.SET_NULL, blank=True, null=True, related_name='applications')
     consentTalentPool = models.BooleanField(default=False)
     internalNotes = models.TextField(default="", blank=True)
+    # § 164 SGB IX / § 178 Abs. 2: FREIWILLIGE Angabe einer Schwerbehinderung/
+    # Gleichstellung. Art.-9-DSGVO-Datum -> verschluesselt at-rest, nur durch
+    # ausdrueckliches Ankreuzen gesetzt ('JA', sonst leer). Loest die
+    # SBV-Unterrichtung aus. NIEMALS Eingabe fuer Scoring/Lernen (Waechter-Test).
+    # Lesen IMMER ueber disability_value_disclosed(): EncryptedCharField gibt
+    # bei Key-Wechsel den rohen Ciphertext zurueck - der darf nie als Angabe
+    # zaehlen (sonst kippen SBV-Kennzahlen und Portal-Anzeige still).
+    severeDisability = EncryptedCharField(max_length=10, blank=True, default="")
 
     createdAt = models.DateTimeField(default=timezone.now)
     updatedAt = models.DateTimeField(auto_now=True)
@@ -433,6 +453,9 @@ class InterviewFeedback(models.Model):
     recommendation = models.CharField(max_length=20,
                                       choices=INTERVIEW_RECOMMENDATIONS)
     ratingsJson = models.JSONField(default=dict)   # {"Kriterium": 1..4}
+    # Leitfaden-Abdeckung (Voice-Studien-Learning): welche Themen des
+    # Stellen-Leitfadens wurden in DIESEM Gespraech behandelt?
+    guideCoverageJson = models.JSONField(default=list)
     strengths = models.TextField(blank=True, default="")
     concerns = models.TextField(blank=True, default="")   # Bedenken
     comment = models.TextField(blank=True, default="")

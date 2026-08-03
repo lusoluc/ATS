@@ -47,7 +47,7 @@ from .governance import _pending_steps_for
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "reorder_board", "bulk_update_status", "application_messages", "draft_reply", "application_summary", "inbox_view", "open_question_clusters", "batch_reply", "save_reply_snippet", "reclassify_message", "application_vote", "talent_pool_view", "job_pool_matches", "application_timeline", "job_timeline", "tasks_view"]
+__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "reorder_board", "bulk_update_status", "application_messages", "draft_reply", "application_summary", "inbox_view", "open_question_clusters", "batch_reply", "job_series_message", "save_reply_snippet", "reclassify_message", "application_vote", "talent_pool_view", "job_pool_matches", "application_timeline", "job_timeline", "tasks_view"]
 
 
 @ensure_csrf_cookie
@@ -218,6 +218,26 @@ def dashboard(request):
     today_focus['any'] = today_focus['any'] or bool(_panel_pending)
     context['today_focus'] = today_focus
     context['gremium_error'] = request.GET.get('gremium', '')
+
+    # P6 (Standortleiter Rittmann, UC-HR-02/04/05): Wer nur einen Ausschnitt
+    # sieht, soll oben lesen KOENNEN, welchen - plus die zwei Zahlen, die
+    # seinen Besuch ausloesen (offene Stellen, laufende Verfahren). Freigaben
+    # stehen schon in "Heute wichtig". Kein Extra-Klick, keine eigene Seite.
+    my_scope = None
+    if not is_hr_admin:
+        _scope = getattr(request.user, 'scope', None)
+        if _scope is not None and not _scope.full_access:
+            _names = ([loc.name for loc in _scope.locations.all()]
+                      + [f.name for f in _scope.facilities.all()])
+            my_scope = {
+                'label': ", ".join(_names) or "eigener Bereich",
+                'open_jobs': active_jobs.filter(
+                    workflowState__name='published').count(),
+                'active_apps': sum(
+                    1 for a in _apps
+                    if a.status not in ('REJECTED', 'WITHDRAWN', 'HIRED')),
+            }
+    context['my_scope'] = my_scope
 
     # Offene Aufgaben aus der Prozess-Automatik (Badge in der Navigation):
     # nur eigene Rollen bzw. rollenlose, im eigenen Zugriffsbereich.
@@ -686,6 +706,18 @@ def _send_rejection_notice(request, app):
             expiresAt=timezone.now() + datetime.timedelta(days=90))
     portal_url = request.build_absolute_uri(
         reverse('ats:candidate_portal', args=[tok.token]))
+    # N2: K.O.-Absagen nennen das objektive, vorab veroeffentlichte
+    # Pflichtkriterium. Ermessens-Absagen liefern hier [] und bekommen NIE
+    # eine automatisch formulierte Begruendung (AGG - ats/questions.py).
+    from ..questions import ko_grounds
+    grounds = ko_grounds(app.withdrawReason)
+    if grounds:
+        body += ('\n\nZur Einordnung: Die Stelle setzt laut Ausschreibung '
+                 'voraus:\n'
+                 + '\n'.join(f'  • {g}' for g in grounds)
+                 + '\nDiese Voraussetzung war laut Ihren Angaben im '
+                   'Bewerbungsformular nicht erfüllt. Ändert sich das, freuen '
+                   'wir uns über eine neue Bewerbung.')
     pool_line = ('\n\nNicht die richtige Stelle, aber vielleicht die richtige '
                  'Arbeitgeberin? In Ihrem Bewerbungsportal können Sie mit einem '
                  'Klick unserem Talent-Pool beitreten – wir weisen Sie dann auf '
@@ -929,6 +961,67 @@ def reclassify_message(request):
     messages.success(
         request, f'Nachricht nach „{INTENT_LABELS[to_intent]}" verschoben.')
     return redirect('ats:inbox')
+
+
+@recruiter_required
+def job_series_message(request, job_id):
+    """P3 (Ulrike Mayr, UC-UM-09): Serien-Nachricht an die Bewerber EINER
+    Stelle - z. B. Einladung zum Infotag oder Ausbildungs-Event.
+
+    Gleiche Mechanik wie die Sammel-Antwort: EINE geprüfte Vorlage, je Person
+    personalisiert ([[Vorname]]/[[Stelle]]/[[Stand]]), Vorschau, bewusstes
+    Ausloesen. Empfaenger sind die AKTIVEN Bewerbungen der Stelle
+    (abgeschlossene werden nie angeschrieben). Zustellung als Portal-Nachricht
+    UND E-Mail (fail-silent), Audit je Person.
+    """
+    from ..board_insights import status_label
+    from ..reply_drafts import personalize
+    job = get_object_or_404(
+        scope_jobs(request.user, JobPosting.objects.filter(id=job_id)))
+    active = list(Application.objects.filter(jobPosting=job)
+                  .exclude(status__in=['REJECTED', 'WITHDRAWN'])
+                  .select_related('applicant').order_by('createdAt'))
+
+    if request.method == 'POST':
+        template = (request.POST.get('template') or '').strip()[:4000]
+        chosen = set(request.POST.getlist('app_ids'))
+        if not template or not chosen:
+            messages.warning(request, "Keine Vorlage oder keine Auswahl.")
+            return redirect('ats:job_series_message', job_id=job.id)
+        sent = 0
+        for app in active:
+            if str(app.id) not in chosen:
+                continue
+            text = personalize(template, first_name=app.applicant.firstName,
+                               job_title=job.title, status=app.status)
+            Message.objects.create(application=app, direction='OUTBOUND',
+                                   content=text)
+            if app.applicant.email:
+                from django.core.mail import send_mail
+                send_mail(f"Neuigkeit zu Ihrer Bewerbung – {job.title}",
+                          text, None, [app.applicant.email],
+                          fail_silently=True)
+            write_audit('SERIES_MESSAGE_SENT', user=request.user,
+                        application_id=app.id)
+            sent += 1
+        if sent:
+            messages.success(request, f"Nachricht an {sent} Person(en) gesendet.")
+        return redirect('ats:job_series_message', job_id=job.id)
+
+    recipients = [{
+        'app': a,
+        'name': f"{a.applicant.firstName} {a.applicant.lastName}".strip(),
+        'first_name': a.applicant.firstName,
+        'status': status_label(a.status),
+    } for a in active]
+    default_template = (
+        "Guten Tag [[Vorname]],\n\n"
+        "zu Ihrer Bewerbung als [[Stelle]] haben wir eine Neuigkeit für Sie:\n\n"
+        "…\n\n"
+        "Freundliche Gruesse\nIhr Recruiting-Team")
+    return render(request, 'job_series_message.html', {
+        'job': job, 'recipients': recipients,
+        'default_template': default_template})
 
 
 @recruiter_required

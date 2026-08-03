@@ -340,6 +340,10 @@
             <i class="fa-solid fa-cloud-arrow-up"></i> HRIS / SAP-Anbindung
         </a>
 
+        <a class="sidebar-link" href="{% url 'ats:retention' %}">
+            <i class="fa-solid fa-clock-rotate-left"></i> Datenaufbewahrung
+        </a>
+
         <a class="sidebar-link" href="{% url 'ats:learned_scoring' %}">
             <i class="fa-solid fa-graduation-cap"></i> Lernendes Scoring
         </a>
@@ -381,6 +385,18 @@
     <div class="dashboard-main">
         {% if gremium_error %}
         <div class="alert alert-danger" role="alert" style="margin-bottom: var(--space-3);"><i class="fa-solid fa-users-rectangle"></i> Einladung noch nicht möglich – {{ gremium_error }}. Abstimmen: <a href="{% url 'ats:approvals' %}" style="color:inherit; text-decoration:underline;">Freigaben › Sichtungs-Gremium</a></div>
+        {% endif %}
+        {% if my_scope %}
+        <!-- P6 (Standortleiter, UC-HR-02/05): Wer nur einen Ausschnitt sieht,
+             liest oben, welchen - plus die Zahlen, die den Besuch ausloesen.
+             Freigaben/Termine stehen direkt darunter in "Heute wichtig". -->
+        <div class="card" style="padding: var(--space-3); margin-bottom: var(--space-3);" aria-label="Mein Bereich">
+            <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+                <strong style="font-size:13px; margin-right:4px;"><i class="fa-solid fa-location-dot" style="color:var(--accent);"></i> Mein Bereich: {{ my_scope.label }}</strong>
+                <span class="badge" title="Veröffentlichte Stellenanzeigen in Ihrem Bereich">{{ my_scope.open_jobs }} veröffentlichte Stelle{{ my_scope.open_jobs|pluralize:"n" }}</span>
+                <span class="badge" title="Bewerbungen, die weder abgesagt noch zurückgezogen noch eingestellt sind">{{ my_scope.active_apps }} Bewerbung{{ my_scope.active_apps|pluralize:"en" }} im Verfahren</span>
+            </div>
+        </div>
         {% endif %}
         {% if today_focus.any %}
         <div class="card" style="padding: var(--space-3); margin-bottom: var(--space-3);" aria-label="Heute wichtig">

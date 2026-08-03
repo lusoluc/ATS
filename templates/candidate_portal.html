@@ -129,6 +129,19 @@
             </div>
           {% endfor %}
         </div>
+        {% if r.ko_grounds %}
+        {% comment %} N2: Nur objektive, vorab veroeffentlichte K.O.-Kriterien
+           werden benannt - Ermessens-Absagen bekommen nie eine automatische
+           Begruendung (ats/questions.py). {% endcomment %}
+        <div style="border:1px solid var(--border-color); background:var(--bg-color); border-radius:10px; padding:10px 12px; margin:-6px 0 6px; font-size:13px;">
+          <strong>Warum hat es nicht gepasst?</strong>
+          <span class="muted">Die Stelle setzt laut Ausschreibung voraus:</span>
+          <ul style="margin:6px 0 0 18px; padding:0;">
+            {% for g in r.ko_grounds %}<li>{{ g }}</li>{% endfor %}
+          </ul>
+          <div class="muted" style="margin-top:6px;">Diese Voraussetzung war laut Ihren Angaben im Bewerbungsformular nicht erfüllt. Ändert sich das, freuen wir uns über eine neue Bewerbung.</div>
+        </div>
+        {% endif %}
         {% if r.interview_at %}
         <div style="border:1px solid #14532d; background:#0e3a2a; color:#6ee7b7; border-radius:10px; padding:10px 12px; margin:-6px 0 6px; font-size:14px;">
           <strong>✓ {{ r.interview_kind|default:"Ihr Gesprächstermin" }}:</strong> {{ r.interview_at|date:"l, d.m.Y" }} um {{ r.interview_at|date:"H:i" }} Uhr

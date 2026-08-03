@@ -38,6 +38,7 @@ from ..models import (
     SystemSetting,
 )
 from ..models.applications import disability_value_disclosed
+from ..questions import ko_grounds as _ko_grounds
 from .ai import evaluate_with_local_gemma, get_ollama_url
 from .common import _remember_campaign_src, campaign_expired, exclude_filled, seed_data_if_empty
 
@@ -237,6 +238,7 @@ def bewerben(request, job_id):
 
         # 3. Evaluate screening questions
         ko_failed = False
+        ko_failed_questions = []   # N2: Snapshot der verfehlten Pflichtkriterien
         answers_dict = {}
 
         for q in screening_questions:
@@ -253,6 +255,10 @@ def bewerben(request, job_id):
             if (q.get('isMandatory') and q.get('expectedAnswer')
                     and ans != q.get('expectedAnswer')):
                 ko_failed = True
+                # N2: verfehltes Pflichtkriterium festhalten - die Absage
+                # nennt der Person spaeter GENAU diese vorab veroeffentlichten
+                # Kriterien (und nur diese, siehe ats/questions.py).
+                ko_failed_questions.append(q['question'])
 
         # 4. Handle CV File Upload
         cv_file = request.FILES.get('cv_file')
@@ -285,7 +291,8 @@ def bewerben(request, job_id):
             withdraw_reason = None
             if ko_failed:
                 initial_status = 'REJECTED'
-                withdraw_reason = 'Automatische Ablehnung: K.O. Kriterien nicht erfüllt.'
+                from ..questions import format_ko_reason
+                withdraw_reason = format_ko_reason(ko_failed_questions)
 
             # 7. KI-Screening – NUR wenn ausdrücklich aktiviert (ROADMAP P0.2 / AI Act):
             # SystemSetting AI_SCORING_ENABLED="1" schaltet das A–D-Scoring als
@@ -824,6 +831,10 @@ def candidate_portal(request, token):
         'created': a.createdAt,
         'stage': stage_of.get(a.status, 0),
         'rejected': a.status in ('REJECTED', 'WITHDRAWN'),
+        # N2: Bei K.O.-Absagen erfaehrt die Person das objektive, vorab
+        # veroeffentlichte Kriterium; Ermessens-Absagen liefern hier [].
+        'ko_grounds': (_ko_grounds(a.withdrawReason)
+                       if a.status == 'REJECTED' else []),
         'slots': _bookable_slots(a),
         'interview_at': booked[a.id].scheduledAt if a.id in booked else None,
         'interview_kind': booked[a.id].kind_label if a.id in booked else '',

@@ -706,6 +706,18 @@ def _send_rejection_notice(request, app):
             expiresAt=timezone.now() + datetime.timedelta(days=90))
     portal_url = request.build_absolute_uri(
         reverse('ats:candidate_portal', args=[tok.token]))
+    # N2: K.O.-Absagen nennen das objektive, vorab veroeffentlichte
+    # Pflichtkriterium. Ermessens-Absagen liefern hier [] und bekommen NIE
+    # eine automatisch formulierte Begruendung (AGG - ats/questions.py).
+    from ..questions import ko_grounds
+    grounds = ko_grounds(app.withdrawReason)
+    if grounds:
+        body += ('\n\nZur Einordnung: Die Stelle setzt laut Ausschreibung '
+                 'voraus:\n'
+                 + '\n'.join(f'  • {g}' for g in grounds)
+                 + '\nDiese Voraussetzung war laut Ihren Angaben im '
+                   'Bewerbungsformular nicht erfüllt. Ändert sich das, freuen '
+                   'wir uns über eine neue Bewerbung.')
     pool_line = ('\n\nNicht die richtige Stelle, aber vielleicht die richtige '
                  'Arbeitgeberin? In Ihrem Bewerbungsportal können Sie mit einem '
                  'Klick unserem Talent-Pool beitreten – wir weisen Sie dann auf '

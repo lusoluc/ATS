@@ -37,10 +37,13 @@ class DisclosureSubmissionTestCase(TestCase):
         self._apply(disclose=True)
         app = Application.objects.get()
         self.assertEqual(app.severeDisability, 'JA')   # entschluesselt lesbar
-        # at-rest verschluesselt: der Rohwert in der DB ist NICHT der Klartext
+        # at-rest verschluesselt: der Rohwert in der DB ist NICHT der Klartext.
+        # Spalte quoten: PostgreSQL faltet unquotierte Bezeichner klein
+        # (severeDisability -> severedisability = existiert nicht).
         from django.db import connection
+        q = connection.ops.quote_name
         with connection.cursor() as cur:
-            cur.execute("SELECT severeDisability FROM ats_application")
+            cur.execute(f"SELECT {q('severeDisability')} FROM ats_application")
             raw = cur.fetchone()[0]
         self.assertNotEqual(raw, 'JA')
         self.assertTrue(raw)   # aber auch nicht leer
@@ -221,11 +224,16 @@ class UndecryptableValueGuardTestCase(TestCase):
         # EncryptedCharField gibt unentschluesselbare Werte roh zurueck;
         # wir legen so einen Altwert direkt per SQL an (ORM wuerde ihn
         # korrekt verschluesseln und damit den Fall verfehlen).
+        # Spalte quoten + PK ueber das Feld anpassen: PostgreSQL faltet
+        # unquotierte Bezeichner klein und fuehrt den PK als echten uuid-Typ.
         from django.db import connection
+        q = connection.ops.quote_name
+        pk = type(app)._meta.pk.get_db_prep_value(app.id, connection)
         with connection.cursor() as cur:
             cur.execute(
-                "UPDATE ats_application SET severeDisability = %s WHERE id = %s",
-                ['gAAAAABkaputt-alter-key-ciphertext', str(app.id)])
+                f"UPDATE ats_application SET {q('severeDisability')} = %s "
+                f"WHERE {q('id')} = %s",
+                ['gAAAAABkaputt-alter-key-ciphertext', pk])
 
     def test_helper_accepts_only_ja(self):
         from ..models.applications import disability_value_disclosed

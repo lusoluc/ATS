@@ -922,6 +922,20 @@
 
         .list-row { display: flex; justify-content: space-between; align-items: center; padding: var(--space-3); border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-main); }
 
+        /* WCAG 2.2 (2.4.11 Focus Not Obscured): Der Header ist sticky - beim
+           Durchtabben schob der Browser fokussierte Elemente sonst unter die
+           Leiste. scroll-padding haelt sie frei; scroll-margin an Sprungzielen
+           (Skip-Link/Anker) sorgt fuer dieselbe Freistellung. */
+        html { scroll-padding-top: 96px; }
+        :target, [id]:focus, main[id] { scroll-margin-top: 96px; }
+
+        /* WCAG 2.2 (2.5.8 Target Size): interaktive Ziele mindestens 24x24 px -
+           NICHT nur am Phone. Betrifft vor allem Icon-Knoepfe. */
+        .btn-icon, .card-move {
+            min-width: 24px;
+            min-height: 24px;
+        }
+
         /* Systemeinstellung "Bewegung reduzieren" respektieren (WCAG 2.3.3):
            der manuelle ADHS-Fokusmodus ergaenzt das, ersetzt es aber nicht.
            Steht bewusst am Ende des Blocks, damit es alle Animationen und
@@ -1135,7 +1149,7 @@
         <div class="inclusion-option">
             <div class="inclusion-option-info">
                 <span class="inclusion-option-label">Lese-Lineal</span>
-                <span class="inclusion-option-desc">Eine geführte Lesehilfe, die Ihrem Mauszeiger folgt.</span>
+                <span class="inclusion-option-desc">Eine geführte Lesehilfe – folgt dem Mauszeiger oder den Pfeiltasten (Bild ↑/↓ für große Schritte).</span>
             </div>
             <label class="inclusion-switch">
                 <input type="checkbox" id="toggleRuler" onchange="toggleReadingRuler()" aria-label="Lese-Lineal aktivieren">
@@ -1147,12 +1161,22 @@
         <div class="inclusion-option">
             <div class="inclusion-option-info">
                 <span class="inclusion-option-label">Vorlesen</span>
-                <span class="inclusion-option-desc">Liest markierten Text vor – oder den Seiteninhalt.</span>
+                <span class="inclusion-option-desc">Liest markierten Text vor – oder den Seiteninhalt. Pausieren und Stoppen jederzeit möglich.</span>
             </div>
-            <button type="button" onclick="speakContent()" aria-label="Text vorlesen"
-                    style="background:none;border:1px solid #4b5563;color:#e5e7eb;border-radius:var(--border-radius-sm);padding:8px 10px;cursor:pointer;">
-                <i class="fa-solid fa-volume-high"></i>
-            </button>
+            <div style="display:flex; gap:6px;">
+                <button type="button" id="speechPlayBtn" onclick="speakContent()" aria-label="Text vorlesen"
+                        style="background:none;border:1px solid #4b5563;color:#e5e7eb;border-radius:var(--border-radius-sm);min-width:44px;min-height:44px;cursor:pointer;">
+                    <i class="fa-solid fa-volume-high" aria-hidden="true"></i>
+                </button>
+                <button type="button" id="speechPauseBtn" onclick="toggleSpeechPause()" aria-label="Vorlesen pausieren" disabled
+                        style="background:none;border:1px solid #4b5563;color:#e5e7eb;border-radius:var(--border-radius-sm);min-width:44px;min-height:44px;cursor:pointer;">
+                    <i class="fa-solid fa-pause" aria-hidden="true"></i>
+                </button>
+                <button type="button" id="speechStopBtn" onclick="stopSpeech()" aria-label="Vorlesen stoppen" disabled
+                        style="background:none;border:1px solid #4b5563;color:#e5e7eb;border-radius:var(--border-radius-sm);min-width:44px;min-height:44px;cursor:pointer;">
+                    <i class="fa-solid fa-stop" aria-hidden="true"></i>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1164,6 +1188,9 @@
         const toggleRuler = document.getElementById('toggleRuler');
         const rulerEl = document.getElementById('inclusion-ruler');
         const panelEl = document.getElementById('inclusionPanel');
+        // Lese-Lineal-Position (Maus ODER Tastatur); Start in Bildmitte.
+        // Bewusst hier oben deklariert: toggleReadingRuler nutzt sie.
+        let _rulerY = Math.round(window.innerHeight / 2);
         
         // Load persisted states
         window.addEventListener('DOMContentLoaded', () => {
@@ -1180,7 +1207,10 @@
                 if (toggleAdhd) toggleAdhd.checked = true;
             }
             if (localStorage.getItem('reading-ruler') === 'enabled') {
-                if (rulerEl) rulerEl.style.display = 'block';
+                if (rulerEl) {
+                    rulerEl.style.display = 'block';
+                    rulerEl.style.top = _rulerY + 'px';
+                }
                 if (toggleRuler) toggleRuler.checked = true;
             }
         });
@@ -1247,10 +1277,13 @@
         function toggleReadingRuler() {
             if (toggleRuler.checked) {
                 rulerEl.style.display = 'block';
+                rulerEl.style.top = _rulerY + 'px';   // Startposition Bildmitte
                 localStorage.setItem('reading-ruler', 'enabled');
+                announceSpeechStatus('Lese-Lineal an. Mit Pfeiltasten bewegen.');
             } else {
                 rulerEl.style.display = 'none';
                 localStorage.setItem('reading-ruler', 'disabled');
+                announceSpeechStatus('Lese-Lineal aus.');
             }
         }
 
@@ -1267,6 +1300,31 @@
             live.textContent = text;
         }
 
+        function _speechButtons() {
+            return {
+                play: document.getElementById('speechPlayBtn'),
+                pause: document.getElementById('speechPauseBtn'),
+                stop: document.getElementById('speechStopBtn'),
+            };
+        }
+
+        function _syncSpeechControls() {
+            // Steuerung spiegelt den echten Zustand: Pause/Stopp nur, wenn
+            // wirklich etwas laeuft (WCAG 2.2.2 - Bewegtes/Laufendes muss
+            // anhaltbar sein, nicht nur abbrechbar).
+            const s = window.speechSynthesis;
+            const b = _speechButtons();
+            const active = !!(s && (s.speaking || s.paused));
+            if (b.pause) {
+                b.pause.disabled = !active;
+                const paused = !!(s && s.paused);
+                b.pause.setAttribute('aria-label', paused ? 'Vorlesen fortsetzen' : 'Vorlesen pausieren');
+                const icon = b.pause.querySelector('i');
+                if (icon) { icon.className = paused ? 'fa-solid fa-play' : 'fa-solid fa-pause'; }
+            }
+            if (b.stop) { b.stop.disabled = !active; }
+        }
+
         function speakContent() {
             if (!('speechSynthesis' in window)) {
                 announceSpeechStatus('Vorlesen wird von diesem Browser nicht unterstützt.');
@@ -1279,10 +1337,32 @@
             window.speechSynthesis.cancel();
             const u = new SpeechSynthesisUtterance(text);
             u.lang = 'de-DE';
-            u.onstart = () => announceSpeechStatus(sel ? 'Vorlesen der Auswahl gestartet.' : 'Vorlesen der Seite gestartet.');
-            u.onend = () => announceSpeechStatus('Vorlesen beendet.');
-            u.onerror = () => announceSpeechStatus('Vorlesen abgebrochen.');
+            u.onstart = () => { announceSpeechStatus(sel ? 'Vorlesen der Auswahl gestartet.' : 'Vorlesen der Seite gestartet.'); _syncSpeechControls(); };
+            u.onend = () => { announceSpeechStatus('Vorlesen beendet.'); _syncSpeechControls(); };
+            u.onerror = () => { announceSpeechStatus('Vorlesen abgebrochen.'); _syncSpeechControls(); };
             window.speechSynthesis.speak(u);
+            setTimeout(_syncSpeechControls, 50);
+        }
+
+        function toggleSpeechPause() {
+            const s = window.speechSynthesis;
+            if (!s) { return; }
+            if (s.paused) {
+                s.resume();
+                announceSpeechStatus('Vorlesen fortgesetzt.');
+            } else if (s.speaking) {
+                s.pause();
+                announceSpeechStatus('Vorlesen pausiert.');
+            }
+            setTimeout(_syncSpeechControls, 50);
+        }
+
+        function stopSpeech() {
+            const s = window.speechSynthesis;
+            if (!s) { return; }
+            s.cancel();
+            announceSpeechStatus('Vorlesen gestoppt.');
+            setTimeout(_syncSpeechControls, 50);
         }
         
         // Einmal-Aktionen: Nach dem Absenden eines Formulars wird der geklickte
@@ -1312,11 +1392,34 @@
             if (box) { e.preventDefault(); box.focus(); }
         });
 
-        // Reading ruler cursor mouse tracker
+        // Lese-Lineal: Maus UND Tastatur. Nur-Maus waere ausgerechnet fuer
+        // die Zielgruppe (Legasthenie + motorische Einschraenkung) nutzlos.
+        // Steuerung: Pfeil hoch/runter (feine Schritte), Bild hoch/runter
+        // (grosse Schritte) - aktiv nur bei eingeschaltetem Lineal und nur,
+        // wenn der Fokus nicht in einem Eingabefeld steht.
+        function _moveRuler(deltaPx) {
+            _rulerY = Math.max(0, Math.min(window.innerHeight - 1, _rulerY + deltaPx));
+            rulerEl.style.top = _rulerY + 'px';
+        }
+
         window.addEventListener('mousemove', (e) => {
             if (rulerEl && rulerEl.style.display === 'block') {
-                rulerEl.style.top = e.clientY + 'px';
+                _rulerY = e.clientY;
+                rulerEl.style.top = _rulerY + 'px';
             }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (!rulerEl || rulerEl.style.display !== 'block') { return; }
+            const t = e.target;
+            const typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA'
+                || t.tagName === 'SELECT' || t.isContentEditable);
+            if (typing) { return; }
+            const steps = { ArrowDown: 24, ArrowUp: -24, PageDown: 120, PageUp: -120 };
+            const delta = steps[e.key];
+            if (delta === undefined) { return; }
+            e.preventDefault();
+            _moveRuler(delta);
         });
     </script>
 </body>

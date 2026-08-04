@@ -5,7 +5,7 @@ from django.db import models
 from django.utils import timezone
 
 from .base import EncryptedCharField, EncryptedTextField, email_blind_index
-from .governance import PrivacyNoticeVersion, User
+from .governance import PrivacyNoticeVersion
 from .jobs import JobPosting
 from .organization import Facility
 from .system import SystemSetting
@@ -172,30 +172,10 @@ class WorkflowTask(models.Model):
                     and self.dueAt < timezone.now())
 
 
-class AppTicket(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    application = models.OneToOneField(Application, on_delete=models.CASCADE, related_name='appTicket')
-    workflow = models.ForeignKey(AppWorkflowDef, on_delete=models.CASCADE, related_name='appTickets')
-    status = models.CharField(max_length=50, default="IN_PROGRESS")  # IN_PROGRESS, COMPLETED, CANCELLED
-    createdAt = models.DateTimeField(default=timezone.now)
-    updatedAt = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"AppTicket for {self.application}"
-
-class AppStep(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    appTicket = models.ForeignKey(AppTicket, on_delete=models.CASCADE, related_name='steps')
-    stepOrder = models.IntegerField()
-    assignedUser = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True, related_name='appSteps')
-    status = models.CharField(max_length=50, default="PENDING")  # PENDING, APPROVED, REJECTED, RETURNED
-    comments = models.TextField(blank=True, null=True)
-    actionTakenAt = models.DateTimeField(blank=True, null=True)
-    createdAt = models.DateTimeField(default=timezone.now)
-    updatedAt = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"AppStep {self.stepOrder} for {self.appTicket}"
+# Hier standen AppTicket/AppStep - eine zweite, nie benutzte Freigabekette fuer
+# Bewerbungen aus dem Prisma-Vorgaenger. Was tatsaechlich laeuft: AppWorkflowDef
+# (bleibt, siehe oben) treibt die Automatik, Entscheidungen stehen an der
+# Bewerbung selbst und im Audit-Log.
 
 # Gesprächsformate: von schriftlicher Aufgabe bis Assessment – die Prüfung
 # einer Bewerbung ist selten EIN Interviewtyp. Gespeichert in

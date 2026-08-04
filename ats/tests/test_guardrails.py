@@ -859,3 +859,51 @@ class GuardrailNoOrphanRouteTestCase(TestCase):
         self.assertEqual(orphans, [],
                          "Route ohne jeden Einstieg - gebaut, aber "
                          "unerreichbar: " + ", ".join(orphans))
+
+
+class GuardrailNoDeadModelTestCase(TestCase):
+    """Waechter: Kein Modell, das ausser im Admin niemand anfasst.
+
+    Sieben Tabellen aus dem Prisma-Vorgaenger liefen jahrelang mit, weil ein
+    frueherer Aufraeum-Durchgang ihre Registrierung im Django-Admin faelschlich
+    als Nutzung gewertet hat ("kein toter Code"). Registrierung ist keine
+    Nutzung - sie erzeugt nur eine Verwaltungsmaske fuer eine leere Tabelle.
+
+    Harmlos war das nicht: Ein Fremdschluessel auf das tote User-Modell hat den
+    Urheber jeder Freigabe unbefuellbar gemacht und spaeter eine
+    PostgreSQL-Migration zerlegt.
+
+    Der Waechter verlangt, dass jedes Modell irgendwo im Anwendungscode
+    vorkommt - ausserhalb von models/, admin.py, Migrationen und Tests.
+    """
+
+    def test_every_model_is_used_by_application_code(self):
+        import os
+        import re
+        base = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        models_dir = os.path.join(base, "ats", "models")
+
+        names: set[str] = set()
+        for fname in os.listdir(models_dir):
+            if not fname.endswith(".py"):
+                continue
+            src = open(os.path.join(models_dir, fname), encoding="utf-8").read()
+            names |= set(re.findall(r"^class (\w+)\(models\.Model\)", src, re.M))
+        self.assertGreater(len(names), 30, "Modell-Parser hat nichts gefunden")
+
+        chunks = []
+        for root, _dirs, files in os.walk(os.path.join(base, "ats")):
+            parts = root.split(os.sep)
+            if "models" in parts or "migrations" in parts or "tests" in parts:
+                continue
+            for fname in files:
+                if fname.endswith(".py") and fname != "admin.py":
+                    chunks.append(open(os.path.join(root, fname),
+                                       encoding="utf-8").read())
+        blob = "\n".join(chunks)
+
+        dead = sorted(n for n in names if not re.search(rf"\b{n}\b", blob))
+        self.assertEqual(
+            dead, [],
+            "Modell existiert, wird aber von keiner Zeile Anwendungscode "
+            "benutzt (Admin-Registrierung zaehlt nicht): " + ", ".join(dead))

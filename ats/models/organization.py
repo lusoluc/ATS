@@ -130,15 +130,11 @@ class JobFamily(models.Model):
     def __str__(self):
         return self.name
 
-class CareerPath(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=255)
-    description = models.TextField(blank=True, null=True)
-    createdAt = models.DateTimeField(default=timezone.now)
-    updatedAt = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return self.name
+# Hier stand CareerPath: Name + Beschreibung, sonst nichts. Kein Formular, keine
+# Ansicht, keine Verknuepfung zu Stellen - eine leere Tabelle als Platzhalter
+# fuer ein Konzept, das im Master-Paket (§ 6.5) beschrieben, aber nie gebaut
+# wurde. Das Konzept bleibt im FEATURE_BACKLOG; wenn es kommt, wird das Modell
+# fuer den echten Bedarf entworfen statt aus einer leeren Huelle erraten.
 
 class ContactPerson(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

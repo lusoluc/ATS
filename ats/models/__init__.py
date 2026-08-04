@@ -25,8 +25,6 @@ from .applications import (
     Application,
     ApplicationDocument,
     ApplicationVote,
-    AppStep,
-    AppTicket,
     AppWorkflowDef,
     Interview,
     InterviewFeedback,
@@ -55,9 +53,6 @@ from .base import (
 )
 from .governance import (
     PrivacyNoticeVersion,
-    Role,
-    User,
-    UserFacility,
     WorkflowState,
 )
 from .iam import RoleDelegation, UserScope
@@ -70,10 +65,8 @@ from .jobs import (
     JobTemplate,
     PayBand,
     TextSnippet,
-    WorkflowDefinition,
 )
 from .organization import (
-    CareerPath,
     ContactPerson,
     Department,
     DepartmentContactPerson,
@@ -104,15 +97,12 @@ __all__ = [
     "Application",
     "ApplicationDocument",
     "ApplicationVote",
-    "AppStep",
-    "AppTicket",
     "AppWorkflowDef",
     "ApprovalStep",
     "ApprovalTicket",
     "AuditLog",
     "Benefit",
     "BestPerformerProfile",
-    "CareerPath",
     "ContactPerson",
     "DEFAULT_FEEDBACK_CRITERIA",
     "Department",
@@ -154,7 +144,6 @@ __all__ = [
     "PrivacyNoticeVersion",
     "RequisitionRule",
     "RequisitionStep",
-    "Role",
     "RoleDelegation",
     "rounds_state",
     "ScreeningQuestion",
@@ -164,11 +153,8 @@ __all__ = [
     "TalentPoolContact",
     "TalentPoolSubscription",
     "TextSnippet",
-    "User",
-    "UserFacility",
     "UserScope",
     "WORKFLOW_TASK_STATUS",
-    "WorkflowDefinition",
     "WorkflowState",
     "WorkflowTask",
 ]

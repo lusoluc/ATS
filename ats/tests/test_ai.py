@@ -29,8 +29,6 @@ class AISettingsTestCase(TestCase):
         self.client.get(reverse('ats:dashboard'))
         payload = {
             'AI_TONE': 'CASUAL', 'AI_LANGUAGE': 'DE_SIE',
-            'AI_AUTO_REJECT_ENABLED': 'on', 'AI_THRESHOLD_D_REJECT': '20',
-            'AI_THRESHOLD_C_WAITLIST': '45', 'AI_THRESHOLD_A_INVITE': '85',
             'AI_CV_LEARNING_MODE': 'true', 'AI_AGG_CHECK_ENABLED': 'on',
             'AI_AGG_PROMPT': 'Custom AGG prompt text',
             'AI_TRANSLATE_EASY_LANGUAGE': 'true',
@@ -39,8 +37,19 @@ class AISettingsTestCase(TestCase):
         response = self.client.post(reverse('ats:save_ai_settings'), data=payload)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(SystemSetting.objects.get(key="AI_TONE").value, "CASUAL")
-        self.assertEqual(SystemSetting.objects.get(key="AI_AUTO_REJECT_ENABLED").value, "true")
         self.assertEqual(SystemSetting.objects.get(key="AI_AGG_PROMPT").value, "Custom AGG prompt text")
+
+    def test_dead_auto_reject_switch_is_gone(self):
+        # Der Schalter versprach eine automatische KI-Absage, die es bewusst
+        # nicht gibt - er darf weder gespeichert noch angezeigt werden.
+        self.client.get(reverse('ats:dashboard'))
+        self.client.post(reverse('ats:save_ai_settings'), data={
+            'AI_TONE': 'CASUAL', 'AI_AUTO_REJECT_ENABLED': 'on'})
+        self.assertFalse(SystemSetting.objects.filter(
+            key="AI_AUTO_REJECT_ENABLED", value="true").exists())
+        resp = self.client.get(reverse('ats:ki_page'))
+        self.assertNotContains(resp, "AI_AUTO_REJECT_ENABLED")
+        self.assertNotContains(resp, "Auto-Absage durch KI")
 
 class TemplateToneTestCase(TestCase):
     """B12 – KI-Tonalitäts-Overlay (Fallback ohne Ollama)."""

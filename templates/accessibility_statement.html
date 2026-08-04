@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Erklärung zur Barrierefreiheit · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap" style="max-width:820px;">
+  <h1 class="page-title"><i class="fa-solid fa-universal-access"></i> Erklärung zur Barrierefreiheit</h1>
+  <p class="page-lead">
+    {{ company }} ist bemüht, das Karriereportal und den gesamten
+    Bewerbungsprozess barrierefrei zugänglich zu machen. Maßstab sind die
+    Web Content Accessibility Guidelines (WCAG) 2.1, Konformitätsstufe AA,
+    sowie das Barrierefreiheitsstärkungsgesetz (BFSG).
+  </p>
+
+  <div class="card">
+    <h2 style="margin:0 0 var(--space-3); font-size:17px;">Stand der Vereinbarkeit</h2>
+    <p style="font-size:14px; margin:0 0 8px;">
+      Diese Website ist mit den WCAG 2.1 (Stufe AA) <strong>teilweise
+      vereinbar</strong>. Die Kernstrecke — Stellenliste, Stellenanzeige,
+      Bewerbungsformular und Status-Portal — ist vollständig per Tastatur
+      bedienbar, mit Screenreadern nutzbar und auf Mobilgeräten zugänglich.
+      Ein externes Vollaudit steht noch aus; bis dahin nennen wir den Stand
+      bewusst „teilweise vereinbar".
+    </p>
+    <p style="font-size:13px; color:var(--text-muted); margin:0;">
+      Umgesetzt sind unter anderem: Tastaturbedienung mit sichtbarem Fokus,
+      Sprungmarke zum Inhalt, beschriftete Formularfelder mit verständlichen
+      Fehlermeldungen, ausreichende Kontraste, Bewegungsreduktion nach
+      Systemeinstellung, Leichte-Sprache-Fassungen von Stellenanzeigen (wo
+      gepflegt) sowie ein Einstellungs-Panel mit Legasthenie-Schrift,
+      Hochkontrast-Modus, Reizreduktion, Lese-Lineal und Vorlesen-Funktion.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2 style="margin:0 0 var(--space-3); font-size:17px;">Bekannte Einschränkungen</h2>
+    <ul style="font-size:14px; margin:0 0 0 18px;">
+      <li>Das Lese-Lineal folgt derzeit nur dem Mauszeiger und ist ohne Maus nicht nutzbar.</li>
+      <li>Die Vorlesen-Funktion bietet noch keine Pause-Taste; erneutes Aktivieren startet neu.</li>
+      <li>Leichte-Sprache-Fassungen liegen noch nicht für alle Stellenanzeigen vor.</li>
+      <li>Einzelne PDF-Anhänge Dritter (z.&nbsp;B. hochgeladene Dokumente) können unzugänglich sein.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2 style="margin:0 0 var(--space-3); font-size:17px;">Barriere melden</h2>
+    <p style="font-size:14px; margin:0;">
+      Sie sind auf eine Barriere gestoßen oder benötigen Inhalte in einer
+      anderen Form? Schreiben Sie uns an
+      <a href="mailto:{{ feedback_email }}">{{ feedback_email }}</a>
+      — wir antworten in der Regel innerhalb von zwei Wochen. Als bewerbende
+      Person können Sie auch die Nachrichten-Funktion in Ihrem
+      Bewerbungsportal nutzen.
+    </p>
+  </div>
+
+  <p style="font-size:12px; color:var(--text-muted);">
+    Diese Erklärung wurde am {{ statement_date }} erstellt und beruht auf
+    einer Selbstbewertung mit automatisierten Prüfungen und manuellen
+    Tastatur-/Screenreader-Durchläufen.
+  </p>
+</div>
+{% endblock %}

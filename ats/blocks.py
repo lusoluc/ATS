@@ -21,6 +21,9 @@ BLOCK_TYPES: dict[str, dict[str, Any]] = {
             ("heading", "text", "Überschrift"),
             ("text", "textarea", "Unterzeile / Botschaft"),
             ("imageUrl", "url", "Bild-URL (optional)"),
+            # B6 (WCAG 1.1.1): Hero-Bilder sind redaktionelle Inhalte, kein
+            # Deko - der Alt-Text gehoert an den Block (Fallback: heading).
+            ("imageAlt", "text", "Bild-Beschreibung / Alt-Text (optional)"),
         ]},
     "text": {
         "label": "Textabschnitt",

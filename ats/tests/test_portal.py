@@ -99,8 +99,32 @@ class CandidateFlowWP1TestCase(TestCase):
                                       expiresAt=timezone.now() + timedelta(days=10))
         resp = self.client.get(reverse('ats:candidate_portal', args=["tok-tl"]))
         self.assertEqual(resp.status_code, 200)
-        for step in ["Eingegangen", "In Prüfung", "Eingeladen", "Entscheidung"]:
+        # Die Status-Pipeline (role="img") ist die eine Fortschritts-Anzeige;
+        # die fruehere doppelte Timeline darunter wurde als tote Struktur
+        # entfernt (CSS war schon in P4 geloescht).
+        self.assertContains(resp, 'role="img"')
+        self.assertContains(resp, "Bewerbungsfortschritt: In Prüfung")
+        for step in ["Eingegangen", "In Sichtung", "Gespräch", "Entscheidung"]:
             self.assertContains(resp, step)
+        self.assertNotContains(resp, "tl-step")
+
+    def test_iphone_heic_photo_is_accepted(self):
+        # "Ein Handy-Foto genuegt" muss auch fuer iPhone-Standardformat
+        # gelten: accept-Attribut UND Server-Whitelist erlauben .heic.
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from ..models import Application
+        job = self._job()
+        cv = SimpleUploadedFile("lebenslauf.heic", b"ftypheic-testbytes",
+                                content_type="image/heic")
+        resp = self.client.post(reverse('ats:bewerben', args=[job.id]), {
+            "first_name": "Ida", "last_name": "Phone", "email": "heic@x.de",
+            "cover_letter": "Hallo.", "consent_privacy": "on", "cv_file": cv})
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(Application.objects.filter(
+            applicant__emailHash__isnull=False).exists())
+        app = Application.objects.get()
+        self.assertTrue(app.cvStorageId)
 
     def test_job_detail_easy_language_toggle(self):
         job = self._job(easy="Wir suchen Sie. Die Arbeit ist gut.")
@@ -399,3 +423,65 @@ class ApplicationConfirmationMailTestCase(TestCase):
             r = self._apply(email="robust@x.de")
         self.assertEqual(r.status_code, 200)               # Erfolgsseite
         self.assertEqual(Application.objects.count(), 1)   # Bewerbung da!
+
+
+class EasyLanguageBridgeTestCase(TestCase):
+    """B5: descriptionEasy ist im Stellen-Editor pfleg- und loeschbar.
+
+    Vorher existierte das Feld nur im Modell - der Umschalter am
+    Stellendetail blieb auf Produktivdaten fuer immer leer.
+    """
+
+    def _base_post(self, job=None, **extra):
+        from .factories import make_world
+        world = getattr(self, '_world', None) or make_world()
+        self._world = world
+        data = {
+            "title": "Pflegefachkraft (m/w/d)", "description": "Standardtext.",
+            "tasks": "Pflegen", "requirements": "Examen",
+            "facility": str(world.facility.id),
+            "location": str(world.location.id),
+            "job_family": str(world.job_family.id),
+            "workflow_state": str(world.published.id),
+            "pay_band": str(world.band.id),
+        }
+        if job is not None:
+            data["job_id"] = str(job.id)
+        data.update(extra)
+        return data
+
+    def test_create_and_update_easy_description(self):
+        from django.urls import reverse
+
+        from ..models import JobPosting
+        from .utils import make_user
+        self.client.force_login(make_user("easy-adm", role="HR-Admin"))
+        self.client.post(reverse('ats:create_job'), self._base_post(
+            description_easy="Wir suchen Sie. Die Arbeit ist gut."))
+        job = JobPosting.objects.get(title="Pflegefachkraft (m/w/d)")
+        self.assertEqual(job.descriptionEasy,
+                         "Wir suchen Sie. Die Arbeit ist gut.")
+        # Update mit geaendertem Text
+        self.client.post(reverse('ats:create_job'), self._base_post(
+            job=job, description_easy="Neuer einfacher Text."))
+        job.refresh_from_db()
+        self.assertEqual(job.descriptionEasy, "Neuer einfacher Text.")
+        # Leeren = Umschalter verschwindet (None statt Leerstring)
+        self.client.post(reverse('ats:create_job'), self._base_post(
+            job=job, description_easy=""))
+        job.refresh_from_db()
+        self.assertIsNone(job.descriptionEasy)
+
+    def test_update_without_field_keeps_existing(self):
+        from django.urls import reverse
+
+        from ..models import JobPosting
+        from .utils import make_user
+        self.client.force_login(make_user("easy-adm2", role="HR-Admin"))
+        self.client.post(reverse('ats:create_job'), self._base_post(
+            description_easy="Bleibt stehen."))
+        job = JobPosting.objects.get(title="Pflegefachkraft (m/w/d)")
+        # POST ohne description_easy (z. B. Alt-Client) loescht NICHT
+        self.client.post(reverse('ats:create_job'), self._base_post(job=job))
+        job.refresh_from_db()
+        self.assertEqual(job.descriptionEasy, "Bleibt stehen.")

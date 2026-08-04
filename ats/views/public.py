@@ -44,7 +44,7 @@ from .common import _remember_campaign_src, campaign_expired, exclude_filled, se
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["home", "job_list", "job_detail", "bewerben", "candidate_portal", "page_detail", "facility_profile", "landing_page", "job_alert_subscribe", "job_alert_confirm", "job_alert_manage", "pricing_view", "healthz", "ai_transparency"]
+__all__ = ["home", "job_list", "job_detail", "bewerben", "candidate_portal", "page_detail", "facility_profile", "landing_page", "job_alert_subscribe", "job_alert_confirm", "job_alert_manage", "pricing_view", "healthz", "ai_transparency", "accessibility_statement"]
 
 
 def home(request):
@@ -183,7 +183,12 @@ def bewerben(request, job_id):
         # Sicherheits-Validierung ALLER Uploads (oeffentliches Formular =
         # Haupt-Angriffsflaeche): Typ-Whitelist + Groessenlimit, VOR dem
         # Anlegen – keine halbe Bewerbung, kein unvalidierter Byte im Storage.
-        UPLOAD_ALLOWED = {'.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'}
+        # Muss zum accept-Attribut und zum angezeigten Hinweis im Formular
+        # passen ("Ein Handy-Foto genuegt"): iPhones liefern standardmaessig
+        # .heic/.heif, Android teils .webp - ohne diese Endungen wuerde genau
+        # das beworbene Foto nach dem Upload serverseitig abgewiesen.
+        UPLOAD_ALLOWED = {'.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png',
+                          '.heic', '.heif', '.webp'}
         UPLOAD_MAX_MB = 10
 
         def _upload_error(f):
@@ -807,8 +812,6 @@ def candidate_portal(request, token):
         'INVITED': 'Zum Gespräch eingeladen', 'REJECTED': 'Leider abgelehnt',
         'WITHDRAWN': 'Zurückgezogen',
     }
-    stage_of = {'NEW': 0, 'IN_REVIEW': 1, 'MISSING_DOCS': 1, 'INVITED': 2,
-                'REJECTED': 3, 'WITHDRAWN': 3}
     def _bookable_slots(a):
         # Terminwahl anbieten: eingeladen und kein ANSTEHENDER Termin.
         # Vergangene Gespraeche blockieren nicht: mehrstufige Pruefung
@@ -829,7 +832,6 @@ def candidate_portal(request, token):
         'label': status_labels.get(a.status, a.status),
         'can_withdraw': a.status not in ('REJECTED', 'WITHDRAWN'),
         'created': a.createdAt,
-        'stage': stage_of.get(a.status, 0),
         'rejected': a.status in ('REJECTED', 'WITHDRAWN'),
         # N2: Bei K.O.-Absagen erfaehrt die Person das objektive, vorab
         # veroeffentlichte Kriterium; Ermessens-Absagen liefern hier [].
@@ -859,7 +861,6 @@ def candidate_portal(request, token):
             .TalentPoolSubscription.objects.filter(
                 email=applicant.email, expiresAt__gte=timezone.now()).first(),
         'has_rejected': applications.filter(status='REJECTED').exists(),
-        'steps': ['Eingegangen', 'In Prüfung', 'Eingeladen', 'Entscheidung'],
         # § 164: Zustand der freiwilligen Angabe (verschluesselt -> in Python)
         'disability_disclosed': any(
             disability_value_disclosed(a.severeDisability) for a in applications),
@@ -892,6 +893,24 @@ def ai_transparency(request):
                               for i in sorted(enabled_intents())],
         'learned_scoring': _learned_on(),
         'slug': 'ki-transparenz',
+    })
+
+
+# --- B7: Erklaerung zur Barrierefreiheit (BFSG) ------------------------------
+def accessibility_statement(request):
+    """Oeffentliche Barrierefreiheitserklaerung (BFSG Anlage 3 / BITV-Muster):
+    Konformitaetsstand, bekannte Ausnahmen, Feedback-Weg. Der Stand ist
+    bewusst ehrlich ("teilweise vereinbar"), bis ein externes Vollaudit
+    vorliegt - eine geschoente Erklaerung waere selbst ein Verstoss."""
+    _fs = SystemSetting.objects.filter(key='FIRMA').first()
+    _mail = SystemSetting.objects.filter(key='SUPPORT_EMAIL').first()
+    return render(request, 'accessibility_statement.html', {
+        'nav_pages': Page.objects.filter(status="published",
+                                         navEnabled=True).order_by('navOrder'),
+        'company': (_fs.value if _fs else '') or 'SecurATS',
+        'feedback_email': (_mail.value if _mail else '') or 'barrierefrei@securats.example',
+        'statement_date': '04.08.2026',
+        'slug': 'barrierefreiheit',
     })
 
 

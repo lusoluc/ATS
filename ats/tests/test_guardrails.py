@@ -245,6 +245,9 @@ class GuardrailAuthDecoratorTestCase(TestCase):
         # N3: KI-Transparenz (Art. 86 EU AI Act) ist bewusst oeffentlich -
         # Bewerbende muessen sie OHNE Konto lesen koennen.
         "ai_transparency",
+        # B7: Barrierefreiheitserklaerung (BFSG) - ebenfalls bewusst
+        # oeffentlich, sie richtet sich an Besucher ohne Konto.
+        "accessibility_statement",
     }
 
     def _iter_views(self):
@@ -559,3 +562,139 @@ class GuardrailTableScrollTestCase(TestCase):
             "Mehrdeutiger table-scroll-Schluss (naechster </div> gehoert "
             "womoeglich der Card) – `</table></div>` inline schreiben: "
             + ", ".join(offender))
+
+
+class GuardrailAutocompleteTestCase(TestCase):
+    """Waechter: WCAG 1.3.5 (AA) - Felder, die Angaben ueber die Person
+    erheben, muessen ihren Zweck per autocomplete-Attribut tragen.
+
+    Scannt die oeffentlichen Formular-Templates nach bekannten PII-Feldnamen
+    und verlangt das passende autocomplete. Neue Bewerber-Formulare mit
+    name="email" & Co. fallen automatisch unter die Pruefung.
+    """
+
+    EXPECTED = {
+        "first_name": "given-name",
+        "last_name": "family-name",
+        "email": "email",
+        "phone": "tel",
+    }
+    PUBLIC_TEMPLATES = ["bewerben.html", "job_alert.html"]
+
+    def test_pii_inputs_declare_autocomplete(self):
+        import os
+        import re
+        base = os.path.join(os.path.dirname(os.path.dirname(
+            os.path.dirname(__file__))), "templates")
+        offenders = []
+        for fname in self.PUBLIC_TEMPLATES:
+            src = open(os.path.join(base, fname), encoding="utf-8").read()
+            for name, expected in self.EXPECTED.items():
+                for m in re.finditer(
+                        rf'<input[^>]*name="{name}"[^>]*>', src):
+                    tag = m.group(0)
+                    if f'autocomplete="{expected}"' not in tag:
+                        offenders.append(f"{fname}: name={name}")
+        self.assertEqual(offenders, [],
+                         "PII-Eingabefeld ohne passendes autocomplete-Attribut "
+                         "(WCAG 1.3.5): " + ", ".join(offenders))
+
+
+class GuardrailImgAltTestCase(TestCase):
+    """Waechter: WCAG 1.1.1 - jedes <img> in JEDEM Template braucht ein
+    alt-Attribut (leer nur fuer echtes Deko, aber das Attribut muss da sein).
+    Scannt auch Templates, die erst morgen dazukommen."""
+
+    def test_every_img_has_alt(self):
+        import os
+        import re
+        base = os.path.join(os.path.dirname(os.path.dirname(
+            os.path.dirname(__file__))), "templates")
+        offenders = []
+        for root, _dirs, files in os.walk(base):
+            for fname in files:
+                if not fname.endswith(".html"):
+                    continue
+                path = os.path.join(root, fname)
+                src = open(path, encoding="utf-8").read()
+                rel = os.path.relpath(path, base)
+                for m in re.finditer(r"<img\b[^>]*>", src, re.DOTALL):
+                    if "alt=" not in m.group(0):
+                        line = src[:m.start()].count("\n") + 1
+                        offenders.append(f"{rel}:{line}")
+        self.assertEqual(offenders, [],
+                         "<img> ohne alt-Attribut (WCAG 1.1.1): "
+                         + ", ".join(offenders))
+
+
+class GuardrailFormLabelTestCase(TestCase):
+    """Waechter: WCAG 3.3.2/4.1.2 - sichtbare Formularfelder der
+    oeffentlichen Bewerberstrecke brauchen ein <label for> oder aria-label.
+
+    Bewusst auf die Bewerberseiten begrenzt: dort sind unbeschriftete
+    Felder ein BFSG-Risiko. Neue Felder in diesen Templates fallen
+    automatisch unter die Pruefung."""
+
+    PUBLIC_TEMPLATES = [
+        "bewerben.html", "job_alert.html", "candidate_portal.html",
+        "job_list.html", "job_detail.html", "registration/login.html",
+    ]
+
+    def test_visible_fields_are_labelled(self):
+        import os
+        import re
+        base = os.path.join(os.path.dirname(os.path.dirname(
+            os.path.dirname(__file__))), "templates")
+        offenders = []
+        for rel in self.PUBLIC_TEMPLATES:
+            src = open(os.path.join(base, *rel.split("/")),
+                       encoding="utf-8").read()
+            for m in re.finditer(r"<(input|textarea|select)\b[^>]*>",
+                                 src, re.DOTALL):
+                tag = m.group(0)
+                if re.search(r'type="(hidden|submit|button)"', tag):
+                    continue
+                if "aria-label" in tag:
+                    continue
+                id_m = re.search(r'id="([^"]+)"', tag)
+                if id_m and f'for="{id_m.group(1)}"' in src:
+                    continue
+                line = src[:m.start()].count("\n") + 1
+                offenders.append(f"{rel}:{line}")
+        self.assertEqual(offenders, [],
+                         "Sichtbares Formularfeld ohne label/aria-label "
+                         "(WCAG 3.3.2): " + ", ".join(offenders))
+
+
+class GuardrailStandaloneTemplateTestCase(TestCase):
+    """Waechter: Standalone-Templates (eigenes <!DOCTYPE>, erben base.html
+    NICHT) muessen das A11y-Fundament selbst mitbringen - lang-Attribut,
+    Skip-Link und :focus-visible-Stil.
+
+    Genau diese Fehlerklasse blieb monatelang unbemerkt: das
+    Kandidatenportal war ein Standalone-Template und hatte als einzige
+    Bewerberseite weder Skip-Link noch Fokus-Stil. Jedes NEUE
+    Standalone-Template faellt automatisch unter diese Pruefung."""
+
+    REQUIRED = ["<html lang=", "skip-link", ":focus-visible"]
+
+    def test_standalone_templates_carry_a11y_fundament(self):
+        import os
+        base = os.path.join(os.path.dirname(os.path.dirname(
+            os.path.dirname(__file__))), "templates")
+        offenders = []
+        for root, _dirs, files in os.walk(base):
+            for fname in files:
+                if not fname.endswith(".html"):
+                    continue
+                path = os.path.join(root, fname)
+                src = open(path, encoding="utf-8").read()
+                if "<!DOCTYPE" not in src and "<!doctype" not in src:
+                    continue   # Partial/erbt base.html -> Fundament kommt von dort
+                rel = os.path.relpath(path, base)
+                missing = [req for req in self.REQUIRED if req not in src]
+                if missing:
+                    offenders.append(f"{rel} (fehlt: {', '.join(missing)})")
+        self.assertEqual(offenders, [],
+                         "Standalone-Template ohne A11y-Fundament: "
+                         + "; ".join(offenders))

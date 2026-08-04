@@ -526,6 +526,32 @@
             .finally(() => { btn.disabled = false; });
     }
 
+    function draftEasyLanguage(btn) {
+        // B5: KI-ENTWURF der Leichte-Sprache-Fassung - landet im Textfeld
+        // zur Pruefung durch den Menschen, nie ungeprueft auf der Anzeige.
+        // Fallback-sicher: ohne KI bleibt das Feld unveraendert.
+        const src = document.getElementById('job-desc-inp');
+        const target = document.getElementById('job-desc-easy');
+        const status = document.getElementById('job-easy-status');
+        if (!src.value.trim()) { status.innerText = 'Bitte zuerst eine Beschreibung eingeben.'; return; }
+        btn.disabled = true; status.innerText = 'KI übersetzt in Leichte Sprache…';
+        const fd = new FormData();
+        fd.append('text', src.value);
+        fetch('/recruiter/ki/simple-german/', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                const out = d.simple || d.translated || d.result || '';
+                if (out) {
+                    target.value = out;
+                    status.innerText = 'Entwurf erstellt – bitte prüfen und bei Bedarf anpassen.';
+                } else {
+                    status.innerText = 'KI nicht erreichbar – Feld unverändert.';
+                }
+            })
+            .catch(() => { status.innerText = 'KI nicht erreichbar – Feld unverändert.'; })
+            .finally(() => { btn.disabled = false; });
+    }
+
     function getDragAfterElement(container, y) {
         const cards = [...container.querySelectorAll('.applicant-card:not(.dragging)')];
         return cards.reduce((closest, el) => {
@@ -979,7 +1005,7 @@
         openJobCreatorModal();
     }
 
-    function editJobPosting(id, title, description, tasksJson, requirementsJson, screeningQuestionsJson, facilityId, departmentId, locationId, jobFamilyId, contactPersonId, jobTemplateId, workflowStateId, benefitsSelectedCsv, panelUserIdsJson, panelQuorum, panelDeadlineDays, interviewRoundsCsv, payBandId, headcount, interviewGuideCsv) {
+    function editJobPosting(id, title, description, tasksJson, requirementsJson, screeningQuestionsJson, facilityId, departmentId, locationId, jobFamilyId, contactPersonId, jobTemplateId, workflowStateId, benefitsSelectedCsv, panelUserIdsJson, panelQuorum, panelDeadlineDays, interviewRoundsCsv, payBandId, headcount, interviewGuideCsv, descriptionEasy) {
         // headcount wird seit dem Umzug ins Wizard-Formular immer mitgesendet
         // und muss deshalb beim Bearbeiten vorbefuellt werden
         document.getElementById('headcount').value = headcount || 1;
@@ -1000,6 +1026,10 @@
         // Pre-fill texts
         document.getElementById('job-title-inp').value = title;
         document.getElementById('job-desc-inp').value = description;
+        // B5: Leichte-Sprache-Fassung vorbefuellen - das Feld wird immer
+        // mitgesendet, ohne Vorbefuellung wuerde Bearbeiten sie loeschen.
+        const easyEl = document.getElementById('job-desc-easy');
+        if (easyEl) { easyEl.value = descriptionEasy || ''; }
         
         // Pre-fill tasks and requirements from JSON
         let tasksList = [];

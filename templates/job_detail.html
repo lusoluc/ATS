@@ -105,31 +105,7 @@
         box-shadow: 0 10px 30px rgba(139, 92, 246, 0.1);
     }
 
-    .btn-apply-now {
-        width: 100%;
-        /* dunkleres Teal: weiße Schrift erreicht AA-Kontrast */
-        background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
-        color: #fff;
-        border: none;
-        padding: 16px 28px;
-        border-radius: 30px;
-        font-size: 16px;
-        font-weight: 700;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        transition: var(--transition-smooth);
-        box-shadow: 0 4px 15px rgba(20, 184, 166, 0.3);
-        text-decoration: none;
-    }
-
-    .btn-apply-now:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba(20, 184, 166, 0.45);
-        background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
-    }
+    /* .btn-apply-now: zentral in base.html (wird auch auf /bewerben/ genutzt) */
 
     /* Contact Card */
     .contact-card {
@@ -254,9 +230,9 @@
             <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
                 <h2 style="margin:0;"><i class="fa-solid fa-align-left"></i> Stellenbeschreibung</h2>
                 {% if job.descriptionEasy %}
-                <button type="button" id="easyToggle" onclick="toggleEasyLang()"
+                <button type="button" id="easyToggle" onclick="toggleEasyLang()" aria-pressed="false"
                         style="background:none;border:1px solid var(--glass-border);color:var(--text-main);border-radius:var(--border-radius-sm);padding:6px 12px;cursor:pointer;font-size:13px;">
-                    <i class="fa-solid fa-language"></i> <span id="easyToggleLabel">Leichte Sprache</span>
+                    <i class="fa-solid fa-language" aria-hidden="true"></i> <span id="easyToggleLabel">Leichte Sprache</span>
                 </button>
                 {% endif %}
             </div>
@@ -272,6 +248,9 @@
                 easy.style.display = showEasy ? 'block' : 'none';
                 std.style.display = showEasy ? 'none' : 'block';
                 label.textContent = showEasy ? 'Normale Sprache' : 'Leichte Sprache';
+                // Zustand fuer Screenreader (WCAG 4.1.2)
+                document.getElementById('easyToggle')
+                    .setAttribute('aria-pressed', showEasy ? 'true' : 'false');
             }
             </script>
             {% endif %}

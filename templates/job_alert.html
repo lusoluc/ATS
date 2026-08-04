@@ -19,7 +19,7 @@
       {% if error %}<div class="form-error-summary" role="alert">{{ error }}</div>{% endif %}
       <div class="field">
         <label for="email">E-Mail-Adresse *</label>
-        <input type="email" id="email" name="email" class="input{% if error %} input-invalid{% endif %}" placeholder="name@beispiel.de" required value="{{ form_data.email|default:'' }}"{% if error %} aria-invalid="true" aria-describedby="err-email"{% endif %}>
+        <input type="email" id="email" name="email" autocomplete="email" class="input{% if error %} input-invalid{% endif %}" placeholder="name@beispiel.de" required value="{{ form_data.email|default:'' }}"{% if error %} aria-invalid="true" aria-describedby="err-email"{% endif %}>
         {% if error %}<span class="field-error" id="err-email">{{ error }}</span>{% endif %}
       </div>
       <div class="field">
@@ -46,8 +46,8 @@
           <input type="number" id="radius" name="radius" class="input" min="1" max="500" placeholder="z.B. 30">
         </div>
       </div>
-      <label style="display:flex;gap:8px;align-items:center;color:var(--text-muted);margin: var(--space-3) 0;">
-        <input type="checkbox" name="global"> Über <strong>alle</strong> neuen Stellen informieren
+      <label for="alert-global" style="display:flex;gap:8px;align-items:center;color:var(--text-muted);margin: var(--space-3) 0;">
+        <input type="checkbox" id="alert-global" name="global"> Über <strong>alle</strong> neuen Stellen informieren
       </label>
       <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">Alarm einrichten / aktualisieren</button>
       <p style="color:var(--text-muted); font-size:12px; margin-top: var(--space-3);">

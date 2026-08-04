@@ -645,10 +645,10 @@ def save_ai_settings(request):
     if request.method == 'POST':
         tone = request.POST.get('AI_TONE', 'EMPATHETIC').strip()
         lang = request.POST.get('AI_LANGUAGE', 'DE_DU').strip()
-        auto_reject = 'true' if request.POST.get('AI_AUTO_REJECT_ENABLED') == 'on' or request.POST.get('AI_AUTO_REJECT_ENABLED') == 'true' else 'false'
-        th_d = request.POST.get('AI_THRESHOLD_D_REJECT', '15').strip()
-        th_c = request.POST.get('AI_THRESHOLD_C_WAITLIST', '50').strip()
-        th_a = request.POST.get('AI_THRESHOLD_A_INVITE', '80').strip()
+        # AI_AUTO_REJECT_ENABLED + AI_THRESHOLD_* entfernt: wurden nur
+        # gespeichert, nie durchgesetzt - tote Schalter versprechen
+        # Funktionen, die es bewusst nicht gibt (keine automatische
+        # KI-Absage; K.O. nur regelbasiert ueber Pflichtkriterien).
         cv_learning = 'true' if request.POST.get('AI_CV_LEARNING_MODE') == 'on' or request.POST.get('AI_CV_LEARNING_MODE') == 'true' else 'false'
         agg_check = 'true' if request.POST.get('AI_AGG_CHECK_ENABLED') == 'on' or request.POST.get('AI_AGG_CHECK_ENABLED') == 'true' else 'false'
         agg_prompt = request.POST.get('AI_AGG_PROMPT', '').strip()
@@ -658,10 +658,6 @@ def save_ai_settings(request):
         settings_dict = {
             'AI_TONE': tone,
             'AI_LANGUAGE': lang,
-            'AI_AUTO_REJECT_ENABLED': auto_reject,
-            'AI_THRESHOLD_D_REJECT': th_d,
-            'AI_THRESHOLD_C_WAITLIST': th_c,
-            'AI_THRESHOLD_A_INVITE': th_a,
             'AI_CV_LEARNING_MODE': cv_learning,
             'AI_AGG_CHECK_ENABLED': agg_check,
             'AI_AGG_PROMPT': agg_prompt,

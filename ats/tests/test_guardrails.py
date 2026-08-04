@@ -559,3 +559,39 @@ class GuardrailTableScrollTestCase(TestCase):
             "Mehrdeutiger table-scroll-Schluss (naechster </div> gehoert "
             "womoeglich der Card) – `</table></div>` inline schreiben: "
             + ", ".join(offender))
+
+
+class GuardrailAutocompleteTestCase(TestCase):
+    """Waechter: WCAG 1.3.5 (AA) - Felder, die Angaben ueber die Person
+    erheben, muessen ihren Zweck per autocomplete-Attribut tragen.
+
+    Scannt die oeffentlichen Formular-Templates nach bekannten PII-Feldnamen
+    und verlangt das passende autocomplete. Neue Bewerber-Formulare mit
+    name="email" & Co. fallen automatisch unter die Pruefung.
+    """
+
+    EXPECTED = {
+        "first_name": "given-name",
+        "last_name": "family-name",
+        "email": "email",
+        "phone": "tel",
+    }
+    PUBLIC_TEMPLATES = ["bewerben.html", "job_alert.html"]
+
+    def test_pii_inputs_declare_autocomplete(self):
+        import os
+        import re
+        base = os.path.join(os.path.dirname(os.path.dirname(
+            os.path.dirname(__file__))), "templates")
+        offenders = []
+        for fname in self.PUBLIC_TEMPLATES:
+            src = open(os.path.join(base, fname), encoding="utf-8").read()
+            for name, expected in self.EXPECTED.items():
+                for m in re.finditer(
+                        rf'<input[^>]*name="{name}"[^>]*>', src):
+                    tag = m.group(0)
+                    if f'autocomplete="{expected}"' not in tag:
+                        offenders.append(f"{fname}: name={name}")
+        self.assertEqual(offenders, [],
+                         "PII-Eingabefeld ohne passendes autocomplete-Attribut "
+                         "(WCAG 1.3.5): " + ", ".join(offenders))

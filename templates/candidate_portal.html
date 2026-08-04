@@ -44,9 +44,24 @@
     button{background:none;border:1px solid var(--danger);color:var(--danger);border-radius:10px;
            padding:10px 14px;min-height:44px;cursor:pointer;font-size:13px;}
     input[type=text],input[type=email],input[type=tel],textarea,select{
-      width:100%;min-height:44px;padding:10px 12px;border-radius:10px;font-size:15px;
+      /* 16px: iOS zoomt bei < 16px beim Fokussieren in die Seite */
+      width:100%;min-height:44px;padding:10px 12px;border-radius:10px;font-size:16px;
       background:var(--bg-color);border:1px solid var(--border-color);color:var(--text-main);}
     a{color:var(--primary);text-decoration:none;}
+    /* Standalone-Template: dieselben A11y-Grundlagen wie base.html -
+       Skip-Link, sichtbarer Tastatur-Fokus, sr-only (WCAG 2.4.1/2.4.7) */
+    .skip-link{position:absolute;left:-9999px;background:var(--primary);
+      color:#fff;padding:10px 16px;border-radius:0 0 8px 0;z-index:10000;}
+    .skip-link:focus{left:0;top:0;}
+    a:focus-visible,button:focus-visible,input:focus-visible,
+    textarea:focus-visible,select:focus-visible,summary:focus-visible{
+      outline:2px solid var(--accent) !important;outline-offset:2px;}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+      overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+    h2{font-size:14px;font-weight:600;margin:0;color:var(--text-main);}
+    @media (prefers-reduced-motion: reduce){
+      *,*::before,*::after{animation-duration:0.01ms !important;
+        transition-duration:0.01ms !important;}}
     /* flex statt width:100%: laesst Badge/Button daneben Platz und bricht am
        schmalen Screen sauber um, statt den Zurueckziehen-Button in die
        Status-Leiste zu quetschen (gemeldeter Optik-Bug). */
@@ -77,8 +92,9 @@
 {% include 'includes/branding_css.html' %}
 </head>
 <body>
+<a href="#main" class="skip-link">Zum Inhalt springen</a>
 {% if brand %}<div class="brand-head">{% if brand.logo %}<img src="{{ brand.logo }}" alt="{{ brand.name }}">{% else %}<span>{{ brand.name }}</span>{% endif %}</div>{% endif %}
-<div class="wrap">
+<main class="wrap" id="main">
   {% if expired %}
     <div class="card"><h1>Link abgelaufen</h1>
       <p class="muted">Dieser Zugangslink ist nicht mehr gültig. Bitte kontaktieren Sie uns, falls Sie Fragen zu Ihrer Bewerbung haben.</p>
@@ -160,7 +176,8 @@
               <form method="post" onsubmit="return confirm('Termin wirklich absagen? Sie können danach jederzeit einen neuen wählen.');" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
                 {% csrf_token %}
                 <input type="hidden" name="cancel_interview_id" value="{{ r.interview_id }}">
-                <input type="text" name="reason" placeholder="Grund (optional)" style="flex:1; min-width:180px; background:#0b1220; border:1px solid #334155; border-radius:8px; color:#e2e8f0; padding:8px 10px;">
+                <label for="cancel-reason-{{ r.id }}" class="sr-only">Grund der Absage (optional)</label>
+                <input type="text" id="cancel-reason-{{ r.id }}" name="reason" placeholder="Grund (optional)" style="flex:1; min-width:180px; background:#0b1220; border:1px solid #334155; border-radius:8px; color:#e2e8f0; padding:8px 10px;">
                 <button type="submit">Termin absagen</button>
               </form>
               <div class="muted" style="font-size:12px; margin-top:8px;">Umbuchen und Absagen ist bis 24 Stunden vor dem Termin möglich.</div>
@@ -169,7 +186,8 @@
               <form method="post" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
                 {% csrf_token %}
                 <input type="hidden" name="change_request_interview_id" value="{{ r.interview_id }}">
-                <input type="text" name="reason" required placeholder="z. B. Schicht getauscht – geht auch Donnerstag?" style="flex:1; min-width:220px; background:#0b1220; border:1px solid #334155; border-radius:8px; color:#e2e8f0; padding:8px 10px;">
+                <label for="change-reason-{{ r.id }}" class="sr-only">Ihr Änderungswunsch zum Termin</label>
+                <input type="text" id="change-reason-{{ r.id }}" name="reason" required placeholder="z. B. Schicht getauscht – geht auch Donnerstag?" style="flex:1; min-width:220px; background:#0b1220; border:1px solid #334155; border-radius:8px; color:#e2e8f0; padding:8px 10px;">
                 <button type="submit" style="border-color:#334155; color:#e2e8f0;">Anfrage senden</button>
               </form>
             {% endif %}
@@ -209,7 +227,8 @@
             <form method="post" style="display:flex; gap:8px; margin-top:10px; align-items:flex-start;">
               {% csrf_token %}
               <input type="hidden" name="reply_app_id" value="{{ r.id }}">
-              <textarea name="content" required rows="2" placeholder="Ihre Rückfrage – wir melden uns so schnell wie möglich." style="flex:1; background:#0b1220; border:1px solid #334155; border-radius:8px; color:#e2e8f0; padding:8px 10px; font-family:inherit; font-size:13px;"></textarea>
+              <label for="reply-{{ r.id }}" class="sr-only">Ihre Rückfrage an das Team</label>
+              <textarea id="reply-{{ r.id }}" name="content" required rows="2" placeholder="Ihre Rückfrage – wir melden uns so schnell wie möglich." style="flex:1; background:#0b1220; border:1px solid #334155; border-radius:8px; color:#e2e8f0; padding:8px 10px; font-family:inherit;"></textarea>
               <button type="submit" style="border-color:#334155; color:#e2e8f0; white-space:nowrap;">Senden</button>
             </form>
           </div>
@@ -221,7 +240,7 @@
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
         <div>
-          <div style="font-weight:600; font-size:14px;">Talent-Pool</div>
+          <h2>Talent-Pool</h2>
           {% if pool_member %}
           <p class="muted" style="font-size:12px; margin:4px 0 0;">Sie sind aufgenommen (gültig bis {{ pool_member.expiresAt|date:"d.m.Y" }}). Wir weisen Sie gelegentlich auf passende Stellen hin – keine Dauer-Werbung.</p>
           {% else %}
@@ -246,7 +265,7 @@
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
         <div>
-          <div style="font-weight:600; font-size:14px;">Freiwillige Angabe: Schwerbehinderung/Gleichstellung</div>
+          <h2>Freiwillige Angabe: Schwerbehinderung/Gleichstellung</h2>
           {% if disability_disclosed %}
           <p class="muted" style="font-size:12px; margin:4px 0 0;">Ihre Angabe liegt vor – unsere Schwerbehindertenvertretung ist nach § 164 SGB IX einbezogen. Sie können die Angabe hier jederzeit mit einem Klick zurücknehmen; sie wird dann sofort gelöscht.</p>
           {% else %}
@@ -283,6 +302,6 @@
     <p class="muted" style="text-align:center;">Ihre Daten verlassen unser Haus nicht und werden nach Ablauf der gesetzlichen Frist automatisch gelöscht.<br>
       <a href="{% url 'ats:ai_transparency' %}">Automatische Funktionen &amp; Ihre Rechte (KI-Transparenz)</a></p>
   {% endif %}
-</div>
+</main>
 </body>
 </html>

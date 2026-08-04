@@ -59,9 +59,9 @@
     }
 
     .btn-search {
-        background: var(--accent);
-        color: #fff;
-        border: none;
+        /* Farbe kommt aus base.html (#0f766e, AA-Kontrast) - hier bewusst
+           KEIN background/color: die lokale Regel hatte den WP8-Kontrastfix
+           mit var(--accent) auf Weiss (~2,2:1) wieder ausgehebelt. */
         padding: 12px 28px;
         border-radius: var(--border-radius-sm);
         font-weight: 600;
@@ -74,7 +74,6 @@
     }
 
     .btn-search:hover {
-        background: var(--accent-light);
         transform: translateY(-2px);
         box-shadow: 0 4px 15px rgba(20, 184, 166, 0.3);
     }

@@ -121,14 +121,6 @@
             {% endif %}
           </div>
         </div>
-        <div class="timeline" aria-label="Bewerbungsstatus">
-          {% for step in steps %}
-            <div class="tl-step {% if forloop.counter0 < r.stage %}done{% elif forloop.counter0 == r.stage %}{% if r.rejected %}rejected{% else %}current{% endif %}{% endif %}">
-              <div class="tl-dot"></div>
-              <div class="tl-label">{% if forloop.counter0 == 3 and r.rejected %}{{ r.label }}{% else %}{{ step }}{% endif %}</div>
-            </div>
-          {% endfor %}
-        </div>
         {% if r.ko_grounds %}
         {% comment %} N2: Nur objektive, vorab veroeffentlichte K.O.-Kriterien
            werden benannt - Ermessens-Absagen bekommen nie eine automatische

@@ -99,8 +99,32 @@ class CandidateFlowWP1TestCase(TestCase):
                                       expiresAt=timezone.now() + timedelta(days=10))
         resp = self.client.get(reverse('ats:candidate_portal', args=["tok-tl"]))
         self.assertEqual(resp.status_code, 200)
-        for step in ["Eingegangen", "In Prüfung", "Eingeladen", "Entscheidung"]:
+        # Die Status-Pipeline (role="img") ist die eine Fortschritts-Anzeige;
+        # die fruehere doppelte Timeline darunter wurde als tote Struktur
+        # entfernt (CSS war schon in P4 geloescht).
+        self.assertContains(resp, 'role="img"')
+        self.assertContains(resp, "Bewerbungsfortschritt: In Prüfung")
+        for step in ["Eingegangen", "In Sichtung", "Gespräch", "Entscheidung"]:
             self.assertContains(resp, step)
+        self.assertNotContains(resp, "tl-step")
+
+    def test_iphone_heic_photo_is_accepted(self):
+        # "Ein Handy-Foto genuegt" muss auch fuer iPhone-Standardformat
+        # gelten: accept-Attribut UND Server-Whitelist erlauben .heic.
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from ..models import Application
+        job = self._job()
+        cv = SimpleUploadedFile("lebenslauf.heic", b"ftypheic-testbytes",
+                                content_type="image/heic")
+        resp = self.client.post(reverse('ats:bewerben', args=[job.id]), {
+            "first_name": "Ida", "last_name": "Phone", "email": "heic@x.de",
+            "cover_letter": "Hallo.", "consent_privacy": "on", "cv_file": cv})
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(Application.objects.filter(
+            applicant__emailHash__isnull=False).exists())
+        app = Application.objects.get()
+        self.assertTrue(app.cvStorageId)
 
     def test_job_detail_easy_language_toggle(self):
         job = self._job(easy="Wir suchen Sie. Die Arbeit ist gut.")

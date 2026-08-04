@@ -66,29 +66,40 @@ def get_ollama_url(endpoint="api/generate"):
     Dynamically determines the Ollama service URL.
     Checks host.docker.internal first (to reach the host from inside the Docker container),
     then falls back to 127.0.0.1 (local execution).
+
+    Der Port kam frueher aus einer festen 11434 - waehrend die Diagnose
+    (`manage.py ai_doctor`) empfahl, "Host/Port via OLLAMA_HOST/OLLAMA_PORT"
+    zu pruefen. Wer dem Rat folgte, aenderte eine Variable, die niemand las.
+    Jetzt gilt OLLAMA_PORT wirklich; OLLAMA_HOST darf wie bei Ollama ueblich
+    auch "rechner:11500" enthalten.
     """
     import socket
 
+    port = (os.environ.get("OLLAMA_PORT") or "").strip()
+    if not port.isdigit():
+        port = "11434"
+
     # Allow override via environment variable
-    env_host = os.environ.get("OLLAMA_HOST")
+    env_host = (os.environ.get("OLLAMA_HOST") or "").strip()
     if env_host:
-        return f"http://{env_host}:11434/{endpoint}"
+        host_part = env_host if ":" in env_host else f"{env_host}:{port}"
+        return f"http://{host_part}/{endpoint}"
 
     for host in ["host.docker.internal", "127.0.0.1"]:
         try:
-            s = socket.create_connection((host, 11434), timeout=2.0)
+            s = socket.create_connection((host, int(port)), timeout=2.0)
             s.close()
-            return f"http://{host}:11434/{endpoint}"
+            return f"http://{host}:{port}/{endpoint}"
         except Exception:
             pass
 
     # Intelligent default fallback: inside a container, host.docker.internal is the host
     try:
         socket.gethostbyname("host.docker.internal")
-        return f"http://host.docker.internal:11434/{endpoint}"
+        return f"http://host.docker.internal:{port}/{endpoint}"
     except Exception:
         pass
-    return f"http://127.0.0.1:11434/{endpoint}"
+    return f"http://127.0.0.1:{port}/{endpoint}"
 
 
 def get_ai_model():
@@ -144,6 +155,7 @@ def evaluate_with_local_gemma(cover_letter, requirements_list, application_id=No
         build_repair_payload,
         coerce_score,
         default_options,
+        tone_applied,
     )
 
     def _setting(key, default=""):
@@ -186,7 +198,13 @@ def evaluate_with_local_gemma(cover_letter, requirements_list, application_id=No
             score = coerce_score(parsed.get("score"))
             rationale = str(parsed.get("rationale", "Automatische Analyse durchgeführt."))[:500]
             log_ai_execution("Bewerbungs-Scoring", get_ai_model(),
-                             res_data.get("total_duration"), True, False, "", bool(tone_key),
+                             res_data.get("total_duration"), True, False, "",
+                             # Ehrlich protokollieren: nur wenn die Tonalitaet
+                             # WIRKLICH als Overlay im Prompt landete. Vorher
+                             # stand hier bool(tone_key) - das Nachweisprotokoll
+                             # behauptete eine aktive Stilvorgabe, obwohl der
+                             # Prompt unveraendert blieb (EU-AI-Act-Nachweis).
+                             tone_applied(tone_key),
                              prompt_used=cover_letter,
                              tokens=res_data.get("eval_count"),
                              params=options, prompt_version=PROMPT_VERSION,
@@ -412,10 +430,21 @@ def gemma_translate_simple_german(request):
         if not text:
             return JsonResponse({'success': False, 'error': 'Kein Text übermittelt.'})
 
+        # Die KI-Zentrale bietet einen pflegbaren Prompt an - inklusive
+        # "Prompt live testen". Der wurde bisher nirgends benutzt: hier stand
+        # ein fest verdrahteter Text. Damit testete der Knopf einen Prompt,
+        # den das System danach nie verwendete (das Gegenstueck
+        # AI_AGG_PROMPT wird sehr wohl gelesen - die Asymmetrie war
+        # unsichtbar). Jetzt gilt der gepflegte Prompt, sonst der Default.
+        _row = SystemSetting.objects.filter(key='AI_EASY_LANGUAGE_PROMPT').first()
+        instruction = ((_row.value.strip() if _row and _row.value else '') or
+                       "Du bist der SecurATS Übersetzer für Leichte Sprache. "
+                       "Übersetze den folgenden Text in Leichte Sprache "
+                       "(barrierefrei, WCAG/BFSG). Verwende kurze Sätze, "
+                       "einfache Wörter, erkläre schwierige Begriffe und "
+                       "verzichte auf Metaphern.")
         prompt = f"""
-        Du bist der SecurATS Übersetzer für Leichte Sprache (basierend auf Gemma).
-        Übersetze den folgenden Text in Leichte Sprache (barrierefrei, WCAG/BFSG compliant).
-        Verwende kurze Sätze, einfache Wörter, erkläre schwierige Begriffe und verzichte auf Metaphern.
+        {instruction}
 
         Text zum Übersetzen:
         {text}
@@ -644,24 +673,21 @@ def save_ai_settings(request):
     """Saves all consolidated AI settings from the KI-Steuerungszentrum form."""
     if request.method == 'POST':
         tone = request.POST.get('AI_TONE', 'EMPATHETIC').strip()
-        lang = request.POST.get('AI_LANGUAGE', 'DE_DU').strip()
         # AI_AUTO_REJECT_ENABLED + AI_THRESHOLD_* entfernt: wurden nur
         # gespeichert, nie durchgesetzt - tote Schalter versprechen
         # Funktionen, die es bewusst nicht gibt (keine automatische
         # KI-Absage; K.O. nur regelbasiert ueber Pflichtkriterien).
-        cv_learning = 'true' if request.POST.get('AI_CV_LEARNING_MODE') == 'on' or request.POST.get('AI_CV_LEARNING_MODE') == 'true' else 'false'
-        agg_check = 'true' if request.POST.get('AI_AGG_CHECK_ENABLED') == 'on' or request.POST.get('AI_AGG_CHECK_ENABLED') == 'true' else 'false'
         agg_prompt = request.POST.get('AI_AGG_PROMPT', '').strip()
-        translate_easy = 'true' if request.POST.get('AI_TRANSLATE_EASY_LANGUAGE') == 'on' or request.POST.get('AI_TRANSLATE_EASY_LANGUAGE') == 'true' else 'false'
         easy_prompt = request.POST.get('AI_EASY_LANGUAGE_PROMPT', '').strip()
 
+        # Das zentrale KI-Opt-in war bisher nur per Shell schaltbar, obwohl es
+        # an vier Stellen wirkt (EU AI Act: Aktivierung ist eine bewusste
+        # Entscheidung - dann muss sie auch im Produkt treffbar sein).
+        scoring_on = '1' if request.POST.get('AI_SCORING_ENABLED') else '0'
         settings_dict = {
+            'AI_SCORING_ENABLED': scoring_on,
             'AI_TONE': tone,
-            'AI_LANGUAGE': lang,
-            'AI_CV_LEARNING_MODE': cv_learning,
-            'AI_AGG_CHECK_ENABLED': agg_check,
             'AI_AGG_PROMPT': agg_prompt,
-            'AI_TRANSLATE_EASY_LANGUAGE': translate_easy,
             'AI_EASY_LANGUAGE_PROMPT': easy_prompt,
         }
 

@@ -71,6 +71,10 @@ MODALS & OVERLAYS
                         <span>Kein Dokument hochgeladen</span>
                     </div>
 
+                    {% comment %} Zeugnisse/Approbation: wurden hochgeladen und
+                       gespeichert, aber von keiner Seite angezeigt. {% endcomment %}
+                    <div id="modal-documents" style="display:none;"></div>
+
                     <!-- Internal Notes & input -->
                     <h3 style="color: #fff; font-size: 16px; margin-top: 24px; margin-bottom: 10px;"><i class="fa-solid fa-comment-medical"></i> Interne Notizen</h3>
                     <div class="recruiter-notes-area" id="modal-notes">
@@ -119,6 +123,15 @@ MODALS & OVERLAYS
                     <a id="modal-btn-history" href="#" class="btn-secondary-cta" style="width: 100%; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 13px; margin-top: 10px; box-sizing: border-box;">
                         <i class="fa-solid fa-clock-rotate-left" style="margin-right: 6px;"></i> Aktionsverlauf ansehen
                     </a>
+                    {% if is_hr_admin %}
+                    {% comment %} Art. 15 DSGVO: Kommt die Anfrage per Brief statt
+                       übers Portal, brauchte HR bisher jemanden mit Server-Zugang.
+                       Bei einem Monat Frist ist das kein Verfahren. {% endcomment %}
+                    <a id="modal-btn-dsar" href="#" download class="btn-secondary-cta" style="width: 100%; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 13px; margin-top: 10px; box-sizing: border-box;"
+                       title="Vollständige Auskunft nach Art. 15 DSGVO als Datei – wird protokolliert">
+                        <i class="fa-solid fa-file-shield" style="margin-right: 6px;"></i> Auskunft (Art. 15 DSGVO)
+                    </a>
+                    {% endif %}
                 </div>
 
             </div>

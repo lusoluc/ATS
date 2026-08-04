@@ -98,17 +98,19 @@ def requisition_chain(facility: "Facility | None" = None,
                       department: "Department | None" = None,
                       job_family: "JobFamily | None" = None) -> list[str]:
     """Genehmigungskette fuer Personalbedarf:
-    Einrichtungs-Kette > globale REQUISITION_CHAIN > Freigabekette der
-    Einrichtung (eine Governance-Wahrheit statt zwei Pflegeorte)."""
+    Regelwerk (Einrichtung/Abteilung/Berufsfeld) > globale REQUISITION_CHAIN >
+    Freigabekette der Einrichtung (eine Governance-Wahrheit statt zwei
+    Pflegeorte)."""
     rule = resolve_requisition_rule(facility, department, job_family)
     if rule and rule.chain.strip():
         return [p.strip() for p in rule.chain.split(",") if p.strip()]
-    raw = ""
-    if facility is not None:
-        raw = (facility.requisitionChain or "").strip()
-    if not raw:
-        setting = SystemSetting.objects.filter(key="REQUISITION_CHAIN").first()
-        raw = (setting.value if setting and setting.value else "")
+    # Frueher lag hier noch Facility.requisitionChain dazwischen - ein dritter
+    # Pfad, den kein Formular beschreiben konnte. Er war damit immer leer und
+    # gaukelte eine Einstellmoeglichkeit vor, die es nie gab. Es bleiben die
+    # beiden gepflegten Wege: Regelwerk je Einrichtung/Abteilung/Berufsfeld
+    # oder die globale Kette.
+    setting = SystemSetting.objects.filter(key="REQUISITION_CHAIN").first()
+    raw = (setting.value if setting and setting.value else "")
     chain = [part.strip() for part in raw.split(",") if part.strip()]
     return chain or approval_chain(facility)
 

@@ -2,7 +2,7 @@
 {% for b in content_blocks %}
   {% if b.type == 'hero' %}
   <div class="card" style="margin-bottom:var(--space-4); padding:0; overflow:hidden;">
-    {% if b.imageUrl %}<img src="{{ b.imageUrl }}" alt="{{ b.imageAlt|default:b.heading }}" style="width:100%; max-height:300px; object-fit:cover; display:block;">{% endif %}
+    {% if b.imageUrl %}<img src="{{ b.imageUrl }}" alt="{{ b.resolved_alt }}" style="width:100%; max-height:300px; object-fit:cover; display:block;">{% endif %}
     <div style="padding:var(--space-5);">
       <h2 style="font-size:26px; margin:0 0 var(--space-2);">{{ b.heading }}</h2>
       {% if b.text %}<p style="font-size:16px; color:var(--text-muted); margin:0; white-space:pre-line;">{{ b.text }}</p>{% endif %}
@@ -47,7 +47,9 @@
 
   {% elif b.type == 'image' %}
   <figure style="margin:0 0 var(--space-4);">
-    <img src="{{ b.url }}" alt="{{ b.caption }}" style="width:100%; border-radius:var(--border-radius-lg); display:block;">
+    {% comment %} alt kam frueher aus der Bildunterschrift: ohne Unterschrift
+       hiess das alt="" – also „reine Deko" fuer Screenreader. {% endcomment %}
+    <img src="{{ b.url }}" alt="{{ b.resolved_alt }}" style="width:100%; border-radius:var(--border-radius-lg); display:block;">
     {% if b.caption %}<figcaption style="font-size:12px; color:var(--text-muted); margin-top:6px;">{{ b.caption }}</figcaption>{% endif %}
   </figure>
 

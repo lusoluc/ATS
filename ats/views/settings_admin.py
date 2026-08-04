@@ -143,10 +143,30 @@ def save_workflow_state(request):
         name = request.POST.get('name', '').strip().lower()
         description = request.POST.get('description', '').strip()
 
+        # "published" und "draft" sind keine gewoehnlichen Namen, sondern der
+        # Schalter fuer die oeffentliche Sichtbarkeit: die ganze Anwendung
+        # vergleicht workflowState__name gegen diese Strings. Wer den
+        # draft-Datensatz auf "published" umbenennt, schaltet SAEMTLICHE
+        # Entwuerfe gleichzeitig online - ohne Entgeltband, ohne genehmigten
+        # Bedarf, mit offenem Freigabe-Ticket. Deshalb sind beide Namen
+        # gesperrt (weder Ziel noch Quelle einer Umbenennung).
+        RESERVED = {'published', 'draft'}
+
         with transaction.atomic():
             if state_id:
                 state = get_object_or_404(WorkflowState, id=state_id)
                 old_name = state.name
+                if old_name != name and (name in RESERVED or old_name in RESERVED):
+                    write_audit('WORKFLOW_STATE_RENAME_BLOCKED',
+                                user=request.user, oldName=old_name, newName=name)
+                    messages.warning(
+                        request,
+                        'Die Zustände „published" und „draft" steuern die '
+                        'öffentliche Sichtbarkeit und lassen sich nicht '
+                        'umbenennen – ein Umbenennen würde alle Entwürfe an '
+                        'den Freigabe- und Entgelt-Gates vorbei '
+                        'veröffentlichen.')
+                    return redirect('ats:process_page')
                 state.name = name
                 state.description = description
                 state.save()
@@ -435,6 +455,24 @@ def archive_pay_band(request, band_id):
     return redirect("ats:pay_bands")
 
 
+def _coordinate(raw, limit=180.0):
+    """Breiten-/Laengengrad aus dem Formular: leer oder Unsinn -> None.
+
+    Werte ausserhalb des gueltigen Bereichs werden verworfen statt gespeichert;
+    eine Koordinate, die auf keinen Punkt der Erde zeigt, waere schlimmer als
+    gar keine - die Umkreissuche rechnete dann mit Unfug. Komma statt Punkt
+    ist erlaubt, weil deutsche Tastaturen es so nahelegen.
+    """
+    text = (raw or "").strip().replace(",", ".")
+    if not text:
+        return None
+    try:
+        value = float(text)
+    except ValueError:
+        return None
+    return value if -limit <= value <= limit else None
+
+
 # --- B14: Standorte ---------------------------------------------------------
 @hr_admin_required
 def locations_view(request):
@@ -446,6 +484,12 @@ def locations_view(request):
                 address=(request.POST.get("address") or "").strip() or None,
                 city=(request.POST.get("city") or "").strip() or None,
                 postalCode=(request.POST.get("postalCode") or "").strip() or None,
+                # Koordinaten waren nur ueber die Demo-Daten zu bekommen. Ohne
+                # sie faellt die Umkreissuche des Job-Alerts still auf
+                # Standort-Gleichheit zurueck (job_alerts.py) - der Nutzer
+                # stellt 50 km ein und bekommt trotzdem nur einen Ort.
+                lat=_coordinate(request.POST.get("lat"), 90.0),
+                lng=_coordinate(request.POST.get("lng"), 180.0),
             )
         return redirect("ats:locations")
     locations = Location.objects.filter(archived=False).order_by("name")

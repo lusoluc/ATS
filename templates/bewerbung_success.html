@@ -57,12 +57,26 @@
         <i class="fa-solid fa-check"></i>
     </div>
     
+    {% if ko_rejected %}
+    {% comment %} Ehrlich bleiben: Wer an einem vorab veröffentlichten
+       Pflichtkriterium scheitert, ist bereits abgelehnt – dann darf hier
+       nicht „wir prüfen Ihre Unterlagen“ stehen. {% endcomment %}
+    <h1 class="success-title">Bewerbung eingegangen – und direkt geprüft</h1>
+    <p class="success-desc">
+        Vielen Dank für Ihre Bewerbung auf die Position <strong>{{ job.title }}</strong>.
+        Diese Stelle setzt Voraussetzungen, die laut Ihren Angaben nicht erfüllt sind –
+        deshalb können wir Ihre Bewerbung diesmal leider nicht berücksichtigen.
+        Welche Voraussetzung das war, steht in Ihrer E-Mail und in Ihrem
+        Bewerbungsportal. Ändert sich das, freuen wir uns über eine neue Bewerbung.
+    </p>
+    {% else %}
     <h1 class="success-title">Bewerbung eingegangen!</h1>
     <p class="success-desc">
-        Vielen Dank für Ihre Bewerbung auf die Position <strong>{{ job.title }}</strong> bei SecurATS. 
-        Ihre Daten wurden sicher verschlüsselt und erfolgreich in unser System übertragen. 
+        Vielen Dank für Ihre Bewerbung auf die Position <strong>{{ job.title }}</strong>.
+        Ihre Daten wurden sicher verschlüsselt und erfolgreich in unser System übertragen.
         Unser Recruiting-Team wird Ihre Unterlagen schnellstmöglich prüfen. Sie erhalten in Kürze eine Bestätigung per E-Mail.
     </p>
+    {% endif %}
 
     <div class="success-actions">
         <a href="{% url 'ats:job_list' %}" class="btn-cta">

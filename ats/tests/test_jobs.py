@@ -899,3 +899,38 @@ class PublishChoiceTestCase(TestCase):
         self._post(workflow_state=str(draft.id), publish_choice="1", publish_now="1")
         job = JobPosting.objects.get(title="Pflegefachkraft (m/w/d)")
         self.assertEqual(job.workflowState.name, "draft")
+
+
+class WorkflowStateRenameGuardTestCase(TestCase):
+    """U1: "published"/"draft" sind der Sichtbarkeits-Schalter der ganzen
+    Anwendung - ein Umbenennen haette SAEMTLICHE Entwuerfe an allen Gates
+    vorbei veroeffentlicht."""
+
+    def setUp(self):
+        from ..models import WorkflowState
+        self.draft, _ = WorkflowState.objects.get_or_create(name="draft")
+        self.published, _ = WorkflowState.objects.get_or_create(name="published")
+        self.own, _ = WorkflowState.objects.get_or_create(name="wiedervorlage")
+        self.client.force_login(make_user("ws-admin", role="HR-Admin"))
+
+    def _rename(self, state, new_name):
+        return self.client.post(reverse('ats:save_workflow_state'), data={
+            "state_id": str(state.id), "name": new_name, "description": "x"})
+
+    def test_draft_cannot_be_renamed_to_published(self):
+        from ..models import AuditLog
+        self._rename(self.draft, "published")
+        self.draft.refresh_from_db()
+        self.assertEqual(self.draft.name, "draft")
+        self.assertTrue(AuditLog.objects.filter(
+            action='WORKFLOW_STATE_RENAME_BLOCKED').exists())
+
+    def test_published_cannot_be_renamed_away(self):
+        self._rename(self.published, "oeffentlich")
+        self.published.refresh_from_db()
+        self.assertEqual(self.published.name, "published")
+
+    def test_own_state_can_still_be_renamed(self):
+        self._rename(self.own, "wiedervorlage-2")
+        self.own.refresh_from_db()
+        self.assertEqual(self.own.name, "wiedervorlage-2")

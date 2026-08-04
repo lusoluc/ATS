@@ -45,6 +45,8 @@ unbemerkt wiederholen. Sie stehen in `ats/tests/test_guardrails.py`.
 | `GuardrailFormLabelTestCase` | sichtbare Formularfelder der Bewerberstrecke ohne `label`/`aria-label` (WCAG 3.3.2) | B-Nachtrag |
 | `GuardrailStandaloneTemplateTestCase` | Standalone-Templates ohne A11y-Fundament (`lang`, Skip-Link, `:focus-visible`) — die Fehlerklasse, durch die das Portal monatelang ohne Panel/Fokus war | B-Nachtrag |
 | `GuardrailConsistentHelpTestCase` | Seiten ohne konsistenten Hilfe-Weg (Barrierefreiheitserklärung, KI-Transparenz) — auch in Standalone-Templates (WCAG 2.2 / 3.2.6) | C2 |
+| `GuardrailNoDeadSettingsTestCase` | Bedienelement für eine Einstellung, die niemand liest — ein Versprechen ohne Funktion | U2 |
+| `GuardrailNoOrphanRouteTestCase` | fertige Seite, zu der kein Link führt. Die häufigste Fehlerklasse des Projekts: gebaut, geschützt, getestet — und für niemanden erreichbar. Reine Maschinen-Endpunkte (Monitoring, Jobbörsen-Feeds) stehen in einer begründeten Allowlist | U3 |
 
 **Wenn ein Wächter fehlschlägt:** Das ist ein *Feature*, kein Ärgernis. Nicht die
 Whitelist blind erweitern – erst prüfen, ob der neue Code wirklich so sein soll:

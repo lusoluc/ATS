@@ -89,7 +89,17 @@ if db_url.startswith('file:'):
     if not os.path.isabs(db_path):
         db_path = str(BASE_DIR / db_path)
 else:
-    db_path = str(BASE_DIR / 'dev.db')
+    # Frueher fiel alles, was nicht mit 'file:' begann, still auf dev.db
+    # zurueck. Wer DATABASE_URL=postgres://... setzte, bekam kommentarlos die
+    # lokale SQLite-Datei - und merkte es erst, wenn Daten fehlten. Die
+    # PostgreSQL-Verbindung wird ueber POSTGRES_HOST/-DB/-USER/-PASSWORD
+    # konfiguriert; eine abweichende DATABASE_URL ist ein Irrtum und wird
+    # als solcher gemeldet statt verschluckt.
+    raise ImproperlyConfigured(
+        f"DATABASE_URL={db_url!r} wird nicht ausgewertet. SecurATS verbindet "
+        "sich ueber POSTGRES_HOST/POSTGRES_PORT/POSTGRES_DB/POSTGRES_USER/"
+        "POSTGRES_PASSWORD (siehe .env.example). Fuer die lokale Entwicklung "
+        "ist nur 'file:<pfad>' zulaessig.")
 
 # DATENBANK — PostgreSQL ist die einzige unterstuetzte Produktions-Datenbank.
 #

@@ -28,7 +28,8 @@ class Command(BaseCommand):
         except Exception as e:
             self.stdout.write(self.style.ERROR(
                 f"✗ Ollama nicht erreichbar: {e}\n"
-                "  → Läuft der Dienst? 'ollama serve'. Host/Port via OLLAMA_HOST/OLLAMA_PORT prüfen."))
+                "  → Läuft der Dienst? 'ollama serve'. Host/Port via OLLAMA_HOST "
+                "(auch 'rechner:11500') bzw. OLLAMA_PORT setzen."))
             return
 
         installed = [m.get("name", "") for m in tags.get("models", [])]

@@ -60,19 +60,18 @@ def _safe_next_url(request):
 def seed_data_if_empty():
     """Seeds the SQLite database with fully functional mock data if it is empty."""
     # Ensure all AI global settings exist (even if organization exists)
+    # PRIMARY_COLOR/FOOTER_TEXT sind hier ersatzlos entfallen: Sie wurden
+    # angelegt, aber von keiner Zeile gelesen. Das Erscheinungsbild kommt aus
+    # den Branding-Feldern der Organisation (brandPrimary/brandAccent/...),
+    # die eine eigene Seite haben. Zwei Pflegeorte, von denen einer nichts
+    # bewirkt, sind schlimmer als einer.
     ai_defaults = {
         "COMPANY_NAME": "SecurATS GmbH",
-        "PRIMARY_COLOR": "#8b5cf6",
         "SUPPORT_EMAIL": "support@securats.de",
-        "FOOTER_TEXT": "© 2026 SecurATS. Datensouveränes Recruiting.",
         "AI_TONE": "EMPATHETIC",
-        "AI_LANGUAGE": "DE_DU",
         # AI_AUTO_REJECT_ENABLED / AI_THRESHOLD_* bewusst entfernt: die
         # Schalter wurden nie durchgesetzt (keine automatische KI-Absage).
-        "AI_CV_LEARNING_MODE": "true",
-        "AI_AGG_CHECK_ENABLED": "true",
         "AI_AGG_PROMPT": "Prüfe den folgenden Text auf Diskriminierung (Alter, Geschlecht, Herkunft, Religion) nach dem deutschen AGG. Zeige kritische Stellen auf und mache neutrale Formulierungsvorschläge.",
-        "AI_TRANSLATE_EASY_LANGUAGE": "true",
         "AI_EASY_LANGUAGE_PROMPT": "Übersetze den folgenden Text in leichte Sprache (A2/B1 Niveau). Nutze kurze Sätze, vermeide Fachwörter und verwende aktive Verben.",
         "AI_MODEL": "gemma:2b"
     }
@@ -366,11 +365,9 @@ Gegründet im Herzen von Berlin, ist SecurATS ein führender Anbieter von datens
 
         # 15. Seed SystemSettings and EmailTemplates
         from ..models import EmailTemplate
-        if not SystemSetting.objects.exists():
-            SystemSetting.objects.create(key="COMPANY_NAME", value="SecurATS GmbH")
-            SystemSetting.objects.create(key="PRIMARY_COLOR", value="#8b5cf6")
-            SystemSetting.objects.create(key="SUPPORT_EMAIL", value="support@securats.de")
-            SystemSetting.objects.create(key="FOOTER_TEXT", value="© 2026 SecurATS. Datensouveränes Recruiting.")
+        # Die Grundeinstellungen legt bereits der Block am Anfang dieser
+        # Funktion an (ai_defaults, get_or_create). Der zweite Block hier war
+        # eine Dublette - und legte zusaetzlich die toten Schluessel an.
 
         if not EmailTemplate.objects.exists():
             EmailTemplate.objects.create(

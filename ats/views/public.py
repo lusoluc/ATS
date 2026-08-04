@@ -13,7 +13,7 @@ import uuid
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.db import transaction
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -44,7 +44,7 @@ from .common import _remember_campaign_src, campaign_expired, exclude_filled, se
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["home", "job_list", "job_detail", "bewerben", "candidate_portal", "page_detail", "facility_profile", "landing_page", "job_alert_subscribe", "job_alert_confirm", "job_alert_manage", "pricing_view", "healthz", "ai_transparency", "accessibility_statement"]
+__all__ = ["home", "job_list", "job_detail", "bewerben", "candidate_portal", "candidate_data_export", "page_detail", "facility_profile", "landing_page", "job_alert_subscribe", "job_alert_confirm", "job_alert_manage", "pricing_view", "healthz", "ai_transparency", "accessibility_statement"]
 
 
 def home(request):
@@ -318,9 +318,14 @@ def bewerben(request, job_id):
             # § 164 SGB IX: freiwillige Angabe (Art. 9 -> verschluesselt,
             # nur bei ausdruecklichem Ankreuzen, nie Scoring-Eingabe).
             disability_disclosed = request.POST.get('disability_disclosure') == 'on'
+            # Art. 7 Abs. 1 DSGVO: Es muss belegbar sein, WORIN eingewilligt
+            # wurde. Das Feld existierte seit der ersten Migration, wurde aber
+            # von keiner Bewerbung befuellt - der Nachweis fehlte still.
+            from ..dsgvo import active_privacy_notice
             application = Application.objects.create(
                 applicant=applicant,
                 jobPosting=job,
+                privacyNoticeVersion=active_privacy_notice(),
                 cvStorageId=cv_storage_path,
                 coverLetterTxt=cover_letter,
                 screeningAnswersJson=answers_dict,
@@ -422,6 +427,23 @@ def bewerben(request, job_id):
             # (Platzhalter {name}, {stelle}, {firma}, {portal}); sonst
             # freundlicher Standardtext.
             # Ein Mailfehler darf die Bewerbung NIE scheitern lassen.
+            # K.O.-Absage: Wer an einem Pflichtkriterium scheitert, ist bereits
+            # abgelehnt - dann darf NICHT die Eingangsbestaetigung "wir melden
+            # uns nach der Sichtung" rausgehen. Stattdessen die echte Absage
+            # mit der objektiven Begruendung (N2), ueber denselben Weg wie
+            # jede andere Absage (genau eine Zustellung, auditiert).
+            if ko_failed:
+                try:
+                    from .applications import _send_rejection_notice
+                    _send_rejection_notice(request, application)
+                except Exception:
+                    logger.exception(
+                        'K.O.-Absage fuer Bewerbung %s fehlgeschlagen',
+                        application.id)
+                return render(request, 'bewerbung_success.html',
+                              {'job': job, 'nav_pages': nav_pages,
+                               'portal_url': portal_url, 'ko_rejected': True})
+
             try:
                 from django.core.mail import send_mail
 
@@ -431,14 +453,19 @@ def bewerben(request, job_id):
                 tpl = (EmailTemplate.objects
                        .filter(name__icontains='eingangsbest').first())
                 if tpl:
-                    body = (tpl.textContent or tpl.htmlContent or '')
-                    subject = (tpl.subject or 'Ihre Bewerbung ist eingegangen')
-                    for k, v in (('{name}', applicant.firstName or ''),
-                                 ('{stelle}', job.title),
-                                 ('{firma}', company),
-                                 ('{portal}', portal_url)):
-                        body = body.replace(k, v)
-                        subject = subject.replace(k, v)
+                    # Eine Wahrheit fuer Platzhalter (beide Syntaxen) und
+                    # HTML-Abbau - vorher gingen "[[COMPANY_NAME]]" und
+                    # "<h3>"-Tags woertlich an die Bewerbenden.
+                    from ..mailing import render_email
+                    subject, body = render_email(
+                        tpl, first_name=applicant.firstName or '',
+                        last_name=applicant.lastName or '',
+                        job_title=job.title, company=company,
+                        portal_url=portal_url)
+                    subject = subject or 'Ihre Bewerbung ist eingegangen'
+                    if portal_url not in body:
+                        body += (f"\n\nIhren Bewerbungsstatus sehen Sie "
+                                 f"jederzeit hier:\n{portal_url}")
                 else:
                     subject = f'Ihre Bewerbung ist eingegangen – {job.title}'
                     body = (
@@ -867,6 +894,32 @@ def candidate_portal(request, token):
         'has_active_application': any(
             a.status not in ('REJECTED', 'WITHDRAWN') for a in applications),
     })
+
+
+def candidate_data_export(request, token):
+    """Art. 15/20 DSGVO als Selbstbedienung im Bewerberportal.
+
+    Der Export existierte bisher nur als Management-Befehl – erreichbar
+    ausschliesslich mit Server-Zugang. Bewerbende mussten ihre Auskunft per
+    Mail erbitten, jemand musste sie von Hand zusammenstellen, und die
+    Monatsfrist aus Art. 12 Abs. 3 lief derweil. Derselbe Rechenkern haengt
+    jetzt an einem Knopf.
+
+    Der Magic-Link-Token ist der Berechtigungsnachweis: nur wer ihn hat,
+    bekommt die Daten der zugehoerigen Person – und nur diese.
+    """
+    tok = ApplicantToken.objects.filter(token=token).select_related('applicant').first()
+    if tok is None or tok.expiresAt < timezone.now():
+        raise Http404("Ungültiger oder abgelaufener Link.")
+    from ..dsgvo import build_applicant_export
+    data = build_applicant_export(tok.applicant)
+    # Jede Auskunft wird protokolliert – der Nachweis, dass und wann sie
+    # erteilt wurde, ist Teil der Rechenschaftspflicht (Art. 5 Abs. 2).
+    write_audit('DATA_EXPORT', via='portal', subject=str(tok.applicant.id))
+    payload = json.dumps(data, ensure_ascii=False, indent=2)
+    resp = HttpResponse(payload, content_type='application/json; charset=utf-8')
+    resp['Content-Disposition'] = 'attachment; filename="meine-daten.json"'
+    return resp
 
 
 # --- N3: KI-Transparenz (Art. 86 EU AI Act) ----------------------------------

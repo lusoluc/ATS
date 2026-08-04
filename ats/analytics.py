@@ -158,8 +158,13 @@ def location_benchmark(apps_qs):
 def cost_per_hire(apps_qs, source_costs: dict):
     """Kosten pro Einstellung je Quelle.
 
-    source_costs: {'STEPSTONE': 1200.0, ...} – gepflegt über SystemSetting
-    `SOURCE_COST_<QUELLE>` (Monats-/Periodenkosten des Kanals).
+    source_costs: {'STEPSTONE': 1200.0, ...} – gepflegt auf der Seite
+    „Kanäle & Kosten" (SourceChannel.costAmount), Monats-/Periodenkosten
+    des Kanals.
+
+    Früher stand hier zusätzlich ein SystemSetting `SOURCE_COST_<QUELLE>`.
+    Es wurde ausgewertet, hatte aber kein Bedienelement – zwei Pflegeorte,
+    von denen einer unsichtbar war und den anderen still überschrieb.
     """
     rows = []
     for source, cost in sorted(source_costs.items()):

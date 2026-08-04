@@ -17,6 +17,7 @@ urlpatterns = [
     path('jobs/<uuid:job_id>/', views.job_detail, name='job_detail'),
     path('jobs/<uuid:job_id>/bewerben/', views.bewerben, name='bewerben'),
     path('bewerber/<str:token>/', views.candidate_portal, name='candidate_portal'),  # B4 Magic-Link
+    path('bewerber/<str:token>/meine-daten.json', views.candidate_data_export, name='candidate_data_export'),  # Art. 15/20
     path('ki-transparenz/', views.ai_transparency, name='ai_transparency'),  # N3 Art. 86 EU AI Act
     path('barrierefreiheit/', views.accessibility_statement, name='accessibility_statement'),  # B7 BFSG
 
@@ -118,6 +119,7 @@ urlpatterns = [
     path('recruiter/applications/<uuid:app_id>/messages/', views.application_messages, name='application_messages'),  # B6
     path('recruiter/applications/<uuid:app_id>/draft-reply/', views.draft_reply, name='draft_reply'),  # C4
     path('recruiter/applications/<uuid:app_id>/steckbrief.json', views.application_summary, name='application_summary'),  # L2
+    path('recruiter/applications/<uuid:app_id>/auskunft.json', views.applicant_data_export, name='applicant_data_export'),  # Art. 15
     path('recruiter/postfach/', views.inbox_view, name='inbox'),  # Sammel-Postfach
     path('recruiter/postfach/sammel-antwort/', views.batch_reply, name='batch_reply'),
     path('recruiter/postfach/baustein-speichern/', views.save_reply_snippet, name='save_reply_snippet'),

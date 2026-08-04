@@ -509,3 +509,52 @@ class SettingsAdminCoverageTestCase(TestCase):
         for name in ('categories', 'locations', 'contacts'):
             r = self.client.get(reverse(f'ats:{name}'))
             self.assertEqual(r.status_code, 200, f"{name} lädt nicht")
+
+
+class EmailTemplateRenderingTestCase(TestCase):
+    """U2: Vorlagen-Platzhalter kommen NIE roh bei Bewerbenden an.
+
+    Gefunden im Durchgang: Die mitgelieferten Vorlagen schreiben
+    [[COMPANY_NAME]]/[[FIRST_NAME]], die Versandpfade ersetzten nur
+    {name}/{stelle}/{firma}. Ergebnis war "Bewerbungseingang bei
+    [[COMPANY_NAME]]" plus rohes HTML als Klartext.
+    """
+
+    def test_both_syntaxes_are_replaced(self):
+        from ..mailing import render_template
+        out = render_template(
+            "Hallo [[FIRST_NAME]] [[LAST_NAME]], Stelle: {stelle} bei [[COMPANY_NAME]].",
+            first_name="Ida", last_name="Sund", job_title="Pflegekraft",
+            company="Klinik Nord")
+        self.assertEqual(
+            out, "Hallo Ida Sund, Stelle: Pflegekraft bei Klinik Nord.")
+
+    def test_unknown_placeholders_are_removed_not_sent(self):
+        from ..mailing import render_template
+        out = render_template("Hallo [[UNBEKANNT]], hier {mystery}!",
+                              first_name="Ida")
+        self.assertNotIn("[[", out)
+        self.assertNotIn("{", out)
+
+    def test_html_becomes_readable_text(self):
+        from ..mailing import html_to_text
+        out = html_to_text("<h3>Hallo Ida,</h3><p>Punkt eins.<br/>Zeile zwei.</p>")
+        self.assertNotIn("<", out)
+        self.assertIn("Hallo Ida,", out)
+        self.assertIn("Zeile zwei.", out)
+
+    def test_seeded_templates_render_clean(self):
+        """Die ausgelieferten Vorlagen selbst - der eigentliche Fund."""
+        from ..models import EmailTemplate
+        from ..views.common import seed_data_if_empty
+        with self.settings(DEMO_MODE=True):
+            seed_data_if_empty()
+        from ..mailing import render_email
+        for tpl in EmailTemplate.objects.all():
+            subject, body = render_email(
+                tpl, first_name="Ida", last_name="Sund",
+                job_title="Pflegekraft", company="Klinik Nord",
+                portal_url="https://x/portal")
+            for raw in ("[[", "{firma}", "{name}", "<h3", "<p>"):
+                self.assertNotIn(raw, subject, f"Betreff von {tpl.name}")
+                self.assertNotIn(raw, body, f"Text von {tpl.name}")

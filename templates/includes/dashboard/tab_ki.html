@@ -104,14 +104,6 @@
                                         </select>
                                         <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">Dies beeinflusst, wie die KI E-Mails formuliert und im Chat mit Bewerbern interagiert.</span>
                                     </div>
-                                    <div class="form-group">
-                                        <label class="form-label" style="font-weight: 600; color: #e5e7eb;">Ansprache</label>
-                                        <select name="AI_LANGUAGE" class="form-input" style="background: rgba(0,0,0,0.3); color: #fff; border-color: var(--glass-border);">
-                                            <option value="DE_SIE" {% if ai_settings.AI_LANGUAGE == 'DE_SIE' %}selected{% endif %}>Deutsch (Siezen)</option>
-                                            <option value="DE_DU" {% if ai_settings.AI_LANGUAGE == 'DE_DU' %}selected{% endif %}>Deutsch (Duzen - Modern)</option>
-                                            <option value="EN" {% if ai_settings.AI_LANGUAGE == 'EN' %}selected{% endif %}>Englisch (International)</option>
-                                        </select>
-                                    </div>
                                 </div>
                             </div>
 
@@ -131,8 +123,26 @@
                                     vorab veröffentlichten K.O.-Pflichtkriterien (regelbasiert, mit
                                     Begründung an die Bewerbenden).
                                 </p>
+                                {% comment %} Der Schalter für die KI-Vorbewertung
+                                   war bislang NUR per Shell setzbar – die Seite
+                                   verwies für „das Scoring“ auf Lernendes Scoring,
+                                   das einen anderen Schalter steuert. {% endcomment %}
+                                <div class="form-group" style="display: flex; align-items: flex-start; gap: 10px; margin: 0 0 10px;">
+                                    <input type="checkbox" name="AI_SCORING_ENABLED" id="ai-scoring-check" value="1"
+                                           style="width: 24px; height: 24px; cursor: pointer; flex-shrink: 0;"
+                                           {% if ai_settings.AI_SCORING_ENABLED == '1' %}checked{% endif %}>
+                                    <label for="ai-scoring-check" style="font-weight: 600; color: #fff; cursor: pointer; margin-bottom: 0;">
+                                        KI-Vorbewertung (A–D) aktivieren
+                                        <span style="display:block; font-weight:400; font-size:12px; color: var(--text-muted); margin-top:2px;">
+                                            Standard: aus. Eingehende Bewerbungen erhalten dann eine lokal
+                                            berechnete Einordnung mit Begründung – als Lesehilfe, nie als
+                                            Entscheidung. Die Angabe zur Schwerbehinderung fließt nie ein.
+                                        </span>
+                                    </label>
+                                </div>
                                 <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 0;">
-                                    Das Scoring selbst wird auf der Seite <a href="{% url 'ats:learned_scoring' %}" style="color: var(--accent-light);">Lernendes Scoring</a>
+                                    Das <strong>lernende</strong> Scoring (aus den eigenen Entscheidungen) ist etwas anderes und
+                                    wird auf der Seite <a href="{% url 'ats:learned_scoring' %}" style="color: var(--accent-light);">Lernendes Scoring</a>
                                     verwaltet (Opt-in, Rechtsgutachten + BR-Zustimmung erforderlich).
                                 </p>
                             </div>
@@ -168,11 +178,30 @@
                                     </div>
                                 </div>
 
-                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 0;">
-                                    <input type="checkbox" name="AI_CV_LEARNING_MODE" id="ai-cv-learning-check" style="width: 18px; height: 18px; cursor: pointer;" {% if ai_settings.AI_CV_LEARNING_MODE == 'true' %}checked{% endif %}>
-                                    <label for="ai-cv-learning-check" style="font-weight: 600; color: #fff; cursor: pointer; margin-bottom: 0;">Kontinuierliches Lernen aktivieren</label>
+                                {% comment %} Der Schalter „Kontinuierliches Lernen“
+                                   versprach, die KI lerne automatisch aus
+                                   Statuswechseln – solchen Code gibt es nicht.
+                                   Entfernt statt beschönigt. Was wirklich lernt,
+                                   steht unter „Lernendes Scoring“. {% endcomment %}
+
+                                {% comment %} Man konnte Profile anlegen, aber nirgends
+                                   sehen oder löschen – die Löschansicht existierte nur
+                                   als JSON-Route. Ohne sie ist Art. 17 DSGVO nicht
+                                   bedienbar. {% endcomment %}
+                                <div style="margin-top: 20px;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                                        <h5 style="color: #fff; font-size: 14px; margin: 0;">Gespeicherte Profile</h5>
+                                        <button type="button" class="btn-search" id="btn-load-bp"
+                                                style="padding: 4px 10px; height: auto; font-size: 11px; border-radius: var(--border-radius-sm);"
+                                                onclick="loadBestPerformerProfiles()">
+                                            <i class="fa-solid fa-rotate"></i> Anzeigen
+                                        </button>
+                                    </div>
+                                    <p style="font-size: 12px; color: var(--text-muted); margin: 6px 0 0;">
+                                        Löschen entfernt den Vektor sofort und wird protokolliert (Art. 17 DSGVO).
+                                    </p>
+                                    <div id="bp-profiles-list" style="margin-top: 12px;" aria-live="polite"></div>
                                 </div>
-                                <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px; margin-left: 28px; margin-bottom: 0;">Wenn aktiviert, lernt die KI automatisch aus Bewerbungen, die von HR in die Spalte "Vertragsangebot" verschoben werden.</p>
                             </div>
 
                             <!-- 4. Text-Assistenz & Compliance -->
@@ -181,12 +210,11 @@
                                 <div style="display: flex; flex-direction: column; gap: 24px;">
                                     <div>
                                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                                            <input type="checkbox" name="AI_AGG_CHECK_ENABLED" id="ai-agg-check-enabled" style="width: 18px; height: 18px; cursor: pointer;" {% if ai_settings.AI_AGG_CHECK_ENABLED == 'true' %}checked{% endif %} onchange="togglePromptTextarea('ai-agg-check-enabled', 'ai-agg-prompt-container')">
-                                            <label for="ai-agg-check-enabled" style="font-weight: 600; color: #fff; cursor: pointer; margin-bottom: 0;">AGG-Check in Stellenangeboten aktivieren</label>
+                                            <label style="font-weight: 600; color: #fff; margin-bottom: 0;">AGG-Check im Stellen-Editor</label>
                                         </div>
-                                        <p style="font-size: 12px; color: var(--text-muted); margin-left: 28px; margin-bottom: 0;">Schaltet im Job-Editor einen Button frei, mit dem Recruiter den Jobtext manuell von der KI auf Diskriminierung prüfen lassen können.</p>
+                                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 0;">Der Knopf steht im Stellen-Editor immer zur Verfügung. Hier legen Sie fest, wonach die KI dabei sucht:</p>
                                         
-                                        <div id="ai-agg-prompt-container" style="margin-left: 28px; margin-top: 12px; {% if ai_settings.AI_AGG_CHECK_ENABLED != 'true' %}display: none;{% endif %}">
+                                        <div id="ai-agg-prompt-container" style="margin-left: 28px; margin-top: 12px; ">
                                             <label class="form-label" style="font-size: 12px; font-weight: 600; color: #e5e7eb; margin-bottom: 6px;">AGG-Prüfungs-Regelwerk (Prompt):</label>
                                             <textarea id="ai-agg-prompt-input" name="AI_AGG_PROMPT" class="form-textarea" rows="3" style="background: rgba(0,0,0,0.3); color: #fff; border-color: var(--glass-border);">{{ ai_settings.AI_AGG_PROMPT }}</textarea>
                                             
@@ -207,12 +235,11 @@
 
                                     <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
                                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                                            <input type="checkbox" name="AI_TRANSLATE_EASY_LANGUAGE" id="ai-translate-easy-enabled" style="width: 18px; height: 18px; cursor: pointer;" {% if ai_settings.AI_TRANSLATE_EASY_LANGUAGE == 'true' %}checked{% endif %} onchange="togglePromptTextarea('ai-translate-easy-enabled', 'ai-easy-prompt-container')">
-                                            <label for="ai-translate-easy-enabled" style="font-weight: 600; color: #fff; cursor: pointer; margin-bottom: 0;">"Leichte Sprache" Übersetzer aktivieren</label>
+                                            <label style="font-weight: 600; color: #fff; margin-bottom: 0;">Übersetzer für Leichte Sprache</label>
                                         </div>
-                                        <p style="font-size: 12px; color: var(--text-muted); margin-left: 28px; margin-bottom: 0;">Schaltet einen Button im Job-Editor frei, mit dem Texte auf Knopfdruck in barrierefreie Sprache übersetzt werden.</p>
+                                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 0;">Der Knopf steht im Stellen-Editor und im CMS immer zur Verfügung. Dieser Prompt steuert die Übersetzung:</p>
                                         
-                                        <div id="ai-easy-prompt-container" style="margin-left: 28px; margin-top: 12px; {% if ai_settings.AI_TRANSLATE_EASY_LANGUAGE != 'true' %}display: none;{% endif %}">
+                                        <div id="ai-easy-prompt-container" style="margin-left: 28px; margin-top: 12px; ">
                                             <label class="form-label" style="font-size: 12px; font-weight: 600; color: #e5e7eb; margin-bottom: 6px;">Übersetzungs-Regelwerk (Prompt):</label>
                                             <textarea id="ai-easy-prompt-input" name="AI_EASY_LANGUAGE_PROMPT" class="form-textarea" rows="3" style="background: rgba(0,0,0,0.3); color: #fff; border-color: var(--glass-border);">{{ ai_settings.AI_EASY_LANGUAGE_PROMPT }}</textarea>
                                             

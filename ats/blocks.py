@@ -60,6 +60,11 @@ BLOCK_TYPES: dict[str, dict[str, Any]] = {
         "fields": [
             ("url", "url", "Bild-URL"),
             ("caption", "text", "Bildunterschrift (optional)"),
+            # WCAG 1.1.1: Der Block rendert bisher alt="{{ caption }}". Ohne
+            # Bildunterschrift stand da alt="" - das erklaert Screenreadern,
+            # das Bild sei reine Deko. Eigenes Feld, Fallback ueber die
+            # Mediathek (siehe enrich_blocks).
+            ("alt", "text", "Bild-Beschreibung / Alt-Text"),
         ]},
     "contact": {
         "label": "Ansprechperson",
@@ -126,13 +131,46 @@ def load_blocks(obj: Any) -> list[dict[str, Any]]:
         return []
 
 
+def _media_alt_index(blocks: list[dict[str, Any]]) -> dict[str, str]:
+    """{Datei-URL: Alt-Text} fuer die in diesen Bloecken benutzten Medien.
+
+    Nur die tatsaechlich referenzierten URLs werden aufgeloest - eine grosse
+    Mediathek soll keine Seite ausbremsen.
+    """
+    from .models import MediaAsset
+    wanted = {
+        (b.get("imageUrl") if b.get("type") == "hero" else b.get("url")) or ""
+        for b in blocks if b.get("type") in ("hero", "image")
+    } - {""}
+    if not wanted:
+        return {}
+    index: dict[str, str] = {}
+    for asset in MediaAsset.objects.exclude(altText=""):
+        try:
+            url = asset.file.url
+        except (ValueError, AttributeError):
+            continue
+        if url in wanted:
+            index[url] = asset.altText
+    return index
+
+
 def enrich_blocks(blocks: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Datenbedarf aufloesen: Ansprechpersonen-Objekt, Stellen-Liste.
     Mutiert Kopien – Templates rendern nur, holen nichts selbst."""
     from .models import ContactPerson, JobPosting
     enriched: list[dict[str, Any]] = []
+    media_alts = _media_alt_index(blocks)
     for b in blocks:
         b = dict(b)
+        # WCAG 1.1.1: Die Mediathek verlangt beim Hochladen einen Alt-Text -
+        # und benutzte ihn nie wieder. Wer ein Bild aus der Mediathek in einen
+        # Block setzt, erbt ihn jetzt, statt ihn ein zweites Mal zu tippen.
+        if b["type"] in ("hero", "image"):
+            url = b.get("imageUrl") if b["type"] == "hero" else b.get("url")
+            own = b.get("imageAlt") if b["type"] == "hero" else b.get("alt")
+            b["resolved_alt"] = (own or media_alts.get(url or "")
+                                 or b.get("heading") or b.get("caption") or "")
         if b["type"] == "contact" and b.get("contactPersonId"):
             b["person"] = ContactPerson.objects.filter(
                 id=b["contactPersonId"]).first()

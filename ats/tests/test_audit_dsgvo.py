@@ -144,7 +144,9 @@ class DsgvoExportTestCase(TestCase):
         self.assertEqual(data["betroffene_person"]["vorname"], "Aylin")  # entschlüsselt
         self.assertEqual(len(data["bewerbungen"]), 1)
         self.assertEqual(data["bewerbungen"][0]["anschreiben"], "Mein Anschreiben")
-        self.assertIn("zeugnis.pdf", data["bewerbungen"][0]["nachweise"])
+        # U4: Nachweise tragen jetzt Art und Hochladedatum, nicht nur den Namen
+        self.assertIn("zeugnis.pdf",
+                      [d["name"] for d in data["bewerbungen"][0]["nachweise"]])
         self.assertTrue(any(e["action"] == "READ_CV" for e in data["zugriffsprotokoll"]))
         # interne Vermerke dürfen NICHT im Export erscheinen
         import json as _j

@@ -11,20 +11,31 @@
       <input name="address" class="input" placeholder="Adresse" style="flex:2;">
       <input name="postalCode" class="input" placeholder="PLZ" style="max-width:110px;">
       <input name="city" class="input" placeholder="Stadt">
+      {% comment %} Ohne Koordinaten fällt die Umkreissuche des Job-Alerts still
+         auf „gleicher Standort" zurück – pflegbar waren sie bisher nirgends. {% endcomment %}
+      <label class="sr-only" for="loc-lat">Breitengrad</label>
+      <input name="lat" id="loc-lat" class="input" placeholder="Breite (z. B. 53.5511)" style="max-width:150px;" inputmode="decimal">
+      <label class="sr-only" for="loc-lng">Längengrad</label>
+      <input name="lng" id="loc-lng" class="input" placeholder="Länge (z. B. 9.9937)" style="max-width:150px;" inputmode="decimal">
       <button type="submit" class="btn btn-primary">Hinzufügen</button>
     </form>
+    <p style="font-size:12px; color:var(--text-muted); margin:0 0 var(--space-4);">
+      Breite und Länge sind freiwillig. Ohne sie funktioniert der Job-Alert nur
+      für exakt denselben Standort, nicht für „im Umkreis von X km".
+    </p>
     <div class="table-scroll">
     <table class="data-table">
-      <thead><tr><th>Name</th><th>Adresse</th><th>PLZ / Stadt</th><th></th></tr></thead>
+      <thead><tr><th>Name</th><th>Adresse</th><th>PLZ / Stadt</th><th>Umkreissuche</th><th></th></tr></thead>
       <tbody>
       {% for l in locations %}
         <tr>
           <td><strong>{{ l.name }}</strong></td>
           <td>{{ l.address|default:"–" }}</td>
           <td>{{ l.postalCode|default:"" }} {{ l.city|default:"" }}</td>
+          <td>{% if l.lat is not None and l.lng is not None %}<span class="badge badge-accent">möglich</span>{% else %}<span class="badge" title="Ohne Koordinaten trifft der Job-Alert nur exakt diesen Standort">ohne Koordinaten</span>{% endif %}</td>
           <td style="text-align:right;"><form method="post" action="{% url 'ats:archive_location' l.id %}">{% csrf_token %}<button type="submit" class="btn-icon danger" title="Archivieren"><i class="fa-solid fa-box-archive"></i></button></form></td>
         </tr>
-      {% empty %}<tr><td colspan="4" class="empty-state">Noch keine Standorte.</td></tr>{% endfor %}
+      {% empty %}<tr><td colspan="5" class="empty-state">Noch keine Standorte.</td></tr>{% endfor %}
       </tbody>
     </table>
     </div>

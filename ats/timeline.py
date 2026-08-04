@@ -274,9 +274,55 @@ def job_events(job: JobPosting) -> list[TimelineEvent]:
             detail=name))
 
     events.extend(_audit_events(list(names.keys()), with_name=names))
+    events.extend(_approval_events(job))
 
     events.sort(key=lambda e: e.when)
     return events
+
+
+#: Entscheidung -> (Symbol, Klartext). Die Rohwerte stehen so in der Datenbank.
+_APPROVAL_LABELS = {
+    "APPROVED": ("fa-circle-check", "Freigabe erteilt"),
+    "REJECTED": ("fa-circle-xmark", "Zustimmung verweigert"),
+    "RETURNED": ("fa-rotate-left", "Rückfrage gestellt"),
+}
+
+
+def _approval_events(job: JobPosting) -> list[TimelineEvent]:
+    """Entschiedene Freigabe-Stufen dieser Stelle.
+
+    Die Entscheidungen lagen vollstaendig in der Datenbank - Stufe, Zeitpunkt,
+    Begruendung, bei § 99 auch die Gruende - aber keine Ansicht zeigte sie.
+    Wer wissen wollte, warum eine Stelle online ist, musste das rohe Audit-Log
+    durchsuchen. Der Urheber fehlte sogar in den Daten (das Feld zeigte auf ein
+    totes Alt-Modell); seit U6 steht er dort und damit auch hier.
+    """
+    from .models import ApprovalStep
+    steps = (ApprovalStep.objects
+             .filter(approvalTicket__jobPosting=job)
+             .exclude(status="PENDING")
+             .exclude(actionTakenAt__isnull=True)
+             .select_related("actionTakenBy")
+             .order_by("actionTakenAt"))
+    out: list[TimelineEvent] = []
+    for step in steps:
+        when = step.actionTakenAt
+        if when is None:                       # vom Filter ausgeschlossen
+            continue
+        icon, title = _APPROVAL_LABELS.get(
+            step.status, ("fa-clipboard-check", f"Freigabe: {step.status}"))
+        who = step.actionTakenBy
+        # Altbestand aus der Zeit vor U6 hat keinen Urheber - das wird gesagt,
+        # nicht mit einem Platzhalternamen ueberdeckt.
+        actor = who.get_username() if who is not None else "nicht dokumentiert"
+        detail = f"Stufe {step.stepOrder}"
+        comment = (step.comments or "").strip()
+        if comment:
+            detail += f" – {comment}"
+        out.append(TimelineEvent(
+            when=when, actor=actor, actor_kind="intern",
+            icon=icon, title=title, detail=detail))
+    return out
 
 
 def relative_age(when: datetime, now: datetime | None = None) -> str:

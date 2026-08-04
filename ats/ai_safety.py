@@ -80,7 +80,23 @@ TONE_OVERLAYS = {
     "DU": "Formuliere locker-freundlich in Du-Ansprache.",
     "HERZLICH": "Formuliere herzlich und wertschätzend.",
     "NUECHTERN": "Formuliere nüchtern und sachlich.",
+    # Die KI-Zentrale bietet seit jeher diese drei Werte an - sie fehlten
+    # hier, wodurch .get() IMMER None lieferte: der Regler war sichtbar,
+    # wurde gespeichert, gelesen - und verworfen. Aliasse schliessen die
+    # Luecke, ohne bestehende Werte zu brechen.
+    "FORMAL": "Formuliere professionell in Sie-Ansprache.",
+    "EMPATHETIC": "Formuliere herzlich und wertschätzend.",
+    "CASUAL": "Formuliere locker-freundlich in Du-Ansprache.",
 }
+
+
+def tone_applied(tone_key: "str | None") -> bool:
+    """Wurde die Tonalitaet TATSAECHLICH als Overlay angehaengt?
+
+    Fuer das Nachweisprotokoll: `bool(tone_key)` war falsch, weil ein
+    gesetzter, aber unbekannter Wert kein Overlay erzeugt.
+    """
+    return (tone_key or "").upper() in TONE_OVERLAYS
 
 
 def compose_system_prompt(tone_key: str | None = None) -> str:

@@ -132,6 +132,10 @@ def approvals_inbox(request):
         else:
             step.comments = comment or step.comments
         step.actionTakenAt = timezone.now()
+        # Wer zugestimmt hat, gehoert an die Zustimmung - bisher stand hier nur
+        # ein Zeitpunkt. Bei einer Vertretung ist der Urheber die handelnde
+        # Person; fuer wen sie gehandelt hat, steht im Kommentar.
+        step.actionTakenBy = request.user
         step.save()
         ticket = step.approvalTicket
         if action == 'approve':
@@ -248,12 +252,17 @@ def governance_view(request):
     consents = TalentPoolSubscription.objects.count()
 
     inclusion = _inclusion_aggregate()
+    # Art. 7 Abs. 1: Nachweis, worin eingewilligt wurde. Fehlt die versionierte
+    # Fassung, sagt die Seite das - statt die Luecke unsichtbar zu lassen.
+    from ..dsgvo import privacy_notice_status
+    notice_status = privacy_notice_status()
 
     return render(request, 'governance.html', {
         'total': total, 'by_status': by_status,
         'audit_counts': audit_counts, 'chain': chain,
         'anonymized': anonymized, 'ai_logged': ai_logged,
         'consents': consents, 'inclusion': inclusion,
+        'notice_status': notice_status,
         # Export nur Leitung (Rollen-Check wie hr_admin_required, NICHT
         # has_full_access: das ist BOLA-Scoping und gilt auch fuer Viewer
         # ohne Einschraenkung): BR/SBV sehen die Seite, aber keinen Knopf.
@@ -857,6 +866,18 @@ def staffing_requests_view(request):
                 job.save(update_fields=['screeningQuestionsJson'])
                 write_audit('MINIMUM_STANDARD_APPLIED', user=request.user,
                             job=job.title)
+            # Frageverbot gilt auch hier: Dieser Pfad uebernimmt die Fragen
+            # einer Vorgaengerstelle wortgleich - stammt dort (aus Altbestand,
+            # Import oder Django-Admin) eine Gehaltshistorie-Frage, wurde sie
+            # ungefiltert in jede neue Ausschreibung vererbt, samt
+            # automatischer K.O.-Absage (EU-RL 2023/970 Art. 5 Abs. 2).
+            from ..pay_transparency import strip_salary_history_questions
+            _removed = strip_salary_history_questions(job)
+            if _removed:
+                job.save(update_fields=['screeningQuestionsJson'])
+                write_audit('PAY_HISTORY_QUESTION_BLOCKED', user=request.user,
+                            job=job.title, removed=len(_removed),
+                            via='requisition_conversion')
             from ..approvals import ensure_approval_gate
             ticket = ensure_approval_gate(job)
             if ticket and ticket.status == 'PENDING':

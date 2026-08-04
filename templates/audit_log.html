@@ -6,12 +6,21 @@
   <p class="page-lead">Revisionssichere Protokollierung sensibler Zugriffe (max. 500 Einträge).</p>
 
   <div class="card">
-    <form method="get" style="margin-bottom: var(--space-4);">
-      <select name="action" class="input" onchange="this.form.submit()" style="max-width:280px;">
-        <option value="">Alle Aktionen</option>
-        {% for a in actions %}<option value="{{ a }}" {% if a == active_action %}selected{% endif %}>{{ a }}</option>{% endfor %}
-      </select>
-    </form>
+    <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom: var(--space-4);">
+      <form method="get" style="margin:0;">
+        <label for="audit-action" class="sr-only">Nach Aktion filtern</label>
+        <select name="action" id="audit-action" class="input" onchange="this.form.submit()" style="max-width:280px;">
+          <option value="">Alle Aktionen</option>
+          {% for a in actions %}<option value="{{ a }}" {% if a == active_action %}selected{% endif %}>{{ a }}</option>{% endfor %}
+        </select>
+      </form>
+      {% comment %} Der Export existierte, war aber nur per manuell getippter
+         URL erreichbar – für BR/DSB genau der Nachweis, den sie brauchen. {% endcomment %}
+      <a class="btn btn-ghost" href="{% url 'ats:audit_export' %}{% if active_action %}?action={{ active_action }}{% endif %}"
+         title="Aktuelle Auswahl als CSV – mit Integritäts-Kopfzeile (Hash-Kette)">
+        <i class="fa-solid fa-file-csv"></i> Als CSV exportieren
+      </a>
+    </div>
     <div class="table-scroll">
     <table class="data-table">
       <thead><tr><th>Zeitpunkt</th><th>Aktion</th><th>Benutzer</th><th>Application</th><th>Details</th></tr></thead>

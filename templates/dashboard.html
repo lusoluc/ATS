@@ -349,6 +349,12 @@
             <i class="fa-solid fa-clock-rotate-left"></i> Datenaufbewahrung
         </a>
 
+        {% comment %} Direkt neben der Aufbewahrung: beide beantworten
+           Nachweisfragen der DSGVO und werden von derselben Person gepflegt. {% endcomment %}
+        <a class="sidebar-link" href="{% url 'ats:privacy_notice' %}">
+            <i class="fa-solid fa-file-shield"></i> Datenschutzhinweis
+        </a>
+
         <a class="sidebar-link" href="{% url 'ats:learned_scoring' %}">
             <i class="fa-solid fa-graduation-cap"></i> Lernendes Scoring
         </a>

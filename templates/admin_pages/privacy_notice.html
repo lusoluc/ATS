@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block title %}Datenschutzhinweis · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap">
+  <h1 class="page-title"><i class="fa-solid fa-file-shield"></i> Datenschutzhinweis</h1>
+  <p class="page-lead">Art. 7 Abs. 1 DSGVO verlangt den Nachweis, <strong>worin</strong> eingewilligt wurde. Jede Bewerbung merkt sich die Fassung, die die Person beim Absenden gesehen hat.</p>
+
+  <div class="card">
+    <h2 style="font-size:16px; margin:0 0 var(--space-3);">Stand</h2>
+    <ul class="list-reset">
+      <li class="list-row"><span>Gültige Fassung</span>
+        {% if status.missing %}<span class="badge badge-danger">keine gepflegt</span>
+        {% else %}<span class="badge badge-accent">{{ status.version }}</span>{% endif %}
+      </li>
+      <li class="list-row"><span>Bewerbungen mit Bezug auf eine Fassung</span>
+        <span class="badge">{{ status.applications_linked }} von {{ status.applications_total }}</span>
+      </li>
+    </ul>
+    {% if status.applications_unlinked %}
+    <p style="font-size:12px; color:var(--text-muted); margin:var(--space-3) 0 0;">
+      {{ status.applications_unlinked }} Bewerbung(en) ohne Bezug: Altbestand und Importe aus
+      Vorsystemen. Das lässt sich nicht rückwirkend heilen – ein nachträglich eingetragener
+      Nachweis wäre keiner.
+    </p>
+    {% endif %}
+  </div>
+
+  {% comment %} Anfuegen statt Aendern: Eine bestehende Fassung darf nicht
+     umgeschrieben werden. Sonst zeigen bereits eingegangene Bewerbungen auf
+     einen Text, den es so nie gab – der Nachweis zerstoert sich selbst. {% endcomment %}
+  <div class="card" style="margin-top: var(--space-4);">
+    <h2 style="font-size:16px; margin:0 0 var(--space-1);">Neue Fassung anlegen</h2>
+    <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--space-3);">
+      Bestehende Fassungen bleiben unverändert. Wer den Text ändert, legt eine neue Fassung an –
+      und die gilt ab dann für neue Bewerbungen.
+    </p>
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label" for="pn-version">Fassungsnummer *</label>
+        <input id="pn-version" name="version" class="input" required maxlength="50"
+               placeholder="z. B. 2026-08 oder 1.2" style="max-width:260px;">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="pn-content">Text der Fassung *</label>
+        <textarea id="pn-content" name="content" class="input" required rows="12"
+                  placeholder="Der Datenschutzhinweis, den Bewerbende beim Absenden sehen."></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Fassung anlegen und gültig setzen</button>
+    </form>
+  </div>
+
+  {% if rows %}
+  <div class="card" style="margin-top: var(--space-4);">
+    <h2 style="font-size:16px; margin:0 0 var(--space-3);">Bisherige Fassungen</h2>
+    <div class="table-scroll">
+    <table class="data-table">
+      <thead><tr><th>Fassung</th><th>Angelegt</th><th>Bewerbungen</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td><strong>{{ r.notice.version }}</strong><br>
+            <span style="color:var(--text-muted); font-size:12px;">{{ r.notice.content|truncatechars:90 }}</span></td>
+          <td>{{ r.notice.createdAt|date:"d.m.Y H:i" }}</td>
+          <td>{{ r.used }}</td>
+          <td>{% if r.notice.active %}<span class="badge badge-accent">gültig</span>{% else %}<span class="badge">abgelöst</span>{% endif %}</td>
+          <td style="text-align:right;">
+            {% if not r.notice.active %}
+            <form method="post" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="activate">
+              <input type="hidden" name="version_id" value="{{ r.notice.id }}">
+              <button type="submit" class="btn btn-ghost" style="padding:4px 10px; font-size:12px;">Wieder gültig setzen</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <p style="font-size:12px; color:var(--text-muted); margin:var(--space-3) 0 0;">
+      Die Spalte „Bewerbungen" zeigt, wie viele Personen genau diese Fassung gesehen haben.
+      Eine Fassung mit Bewerbungen daran zu ändern, ist deshalb nicht möglich.
+    </p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

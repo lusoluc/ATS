@@ -99,6 +99,7 @@ urlpatterns = [
     path('recruiter/categories/<uuid:cat_id>/archive/', views.archive_category, name='archive_category'),
     path('recruiter/pay-bands/', views.pay_bands_view, name='pay_bands'),                            # E1 Entgelttransparenz
     path('recruiter/pay-bands/<uuid:band_id>/archive/', views.archive_pay_band, name='archive_pay_band'),
+    path('recruiter/datenschutzhinweis/', views.privacy_notice_page, name='privacy_notice'),  # Art. 7 Abs. 1
     path('recruiter/locations/', views.locations_view, name='locations'),
     path('recruiter/contacts/', views.contacts_manage, name='contacts'),
     path('recruiter/import/', views.import_view, name='data_import'),  # P0.5

@@ -5,6 +5,20 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Ergänzt (Datenschutzhinweis im Produkt pflegbar)
+
+Art. 7 Abs. 1 DSGVO verlangt den Nachweis, **worin** eingewilligt wurde. Fassungen
+anlegen ging bisher nur über die Django-Administration — eine technische Oberfläche,
+die in der Personalabteilung niemand öffnet. Die Governance-Seite benannte die Lücke
+zwar, schickte zur Behebung aber aus dem Produkt heraus.
+
+Neue Seite „Datenschutzhinweis" (HR-Admin, in der Seitenleiste neben der
+Datenaufbewahrung, verlinkt aus dem Governance-Hinweis). Zentrale Regel:
+**anfügen statt ändern.** Eine bestehende Fassung lässt sich nicht überschreiben —
+sonst zeigen die Bewerbungen, die daran hängen, auf einen Text, den es so nie gab.
+Die Tabelle zeigt je Fassung, wie viele Personen genau sie gesehen haben; genau
+eine Fassung ist gültig, ältere lassen sich wieder aktivieren (auditiert).
+
 ### Ergänzt (Freigaben: Rückblick und Überblick)
 
 Die Freigabe-Seite zeigte ausschließlich „wartet auf mich". Zwei Fragen, die im

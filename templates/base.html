@@ -994,7 +994,11 @@
                 {% if nav_pages %}
                     {% for p in nav_pages %}
                         <li class="nav-item {% if slug == p.slug %}active{% endif %}">
-                            <a href="{% if p.slug == 'home' %}{% url 'ats:home' %}{% else %}/pages/{{ p.slug }}/{% endif %}">
+                            {% comment %} url-Tag statt handgeschriebenem Pfad: ein
+                               getippter Pfad bricht lautlos, wenn sich die Route
+                               ändert – und die Hauptnavigation ist der schlechteste
+                               Ort für tote Links. {% endcomment %}
+                            <a href="{% if p.slug == 'home' %}{% url 'ats:home' %}{% else %}{% url 'ats:page_detail' p.slug %}{% endif %}">
                                 {{ p.navLabel|default:p.title }}
                             </a>
                         </li>

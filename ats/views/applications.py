@@ -1261,6 +1261,16 @@ def application_summary(request, app_id):
     result = {'text': text, 'bullets': bullets,
               'ai_score': facts.ai_score, 'used_ai': False}
 
+    # Hochgeladene Nachweise (Zeugnisse, Approbation, Pflicht-Dokumente):
+    # Sie wurden gespeichert und der Download-Endpunkt existierte samt
+    # BOLA-Pruefung und Audit - nur zeigte sie keine einzige Seite an. Wer
+    # sie anfordert, bekam sie nie zu Gesicht.
+    result['documents'] = [
+        {'id': str(d.id), 'name': d.name,
+         'url': reverse('ats:download_document', args=[d.id])}
+        for d in app.documents.order_by('createdAt')[:20]
+    ]
+
     # L3: gelernte Einordnung NUR wenn freigeschaltet + Kontext belastbar +
     # Backtest schlaegt die Grundlinie (sonst gar nicht) - erklaerbar.
     from ..scoring_eval import learned_grade

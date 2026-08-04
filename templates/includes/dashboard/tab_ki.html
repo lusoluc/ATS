@@ -183,6 +183,25 @@
                                    Statuswechseln – solchen Code gibt es nicht.
                                    Entfernt statt beschönigt. Was wirklich lernt,
                                    steht unter „Lernendes Scoring“. {% endcomment %}
+
+                                {% comment %} Man konnte Profile anlegen, aber nirgends
+                                   sehen oder löschen – die Löschansicht existierte nur
+                                   als JSON-Route. Ohne sie ist Art. 17 DSGVO nicht
+                                   bedienbar. {% endcomment %}
+                                <div style="margin-top: 20px;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                                        <h5 style="color: #fff; font-size: 14px; margin: 0;">Gespeicherte Profile</h5>
+                                        <button type="button" class="btn-search" id="btn-load-bp"
+                                                style="padding: 4px 10px; height: auto; font-size: 11px; border-radius: var(--border-radius-sm);"
+                                                onclick="loadBestPerformerProfiles()">
+                                            <i class="fa-solid fa-rotate"></i> Anzeigen
+                                        </button>
+                                    </div>
+                                    <p style="font-size: 12px; color: var(--text-muted); margin: 6px 0 0;">
+                                        Löschen entfernt den Vektor sofort und wird protokolliert (Art. 17 DSGVO).
+                                    </p>
+                                    <div id="bp-profiles-list" style="margin-top: 12px;" aria-live="polite"></div>
+                                </div>
                             </div>
 
                             <!-- 4. Text-Assistenz & Compliance -->

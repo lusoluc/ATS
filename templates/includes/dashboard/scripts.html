@@ -924,6 +924,22 @@
                 chips.innerHTML = d.bullets.map(b =>
                     `<span style="font-size:11px; background:rgba(255,255,255,0.08); border:1px solid var(--glass-border); border-radius:12px; padding:2px 9px; color:#e5e7eb;">${esc(b)}</span>`).join('');
             }
+            // Hochgeladene Nachweise: existierten samt Download-Endpunkt,
+            // wurden aber nirgends angezeigt - wer sie anforderte, sah sie nie.
+            const docsBox = document.getElementById('modal-documents');
+            if (docsBox) {
+                const docs = Array.isArray(d.documents) ? d.documents : [];
+                if (docs.length) {
+                    docsBox.innerHTML = '<h3 style="color:#fff; font-size:16px; margin:24px 0 10px;">'
+                        + '<i class="fa-solid fa-paperclip"></i> Weitere Nachweise</h3>'
+                        + docs.map(doc =>
+                            `<a href="${doc.url}" class="btn-search" style="display:inline-block; padding:4px 10px; height:auto; font-size:11px; margin:0 6px 6px 0; border-radius:var(--border-radius-sm);" title="Öffnen (wird protokolliert)"><i class="fa-solid fa-file-arrow-down"></i> ${esc(doc.name)}</a>`).join('');
+                    docsBox.style.display = 'block';
+                } else {
+                    docsBox.style.display = 'none';
+                    docsBox.innerHTML = '';
+                }
+            }
             // L3: gelernte Einordnung (nur wenn Server sie liefert = freigeschaltet + belastbar)
             const learned = document.getElementById('modal-learned');
             if (learned) {
@@ -2128,6 +2144,59 @@
         } else {
             container.style.display = 'none';
         }
+    }
+
+    // Gespeicherte Best-Performer-Profile: ansehen und einzeln loeschen.
+    // Ohne diese Ansicht war die Loeschung nur per Hand-Request moeglich.
+    function loadBestPerformerProfiles() {
+        const box = document.getElementById('bp-profiles-list');
+        if (!box) return;
+        box.innerHTML = '<span style="font-size:12px; color: var(--text-muted);">Wird geladen …</span>';
+        fetch('/recruiter/best-performers/', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(r => r.ok ? r.json() : Promise.reject(r.status))
+            .then(d => renderBestPerformerProfiles(d.profiles || []))
+            .catch(() => {
+                box.innerHTML = '<span style="font-size:12px; color: var(--danger);">'
+                    + 'Profile konnten nicht geladen werden (nur HR-Admin).</span>';
+            });
+    }
+
+    function renderBestPerformerProfiles(profiles) {
+        const box = document.getElementById('bp-profiles-list');
+        if (!box) return;
+        const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
+            c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        if (!profiles.length) {
+            box.innerHTML = '<span style="font-size:12px; color: var(--text-muted);">'
+                + 'Noch keine Profile gespeichert.</span>';
+            return;
+        }
+        box.innerHTML = '<div class="table-scroll"><table class="premium-table" style="font-size:12px;">'
+            + '<thead><tr><th>Profil</th><th>Berufsfeld</th><th>Modell</th><th>Angelegt</th><th>Aktion</th></tr></thead><tbody>'
+            + profiles.map(p =>
+                '<tr><td>' + esc(p.label || '–') + '</td>'
+                + '<td>' + esc(p.jobFamily || '–') + '</td>'
+                + '<td>' + esc(p.model || '–') + ' (' + (p.dim || 0) + ')</td>'
+                + '<td>' + esc(p.createdAt || '') + '</td>'
+                + '<td><button type="button" class="btn-search" style="padding:2px 8px; height:auto; font-size:11px; background: var(--danger); border-radius: var(--border-radius-sm);" '
+                + 'onclick="deleteBestPerformerProfile(\'' + p.id + '\', this)">'
+                + '<i class="fa-solid fa-trash"></i> Löschen</button></td></tr>').join('')
+            + '</tbody></table></div>';
+    }
+
+    function deleteBestPerformerProfile(id, btn) {
+        if (!confirm('Dieses Profil endgültig löschen? Der Vektor wird sofort entfernt.')) return;
+        if (btn) btn.disabled = true;
+        const fd = new FormData();
+        fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        fd.append('delete_id', id);
+        fetch('/recruiter/best-performers/', { method: 'POST', body: fd })
+            .then(r => r.ok ? r.json() : Promise.reject(r.status))
+            .then(() => loadBestPerformerProfiles())
+            .catch(() => {
+                if (btn) btn.disabled = false;
+                alert('Löschen fehlgeschlagen – es wurde nichts entfernt.');
+            });
     }
 
     // Global selected files list for PDF simulation

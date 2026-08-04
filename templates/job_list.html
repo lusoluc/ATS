@@ -273,9 +273,26 @@
         <div class="no-jobs-card">
             <i class="fa-solid fa-folder-open"></i>
             <h3>Keine Stellen gefunden</h3>
-            <p style="color: var(--text-muted); margin-top: 8px;">Wir konnten keine passenden Stellenangebote zu Ihren Filtereinstellungen finden. Versuchen Sie es mit anderen Suchkriterien oder schauen Sie später wieder vorbei.</p>
+            <p style="color: var(--text-muted); margin-top: 8px;">Wir konnten keine passenden Stellenangebote zu Ihren Filtereinstellungen finden. Versuchen Sie es mit anderen Suchkriterien – oder lassen Sie sich benachrichtigen, sobald etwas Passendes frei wird.</p>
+            <a href="{% url 'ats:job_alert' %}" class="job-card-btn" style="display: inline-block; margin-top: 16px;">
+                <i class="fa-solid fa-bell" aria-hidden="true"></i> Job-Alert einrichten
+            </a>
         </div>
     {% endfor %}
 </div>
+
+{% comment %} Der Job-Alert war nur über die Einrichtungsseite erreichbar – also
+   praktisch nie. Genau hier, am Ende der Trefferliste, ist der Moment, in dem
+   jemand ihn braucht. {% endcomment %}
+<section style="margin-top: 40px; padding: 24px; border: 1px solid var(--glass-border); border-radius: var(--border-radius); background: rgba(255,255,255,0.03);">
+    <h2 style="font-size: 20px; margin: 0 0 8px;">Nichts Passendes dabei?</h2>
+    <p style="color: var(--text-muted); font-size: 14px; margin: 0 0 16px; max-width: 60ch;">
+        Wir melden uns per E-Mail, sobald eine Stelle zu Ihren Kriterien ausgeschrieben wird –
+        mit Bestätigungslink, jederzeit widerrufbar.
+    </p>
+    <a href="{% url 'ats:job_alert' %}" class="job-card-btn" style="display: inline-block;">
+        <i class="fa-solid fa-bell" aria-hidden="true"></i> Job-Alert einrichten
+    </a>
+</section>
 
 {% endblock %}

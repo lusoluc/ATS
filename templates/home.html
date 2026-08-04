@@ -292,9 +292,13 @@
             <a href="{% url 'ats:job_list' %}" class="btn-secondary-cta">
                 <i class="fa-solid fa-briefcase" style="margin-right: 6px;"></i> Demo-Stellenbörse sichten
             </a>
+            {% comment %} Die Preisseite gibt es nur auf der Demo-Instanz (404 sonst).
+               Der Link stand trotzdem überall – auf Kundeninstanzen ein toter Link. {% endcomment %}
+            {% if DEMO_MODE %}
             <a href="{% url 'ats:pricing' %}" class="btn-secondary-cta">
                 <i class="fa-solid fa-tags" style="margin-right: 6px;"></i> Preise &amp; Open Source
             </a>
+            {% endif %}
         </div>
     </div>
 
@@ -366,7 +370,7 @@
 <section class="pricing-teaser">
     <h2>Faire Lizenzierung. Keine Nutzer-Kosten.</h2>
     <p>Verabschieden Sie sich von Lizenzen, die mit jedem neuen Mitarbeiter teurer werden. SecurATS bietet einen kostenlosen Open-Source-Kern und flache, einrichtungsbezogene Support-Tarife mit verbindlichen SLAs.</p>
-    <a href="{% url 'ats:pricing' %}" class="btn-cta"><i class="fa-solid fa-circle-arrow-right"></i> Preise im Detail ansehen</a>
+    {% if DEMO_MODE %}<a href="{% url 'ats:pricing' %}" class="btn-cta"><i class="fa-solid fa-circle-arrow-right"></i> Preise im Detail ansehen</a>{% endif %}
 </section>
 
 <script>

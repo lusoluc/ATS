@@ -56,6 +56,12 @@
                                     <a class="btn-search" href="{% url 'ats:job_series_message' job.id %}" style="padding: 4px 10px; height: auto; font-size: 11px; margin: 0 0 0 6px; border-radius: var(--border-radius-sm); display:inline-block;" title="Serien-Nachricht an alle aktiven Bewerber dieser Stelle">
                                         <i class="fa-solid fa-bullhorn"></i> Nachricht an alle
                                     </a>
+                                    {% comment %} C3: Der Talent-Pool-Abgleich war eine
+                                       fertige Seite ohne jeden Einstieg – gefunden im
+                                       Durchgang „unerreichbare Funktionen". {% endcomment %}
+                                    <a class="btn-search" href="{% url 'ats:job_pool_matches' job.id %}" style="padding: 4px 10px; height: auto; font-size: 11px; margin: 0 0 0 6px; border-radius: var(--border-radius-sm); display:inline-block;" title="Passende Personen aus dem Talent-Pool für diese Stelle">
+                                        <i class="fa-solid fa-user-check"></i> Talent-Pool
+                                    </a>
                                 </td>
                             </tr>
                         {% empty %}

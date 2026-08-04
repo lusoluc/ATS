@@ -792,3 +792,65 @@ class GuardrailNoDeadSettingsTestCase(TestCase):
         self.assertEqual(dead, [],
                          "Einstellung wird angeboten, aber nie gelesen: "
                          + ", ".join(dead))
+
+
+class GuardrailNoOrphanRouteTestCase(TestCase):
+    """Waechter: Keine fertige Seite, zu der kein Weg fuehrt.
+
+    Die haeufigste Fehlerklasse im ganzen Projekt: Eine View ist gebaut,
+    geschuetzt und getestet - aber kein Link zeigt darauf, also benutzt sie
+    niemand. So blieben u. a. der Talent-Pool-Abgleich, der Audit-CSV-Export,
+    die Loeschansicht fuer Best-Performer-Profile und der Job-Alert monatelang
+    unerreichbar.
+
+    Der Waechter verlangt fuer jeden URL-Namen einen Verweis - entweder als
+    {% url 'ats:name' %} / reverse('ats:name') oder als Pfad-Literal im
+    JavaScript. Reine Maschinen-Endpunkte stehen in der Allowlist.
+    """
+
+    #: Endpunkte ohne Oberflaeche - sie werden von aussen aufgerufen
+    #: (Monitoring, Jobboersen-Feeds), ein Link waere hier sinnlos.
+    MACHINE_ONLY = {
+        "healthz",          # Monitoring/Loadbalancer
+        "healthz_ai",       # Monitoring der KI-Anbindung
+        "stepstone_feed",   # Jobboerse zieht selbst
+        "hr_ba_xml_feed",   # Bundesagentur zieht selbst
+    }
+
+    def test_every_route_has_an_entry_point(self):
+        import os
+        import re
+        base = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        urls_src = open(os.path.join(base, "ats", "urls.py"),
+                        encoding="utf-8").read()
+
+        routes = [(m.group(4), m.group(2)) for m in re.finditer(
+            r"path\(\s*(['\"])(.*?)\1[^\n]*?name=(['\"])([^'\"]+)\3", urls_src)]
+        self.assertGreater(len(routes), 50, "URL-Parser hat nichts gefunden")
+
+        chunks = []
+        for root, _dirs, files in os.walk(os.path.join(base, "templates")):
+            for fname in files:
+                if fname.endswith(".html"):
+                    chunks.append(open(os.path.join(root, fname),
+                                       encoding="utf-8").read())
+        for root, _dirs, files in os.walk(os.path.join(base, "ats")):
+            if "tests" in root or "migrations" in root:
+                continue
+            for fname in files:
+                if fname.endswith(".py") and fname != "urls.py":
+                    chunks.append(open(os.path.join(root, fname),
+                                       encoding="utf-8").read())
+        blob = "\n".join(chunks)
+
+        orphans = []
+        for name, pattern in routes:
+            if name in self.MACHINE_ONLY or f"ats:{name}" in blob:
+                continue
+            literal = "/" + pattern.split("<")[0]
+            if len(literal) > 8 and literal in blob:
+                continue
+            orphans.append(f"{name} (/{pattern})")
+        self.assertEqual(orphans, [],
+                         "Route ohne jeden Einstieg - gebaut, aber "
+                         "unerreichbar: " + ", ".join(orphans))

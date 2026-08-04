@@ -235,6 +235,12 @@
 </form>
 
 <!-- Jobs Listing Grid -->
+{# Trefferzahl als status-Region: nach dem Filtern erfahren auch
+   Screenreader-Nutzer, was sich geaendert hat (WCAG 4.1.3) #}
+<p role="status" style="color: var(--text-muted); font-size: 14px; margin: 0 0 16px;">
+  {{ jobs|length }} Stelle{{ jobs|length|pluralize:"n" }} gefunden{% if search_query or location_filter or dept_filter %} (gefiltert){% endif %}
+</p>
+
 <div class="jobs-grid">
     {% for job in jobs %}
         <div class="job-card">
@@ -256,8 +262,10 @@
                 <span style="font-size: 13px; color: var(--text-muted);">
                     <i class="fa-solid fa-calendar-days" style="margin-right: 4px;"></i> Erschienen: {{ job.createdAt|date:"d.m.Y" }}
                 </span>
-                <a href="{% url 'ats:job_detail' job.id %}" class="job-card-btn">
-                    Details & Bewerbung <i class="fa-solid fa-arrow-right-long"></i>
+                {# aria-label mit Jobtitel: sonst heisst jeder Link in der
+                   Screenreader-Linkliste identisch "Details & Bewerbung" #}
+                <a href="{% url 'ats:job_detail' job.id %}" class="job-card-btn" aria-label="Details &amp; Bewerbung: {{ job.title }}">
+                    Details & Bewerbung <i class="fa-solid fa-arrow-right-long" aria-hidden="true"></i>
                 </a>
             </div>
         </div>

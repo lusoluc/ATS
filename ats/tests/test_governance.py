@@ -66,11 +66,20 @@ class GovernanceWP6TestCase(TestCase):
         t, s1, s2 = self._ticket(job)
         hm = make_user("wp6hm", role="Hiring-Manager")
         hr = make_user("wp6hr", role="HR-Admin")
-        # HM sieht Schritt 1; HR sieht Schritt 2 noch NICHT (Vorgänger offen)
+        # HM ist mit Schritt 1 dran; HR mit Schritt 2 noch NICHT (Vorgaenger offen).
+        #
+        # Geprueft wird die Entscheidungs-Moeglichkeit (das Formular zum
+        # Schritt), nicht mehr der blosse Stellentitel irgendwo auf der Seite:
+        # Seit Y1 fuehrt dieselbe Seite eine Uebersicht der LAUFENDEN Ketten,
+        # in der die Stelle auftaucht, ohne dass man an der Reihe waere. Das
+        # ist gewollt - "wartet auf mich" und "was laeuft gerade" sind zwei
+        # verschiedene Fragen.
         self.client.force_login(hm)
-        self.assertContains(self.client.get(reverse('ats:approvals')), "Stationsleitung")
+        self.assertContains(self.client.get(reverse('ats:approvals')), str(s1.id))
         self.client.force_login(hr)
-        self.assertNotContains(self.client.get(reverse('ats:approvals')), "Stationsleitung")
+        resp = self.client.get(reverse('ats:approvals'))
+        self.assertNotContains(resp, str(s2.id))
+        self.assertContains(resp, "Laufende Freigaben")
 
     def test_approve_advances_and_completes_ticket(self):
         from ..models import AuditLog

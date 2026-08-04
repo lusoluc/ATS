@@ -102,4 +102,63 @@
     </tbody></table></div>
   </div>
   {% endif %}
+
+  {% comment %} Laufende Ketten: Die Engpass-Kennzahl in der Analytik beantwortet
+     „welche Stufe bremst im Schnitt". Diese Tabelle beantwortet die Frage, die
+     im Alltag gestellt wird: „Was haengt gerade, und bei wem?" Rollen statt
+     Namen – es geht um den Prozess, nicht um Personen. {% endcomment %}
+  {% if open_chains %}
+  <div class="card" style="margin-top: var(--space-4);">
+    <h2 style="font-size:16px; margin:0 0 var(--space-1);"><i class="fa-solid fa-diagram-project" style="color:var(--accent-light);"></i> Laufende Freigaben</h2>
+    <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--space-3);">Ausschreibungen in der Kette – in Ihrem Zugriffsbereich, älteste zuerst.</p>
+    <div class="table-scroll">
+    <table class="data-table">
+      <thead><tr><th>Stelle</th><th>Fortschritt</th><th>Wartet auf</th><th>Offen seit</th></tr></thead>
+      <tbody>
+      {% for c in open_chains %}
+        <tr>
+          <td><strong>{{ c.job.title }}</strong><br><span style="color:var(--text-muted); font-size:12px;">{{ c.job.location.name|default:"—" }}</span></td>
+          <td>Stufe {{ c.step_no }} · {{ c.done }} von {{ c.total }} freigegeben</td>
+          <td>{{ c.waiting_on }}</td>
+          <td>{% if c.overdue %}<span class="badge badge-danger">{{ c.age_days }} Tage</span>{% else %}{{ c.age_days }} Tag(e){% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {% comment %} Rueckblick, kein Tagesgeschaeft – deshalb eingeklappt. Ohne ihn
+     verschwand ein entschiedener Schritt spurlos aus der Liste: Wer nach dem
+     Wochenende wissen wollte, ob er eine Stelle schon freigegeben hat, fand
+     dazu nichts. {% endcomment %}
+  {% if my_decisions %}
+  <div class="card" style="margin-top: var(--space-4);">
+    <details>
+      <summary style="cursor:pointer; font-size:16px; color:var(--text-color);">
+        <i class="fa-solid fa-clock-rotate-left" style="color:var(--accent-light);"></i> Von mir entschieden ({{ my_decisions|length }})
+      </summary>
+      <div class="table-scroll" style="margin-top: var(--space-3);">
+      <table class="data-table">
+        <thead><tr><th>Stelle</th><th>Entscheidung</th><th>Wann</th><th>Begründung</th></tr></thead>
+        <tbody>
+        {% for s in my_decisions %}
+          <tr>
+            <td>{{ s.approvalTicket.jobPosting.title }}<br><span style="color:var(--text-muted); font-size:12px;">Stufe {{ s.stepOrder }}</span></td>
+            <td>
+              {% if s.status == 'APPROVED' %}<span class="badge badge-accent">freigegeben</span>
+              {% elif s.status == 'REJECTED' %}<span class="badge badge-danger">Zustimmung verweigert</span>
+              {% else %}<span class="badge">Rückfrage</span>{% endif %}
+            </td>
+            <td>{{ s.actionTakenAt|date:"d.m.Y H:i" }}</td>
+            <td style="color:var(--text-muted); font-size:12px;">{{ s.comments|default:"—"|truncatechars:120 }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    </details>
+  </div>
+  {% endif %}
 {% endblock %}

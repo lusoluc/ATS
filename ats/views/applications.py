@@ -40,14 +40,21 @@ from ..models import (
     WorkflowState,
     get_interview_kinds,
 )
-from ..permissions import any_staff_required, can_access_application, recruiter_required, scope_applications, scope_jobs
+from ..permissions import (
+    any_staff_required,
+    can_access_application,
+    hr_admin_required,
+    recruiter_required,
+    scope_applications,
+    scope_jobs,
+)
 from .admin_pages import gemma_status
 from .common import seed_data_if_empty
 from .governance import _pending_steps_for
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "reorder_board", "bulk_update_status", "application_messages", "draft_reply", "application_summary", "inbox_view", "open_question_clusters", "batch_reply", "job_series_message", "save_reply_snippet", "reclassify_message", "application_vote", "talent_pool_view", "job_pool_matches", "application_timeline", "job_timeline", "tasks_view"]
+__all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "reorder_board", "bulk_update_status", "application_messages", "draft_reply", "application_summary", "applicant_data_export", "inbox_view", "open_question_clusters", "batch_reply", "job_series_message", "save_reply_snippet", "reclassify_message", "application_vote", "talent_pool_view", "job_pool_matches", "application_timeline", "job_timeline", "tasks_view"]
 
 
 @ensure_csrf_cookie
@@ -1239,6 +1246,32 @@ def draft_reply(request, app_id):
         logger.exception("KI-Antwort-Entwurf nicht verfügbar")
     return JsonResponse({'draft': baseline, 'used_ai': False,
                          'note': 'Lokale KI nicht erreichbar – Status-Vorlage.'})
+
+
+@hr_admin_required
+def applicant_data_export(request, app_id):
+    """Art.-15-Auskunft, wenn die Anfrage per Brief oder Mail eintrifft.
+
+    Bewerbende bedienen sich im Portal selbst; bei einer Anfrage ausserhalb
+    des Portals brauchte HR bisher jemanden mit Server-Zugang, der den
+    Management-Befehl ausfuehrt. Bei einer Frist von einem Monat
+    (Art. 12 Abs. 3) ist das kein Verfahren, sondern ein Risiko.
+
+    Bewusst nur HR-Admin: Die Auskunft buendelt ALLE Daten einer Person ueber
+    alle Bewerbungen hinweg - mehr, als der Bewerbungs-Zugriffsbereich
+    einzelner Rollen hergibt.
+    """
+    app = get_object_or_404(Application.objects.select_related('applicant'),
+                            id=app_id)
+    from ..dsgvo import build_applicant_export
+    data = build_applicant_export(app.applicant)
+    write_audit('DATA_EXPORT', user=request.user, application_id=app.id,
+                via='hr', subject=str(app.applicant_id))
+    payload = json.dumps(data, ensure_ascii=False, indent=2)
+    resp = HttpResponse(payload, content_type='application/json; charset=utf-8')
+    resp['Content-Disposition'] = (
+        f'attachment; filename="auskunft-{app.applicant_id}.json"')
+    return resp
 
 
 @any_staff_required

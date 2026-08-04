@@ -13,7 +13,7 @@ import uuid
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.db import transaction
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -44,7 +44,7 @@ from .common import _remember_campaign_src, campaign_expired, exclude_filled, se
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["home", "job_list", "job_detail", "bewerben", "candidate_portal", "page_detail", "facility_profile", "landing_page", "job_alert_subscribe", "job_alert_confirm", "job_alert_manage", "pricing_view", "healthz", "ai_transparency", "accessibility_statement"]
+__all__ = ["home", "job_list", "job_detail", "bewerben", "candidate_portal", "candidate_data_export", "page_detail", "facility_profile", "landing_page", "job_alert_subscribe", "job_alert_confirm", "job_alert_manage", "pricing_view", "healthz", "ai_transparency", "accessibility_statement"]
 
 
 def home(request):
@@ -318,9 +318,14 @@ def bewerben(request, job_id):
             # § 164 SGB IX: freiwillige Angabe (Art. 9 -> verschluesselt,
             # nur bei ausdruecklichem Ankreuzen, nie Scoring-Eingabe).
             disability_disclosed = request.POST.get('disability_disclosure') == 'on'
+            # Art. 7 Abs. 1 DSGVO: Es muss belegbar sein, WORIN eingewilligt
+            # wurde. Das Feld existierte seit der ersten Migration, wurde aber
+            # von keiner Bewerbung befuellt - der Nachweis fehlte still.
+            from ..dsgvo import active_privacy_notice
             application = Application.objects.create(
                 applicant=applicant,
                 jobPosting=job,
+                privacyNoticeVersion=active_privacy_notice(),
                 cvStorageId=cv_storage_path,
                 coverLetterTxt=cover_letter,
                 screeningAnswersJson=answers_dict,
@@ -889,6 +894,32 @@ def candidate_portal(request, token):
         'has_active_application': any(
             a.status not in ('REJECTED', 'WITHDRAWN') for a in applications),
     })
+
+
+def candidate_data_export(request, token):
+    """Art. 15/20 DSGVO als Selbstbedienung im Bewerberportal.
+
+    Der Export existierte bisher nur als Management-Befehl – erreichbar
+    ausschliesslich mit Server-Zugang. Bewerbende mussten ihre Auskunft per
+    Mail erbitten, jemand musste sie von Hand zusammenstellen, und die
+    Monatsfrist aus Art. 12 Abs. 3 lief derweil. Derselbe Rechenkern haengt
+    jetzt an einem Knopf.
+
+    Der Magic-Link-Token ist der Berechtigungsnachweis: nur wer ihn hat,
+    bekommt die Daten der zugehoerigen Person – und nur diese.
+    """
+    tok = ApplicantToken.objects.filter(token=token).select_related('applicant').first()
+    if tok is None or tok.expiresAt < timezone.now():
+        raise Http404("Ungültiger oder abgelaufener Link.")
+    from ..dsgvo import build_applicant_export
+    data = build_applicant_export(tok.applicant)
+    # Jede Auskunft wird protokolliert – der Nachweis, dass und wann sie
+    # erteilt wurde, ist Teil der Rechenschaftspflicht (Art. 5 Abs. 2).
+    write_audit('DATA_EXPORT', via='portal', subject=str(tok.applicant.id))
+    payload = json.dumps(data, ensure_ascii=False, indent=2)
+    resp = HttpResponse(payload, content_type='application/json; charset=utf-8')
+    resp['Content-Disposition'] = 'attachment; filename="meine-daten.json"'
+    return resp
 
 
 # --- N3: KI-Transparenz (Art. 86 EU AI Act) ----------------------------------

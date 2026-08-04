@@ -248,6 +248,11 @@ class GuardrailAuthDecoratorTestCase(TestCase):
         # B7: Barrierefreiheitserklaerung (BFSG) - ebenfalls bewusst
         # oeffentlich, sie richtet sich an Besucher ohne Konto.
         "accessibility_statement",
+        # U4: Art.-15-Auskunft im Bewerberportal. Bewerbende haben kein
+        # Konto - der Magic-Link-Token IST der Berechtigungsnachweis, genau
+        # wie beim Portal selbst. Die View prueft ihn und liefert
+        # ausschliesslich die Daten der zugehoerigen Person.
+        "candidate_data_export",
     }
 
     def _iter_views(self):

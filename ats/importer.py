@@ -222,6 +222,10 @@ def run_import(rows, default_job=None, dry_run=True):
                                  "address": row.get("address", "")[:300] or None})
             report["applicants_new" if created else "applicants_reused"] += 1
 
+            # Kein privacyNoticeVersion: Diese Personen haben unser Formular nie
+            # gesehen, ihre Einwilligung stammt aus dem Vorsystem. Unsere
+            # aktuelle Fassung hier einzutragen waere ein erfundener Nachweis.
+            # Die Governance-Sicht zaehlt solche Bewerbungen als "ohne Bezug".
             app = Application.objects.create(
                 applicant=applicant, jobPosting=job, status=status,
                 source=(row.get("source") or "IMPORT").upper()[:50],

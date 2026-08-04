@@ -299,6 +299,21 @@
         </form>
       </details>
     </div>
+    {% comment %} Art. 15/20 DSGVO: Die Auskunft gab es bisher nur als Befehl auf
+       dem Server – Bewerbende mussten sie erbitten, jemand musste sie von Hand
+       zusammenstellen, und die Monatsfrist lief. Jetzt ein Knopf. {% endcomment %}
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+        <div>
+          <h2>Meine gespeicherten Daten</h2>
+          <p class="muted" style="font-size:12px; margin:4px 0 0;">Alles, was wir zu Ihnen gespeichert haben – Bewerbungen, Antworten, Nachrichten, Einwilligungen und wer wann zugegriffen hat. Als Datei zum Mitnehmen (Art. 15 und 20 DSGVO).</p>
+        </div>
+        <a href="{% url 'ats:candidate_data_export' token %}" download
+           style="display:inline-block; padding:10px 14px; border:1px solid #334155; border-radius:8px; color:#e2e8f0; text-decoration:none; min-height:24px;">
+          Daten herunterladen
+        </a>
+      </div>
+    </div>
     <p class="muted" style="text-align:center;">Ihre Daten verlassen unser Haus nicht und werden nach Ablauf der gesetzlichen Frist automatisch gelöscht.<br>
       {% comment %} WCAG 2.2 (3.2.6 Consistent Help): dieselben Hilfe-Wege in
          derselben Reihenfolge wie im Footer aller anderen Seiten. {% endcomment %}

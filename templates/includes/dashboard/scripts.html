@@ -902,7 +902,12 @@
         // Aktionsverlauf: chronologische Historie dieser Bewerbung
         const histBtn = document.getElementById('modal-btn-history');
         if (histBtn) { histBtn.href = `/recruiter/applications/${appId}/verlauf/`; }
-        
+
+        // Art.-15-Auskunft (nur HR-Admin, Knopf sonst gar nicht im Markup)
+        const dsarBtn = document.getElementById('modal-btn-dsar');
+        if (dsarBtn) { dsarBtn.href = `/recruiter/applications/${appId}/auskunft.json`; }
+
+
         loadCandidateFeedback(appId);
         loadCandidateSummary(appId);
         document.getElementById('candidateModal').style.display = 'flex';

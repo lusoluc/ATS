@@ -5,6 +5,43 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (Durchgang „unerreichbare Funktionen")
+
+Ein systematischer Durchgang durch alle 122 Routen, Einstellungen und Modellfelder
+mit einer einzigen Frage: *Kommt jemand da hin, und bewirkt es etwas?* Das Muster
+kam so oft vor, dass es jetzt einen Wächter hat (`GuardrailNoOrphanRouteTestCase`):
+eine View ist gebaut, geschützt und getestet – aber kein Link zeigt darauf, also
+existiert sie für niemanden.
+
+- **Auskunft nach Art. 15/20 DSGVO gab es nur auf der Kommandozeile.** Sie war
+  implementiert, getestet und in der Compliance-Matrix als erledigt geführt –
+  erreichbar aber nur mit Server-Zugang, während Art. 12 Abs. 3 eine Frist von
+  einem Monat setzt. Jetzt Selbstbedienung im Bewerberportal und ein Knopf für
+  HR-Admins. Der Export war zudem unvollständig (Anschrift, Absagegrund,
+  Nachrichten, Talent-Pool-Einwilligung samt consentId fehlten).
+- **Einwilligungs-Nachweis (Art. 7 Abs. 1) wurde nie geschrieben.** Das Feld für
+  die Fassung des Datenschutzhinweises existierte seit der ersten Migration und
+  blieb bei jeder Bewerbung leer.
+- **Vier fertige Seiten ohne Verlinkung:** Talent-Pool-Abgleich je Stelle,
+  Audit-CSV-Export, Löschansicht für Best-Performer-Profile (ohne sie war Art. 17
+  nur per Hand-Request bedienbar) und der Job-Alert. Hochgeladene Zeugnisse wurden
+  gespeichert und von keiner Seite angezeigt.
+- **Pflichtfeld ohne Wirkung:** Die Mediathek verlangt beim Hochladen einen
+  Alt-Text und verwarf ihn beim Rendern; ohne Bildunterschrift stand `alt=""` im
+  Markup – für Screenreader die Ansage „reine Deko" (WCAG 1.1.1).
+- **Umkreissuche degradierte still:** `Location.lat/lng` brauchte der Job-Alert,
+  pflegen konnte die Werte niemand. Wer 50 km einstellte, bekam nur den exakt
+  gleichen Ort.
+- **Freigaben ohne Urheber:** Das Feld zeigte auf ein totes Alt-Modell, mit dem
+  sich niemand anmeldet. Jede Zustimmung hatte einen Zeitpunkt, aber nie einen
+  Namen – und tauchte in gar keiner Ansicht auf.
+- **Konfiguration, die nichts tat oder falsch beriet:** `PRIMARY_COLOR`/
+  `FOOTER_TEXT` (nie gelesen), `SOURCE_COST_*` (unsichtbarer zweiter Pflegeort),
+  `OLLAMA_PORT` (empfohlen, aber nicht ausgewertet), `DATABASE_URL` (fiel ohne
+  `file:`-Präfix kommentarlos auf die lokale Datei zurück), ein dritter
+  Freigabeketten-Pfad ohne Formular, die Preisseite verlinkt auf Instanzen, die
+  sie mit 404 beantworten.
+
 ### Behoben (Prüfung abgeschlossen)
 - **OData-Sync-Tab war ein weiterer Blender.** Eine "Konsole" gab beim Laden
   "Port 443 verschlüsselt mit zertifizierten Partner-Keys" aus und auf Knopfdruck

@@ -141,3 +141,20 @@ mit Fokus:
 Dazu Wächter-Zuwachs in `test_guardrails.py`: Tabellen-Scroll-Wrapper +
 eindeutige Wrapper-Schlüsse (M1), mehrzeilige Template-Kommentare (bestätigt
 durch einen echten Fund in N2).
+
+## Runde 5: Durchgang „unerreichbare Funktionen" (U1–U6)
+
+Der Durchgang stellte an jede Route, jede Einstellung und jedes Modellfeld
+dieselbe Frage: *Kommt jemand da hin, und bewirkt es etwas?* Die Funde waren
+selten kaputter Code – meistens fehlte die Tür. Deshalb prüfen die neuen Tests
+bewusst die **Verlinkung und die Wirkung**, nicht nur die Erreichbarkeit einer
+Route für sich.
+
+| Datei | Tests | Deckt ab |
+|---|---|---|
+| `test_auskunft.py` | 22 | Art. 15/20: Inhalt der Auskunft (Anschrift, Absagegrund, Nachrichten, consentId, KI-Einordnung samt Tragweite, § 164 über `disability_value_disclosed`), Portal-Download nur mit gültigem Token und nur eigene Daten, HR-Knopf nur für HR-Admin, Audit je Erteilung; Art. 7 Abs. 1: gültige Fassung wird gespeichert, nichts erfunden, Governance benennt die Lücke |
+| `test_tote_stellschrauben.py` | 18 | Seed legt keine ungelesenen Schlüssel mehr an, `OLLAMA_PORT` wirkt wirklich (inkl. `host:port` und Unsinn-Eingabe), Alt-Text erbt aus der Mediathek und wird nie leer, Standort-Koordinaten pflegbar (Komma erlaubt, unmögliche Werte verworfen), Freigabe-Urheber im Datenmodell **und** im Stellen-Verlauf, Freigabekette ohne den unerreichbaren dritten Pfad |
+| `test_einstiege.py` | 9 | Verlinkung von Talent-Pool-Abgleich, Audit-CSV, Job-Alert, Lösch-Ansicht der Best-Performer-Profile und Dokumentenliste im Modal; Preisseite nur im DEMO_MODE |
+
+Dazu zwei neue Wächter in `test_guardrails.py`: `GuardrailNoDeadSettingsTestCase`
+(Schalter ohne Leser) und `GuardrailNoOrphanRouteTestCase` (Route ohne Einstieg).

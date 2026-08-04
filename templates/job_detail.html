@@ -230,9 +230,9 @@
             <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
                 <h2 style="margin:0;"><i class="fa-solid fa-align-left"></i> Stellenbeschreibung</h2>
                 {% if job.descriptionEasy %}
-                <button type="button" id="easyToggle" onclick="toggleEasyLang()"
+                <button type="button" id="easyToggle" onclick="toggleEasyLang()" aria-pressed="false"
                         style="background:none;border:1px solid var(--glass-border);color:var(--text-main);border-radius:var(--border-radius-sm);padding:6px 12px;cursor:pointer;font-size:13px;">
-                    <i class="fa-solid fa-language"></i> <span id="easyToggleLabel">Leichte Sprache</span>
+                    <i class="fa-solid fa-language" aria-hidden="true"></i> <span id="easyToggleLabel">Leichte Sprache</span>
                 </button>
                 {% endif %}
             </div>
@@ -248,6 +248,9 @@
                 easy.style.display = showEasy ? 'block' : 'none';
                 std.style.display = showEasy ? 'none' : 'block';
                 label.textContent = showEasy ? 'Normale Sprache' : 'Leichte Sprache';
+                // Zustand fuer Screenreader (WCAG 4.1.2)
+                document.getElementById('easyToggle')
+                    .setAttribute('aria-pressed', showEasy ? 'true' : 'false');
             }
             </script>
             {% endif %}

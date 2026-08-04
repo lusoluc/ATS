@@ -67,6 +67,11 @@ def create_job(request):
                       request.POST.get('interview_guide', '').split(',')
                       if t.strip()][:12]
         description = request.POST.get('description', '').strip()
+        # B5 (BFSG/Leichte Sprache): Fassung ist jetzt im Editor pflegbar -
+        # vorher gab es das Feld nur im Modell und der Umschalter am
+        # Stellendetail blieb auf Produktivdaten fuer immer leer.
+        easy_sent = 'description_easy' in request.POST
+        description_easy = request.POST.get('description_easy', '').strip()
 
         tasks_raw = request.POST.get('tasks', '')
         requirements_raw = request.POST.get('requirements', '')
@@ -123,6 +128,8 @@ def create_job(request):
                 if guide_sent:
                     job.interviewGuideJson = guide_list
                 job.description = description
+                if easy_sent:
+                    job.descriptionEasy = description_easy or None
                 job.tasksJson = tasks
                 job.requirementsJson = requirements
                 job.screeningQuestionsJson = screening_questions
@@ -145,6 +152,7 @@ def create_job(request):
                     interviewGuideJson=guide_list,
                     panelDeadlineDays=panel_deadline,
                     description=description,
+                    descriptionEasy=description_easy or None,
                     tasksJson=tasks,
                     requirementsJson=requirements,
                     screeningQuestionsJson=screening_questions,

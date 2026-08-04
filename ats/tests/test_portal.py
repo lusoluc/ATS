@@ -423,3 +423,65 @@ class ApplicationConfirmationMailTestCase(TestCase):
             r = self._apply(email="robust@x.de")
         self.assertEqual(r.status_code, 200)               # Erfolgsseite
         self.assertEqual(Application.objects.count(), 1)   # Bewerbung da!
+
+
+class EasyLanguageBridgeTestCase(TestCase):
+    """B5: descriptionEasy ist im Stellen-Editor pfleg- und loeschbar.
+
+    Vorher existierte das Feld nur im Modell - der Umschalter am
+    Stellendetail blieb auf Produktivdaten fuer immer leer.
+    """
+
+    def _base_post(self, job=None, **extra):
+        from .factories import make_world
+        world = getattr(self, '_world', None) or make_world()
+        self._world = world
+        data = {
+            "title": "Pflegefachkraft (m/w/d)", "description": "Standardtext.",
+            "tasks": "Pflegen", "requirements": "Examen",
+            "facility": str(world.facility.id),
+            "location": str(world.location.id),
+            "job_family": str(world.job_family.id),
+            "workflow_state": str(world.published.id),
+            "pay_band": str(world.band.id),
+        }
+        if job is not None:
+            data["job_id"] = str(job.id)
+        data.update(extra)
+        return data
+
+    def test_create_and_update_easy_description(self):
+        from django.urls import reverse
+
+        from ..models import JobPosting
+        from .utils import make_user
+        self.client.force_login(make_user("easy-adm", role="HR-Admin"))
+        self.client.post(reverse('ats:create_job'), self._base_post(
+            description_easy="Wir suchen Sie. Die Arbeit ist gut."))
+        job = JobPosting.objects.get(title="Pflegefachkraft (m/w/d)")
+        self.assertEqual(job.descriptionEasy,
+                         "Wir suchen Sie. Die Arbeit ist gut.")
+        # Update mit geaendertem Text
+        self.client.post(reverse('ats:create_job'), self._base_post(
+            job=job, description_easy="Neuer einfacher Text."))
+        job.refresh_from_db()
+        self.assertEqual(job.descriptionEasy, "Neuer einfacher Text.")
+        # Leeren = Umschalter verschwindet (None statt Leerstring)
+        self.client.post(reverse('ats:create_job'), self._base_post(
+            job=job, description_easy=""))
+        job.refresh_from_db()
+        self.assertIsNone(job.descriptionEasy)
+
+    def test_update_without_field_keeps_existing(self):
+        from django.urls import reverse
+
+        from ..models import JobPosting
+        from .utils import make_user
+        self.client.force_login(make_user("easy-adm2", role="HR-Admin"))
+        self.client.post(reverse('ats:create_job'), self._base_post(
+            description_easy="Bleibt stehen."))
+        job = JobPosting.objects.get(title="Pflegefachkraft (m/w/d)")
+        # POST ohne description_easy (z. B. Alt-Client) loescht NICHT
+        self.client.post(reverse('ats:create_job'), self._base_post(job=job))
+        job.refresh_from_db()
+        self.assertEqual(job.descriptionEasy, "Bleibt stehen.")

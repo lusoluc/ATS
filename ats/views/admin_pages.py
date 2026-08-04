@@ -18,7 +18,6 @@ Decorator (@hr_admin_required), nicht im Template.
 Teil des View-Pakets; oeffentliche Namen werden in ats/views/__init__.py
 re-exportiert.
 """
-import socket
 
 from django.contrib import messages
 from django.contrib.auth.models import Group
@@ -42,20 +41,24 @@ __all__ = ["stats_page", "process_page", "templates_page", "cms_page", "ki_page"
 
 
 def gemma_status() -> str:
-    """Erreichbarkeit der lokalen KI (Ollama, Port 11434) als ONLINE/OFFLINE.
+    """Erreichbarkeit der lokalen KI als ONLINE/OFFLINE.
 
-    Wird sowohl von der KI-Zentrale als auch vom Dashboard-Badge genutzt;
-    bewusst mit kurzem Timeout, damit eine abwesende KI die Seite nicht
-    ausbremst. Docker und blankes localhost werden beide probiert.
+    Wird sowohl von der KI-Zentrale als auch vom Dashboard-Abzeichen genutzt.
+
+    Frueher stand hier eine eigene Verbindungspruefung mit fest verdrahtetem
+    Port 11434. Zwei Folgen:
+
+    * Wer OLLAMA_PORT setzte, sah ein OFFLINE-Abzeichen ueber einer laufenden
+      KI - die Anzeige widersprach der Funktion.
+    * Ohne KI kostete jeder Dashboard-Aufruf bis zu vier Sekunden, weil zwei
+      Verbindungsversuche mit je zwei Sekunden ins Leere liefen. Beim Kunden
+      ohne KI-Profil ist genau das der Normalfall.
+
+    Beides erledigt `ollama_reachable()`: dieselbe Adresse wie die echten
+    KI-Aufrufe, und die Antwort gilt kurz nach.
     """
-    for host in ("host.docker.internal", "127.0.0.1"):
-        try:
-            conn = socket.create_connection((host, 11434), timeout=2.0)
-            conn.close()
-            return 'ONLINE'
-        except OSError:
-            continue
-    return 'OFFLINE'
+    from .ai import ollama_reachable
+    return 'ONLINE' if ollama_reachable() else 'OFFLINE'
 
 
 @hr_admin_required

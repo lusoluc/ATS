@@ -5,6 +5,24 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (Tempo & Wahrheit der KI-Anzeige)
+
+- **Das Dashboard blockierte bis zu vier Sekunden pro Aufruf.** Das KI-Abzeichen
+  probierte bei JEDEM Seitenaufruf zwei Verbindungen mit je zwei Sekunden
+  Zeitlimit. Bei einer Installation ohne KI-Profil — dem Normalfall beim Kunden —
+  war damit die meistgeöffnete Seite des Produkts dauerhaft träge, ohne
+  erkennbaren Grund. Die Antwort gilt jetzt 20 Sekunden nach: kurz genug, dass
+  eine nachträglich gestartete KI von selbst gefunden wird.
+- **Das Abzeichen log bei abweichendem Port.** Es prüfte fest 11434, während die
+  echten KI-Aufrufe `OLLAMA_HOST`/`OLLAMA_PORT` folgen — wer den Port umstellte,
+  sah OFFLINE über einer laufenden KI. Anzeige und Funktion kommen jetzt aus
+  derselben Quelle.
+- Die Adress-Suche (zwei TCP-Verbindungen plus Namensauflösung) lief vor jedem
+  einzelnen KI-Aufruf neu, auch mitten in einer Schleife über dutzende
+  Bewerbungen. Jetzt einmal je Minute. `ai_doctor` setzt beide Puffer zurück,
+  damit eine Diagnose den Jetzt-Zustand zeigt und nicht eine alte Erkenntnis.
+- Nebenwirkung: Die Testsuite läuft von 1103 auf 830 Sekunden.
+
 ### Behoben (Durchgang „unerreichbare Funktionen")
 
 Ein systematischer Durchgang durch alle 122 Routen, Einstellungen und Modellfelder

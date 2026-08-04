@@ -12,7 +12,7 @@ from django.shortcuts import render
 from django.utils import timezone
 
 from ..audit import write_audit
-from ..models import Application, JobPosting, Page, SystemSetting
+from ..models import Application, JobPosting, Page
 from ..permissions import any_staff_required, has_full_access, recruiter_required, scope_applications, scope_jobs
 
 logger = logging.getLogger(__name__)
@@ -84,12 +84,11 @@ def analytics_view(request):
     # Rollen-adaptiv: Benchmarking/Kosten nur für Leitung (HR-Admin/Superuser)
     is_leadership = request.user.is_superuser or request.user.groups.filter(name='HR-Admin').exists()
     benchmark = location_benchmark(apps) if is_leadership else []
-    source_costs = {}
-    for s in SystemSetting.objects.filter(key__startswith='SOURCE_COST_'):
-        try:
-            source_costs[s.key.replace('SOURCE_COST_', '')] = float(s.value)
-        except (TypeError, ValueError):
-            continue
+    # Kanalkosten kommen ausschliesslich aus der Kanal-Verwaltung. Der frueher
+    # zusaetzlich ausgewertete SystemSetting-Schluessel SOURCE_COST_<QUELLE>
+    # hatte kein Bedienelement: ein unsichtbarer zweiter Pflegeort, der den
+    # sichtbaren still ueberschrieb.
+    source_costs: dict[str, float] = {}
     from ..models import SourceChannel as _SCh
     for _c in _SCh.objects.exclude(costAmount__isnull=True):
         source_costs[_c.slug] = float(_c.costAmount)

@@ -1,10 +1,11 @@
 """Stellen-Domaene: Vorlagen, Benefits, Textbausteine, Entgeltbaender, Ausschreibungen und Freigabe-Engine."""
 import uuid
 
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
-from .governance import User, WorkflowState
+from .governance import WorkflowState
 from .organization import (
     ContactPerson,
     Department,
@@ -217,7 +218,12 @@ class ApprovalStep(models.Model):
     status = models.CharField(max_length=50, default="PENDING")
     comments = models.TextField(blank=True, null=True)
     actionTakenAt = models.DateTimeField(blank=True, null=True)
-    actionTakenBy = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True, related_name='approvalSteps')
+    # Der Urheber zeigte frueher auf das Prisma-Alt-Modell `User`, mit dem sich
+    # in dieser Anwendung niemand anmeldet - das Feld war also nicht befuellbar
+    # und blieb in jeder Freigabe leer. Jetzt der echte Anmelde-Benutzer, damit
+    # eine Zustimmung einen Namen hat (§ 99 BetrVG-Nachweis).
+    actionTakenBy = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                      blank=True, null=True, related_name='approvalSteps')
 
     def __str__(self):
         return f"Step {self.stepOrder} for {self.approvalTicket}"

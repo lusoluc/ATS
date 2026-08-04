@@ -455,6 +455,24 @@ def archive_pay_band(request, band_id):
     return redirect("ats:pay_bands")
 
 
+def _coordinate(raw, limit=180.0):
+    """Breiten-/Laengengrad aus dem Formular: leer oder Unsinn -> None.
+
+    Werte ausserhalb des gueltigen Bereichs werden verworfen statt gespeichert;
+    eine Koordinate, die auf keinen Punkt der Erde zeigt, waere schlimmer als
+    gar keine - die Umkreissuche rechnete dann mit Unfug. Komma statt Punkt
+    ist erlaubt, weil deutsche Tastaturen es so nahelegen.
+    """
+    text = (raw or "").strip().replace(",", ".")
+    if not text:
+        return None
+    try:
+        value = float(text)
+    except ValueError:
+        return None
+    return value if -limit <= value <= limit else None
+
+
 # --- B14: Standorte ---------------------------------------------------------
 @hr_admin_required
 def locations_view(request):
@@ -466,6 +484,12 @@ def locations_view(request):
                 address=(request.POST.get("address") or "").strip() or None,
                 city=(request.POST.get("city") or "").strip() or None,
                 postalCode=(request.POST.get("postalCode") or "").strip() or None,
+                # Koordinaten waren nur ueber die Demo-Daten zu bekommen. Ohne
+                # sie faellt die Umkreissuche des Job-Alerts still auf
+                # Standort-Gleichheit zurueck (job_alerts.py) - der Nutzer
+                # stellt 50 km ein und bekommt trotzdem nur einen Ort.
+                lat=_coordinate(request.POST.get("lat"), 90.0),
+                lng=_coordinate(request.POST.get("lng"), 180.0),
             )
         return redirect("ats:locations")
     locations = Location.objects.filter(archived=False).order_by("name")

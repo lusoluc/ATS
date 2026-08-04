@@ -66,29 +66,40 @@ def get_ollama_url(endpoint="api/generate"):
     Dynamically determines the Ollama service URL.
     Checks host.docker.internal first (to reach the host from inside the Docker container),
     then falls back to 127.0.0.1 (local execution).
+
+    Der Port kam frueher aus einer festen 11434 - waehrend die Diagnose
+    (`manage.py ai_doctor`) empfahl, "Host/Port via OLLAMA_HOST/OLLAMA_PORT"
+    zu pruefen. Wer dem Rat folgte, aenderte eine Variable, die niemand las.
+    Jetzt gilt OLLAMA_PORT wirklich; OLLAMA_HOST darf wie bei Ollama ueblich
+    auch "rechner:11500" enthalten.
     """
     import socket
 
+    port = (os.environ.get("OLLAMA_PORT") or "").strip()
+    if not port.isdigit():
+        port = "11434"
+
     # Allow override via environment variable
-    env_host = os.environ.get("OLLAMA_HOST")
+    env_host = (os.environ.get("OLLAMA_HOST") or "").strip()
     if env_host:
-        return f"http://{env_host}:11434/{endpoint}"
+        host_part = env_host if ":" in env_host else f"{env_host}:{port}"
+        return f"http://{host_part}/{endpoint}"
 
     for host in ["host.docker.internal", "127.0.0.1"]:
         try:
-            s = socket.create_connection((host, 11434), timeout=2.0)
+            s = socket.create_connection((host, int(port)), timeout=2.0)
             s.close()
-            return f"http://{host}:11434/{endpoint}"
+            return f"http://{host}:{port}/{endpoint}"
         except Exception:
             pass
 
     # Intelligent default fallback: inside a container, host.docker.internal is the host
     try:
         socket.gethostbyname("host.docker.internal")
-        return f"http://host.docker.internal:11434/{endpoint}"
+        return f"http://host.docker.internal:{port}/{endpoint}"
     except Exception:
         pass
-    return f"http://127.0.0.1:11434/{endpoint}"
+    return f"http://127.0.0.1:{port}/{endpoint}"
 
 
 def get_ai_model():

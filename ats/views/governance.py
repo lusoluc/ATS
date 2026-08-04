@@ -132,6 +132,10 @@ def approvals_inbox(request):
         else:
             step.comments = comment or step.comments
         step.actionTakenAt = timezone.now()
+        # Wer zugestimmt hat, gehoert an die Zustimmung - bisher stand hier nur
+        # ein Zeitpunkt. Bei einer Vertretung ist der Urheber die handelnde
+        # Person; fuer wen sie gehandelt hat, steht im Kommentar.
+        step.actionTakenBy = request.user
         step.save()
         ticket = step.approvalTicket
         if action == 'approve':

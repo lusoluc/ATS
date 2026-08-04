@@ -451,7 +451,11 @@ class Command(BaseCommand):
                         id=r['id'], approvalTicket_id=r['approvalTicketId'], stepOrder=r['stepOrder'],
                         assignedRoleId=r['assignedRoleId'], assignedUserId=r['assignedUserId'],
                         status=r['status'], comments=r['comments'],
-                        actionTakenAt=self.parse_date(r['actionTakenAt']), actionTakenBy_id=r['actionTakenById']
+                        # actionTakenBy zeigt jetzt auf den Anmelde-Benutzer.
+                        # Die Prisma-IDs stammen aus der alten User-Tabelle und
+                        # passen dort nicht hinein; wer entschieden hat, steht
+                        # fuer den Altbestand im uebernommenen Audit-Log.
+                        actionTakenAt=self.parse_date(r['actionTakenAt'])
                     )
 
                 # AppTicket

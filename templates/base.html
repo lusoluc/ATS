@@ -921,6 +921,19 @@
             opacity:.75; font-weight:700; }
 
         .list-row { display: flex; justify-content: space-between; align-items: center; padding: var(--space-3); border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-main); }
+
+        /* Systemeinstellung "Bewegung reduzieren" respektieren (WCAG 2.3.3):
+           der manuelle ADHS-Fokusmodus ergaenzt das, ersetzt es aber nicht.
+           Steht bewusst am Ende des Blocks, damit es alle Animationen und
+           Hover-Transitions dieser Datei sicher uebersteuert. */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
     </style>
     {% block extra_head %}{% endblock %}
     {% include 'includes/branding_css.html' %}
@@ -955,10 +968,14 @@
             </form>
             {% endif %}
 
-            <button class="mobile-toggle" id="menuToggle">
-                <i class="fa-solid fa-bars"></i>
+            <button class="mobile-toggle" id="menuToggle" aria-label="Menü öffnen"
+                    aria-expanded="false" aria-controls="navLinks">
+                <i class="fa-solid fa-bars" aria-hidden="true"></i>
             </button>
 
+            {# Echtes nav-Landmark: eine ul im header ist fuer Screenreader
+               KEINE Navigations-Landmarke (WCAG 1.3.1). #}
+            <nav aria-label="Hauptnavigation" style="display:contents;">
             <ul class="nav-links" id="navLinks">
                 {% if nav_pages %}
                     {% for p in nav_pages %}
@@ -993,6 +1010,7 @@
                 </li>
                 {% endif %}
             </ul>
+            </nav>
         </div>
     </header>
 
@@ -1037,11 +1055,16 @@
             menuToggle.addEventListener('click', () => {
                 navLinks.classList.toggle('active');
                 const icon = menuToggle.querySelector('i');
-                if (navLinks.classList.contains('active')) {
+                const open = navLinks.classList.contains('active');
+                if (open) {
                     icon.classList.replace('fa-bars', 'fa-xmark');
                 } else {
                     icon.classList.replace('fa-xmark', 'fa-bars');
                 }
+                // Zustand fuer Screenreader (WCAG 4.1.2)
+                menuToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+                menuToggle.setAttribute('aria-label',
+                    open ? 'Menü schließen' : 'Menü öffnen');
             });
         }
     </script>
@@ -1051,17 +1074,19 @@
          ===================================================================== -->
     <div id="inclusion-ruler"></div>
     
-    <button class="inclusion-widget-btn" onclick="toggleInclusionPanel()" aria-label="Barrierefreiheit-Einstellungen öffnen">
-        <i class="fa-solid fa-universal-access"></i>
+    <button class="inclusion-widget-btn" id="inclusionTrigger" onclick="toggleInclusionPanel()"
+            aria-label="Barrierefreiheit-Einstellungen öffnen"
+            aria-expanded="false" aria-controls="inclusionPanel">
+        <i class="fa-solid fa-universal-access" aria-hidden="true"></i>
     </button>
-    
+
     <div class="inclusion-panel" id="inclusionPanel">
         <div class="inclusion-panel-header">
             <span class="inclusion-panel-title">
-                <i class="fa-solid fa-sliders"></i> Barrierefreiheit (BFSG)
+                <i class="fa-solid fa-sliders" aria-hidden="true"></i> Barrierefreiheit (BFSG)
             </span>
-            <button onclick="toggleInclusionPanel()" style="background:none; border:none; color:#a6aebc; cursor:pointer; font-size:16px;">
-                <i class="fa-solid fa-xmark"></i>
+            <button onclick="toggleInclusionPanel()" aria-label="Einstellungen schließen" style="background:none; border:none; color:#a6aebc; cursor:pointer; font-size:16px;">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
             </button>
         </div>
         
@@ -1072,7 +1097,10 @@
                 <span class="inclusion-option-desc">Optimierte Schriftart zur leichteren Lesbarkeit.</span>
             </div>
             <label class="inclusion-switch">
-                <input type="checkbox" id="toggleDyslexia" onchange="toggleDyslexiaMode()">
+                {# aria-label: das umschliessende Label enthaelt nur den
+                   Slider-Span - ohne Namen liest der Screenreader vier
+                   anonyme Checkboxen vor (WCAG 4.1.2). #}
+                <input type="checkbox" id="toggleDyslexia" onchange="toggleDyslexiaMode()" aria-label="Legasthenie-Schrift aktivieren">
                 <span class="inclusion-slider"></span>
             </label>
         </div>
@@ -1084,7 +1112,7 @@
                 <span class="inclusion-option-desc">Aktiviert maximalen Kontrast für Sehbehinderte.</span>
             </div>
             <label class="inclusion-switch">
-                <input type="checkbox" id="toggleContrast" onchange="toggleContrastMode()">
+                <input type="checkbox" id="toggleContrast" onchange="toggleContrastMode()" aria-label="Kontrast-Modus aktivieren">
                 <span class="inclusion-slider"></span>
             </label>
         </div>
@@ -1096,7 +1124,7 @@
                 <span class="inclusion-option-desc">Reizreduktion: Blendet alle ablenkenden Elemente aus.</span>
             </div>
             <label class="inclusion-switch">
-                <input type="checkbox" id="toggleAdhd" onchange="toggleAdhdMode()">
+                <input type="checkbox" id="toggleAdhd" onchange="toggleAdhdMode()" aria-label="ADHS-Fokusmodus aktivieren">
                 <span class="inclusion-slider"></span>
             </label>
         </div>
@@ -1108,7 +1136,7 @@
                 <span class="inclusion-option-desc">Eine geführte Lesehilfe, die Ihrem Mauszeiger folgt.</span>
             </div>
             <label class="inclusion-switch">
-                <input type="checkbox" id="toggleRuler" onchange="toggleReadingRuler()">
+                <input type="checkbox" id="toggleRuler" onchange="toggleReadingRuler()" aria-label="Lese-Lineal aktivieren">
                 <span class="inclusion-slider"></span>
             </label>
         </div>
@@ -1156,14 +1184,33 @@
         });
         
         function toggleInclusionPanel() {
-            if (panelEl) {
-                if (panelEl.style.display === 'flex') {
-                    panelEl.style.display = 'none';
-                } else {
-                    panelEl.style.display = 'flex';
-                }
+            if (!panelEl) { return; }
+            const trigger = document.getElementById('inclusionTrigger');
+            const opening = panelEl.style.display !== 'flex';
+            panelEl.style.display = opening ? 'flex' : 'none';
+            // Fokus-Management + Zustand (WCAG 2.4.3 / 4.1.2): beim Oeffnen
+            // in das Panel, beim Schliessen zurueck zum Ausloeser.
+            if (trigger) {
+                trigger.setAttribute('aria-expanded', opening ? 'true' : 'false');
+                trigger.setAttribute('aria-label', opening
+                    ? 'Barrierefreiheit-Einstellungen schließen'
+                    : 'Barrierefreiheit-Einstellungen öffnen');
+            }
+            if (opening) {
+                const first = panelEl.querySelector('input, button');
+                if (first) { first.focus(); }
+            } else if (trigger) {
+                trigger.focus();
             }
         }
+
+        // Escape schliesst das offene Panel (Tastatur-Gleichwertigkeit)
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && panelEl
+                    && panelEl.style.display === 'flex') {
+                toggleInclusionPanel();
+            }
+        });
         
         function toggleDyslexiaMode() {
             if (toggleDyslexia.checked) {

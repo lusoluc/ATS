@@ -643,7 +643,15 @@ def execute_workflow_actions(app, actions):
             # keine Endlosschleifen).
             target = (action.get('to') or '').strip().upper()
             allowed = {'NEW', 'IN_REVIEW', 'INVITED'}
-            if target in allowed and target != app.status:
+            # Das Sichtungs-Gremium ist auch fuer die Automatik bindend: eine
+            # Regel "bei IN_REVIEW weiter auf INVITED" haette den
+            # Mehr-Augen-Beschluss sonst systematisch ausgehebelt - ohne
+            # Mensch, ohne Override, ohne Spur.
+            _panel_block = None
+            if target == 'INVITED':
+                from ..panel import invitation_blocked_reason
+                _panel_block = invitation_blocked_reason(app)
+            if target in allowed and target != app.status and not _panel_block:
                 previous = app.status
                 app.status = target
                 app.save(update_fields=['status'])
@@ -660,7 +668,8 @@ def execute_workflow_actions(app, actions):
                     applicationId=str(app.id),
                     metadataJson=json.dumps({
                         "type": action_type, "target": target or "?",
-                        "reason": ("Zu-/Absagen sind der menschlichen "
+                        "reason": (_panel_block or
+                                   "Zu-/Absagen sind der menschlichen "
                                    "Entscheidung vorbehalten (Human-in-the-"
                                    "Loop) bzw. Ziel unbekannt/identisch.")}))
 
@@ -815,13 +824,21 @@ def reorder_board(request):
 
 
 # --- WP4: Bulk-Statuswechsel im Kanban (UC-UM-08/09) --------------------------
-@any_staff_required
+@recruiter_required
 def bulk_update_status(request):
     """Setzt den Status mehrerer Bewerbungen in einem Schritt (BOLA-gescoped).
 
-    Hinweis: Workflow-Automationen laufen bewusst nicht je Karte mit –
-    Massenaktionen sollen keine Mail-/Automationsflut auslösen (UC-UM-09:
-    Sammelaktionen sind kontrollierte, manuelle Eingriffe).
+    Die Abkuerzung darf keine Schutzplanke umgehen - sie unterliegt denselben
+    Regeln wie der Einzelweg:
+    - dieselbe Rolle (vorher @any_staff_required: ein Viewer konnte per
+      Sammelklick einladen und absagen, was er einzeln nicht darf),
+    - dasselbe Gremium-Gate vor einer Einladung,
+    - eine Absage bekommt eine Begruendung UND wird zugestellt (vorher
+      erfuhr die Person gar nichts, und im Portal konnte ein veralteter
+      K.O.-Grund aus einem frueheren Vorgang stehen bleiben).
+
+    Workflow-Automationen laufen weiterhin bewusst nicht je Karte mit
+    (UC-UM-09: keine Automationsflut aus einem Sammelklick).
     """
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'POST erforderlich'}, status=405)
@@ -829,7 +846,8 @@ def bulk_update_status(request):
     if new_status not in ['NEW', 'IN_REVIEW', 'INVITED', 'REJECTED']:
         return JsonResponse({'success': False, 'error': 'Ungültiger Status'}, status=400)
     ids = request.POST.getlist('ids[]') or request.POST.getlist('ids')
-    updated, skipped = 0, 0
+    updated, skipped, blocked = 0, 0, []
+    from ..panel import invitation_blocked_reason
     for app_id in ids:
         app = Application.objects.filter(id=app_id).first()
         if not app or not can_access_application(request.user, app):
@@ -838,12 +856,27 @@ def bulk_update_status(request):
         old = app.status
         if old == new_status:
             continue
+        if new_status == 'INVITED':
+            reason = invitation_blocked_reason(app)
+            if reason:
+                blocked.append(f"{app.applicant.firstName}: {reason}")
+                skipped += 1
+                continue
         app.status = new_status
-        app.save(update_fields=['status', 'updatedAt'])
+        if new_status == 'REJECTED':
+            app.withdrawReason = 'Absage im Sammelvorgang.'
+            app.save(update_fields=['status', 'withdrawReason', 'updatedAt'])
+        else:
+            app.save(update_fields=['status', 'updatedAt'])
         write_audit("STATUS_CHANGE_BULK", user=request.user, application_id=app.id,
                     oldStatus=old, newStatus=new_status)
+        if new_status == 'REJECTED':
+            # Eine Absage, die niemand erfaehrt, ist keine Absage.
+            # _send_rejection_notice stellt genau einmal zu (Audit-Marker).
+            _send_rejection_notice(request, app)
         updated += 1
-    return JsonResponse({'success': True, 'updated': updated, 'skipped': skipped})
+    return JsonResponse({'success': True, 'updated': updated, 'skipped': skipped,
+                         'blocked': blocked})
 
 
 # --- Sammel-Postfach: offene Bewerber-Fragen nach Anliegen gebuendelt --------
@@ -1417,6 +1450,15 @@ def talent_pool_view(request):
     now = timezone.now()
     contacted = {(c.subscription_id, c.jobPosting_id): c.sentAt
                  for c in TalentPoolContact.objects.all()}
+    # BOLA auch fuer die Personenliste: Die Stellenliste daneben war laengst
+    # gescoped, die E-Mail-Adressen im Pool nicht - ein auf eine Einrichtung
+    # begrenzter Recruiter sah ALLE Pool-Kontakte der Organisation. Wer
+    # eingeschraenkt ist, sieht nur Personen, deren Kriterien in seinen
+    # Bereich fallen.
+    from ..permissions import has_full_access
+    _full = has_full_access(request.user)
+    _scope_fams = {str(j.jobFamily_id) for j in published if j.jobFamily_id}
+    _scope_locs = {str(j.location_id) for j in published if j.location_id}
     rows = []
     for sub in TalentPoolSubscription.objects.order_by('-createdAt')[:500]:
         try:
@@ -1425,6 +1467,8 @@ def talent_pool_view(request):
             crit = {}
         fam_ids = set(crit.get('job_families') or [])
         loc_ids = set(crit.get('locations') or [])
+        if not _full and not (fam_ids & _scope_fams or loc_ids & _scope_locs):
+            continue      # ausserhalb des eigenen Bereichs: nicht anzeigen
         matches = []
         if sub.expiresAt >= now and (fam_ids or loc_ids):
             for j in published:

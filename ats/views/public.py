@@ -422,6 +422,23 @@ def bewerben(request, job_id):
             # (Platzhalter {name}, {stelle}, {firma}, {portal}); sonst
             # freundlicher Standardtext.
             # Ein Mailfehler darf die Bewerbung NIE scheitern lassen.
+            # K.O.-Absage: Wer an einem Pflichtkriterium scheitert, ist bereits
+            # abgelehnt - dann darf NICHT die Eingangsbestaetigung "wir melden
+            # uns nach der Sichtung" rausgehen. Stattdessen die echte Absage
+            # mit der objektiven Begruendung (N2), ueber denselben Weg wie
+            # jede andere Absage (genau eine Zustellung, auditiert).
+            if ko_failed:
+                try:
+                    from .applications import _send_rejection_notice
+                    _send_rejection_notice(request, application)
+                except Exception:
+                    logger.exception(
+                        'K.O.-Absage fuer Bewerbung %s fehlgeschlagen',
+                        application.id)
+                return render(request, 'bewerbung_success.html',
+                              {'job': job, 'nav_pages': nav_pages,
+                               'portal_url': portal_url, 'ko_rejected': True})
+
             try:
                 from django.core.mail import send_mail
 

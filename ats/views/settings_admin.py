@@ -143,10 +143,30 @@ def save_workflow_state(request):
         name = request.POST.get('name', '').strip().lower()
         description = request.POST.get('description', '').strip()
 
+        # "published" und "draft" sind keine gewoehnlichen Namen, sondern der
+        # Schalter fuer die oeffentliche Sichtbarkeit: die ganze Anwendung
+        # vergleicht workflowState__name gegen diese Strings. Wer den
+        # draft-Datensatz auf "published" umbenennt, schaltet SAEMTLICHE
+        # Entwuerfe gleichzeitig online - ohne Entgeltband, ohne genehmigten
+        # Bedarf, mit offenem Freigabe-Ticket. Deshalb sind beide Namen
+        # gesperrt (weder Ziel noch Quelle einer Umbenennung).
+        RESERVED = {'published', 'draft'}
+
         with transaction.atomic():
             if state_id:
                 state = get_object_or_404(WorkflowState, id=state_id)
                 old_name = state.name
+                if old_name != name and (name in RESERVED or old_name in RESERVED):
+                    write_audit('WORKFLOW_STATE_RENAME_BLOCKED',
+                                user=request.user, oldName=old_name, newName=name)
+                    messages.warning(
+                        request,
+                        'Die Zustände „published" und „draft" steuern die '
+                        'öffentliche Sichtbarkeit und lassen sich nicht '
+                        'umbenennen – ein Umbenennen würde alle Entwürfe an '
+                        'den Freigabe- und Entgelt-Gates vorbei '
+                        'veröffentlichen.')
+                    return redirect('ats:process_page')
                 state.name = name
                 state.description = description
                 state.save()

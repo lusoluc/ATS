@@ -127,3 +127,51 @@ class KoRejectionMailTestCase(TestCase):
         body = self._notice_body(app)
         self.assertNotIn("laut Ausschreibung", body)
         self.assertNotIn("anders entschieden", body)
+
+
+class KoRejectionIsDeliveredTestCase(TestCase):
+    """U1: Wer an einem Pflichtkriterium scheitert, bekommt die ABSAGE -
+    nicht die Eingangsbestätigung "wir melden uns nach der Sichtung".
+
+    Der schwerste Fund des Durchgangs: Die Person war im selben
+    Transaktionsblock bereits abgelehnt, erfuhr es per Mail aber nie.
+    """
+
+    def setUp(self):
+        self.world = make_world()
+        self.job = _ko_job(self.world)
+
+    def _apply(self, answer):
+        cv = SimpleUploadedFile("cv.pdf", b"%PDF-1.4 x",
+                                content_type="application/pdf")
+        return self.client.post(reverse('ats:bewerben', args=[self.job.id]), {
+            "first_name": "Nia", "last_name": "Muster",
+            "email": "ko-mail@x.de", "cover_letter": "Hallo.",
+            "consent_privacy": "on", "cv_file": cv,
+            "question_q-ko1": answer})
+
+    def test_rejected_applicant_gets_rejection_not_confirmation(self):
+        from django.core import mail
+
+        from ..models import AuditLog
+        mail.outbox = []
+        resp = self._apply("NO")
+        self.assertEqual(resp.status_code, 200)
+        # Absage zugestellt und protokolliert
+        self.assertTrue(AuditLog.objects.filter(
+            action='REJECTION_NOTICE_SENT').exists())
+        self.assertFalse(AuditLog.objects.filter(
+            action='APPLICATION_CONFIRMATION_SENT').exists())
+        body = "\n".join(m.body for m in mail.outbox)
+        self.assertIn(KO_QUESTION, body)               # Grund steht drin
+        self.assertNotIn("melden uns, sobald", body)   # keine Falschaussage
+        # Auch die Seite verspricht keine Prüfung mehr
+        self.assertContains(resp, "leider nicht berücksichtigen")
+
+    def test_accepted_applicant_still_gets_confirmation(self):
+        from ..models import AuditLog
+        self._apply("YES")
+        self.assertTrue(AuditLog.objects.filter(
+            action='APPLICATION_CONFIRMATION_SENT').exists())
+        self.assertFalse(AuditLog.objects.filter(
+            action='REJECTION_NOTICE_SENT').exists())

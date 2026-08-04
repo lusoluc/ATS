@@ -382,6 +382,10 @@ def interviews_ics(request):
                   f"LOCATION:{iv.meetingLink or iv.locationType}",
                   'END:VEVENT']
     lines.append('END:VCALENDAR')
+    # Diese Datei enthaelt Klarnamen aller anstehenden Gespraeche - derselbe
+    # Nachweis wie beim CV-Download (READ_CV) gehoert also auch hierher.
+    # Vorher war es der einzige Datei-Download der Anwendung ohne Spur.
+    write_audit('CALENDAR_EXPORT', user=request.user, events=len(ivs))
     resp = HttpResponse('\r\n'.join(lines), content_type='text/calendar; charset=utf-8')
     resp['Content-Disposition'] = 'attachment; filename="securats-interviews.ics"'
     return resp

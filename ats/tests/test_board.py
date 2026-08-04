@@ -797,3 +797,57 @@ class JobPoolMatchPageTestCase(TestCase):
         sc.locations.add(self.world.location)
         r = self.client.get(reverse('ats:job_pool_matches', args=[foreign.id]))
         self.assertEqual(r.status_code, 404)
+
+
+class BulkActionGuardrailsTestCase(TestCase):
+    """U1: Die Sammelaktion darf keine Schutzplanke umgehen.
+
+    Gefunden im Durchgang "unerreichbare Funktionen": bulk_update_status lief
+    unter @any_staff_required (ein Viewer konnte massenhaft einladen und
+    absagen), ohne Gremium-Gate und ohne Absage-Zustellung.
+    """
+
+    def setUp(self):
+        from .factories import make_application, make_job, make_world
+        self.world = make_world()
+        self.job = make_job(self.world)
+        self.app = make_application(self.job, status="IN_REVIEW")
+
+    def _bulk(self, status):
+        return self.client.post(reverse('ats:bulk_update_status'),
+                                data={"status": status, "ids[]": [str(self.app.id)]})
+
+    def test_viewer_is_rejected(self):
+        self.client.force_login(make_user("bulk-viewer", role="Viewer"))
+        resp = self._bulk("INVITED")
+        self.assertNotEqual(resp.status_code, 200)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, "IN_REVIEW")
+
+    def test_panel_gate_blocks_bulk_invite(self):
+        import json as _json
+        panel = make_user("bulk-panel", role="Recruiter")
+        self.job.panelUserIdsJson = [str(panel.id)]
+        self.job.save(update_fields=['panelUserIdsJson'])
+        self.client.force_login(make_user("bulk-rec", role="Recruiter"))
+        resp = self._bulk("INVITED")
+        self.assertEqual(resp.status_code, 200)
+        data = _json.loads(resp.content)
+        self.assertEqual(data['updated'], 0)
+        self.assertTrue(data['blocked'])
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, "IN_REVIEW")   # Gremium wirkt
+
+    def test_bulk_rejection_reaches_the_person(self):
+        from django.core import mail
+
+        from ..models import AuditLog
+        self.client.force_login(make_user("bulk-rec2", role="Recruiter"))
+        mail.outbox = []
+        self._bulk("REJECTED")
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, "REJECTED")
+        self.assertTrue(self.app.withdrawReason)          # Grund gesetzt
+        self.assertTrue(AuditLog.objects.filter(
+            action='REJECTION_NOTICE_SENT').exists())     # zugestellt
+        self.assertTrue(mail.outbox)

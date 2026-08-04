@@ -857,6 +857,18 @@ def staffing_requests_view(request):
                 job.save(update_fields=['screeningQuestionsJson'])
                 write_audit('MINIMUM_STANDARD_APPLIED', user=request.user,
                             job=job.title)
+            # Frageverbot gilt auch hier: Dieser Pfad uebernimmt die Fragen
+            # einer Vorgaengerstelle wortgleich - stammt dort (aus Altbestand,
+            # Import oder Django-Admin) eine Gehaltshistorie-Frage, wurde sie
+            # ungefiltert in jede neue Ausschreibung vererbt, samt
+            # automatischer K.O.-Absage (EU-RL 2023/970 Art. 5 Abs. 2).
+            from ..pay_transparency import strip_salary_history_questions
+            _removed = strip_salary_history_questions(job)
+            if _removed:
+                job.save(update_fields=['screeningQuestionsJson'])
+                write_audit('PAY_HISTORY_QUESTION_BLOCKED', user=request.user,
+                            job=job.title, removed=len(_removed),
+                            via='requisition_conversion')
             from ..approvals import ensure_approval_gate
             ticket = ensure_approval_gate(job)
             if ticket and ticket.status == 'PENDING':

@@ -10,12 +10,16 @@ import urllib.request
 from django.core.management.base import BaseCommand
 
 from ats.views import get_ai_model, get_ollama_url
+from ats.views.ai import reset_ollama_url_cache
 
 
 class Command(BaseCommand):
     help = "Prüft Erreichbarkeit, Modell-Verfügbarkeit und Latenz der lokalen LLM."
 
     def handle(self, *args, **options):
+        # Eine Diagnose soll den JETZIGEN Zustand zeigen, nicht eine Minute
+        # alte Erkenntnis aus dem Suchpuffer.
+        reset_ollama_url_cache()
         model = get_ai_model()
         base = get_ollama_url("api/tags")
         self.stdout.write(f"Ollama-URL: {base}")

@@ -61,6 +61,69 @@ def _run_in_background(worker):
     return t
 
 
+#: Gefundene Basis-Adresse (host:port) samt Zeitpunkt - siehe _discover_ollama_base.
+_OLLAMA_BASE_CACHE: tuple[float, str] | None = None
+
+#: Wie lange eine Suche gilt. Kurz genug, dass ein spaeter gestarteter Ollama
+#: von selbst gefunden wird, lang genug, dass eine Schleife von KI-Aufrufen
+#: nicht bei jedem Schritt neu sucht.
+OLLAMA_DISCOVERY_TTL = 60.0
+
+
+def reset_ollama_url_cache() -> None:
+    """Suche vergessen - fuer Tests und fuer `ai_doctor`, das den echten
+    Zustand sehen soll statt einer Minute alter Erkenntnis."""
+    global _OLLAMA_BASE_CACHE
+    _OLLAMA_BASE_CACHE = None
+
+
+def _discover_ollama_base(port: str) -> str:
+    """Sucht die erreichbare Ollama-Adresse - hoechstens einmal je TTL.
+
+    WARUM GEPUFFERT: Die Suche probiert zwei TCP-Verbindungen mit je zwei
+    Sekunden Zeitlimit und danach eine Namensaufloesung. Sie lief bei JEDEM
+    KI-Aufruf erneut - also auch mitten in einer Schleife ueber 30 Bewerbungen,
+    und selbst dann, wenn die vorherige Antwort eine Sekunde alt war. Ohne
+    laufenden Ollama kostete jeder Aufruf mehrere Sekunden, bevor ueberhaupt
+    etwas passierte; in der Testsuite summierte sich das auf Minuten.
+
+    Die Puffer-Zeit ist bewusst kurz: Wer Ollama nachtraeglich startet, muss
+    nicht neu starten, sondern wartet hoechstens eine Minute.
+    """
+    global _OLLAMA_BASE_CACHE
+    import socket
+    import time
+
+    now = time.monotonic()
+    cached = _OLLAMA_BASE_CACHE
+    if cached is not None and now - cached[0] < OLLAMA_DISCOVERY_TTL:
+        found = cached[1]
+        # Ein gepufferter Treffer gilt nur fuer denselben Port.
+        if found.endswith(f":{port}"):
+            return found
+
+    base = None
+    for host in ["host.docker.internal", "127.0.0.1"]:
+        try:
+            s = socket.create_connection((host, int(port)), timeout=2.0)
+            s.close()
+            base = f"{host}:{port}"
+            break
+        except Exception:              # noqa: BLE001 - jeder Fehler = nicht da
+            pass
+
+    if base is None:
+        # Kein Dienst erreichbar: im Container ist host.docker.internal der Wirt.
+        try:
+            socket.gethostbyname("host.docker.internal")
+            base = f"host.docker.internal:{port}"
+        except Exception:              # noqa: BLE001
+            base = f"127.0.0.1:{port}"
+
+    _OLLAMA_BASE_CACHE = (now, base)
+    return base
+
+
 def get_ollama_url(endpoint="api/generate"):
     """
     Dynamically determines the Ollama service URL.
@@ -73,8 +136,6 @@ def get_ollama_url(endpoint="api/generate"):
     Jetzt gilt OLLAMA_PORT wirklich; OLLAMA_HOST darf wie bei Ollama ueblich
     auch "rechner:11500" enthalten.
     """
-    import socket
-
     port = (os.environ.get("OLLAMA_PORT") or "").strip()
     if not port.isdigit():
         port = "11434"
@@ -85,21 +146,7 @@ def get_ollama_url(endpoint="api/generate"):
         host_part = env_host if ":" in env_host else f"{env_host}:{port}"
         return f"http://{host_part}/{endpoint}"
 
-    for host in ["host.docker.internal", "127.0.0.1"]:
-        try:
-            s = socket.create_connection((host, int(port)), timeout=2.0)
-            s.close()
-            return f"http://{host}:{port}/{endpoint}"
-        except Exception:
-            pass
-
-    # Intelligent default fallback: inside a container, host.docker.internal is the host
-    try:
-        socket.gethostbyname("host.docker.internal")
-        return f"http://host.docker.internal:{port}/{endpoint}"
-    except Exception:
-        pass
-    return f"http://127.0.0.1:{port}/{endpoint}"
+    return f"http://{_discover_ollama_base(port)}/{endpoint}"
 
 
 def get_ai_model():
@@ -111,6 +158,55 @@ def get_ai_model():
     except Exception:
         pass
     return "gemma:2b"
+
+
+#: Letzte Erreichbarkeits-Antwort samt Zeitpunkt (siehe ollama_reachable).
+_OLLAMA_REACHABLE_CACHE: tuple[float, bool] | None = None
+
+#: Kurz halten: Das Abzeichen darf nicht minutenlang eine tote KI als online
+#: ausgeben - aber auch nicht bei jedem Seitenaufruf blockieren.
+OLLAMA_STATUS_TTL = 20.0
+
+
+def ollama_reachable() -> bool:
+    """Ist die lokale KI erreichbar? Hoechstens einmal je TTL wirklich gefragt.
+
+    WARUM GEPUFFERT: Diese Frage haengt am Dashboard-Abzeichen - also an der
+    meistgeoeffneten Seite des Produkts. Sie kostete bei ABWESENDER KI bis zu
+    vier Sekunden (zwei Verbindungsversuche a zwei Sekunden), und zwar bei
+    JEDEM Aufruf. Genau die Konstellation, die beim Kunden ohne KI-Profil der
+    Normalfall ist: Das Dashboard war dort dauerhaft langsam, ohne dass jemand
+    den Grund sah.
+
+    Ausserdem nutzt die Pruefung jetzt dieselbe Adresse wie die echten
+    KI-Aufrufe. Vorher stand hier fest Port 11434 - wer OLLAMA_PORT setzte,
+    bekam ein OFFLINE-Abzeichen ueber einer funktionierenden KI.
+    """
+    global _OLLAMA_REACHABLE_CACHE
+    import socket
+    import time
+    from urllib.parse import urlsplit
+
+    now = time.monotonic()
+    cached = _OLLAMA_REACHABLE_CACHE
+    if cached is not None and now - cached[0] < OLLAMA_STATUS_TTL:
+        return cached[1]
+
+    parts = urlsplit(get_ollama_url("api/tags"))
+    host, port = parts.hostname or "127.0.0.1", parts.port or 11434
+    try:
+        socket.create_connection((host, port), timeout=2.0).close()
+        alive = True
+    except OSError:
+        alive = False
+    _OLLAMA_REACHABLE_CACHE = (now, alive)
+    return alive
+
+
+def reset_ollama_status_cache() -> None:
+    """Erreichbarkeits-Antwort vergessen (Tests, Diagnose)."""
+    global _OLLAMA_REACHABLE_CACHE
+    _OLLAMA_REACHABLE_CACHE = None
 
 
 def make_ollama_request(url, payload, timeout=8.0):

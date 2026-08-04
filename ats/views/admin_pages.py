@@ -176,18 +176,25 @@ def learned_scoring_view(request):
     aus (EU AI Act, Hochrisiko)."""
     from ..insights import resolve_learning_scope
     from ..models import JobFamily, JobPosting
-    from ..scoring_eval import backtest, is_scoring_enabled
+    from ..scoring_eval import backtest, drift_report, is_scoring_enabled
     families = list(JobFamily.objects.all()[:40])
     rows = []
     for fam in families:
         job = JobPosting.objects.filter(jobFamily=fam).first()
         if not job:
             continue
-        bt = backtest(resolve_learning_scope(job))
-        rows.append({'family': fam.name, 'bt': bt})
+        scope = resolve_learning_scope(job)
+        # L5: neben der Momentaufnahme (Backtest) auch die Fruehwarnung -
+        # wird das Modell schlechter, und entscheidet das Team dagegen?
+        rows.append({'family': fam.name, 'bt': backtest(scope),
+                     'drift': drift_report(scope)})
     rows.sort(key=lambda r: (not r['bt'].beats_baseline, -r['bt'].total))
+    # Handlungsbedarf nach oben: fallender Trend oder hohe Gegen-Quote.
+    alerts = [r for r in rows
+              if r['drift'].trend == 'fallend'
+              or (r['drift'].override_rate or 0) >= 0.30]
     return render(request, 'admin_pages/learned_scoring.html', {
-        'enabled': is_scoring_enabled(), 'rows': rows})
+        'enabled': is_scoring_enabled(), 'rows': rows, 'alerts': alerts})
 
 
 @hr_admin_required

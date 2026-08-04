@@ -410,6 +410,17 @@ A-Bewerber tatsächlich häufiger eingeladen werden als C (Kalibrierung).
 schlägt** — sonst bleibt es aus. Ein Modell, das nur so tut, kommt gar nicht erst
 zum Vorschein. Anti-Blender-Prinzip, angewandt auf KI.
 
+**Die Frühwarnung.** Eine Momentaufnahme genügt nicht: Ein Modell, das vor drei
+Monaten passte, kann heute an der Realität vorbeilaufen — neue Stellenzuschnitte,
+anderer Bewerbermarkt. Deshalb misst SecurATS zwei Signale im Zeitverlauf. Erstens
+die **Treffsicherheit in zwei aufeinanderfolgenden Prüf-Zeiträumen** (gelernt wird
+nur auf den ältesten Daten, geprüft auf beiden späteren Fenstern) — fällt sie ab,
+steht das als „fallend" in der Messstrecke. Zweitens die **Quote, in der das Team
+gegen die gelernte Note entscheidet** (Note A, trotzdem abgesagt — oder Note D,
+trotzdem eingeladen). Diese Quote kippt früher als die Trefferquote und ist damit
+das schnellste Warnsignal überhaupt. Jede Auffälligkeit erscheint oben auf der
+Seite **mit dem konkreten nächsten Schritt**, nicht als nackte Zahl.
+
 **Lokal, opt-in, fallback-sicher.** Alle KI läuft lokal (Gemma) — keine
 Bewerberdaten verlassen das Haus, keine Cloud-Kosten. Ist die KI nicht erreichbar,
 fällt jede Funktion sauber auf einen regelbasierten Weg zurück; der Ablauf bricht

@@ -457,16 +457,33 @@ class ModalDecisionButtonsTestCase(TestCase):
         self.assertContains(r, 'modal-decide-rejected')
         self.assertContains(r, 'decideFromModal')
 
-    def test_decision_uses_the_same_guarded_endpoint(self):
-        """Die Abkürzung darf keine Schutzplanke umgehen: Sie nutzt denselben
-        update-status-Endpunkt inklusive Bedenken-Gate."""
+    def _decide_block(self):
+        """Der Rumpf von decideFromModal - bis zur naechsten Funktion.
+
+        Bewusst NICHT ueber eine feste Zeichenzahl: das schlug schon bei einer
+        Ergaenzung am Funktionsanfang fehl, obwohl die Schutzplanke intakt war.
+        """
         import os
         tpl = open(os.path.join('templates', 'includes', 'dashboard', 'scripts.html'),
                    encoding='utf-8').read()
         i = tpl.index('function decideFromModal')
-        block = tpl[i:i + 1400]
+        nxt = tpl.find('\n    function ', i + 10)
+        return tpl[i:nxt if nxt > i else len(tpl)]
+
+    def test_decision_uses_the_same_guarded_endpoint(self):
+        """Die Abkürzung darf keine Schutzplanke umgehen: Sie nutzt denselben
+        update-status-Endpunkt inklusive Bedenken-Gate."""
+        block = self._decide_block()
         self.assertIn('update-status', block)
         self.assertIn('concerns_blocked', block)   # Bedenken-Gate bleibt aktiv
+
+    def test_rejection_asks_before_sending(self):
+        """Die Absage verschickt sofort eine nicht rueckholbare Mail - dafuer
+        muss sie fragen (die harmlosere Sammel-Absage tat es schon)."""
+        block = self._decide_block()
+        i = block.index("'REJECTED'")
+        self.assertIn('confirm', block[:i + 400],
+                      "Absage aus dem Modal ohne Rückfrage")
 
 class SidebarRoleFilteringTestCase(TestCase):
     """Benutzerfuehrung: Ein Recruiter sieht nur seine taegliche Arbeit,

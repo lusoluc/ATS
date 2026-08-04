@@ -144,10 +144,19 @@ gehalten:
 2. **Kalibrierung:** Werden A-Bewerber tatsächlich häufiger eingeladen als
    C-Bewerber? Einladungsquote je Band anzeigen. Gleiche Quote in A und C =
    das Modell hat nichts gelernt — das wird ehrlich gezeigt.
-3. **Mensch-über-Modell-Quote:** wie oft weicht der Recruiter vom Band ab
-   (steckt schon im Fairness-Cockpit). Etwas Abweichung ist gesund (Mensch
-   steuert); ein sinkender Trend = das Modell lernt die echten Präferenzen des
-   Teams. Dauerhaft hohe Abweichung = Rauschen, dann nicht vertrauen.
+3. **Mensch-über-Modell-Quote:** wie oft weicht der Recruiter vom Band ab.
+   Etwas Abweichung ist gesund (Mensch steuert); dauerhaft hohe Abweichung =
+   das Modell trägt nicht. **Umgesetzt (L5):** `scoring_eval.drift_report`
+   zählt im neuesten Prüf-Fenster die Fälle „Note A → trotzdem abgesagt" und
+   „Note D → trotzdem eingeladen"; ab 30 % erscheint auf der Messstrecken-Seite
+   eine Frühwarnung samt konkretem nächsten Schritt. Das Fairness-Cockpit misst
+   dieselbe Idee für das LLM-Score — beides ergänzt sich, keins ersetzt das
+   andere.
+3b. **Zeitverlauf (L5):** Ein Modell, das den Backtest heute besteht, kann in
+   drei Monaten an der Realität vorbeilaufen. Deshalb wird auf den ältesten
+   50 % gelernt und auf ZWEI aufeinanderfolgenden Fenstern geprüft; fällt die
+   Treffsicherheit um mehr als 10 Punkte, steht „fallend" in der Messstrecke —
+   mit der Handlung „Zuschnitt und Pflichtkriterien der Jobfamilie prüfen".
 4. **Fairness-Drift:** auch ohne geschützte Merkmale als Eingabe überwachen,
    ob das Score unbeabsichtigt mit einem Näherungsmerkmal korreliert. Zuhause
    im Fairness-Cockpit.

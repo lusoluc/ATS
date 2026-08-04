@@ -142,15 +142,20 @@ def approvals_inbox(request):
                 published, _ = WorkflowState.objects.get_or_create(
                     name='published', defaults={'description': 'Öffentlich sichtbar'})
                 job = ticket.jobPosting
-                # Stellenfreigabe ist auch hier nicht umgehbar: die finale
-                # Job-Freigabe publiziert NUR mit genehmigtem Bedarf.
+                # Die Veroeffentlichungs-Gates sind auch hier nicht umgehbar.
+                # Beide muessen offen sein - vorher fehlte hier das
+                # Entgelt-Gate, wodurch eine Stelle OHNE Entgeltband ueber
+                # die Freigabekette online ging, obwohl create_job und der
+                # Schnell-Toggle sie blockieren (EU-RL 2023/970 Art. 5).
                 from ..approvals import requisition_blocked_reason
+                from ..pay_transparency import pay_blocked_reason
                 _rq = requisition_blocked_reason(job)
-                if _rq:
-                    write_audit('REQUISITION_GATE_BLOCKED',
-                                user=request.user, job=job.title,
-                                via='approval_gate')
-                    messages.warning(request, _rq)
+                _pay = pay_blocked_reason(job)
+                if _rq or _pay:
+                    write_audit(
+                        'REQUISITION_GATE_BLOCKED' if _rq else 'PAY_GATE_BLOCKED',
+                        user=request.user, job=job.title, via='approval_gate')
+                    messages.warning(request, _rq or _pay)
                 elif job.workflowState_id != published.id:
                     job.workflowState = published
                     job.save(update_fields=['workflowState', 'updatedAt'])
@@ -1021,6 +1026,21 @@ def _previous_process(job_family_id, facility_id=None, exclude_id=None,
         'screening_questions': questions,
         'tasks': source.tasksJson or [],
         'requirements': source.requirementsJson or [],
+        # V2: Die Quell-Stelle ist ohnehin geladen - dann soll sie auch die
+        # Einordnung und den Auswahlprozess mitgeben, statt dass beides
+        # erneut zusammengeklickt wird. Alles VORSCHLAEGE: der Nutzer sieht
+        # sie im Formular und kann jede aendern.
+        'facility_id': str(source.facility_id) if source.facility_id else '',
+        'department_id': str(source.department_id) if source.department_id else '',
+        'location_id': str(source.location_id) if source.location_id else '',
+        'pay_band_id': str(source.payBand_id) if source.payBand_id else '',
+        'contact_person_id': (str(source.contactPerson_id)
+                              if source.contactPerson_id else ''),
+        'interview_rounds': list(source.interviewRoundsJson or []),
+        'interview_guide': list(source.interviewGuideJson or []),
+        'panel_quorum': source.panelQuorum if source.panelQuorum else '',
+        'panel_deadline_days': (source.panelDeadlineDays
+                                if source.panelDeadlineDays else ''),
     }
 
 

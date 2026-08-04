@@ -325,7 +325,11 @@
         const dept = document.getElementById('job-department') ? document.getElementById('job-department').value : '';
         const loc = document.getElementById('job-location') ? document.getElementById('job-location').value : '';
         const title = document.getElementById('job-title-inp') ? document.getElementById('job-title-inp').value : '';
-        const jobId = document.querySelector('#job-form [name="job_id"]') ? document.querySelector('#job-form [name="job_id"]').value : '';
+        // job-id-inp ist das echte Feld; die frühere Suche über '#job-form'
+        // lief ins Leere (kein Element mit dieser ID) - beim BEARBEITEN
+        // konnte die Stelle sich dadurch selbst als Vorlage liefern.
+        const jobIdEl = document.getElementById('job-id-inp');
+        const jobId = jobIdEl ? jobIdEl.value : '';
         if (!fam) { alert('Bitte zuerst die Jobfamilie wählen.'); return; }
         btn.disabled = true;
         fetch(`/recruiter/process/previous/?job_family=${encodeURIComponent(fam)}&facility=${encodeURIComponent(fac)}&department=${encodeURIComponent(dept)}&location=${encodeURIComponent(loc)}&title=${encodeURIComponent(title)}&exclude=${encodeURIComponent(jobId)}`)
@@ -342,10 +346,68 @@
                 qbRender();
                 try { tasks.value = (Array.isArray(d.tasks) ? d.tasks : JSON.parse(d.tasks)).join('\n'); } catch (e) {}
                 try { reqs.value = (Array.isArray(d.requirements) ? d.requirements : JSON.parse(d.requirements)).join('\n'); } catch (e) {}
-                alert(`Übernommen: ${d.source_title}${d.source_date ? ' (' + d.source_date + ')' : ''} – Herkunft: ${d.scope}. Bitte prüfen und anpassen.`);
+
+                // V2: Einordnung + Auswahlprozess gleich mit uebernehmen -
+                // die Quell-Stelle kennt das alles. Nur LEERE Felder werden
+                // gefuellt: eine bewusste Eingabe wird nie ueberschrieben.
+                const übernommen = [];
+                const setIfEmpty = (id, value, label) => {
+                    const el = document.getElementById(id);
+                    if (el && value && !el.value) { el.value = value; übernommen.push(label); }
+                };
+                setIfEmpty('job-facility', d.facility_id, 'Einrichtung');
+                setIfEmpty('job-department', d.department_id, 'Abteilung');
+                setIfEmpty('job-location', d.location_id, 'Standort');
+                setIfEmpty('job-pay-band', d.pay_band_id, 'Entgeltband');
+                setIfEmpty('job-contact', d.contact_person_id, 'Ansprechpartner');
+                setIfEmpty('panel_quorum', d.panel_quorum, 'Quorum');
+                setIfEmpty('panel_deadline_days', d.panel_deadline_days, 'Abstimmungsfrist');
+                if (Array.isArray(d.interview_rounds) && d.interview_rounds.length) {
+                    setIfEmpty('interview_rounds', d.interview_rounds.join(', '), 'Gesprächsrunden');
+                }
+                if (Array.isArray(d.interview_guide) && d.interview_guide.length) {
+                    setIfEmpty('interview_guide', d.interview_guide.join(', '), 'Interview-Leitfaden');
+                }
+                if (typeof refreshPanelPreview === 'function') { setTimeout(refreshPanelPreview, 0); }
+
+                const extra = übernommen.length ? `\n\nZusätzlich vorbelegt: ${übernommen.join(', ')}.` : '';
+                alert(`Übernommen: ${d.source_title}${d.source_date ? ' (' + d.source_date + ')' : ''} – Herkunft: ${d.scope}. Bitte prüfen und anpassen.${extra}`);
             })
             .catch(() => { btn.disabled = false; alert('Abruf fehlgeschlagen.'); });
     }
+
+    // V2: Ehrlicher Hinweis statt Schein-Auswahl. Der Server entscheidet ueber
+    // drei Gates, ob eine Stelle wirklich online geht - der Nutzer soll das
+    // VORHER lesen, nicht hinterher raten.
+    function updatePublishHint() {
+        const hint = document.getElementById('publish-hint');
+        const cb = document.getElementById('job-publish-now');
+        const facSel = document.getElementById('job-facility');
+        if (!hint || !cb || !facSel) { return; }
+        const opt = facSel.options[facSel.selectedIndex];
+        const needsApproval = opt && opt.getAttribute('data-approval') === '1';
+        const band = document.getElementById('job-pay-band');
+        const hasBand = band && band.value;
+        if (!cb.checked) {
+            hint.innerText = 'Die Stelle wird als Entwurf gespeichert und ist nicht öffentlich sichtbar.';
+        } else if (needsApproval) {
+            hint.innerText = 'Diese Einrichtung ist zustimmungspflichtig: Die Anzeige startet als '
+                + 'Entwurf und geht nach der letzten Freigabe automatisch online. '
+                + 'Das ist bewusst nicht abschaltbar.';
+        } else if (!hasBand) {
+            hint.innerText = 'Ohne Entgeltband bleibt die Stelle ein Entwurf '
+                + '(EU-Entgelttransparenz, Art. 5) – Band oben auswählen.';
+        } else {
+            hint.innerText = 'Die Stelle geht direkt online, sobald Sie speichern.';
+        }
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+        const cb = document.getElementById('job-publish-now');
+        const band = document.getElementById('job-pay-band');
+        if (cb) { cb.addEventListener('change', updatePublishHint); }
+        if (band) { band.addEventListener('change', updatePublishHint); }
+        updatePublishHint();
+    });
 
     // Prozess-Berater: Vorschlaege fuellen nur das Formular – Mensch speichert.
     function suggestProcess(btn, withAi) {
@@ -636,10 +698,20 @@
                     location.reload();   // Zug zurücknehmen
                 }
             } else {
-                console.error("Status-Update schlug fehl.");
+                // Jede serverseitige Ablehnung sichtbar machen und den Zug
+                // zuruecknehmen. Vorher landete z. B. "offene Gesprächsrunden"
+                // nur in der Konsole - die Karte blieb optisch verschoben, der
+                // Nutzer sah einen Erfolg, den es nicht gab.
+                alert(data.error || 'Der Statuswechsel wurde nicht übernommen.');
+                location.reload();
             }
         })
-        .catch(err => console.error("Error updating status:", err));
+        .catch(err => {
+            console.error("Error updating status:", err);
+            alert('Der Statuswechsel konnte nicht gespeichert werden. '
+                  + 'Die Ansicht wird neu geladen.');
+            location.reload();
+        });
     }
 
     function updateStatsCounters() {
@@ -668,6 +740,20 @@
     function decideFromModal(newStatus) {
         const appId = activeApplicationId;
         if (!appId || decideInFlight) return;
+        // Absage aus dem Modal verschickt SOFORT eine echte Absage-Mail und
+        // eine Portal-Nachricht - das ist nicht rueckholbar und braucht
+        // dieselbe Rueckfrage wie die Sammel-Absage (vorher: ein Klick,
+        // keine Nachfrage - genau falsch herum).
+        if (newStatus === 'REJECTED') {
+            const who = document.getElementById('modal-name');
+            const name = who ? who.innerText.trim() : 'diese Person';
+            if (!confirm(`Absage an ${name} jetzt senden?\n\n`
+                         + 'Die Person erhält sofort eine E-Mail und eine '
+                         + 'Nachricht im Bewerbungsportal. Das lässt sich nicht '
+                         + 'zurücknehmen.')) {
+                return;
+            }
+        }
         decideInFlight = true;
         document.querySelectorAll('[id^="modal-decide-"]').forEach(b => b.disabled = true);
         const decideDone = () => {
@@ -929,10 +1015,31 @@
 
     // Modal controls for scheduler
     function openInterviewModal(appId, candidateName, jobTitle) {
-        if (appId) {
-            document.getElementById('schedule-app-id').value = appId;
-        } else if (activeApplicationId) {
-            document.getElementById('schedule-app-id').value = activeApplicationId;
+        const targetId = appId || activeApplicationId;
+        if (!targetId) {
+            // Ohne Bewerbung endete das Absenden frueher in einer 404-Sackgasse.
+            alert('Bitte zuerst eine Bewerbung öffnen – der Termin wird immer '
+                  + 'zu einer konkreten Bewerbung vergeben.');
+            return;
+        }
+        document.getElementById('schedule-app-id').value = targetId;
+
+        // Nur Slots DIESER Stelle anbieten (Server prueft es zusaetzlich):
+        // vorher stand hier die Gesamtliste aller freien Slots.
+        const card = document.getElementById('card-' + targetId);
+        const jobId = card && card.getAttribute('data-job-id');
+        const slotSel = document.getElementById('slot_id');
+        if (slotSel && jobId) {
+            let visible = 0;
+            slotSel.querySelectorAll('option[data-job]').forEach(o => {
+                const match = o.getAttribute('data-job') === jobId;
+                o.hidden = !match;
+                o.disabled = !match;
+                if (match) { visible++; }
+            });
+            slotSel.value = '';   // Auswahl zuruecksetzen, nie ein fremder Slot
+            const hint = document.getElementById('slot-empty-hint');
+            if (hint) { hint.style.display = visible ? 'none' : 'block'; }
         }
         // Einladungstext aus der zentralen Vorlage (UC-SB-10) vorbefuellen
         const inviteBox = document.getElementById('invite-message');
@@ -981,6 +1088,18 @@
         document.getElementById('panel_deadline_days').value = '';
         document.getElementById('interview_guide').value = '';
         document.getElementById('interview_rounds').value = '';
+        // Diese vier fehlten: eine NEUE Stelle erbte sonst still Entgeltband,
+        // Gremium, Leichte-Sprache-Text und Stellenzahl der zuletzt
+        // BEARBEITETEN Stelle - beim Entgeltband heisst das: falsche
+        // Gehaltsspanne veroeffentlicht.
+        const _payBand = document.getElementById('job-pay-band');
+        if (_payBand) { _payBand.value = ''; }
+        const _easy = document.getElementById('job-desc-easy');
+        if (_easy) { _easy.value = ''; }
+        const _headcount = document.getElementById('headcount');
+        if (_headcount) { _headcount.value = 1; }
+        document.querySelectorAll('#job-panel option').forEach(o => { o.selected = false; });
+        if (typeof refreshPanelPreview === 'function') { setTimeout(refreshPanelPreview, 0); }
         
         // Reset selections to first option
         document.getElementById('job-facility').selectedIndex = 0;
@@ -989,7 +1108,8 @@
         document.getElementById('job-family').selectedIndex = 0;
         document.getElementById('job-contact').value = '';
         document.getElementById('job-template').selectedIndex = 0;
-        document.getElementById('job-state').value = document.querySelector('#job-state option[selected]') ? document.querySelector('#job-state option[selected]').value : document.getElementById('job-state').options[0].value;
+        const _pubNew = document.getElementById('job-publish-now');
+        if (_pubNew) { _pubNew.checked = true; }   // neue Stelle: Standard veröffentlichen
         
         // Reset benefits checkboxes
         const benefitsForm = document.getElementById('jobCreatorModal');
@@ -1055,8 +1175,13 @@
         document.getElementById('job-family').value = jobFamilyId;
         document.getElementById('job-contact').value = contactPersonId || '';
         document.getElementById('job-template').value = jobTemplateId || '';
-        document.getElementById('job-state').value = workflowStateId;
+        // Der Workflow-Status ist jetzt eine Ja/Nein-Entscheidung; beim
+        // Bearbeiten spiegelt die Checkbox den echten Zustand der Stelle
+        // (Parameter traegt seit V2 den NAMEN, nicht die ID).
+        const _pub = document.getElementById('job-publish-now');
+        if (_pub) { _pub.checked = (workflowStateId === 'published'); }
         document.getElementById('job-pay-band').value = payBandId || '';
+        if (typeof updatePublishHint === 'function') { updatePublishHint(); }
 
         // Benefits (Checkboxes)
         // Reset all benefits checkboxes first

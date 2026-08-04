@@ -256,9 +256,15 @@ CommandError-Tests ('cannot pickle traceback') – serieller Lauf noetig.
 **Status:** ✅ erledigt (332 Tests, keine Migration). Bewusst als
 Aufraeum-/Luecken-Runde statt Feature-Stapeln.
 
-**Code-Audit (ehrlicher Befund):** Kein toter Code – die 5 zunaechst
-verdaechtigen Modelle (CareerPath, UserFacility, WorkflowDefinition,
-UserScope, AiTask) sind alle in Admin/Migration/Seed/Queue verankert.
+**Code-Audit (Befund von damals – inzwischen widerlegt):** „Kein toter Code
+– die 5 zunaechst verdaechtigen Modelle (CareerPath, UserFacility,
+WorkflowDefinition, UserScope, AiTask) sind alle in Admin/Migration/Seed/Queue
+verankert." Der Schluss war falsch: Eine Registrierung im Django-Admin ist
+KEINE Nutzung, sie erzeugt nur eine Verwaltungsmaske fuer eine leere Tabelle.
+CareerPath, UserFacility und WorkflowDefinition waren tot und sind mit vier
+weiteren Prisma-Tabellen in Migration 0006 entfernt; nur UserScope und AiTask
+sind tatsaechlich verankert (Rechte bzw. Queue). Ein Waechter
+(GuardrailNoDeadModelTestCase) prueft das jetzt maschinell.
 Keine URL zeigt auf eine fehlende View. Migrationen konsistent
 (makemigrations --check: sauber). EIN echter Fund: doppelter
 @recruiter_required auf advance_interview_round – entfernt (harmlos, aber

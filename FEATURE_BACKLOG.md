@@ -130,6 +130,12 @@ Spekulation:
   UND bestandenem ASR-Bias-Test (Akzent/Dialekt/L2-Sprecher; AGG-Risiko) – Learning
   aus der AI-Voice-Agent-Studie 2026, siehe ROADMAP „Evidenz-Gates"
 - CV-Parsing-Feldbefüllung, 1-Klick LinkedIn/Xing-Import, Mehrfachbewerbung, A/B-Landingpages, Offboarding
+- **Sichtbare Karrierepfade** (Master-Paket § 2.2/6.5): Einstiege und
+  Entwicklungswege je Berufsfeld auf der Karriereseite darstellen. Es gab dafür
+  eine Tabelle `CareerPath` mit Name und Beschreibung — leer, ohne Formular,
+  ohne Ansicht, ohne Verknüpfung zu Stellen. Sie ist entfernt (Migration 0006):
+  Eine leere Hülle ersetzt keinen Entwurf, und wenn das Feature kommt, wird das
+  Modell für den echten Bedarf gebaut statt aus der Hülle erraten.
 
 (Die frühere Idee „Erinnerung bei Liegenbleiben" ist umgesetzt: Liegenbleiber-Radar
 auf dem Board (`ats/board_insights.py`) + Aufgaben-Seite.)

@@ -7,12 +7,9 @@ from .models import (
     ApplicationDocument,
     ApprovalStep,
     ApprovalTicket,
-    AppStep,
-    AppTicket,
     AppWorkflowDef,
     AuditLog,
     Benefit,
-    CareerPath,
     ContactPerson,
     Department,
     DepartmentContactPerson,
@@ -32,16 +29,12 @@ from .models import (
     Organization,
     Page,
     PrivacyNoticeVersion,
-    Role,
     RoleDelegation,
     ScreeningQuestion,
     SystemSetting,
     TalentPoolSubscription,
     TextSnippet,
-    User,
-    UserFacility,
     UserScope,
-    WorkflowDefinition,
     WorkflowState,
 )
 
@@ -113,24 +106,17 @@ class PageAdmin(admin.ModelAdmin):
 
 # Register remaining models in standard way
 admin.site.register(JobFamily)
-admin.site.register(CareerPath)
 admin.site.register(ContactPerson)
 admin.site.register(FacilityContactPerson)
 admin.site.register(DepartmentContactPerson)
 admin.site.register(WorkflowState)
 admin.site.register(PrivacyNoticeVersion)
-admin.site.register(Role)
-admin.site.register(User)
-admin.site.register(UserFacility)
 admin.site.register(JobTemplate)
 admin.site.register(TextSnippet)
-admin.site.register(WorkflowDefinition)
 admin.site.register(ApprovalTicket)
 admin.site.register(ApprovalStep)
 admin.site.register(ApplicantToken)
 admin.site.register(AppWorkflowDef)
-admin.site.register(AppTicket)
-admin.site.register(AppStep)
 admin.site.register(Interview)
 admin.site.register(Message)
 admin.site.register(TalentPoolSubscription)

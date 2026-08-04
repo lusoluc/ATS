@@ -189,15 +189,10 @@ class JobPosting(models.Model):
 # WORKFLOW & APPROVAL ENGINE
 # ============================================================================
 
-class WorkflowDefinition(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=255)
-    facility = models.ForeignKey(Facility, on_delete=models.CASCADE, related_name='workflows')
-    stepsJson = models.JSONField(default=list)
-    createdAt = models.DateTimeField(default=timezone.now)
-
-    def __str__(self):
-        return self.name
+# Hier stand WorkflowDefinition: Freigabe-Schritte je Einrichtung als JSON.
+# Nie beschrieben, nie gelesen - die Kette kommt aus RequisitionRule, der
+# globalen REQUISITION_CHAIN oder `approval_chain`. Ein vierter Pfad haette
+# dieselbe Verwirrung gestiftet wie der dritte, den U6 entfernt hat.
 
 class ApprovalTicket(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

@@ -922,6 +922,20 @@
 
         .list-row { display: flex; justify-content: space-between; align-items: center; padding: var(--space-3); border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-main); }
 
+        /* WCAG 2.2 (2.4.11 Focus Not Obscured): Der Header ist sticky - beim
+           Durchtabben schob der Browser fokussierte Elemente sonst unter die
+           Leiste. scroll-padding haelt sie frei; scroll-margin an Sprungzielen
+           (Skip-Link/Anker) sorgt fuer dieselbe Freistellung. */
+        html { scroll-padding-top: 96px; }
+        :target, [id]:focus, main[id] { scroll-margin-top: 96px; }
+
+        /* WCAG 2.2 (2.5.8 Target Size): interaktive Ziele mindestens 24x24 px -
+           NICHT nur am Phone. Betrifft vor allem Icon-Knoepfe. */
+        .btn-icon, .card-move {
+            min-width: 24px;
+            min-height: 24px;
+        }
+
         /* Systemeinstellung "Bewegung reduzieren" respektieren (WCAG 2.3.3):
            der manuelle ADHS-Fokusmodus ergaenzt das, ersetzt es aber nicht.
            Steht bewusst am Ende des Blocks, damit es alle Animationen und

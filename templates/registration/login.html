@@ -61,6 +61,10 @@
         <input type="hidden" name="next" value="{{ next }}">
         <button type="submit">Anmelden</button>
         <p class="foot"><a href="{% url 'ats:home' %}">← Zurück zum Karriereportal</a></p>
+        <p class="foot" style="margin-top:6px;">
+          <a href="{% url 'ats:accessibility_statement' %}">Barrierefreiheit</a> ·
+          <a href="{% url 'ats:ai_transparency' %}">KI-Transparenz</a>
+        </p>
     </form>
     </main>
 </body>

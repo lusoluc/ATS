@@ -300,8 +300,10 @@
       </details>
     </div>
     <p class="muted" style="text-align:center;">Ihre Daten verlassen unser Haus nicht und werden nach Ablauf der gesetzlichen Frist automatisch gelöscht.<br>
-      <a href="{% url 'ats:ai_transparency' %}">Automatische Funktionen &amp; Ihre Rechte (KI-Transparenz)</a> ·
-      <a href="{% url 'ats:accessibility_statement' %}">Erklärung zur Barrierefreiheit</a></p>
+      {% comment %} WCAG 2.2 (3.2.6 Consistent Help): dieselben Hilfe-Wege in
+         derselben Reihenfolge wie im Footer aller anderen Seiten. {% endcomment %}
+      <a href="{% url 'ats:accessibility_statement' %}">Barrierefreiheit</a> ·
+      <a href="{% url 'ats:ai_transparency' %}">KI-Transparenz</a></p>
   {% endif %}
 </main>
 </body>

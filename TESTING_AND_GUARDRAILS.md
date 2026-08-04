@@ -44,6 +44,7 @@ unbemerkt wiederholen. Sie stehen in `ats/tests/test_guardrails.py`.
 | `GuardrailImgAltTestCase` | `<img>` ohne `alt`-Attribut, in ALLEN Templates (WCAG 1.1.1) | B-Nachtrag |
 | `GuardrailFormLabelTestCase` | sichtbare Formularfelder der Bewerberstrecke ohne `label`/`aria-label` (WCAG 3.3.2) | B-Nachtrag |
 | `GuardrailStandaloneTemplateTestCase` | Standalone-Templates ohne A11y-Fundament (`lang`, Skip-Link, `:focus-visible`) — die Fehlerklasse, durch die das Portal monatelang ohne Panel/Fokus war | B-Nachtrag |
+| `GuardrailConsistentHelpTestCase` | Seiten ohne konsistenten Hilfe-Weg (Barrierefreiheitserklärung, KI-Transparenz) — auch in Standalone-Templates (WCAG 2.2 / 3.2.6) | C2 |
 
 **Wenn ein Wächter fehlschlägt:** Das ist ein *Feature*, kein Ärgernis. Nicht die
 Whitelist blind erweitern – erst prüfen, ob der neue Code wirklich so sein soll:
@@ -111,6 +112,18 @@ Pflicht-Checkliste für jedes neue Feature mit Oberfläche:
 Maßstab: WCAG 2.1 AA heute, WCAG 2.2 AA mit EN 301 549 V4 (erwartet 2026/27) —
 Details und Rechtslage in der Bewerberstrecken-Checkliste (Session-Artefakt)
 und `ACCESSIBILITY_AUDIT.md`.
+
+**WCAG-2.2-Stand (vorgezogen, damit EN 301 549 V4 kein Nachrüst-Projekt wird):**
+
+| Kriterium | Umsetzung |
+|---|---|
+| 2.4.11 Focus Not Obscured | `scroll-padding-top` gegen den Sticky-Header; Sprungziele mit `scroll-margin-top` |
+| 2.5.7 Dragging Movements | Datei-Upload und Kanban haben immer eine Klick-/Tastatur-Alternative zum Ziehen |
+| 2.5.8 Target Size | Icon-Knöpfe und Karten-Verschieben ≥ 24×24 px überall (44 px am Phone), Checkboxen im Bewerbungsformular 24 px |
+| 3.2.6 Consistent Help | Barrierefreiheit + KI-Transparenz in gleicher Reihenfolge im Footer **und** in beiden Standalone-Templates (Wächter) |
+| 3.3.7 Redundant Entry | Formularwerte bleiben nach Fehlern erhalten; `autocomplete` an allen PII-Feldern |
+| 3.3.8 Accessible Authentication | Kandidatenportal per Magic-Link ohne Passwort/Rätsel |
+| 2.2.2 Pause, Stop, Hide | Vorlesen mit Pause/Weiter/Stopp; Animationen respektieren `prefers-reduced-motion` |
 
 ## Eine neue Prüfung ergänzen
 

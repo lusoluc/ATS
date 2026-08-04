@@ -698,3 +698,42 @@ class GuardrailStandaloneTemplateTestCase(TestCase):
         self.assertEqual(offenders, [],
                          "Standalone-Template ohne A11y-Fundament: "
                          + "; ".join(offenders))
+
+
+class GuardrailConsistentHelpTestCase(TestCase):
+    """Waechter: WCAG 2.2 (3.2.6 Consistent Help) - die Hilfe-Wege
+    (Barrierefreiheitserklaerung, KI-Transparenz) muessen auf JEDER
+    oeffentlichen Seite erreichbar sein, auch in Standalone-Templates,
+    die den Footer aus base.html nicht erben.
+
+    Wird ab EN 301 549 V4 (WCAG 2.2 AA) verbindlich.
+    """
+
+    REQUIRED_URLS = ["ats:accessibility_statement", "ats:ai_transparency"]
+    # Standalone-Templates tragen den Footer nicht mit - sie muessen die
+    # Hilfe-Wege selbst anbieten.
+    STANDALONE = ["candidate_portal.html", "registration/login.html"]
+
+    def test_help_links_in_base_footer(self):
+        import os
+        base = os.path.join(os.path.dirname(os.path.dirname(
+            os.path.dirname(__file__))), "templates")
+        src = open(os.path.join(base, "base.html"), encoding="utf-8").read()
+        for name in self.REQUIRED_URLS:
+            self.assertIn(name, src,
+                          f"Hilfe-Weg {name} fehlt im globalen Footer")
+
+    def test_help_links_in_standalone_templates(self):
+        import os
+        base = os.path.join(os.path.dirname(os.path.dirname(
+            os.path.dirname(__file__))), "templates")
+        offenders = []
+        for rel in self.STANDALONE:
+            src = open(os.path.join(base, *rel.split("/")),
+                       encoding="utf-8").read()
+            for name in self.REQUIRED_URLS:
+                if name not in src:
+                    offenders.append(f"{rel}: {name}")
+        self.assertEqual(offenders, [],
+                         "Standalone-Seite ohne konsistenten Hilfe-Weg "
+                         "(WCAG 2.2 / 3.2.6): " + ", ".join(offenders))

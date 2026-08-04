@@ -183,8 +183,13 @@
     }
 
     .ai-score-none { background: rgba(148,163,184,.15); color: var(--text-muted); border: 1px solid var(--border-color); }
-    .card-move { background:none; border:none; color: var(--text-muted); cursor:pointer; padding:2px 4px; font-size:11px; opacity:0; transition: opacity .15s; }
+    /* WCAG 2.2 (2.5.8): mind. 24x24 px Zielflaeche; sichtbar wird der Knopf
+       weiterhin erst bei Hover/Fokus, aber er ist dann gross genug. */
+    .card-move { background:none; border:none; color: var(--text-muted); cursor:pointer;
+        padding:4px 6px; min-width:24px; min-height:24px; font-size:12px; opacity:0; transition: opacity .15s; }
     .applicant-card:hover .card-move, .applicant-card:focus-within .card-move { opacity:1; }
+    /* Tastatur-Fokus macht den Knopf ebenfalls sichtbar (nicht nur der Karten-Hover) */
+    .card-move:focus-visible { opacity:1; }
     .kanban-cards-wrapper {
         display: flex;
         flex-direction: column;

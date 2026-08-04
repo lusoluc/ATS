@@ -61,8 +61,16 @@ Legende: ✅ erfüllt · ◐ teilweise · ❌ offen · n/a nicht anwendbar
 4. ~~Alt-Text-Pflichtfeld beim Medien-Upload; `alt` an Kontaktperson-Fotos.~~ ✅ Pflicht (HTML + Server, getestet); sprechende `alt`-Texte in Landingpage und Content-Blöcken ergänzt.
 5. ~~Serverseitige Formularfehler inline am Feld.~~ ✅ umgesetzt (Nachtrag): Zusammenfassung + Feldfehler mit ARIA, Werte-Erhalt; deckt zugleich eine Robustheitslücke (direkte POSTs ohne Pflichtfelder erzeugten Datensätze mit leerer E-Mail).
 
-> Fazit: Kern-Kandidatenstrecke und Recruiter-Oberfläche sind BFSG-tauglich nutzbar.
-> Alle im Audit katalogisierten AA-Lücken sind geschlossen und in den Tabellen oben
-> als ✅ mit Umsetzungsort dokumentiert. Laufende Pflege: Alt-Texte bei künftigen
-> Uploads (durch Pflichtfeld abgesichert), neue Views gegen die globalen
-> Fokus-/Live-Region-Muster prüfen.
+> Fazit (aktualisiert 04.08.2026): Die im Erst-Audit katalogisierten Lücken sind
+> geschlossen. Eine ZWEITE, tiefere Inventur (Paket B1–B7) fand und behob weitere
+> Defekte, die das Erst-Audit übersehen hatte — u. a. Panel-Switches ohne
+> zugänglichen Namen, das Kandidatenportal ohne Panel/Skip-Link/Fokus-Stil,
+> fehlende autocomplete-Attribute (WCAG 1.3.5), fehlendes prefers-reduced-motion,
+> ein ungestylter Absende-Knopf auf /bewerben/ und eine Leichte-Sprache-Funktion
+> ohne Befüllungsweg. Konsequenz für künftige Aussagen: Der verbindliche Status
+> steht in der COMPLIANCE_MATRIX (BFSG/WCAG: ◐ bis zum externen Vollaudit, WP7);
+> dieses Dokument ist das Arbeitsprotokoll, keine Konformitätsbehauptung.
+> Öffentliche Erklärung zur Barrierefreiheit: `/barrierefreiheit/` (ehrlich
+> „teilweise vereinbar"). Laufende Pflege: Wächter-Tests (autocomplete,
+> Auth-Allowlist, Tabellen-Wrapper, Template-Kommentare) + neue Views gegen die
+> globalen Fokus-/Live-Region-Muster prüfen.

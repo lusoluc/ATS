@@ -18,6 +18,7 @@ urlpatterns = [
     path('jobs/<uuid:job_id>/bewerben/', views.bewerben, name='bewerben'),
     path('bewerber/<str:token>/', views.candidate_portal, name='candidate_portal'),  # B4 Magic-Link
     path('ki-transparenz/', views.ai_transparency, name='ai_transparency'),  # N3 Art. 86 EU AI Act
+    path('barrierefreiheit/', views.accessibility_statement, name='accessibility_statement'),  # B7 BFSG
 
     # Recruiter ATS Dashboard URLs
     path('recruiter/dashboard/', views.dashboard, name='dashboard'),

@@ -245,6 +245,9 @@ class GuardrailAuthDecoratorTestCase(TestCase):
         # N3: KI-Transparenz (Art. 86 EU AI Act) ist bewusst oeffentlich -
         # Bewerbende muessen sie OHNE Konto lesen koennen.
         "ai_transparency",
+        # B7: Barrierefreiheitserklaerung (BFSG) - ebenfalls bewusst
+        # oeffentlich, sie richtet sich an Besucher ohne Konto.
+        "accessibility_statement",
     }
 
     def _iter_views(self):

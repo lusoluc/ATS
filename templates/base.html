@@ -973,8 +973,8 @@
                 <i class="fa-solid fa-bars" aria-hidden="true"></i>
             </button>
 
-            {# Echtes nav-Landmark: eine ul im header ist fuer Screenreader
-               KEINE Navigations-Landmarke (WCAG 1.3.1). #}
+            {% comment %} Echtes nav-Landmark: eine ul im header ist fuer
+               Screenreader KEINE Navigations-Landmarke (WCAG 1.3.1). {% endcomment %}
             <nav aria-label="Hauptnavigation" style="display:contents;">
             <ul class="nav-links" id="navLinks">
                 {% if nav_pages %}
@@ -1040,6 +1040,8 @@
             <div class="footer-links">
                 <a href="{% url 'ats:home' %}">Startseite</a>
                 <a href="{% url 'ats:job_list' %}">Stellenangebote</a>
+                <a href="{% url 'ats:accessibility_statement' %}">Barrierefreiheit</a>
+                <a href="{% url 'ats:ai_transparency' %}">KI-Transparenz</a>
                 <a href="{% url 'ats:dashboard' %}">ATS-Dashboard</a>
             </div>
             <p class="footer-text">© 2026 SecurATS GmbH. Alle Rechte vorbehalten. | DSGVO & ISO 27001 Konform.</p>
@@ -1097,9 +1099,9 @@
                 <span class="inclusion-option-desc">Optimierte Schriftart zur leichteren Lesbarkeit.</span>
             </div>
             <label class="inclusion-switch">
-                {# aria-label: das umschliessende Label enthaelt nur den
-                   Slider-Span - ohne Namen liest der Screenreader vier
-                   anonyme Checkboxen vor (WCAG 4.1.2). #}
+                {% comment %} aria-label: das umschliessende Label enthaelt nur
+                   den Slider-Span - ohne Namen liest der Screenreader vier
+                   anonyme Checkboxen vor (WCAG 4.1.2). {% endcomment %}
                 <input type="checkbox" id="toggleDyslexia" onchange="toggleDyslexiaMode()" aria-label="Legasthenie-Schrift aktivieren">
                 <span class="inclusion-slider"></span>
             </label>

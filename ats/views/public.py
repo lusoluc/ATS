@@ -44,7 +44,7 @@ from .common import _remember_campaign_src, campaign_expired, exclude_filled, se
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["home", "job_list", "job_detail", "bewerben", "candidate_portal", "page_detail", "facility_profile", "landing_page", "job_alert_subscribe", "job_alert_confirm", "job_alert_manage", "pricing_view", "healthz", "ai_transparency"]
+__all__ = ["home", "job_list", "job_detail", "bewerben", "candidate_portal", "page_detail", "facility_profile", "landing_page", "job_alert_subscribe", "job_alert_confirm", "job_alert_manage", "pricing_view", "healthz", "ai_transparency", "accessibility_statement"]
 
 
 def home(request):
@@ -893,6 +893,24 @@ def ai_transparency(request):
                               for i in sorted(enabled_intents())],
         'learned_scoring': _learned_on(),
         'slug': 'ki-transparenz',
+    })
+
+
+# --- B7: Erklaerung zur Barrierefreiheit (BFSG) ------------------------------
+def accessibility_statement(request):
+    """Oeffentliche Barrierefreiheitserklaerung (BFSG Anlage 3 / BITV-Muster):
+    Konformitaetsstand, bekannte Ausnahmen, Feedback-Weg. Der Stand ist
+    bewusst ehrlich ("teilweise vereinbar"), bis ein externes Vollaudit
+    vorliegt - eine geschoente Erklaerung waere selbst ein Verstoss."""
+    _fs = SystemSetting.objects.filter(key='FIRMA').first()
+    _mail = SystemSetting.objects.filter(key='SUPPORT_EMAIL').first()
+    return render(request, 'accessibility_statement.html', {
+        'nav_pages': Page.objects.filter(status="published",
+                                         navEnabled=True).order_by('navOrder'),
+        'company': (_fs.value if _fs else '') or 'SecurATS',
+        'feedback_email': (_mail.value if _mail else '') or 'barrierefrei@securats.example',
+        'statement_date': '04.08.2026',
+        'slug': 'barrierefreiheit',
     })
 
 

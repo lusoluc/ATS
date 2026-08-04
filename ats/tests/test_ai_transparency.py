@@ -66,3 +66,18 @@ class TransparencyLinksTestCase(TestCase):
         resp = self.client.get(
             reverse('ats:candidate_portal', args=[tok.token]))
         self.assertContains(resp, reverse('ats:ai_transparency'))
+
+
+class AccessibilityStatementTestCase(TestCase):
+    """B7: Erklaerung zur Barrierefreiheit (BFSG) - oeffentlich + verlinkt."""
+
+    def test_public_and_honest(self):
+        resp = self.client.get(reverse('ats:accessibility_statement'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "teilweise")          # ehrlicher Stand
+        self.assertContains(resp, "Barriere melden")    # Feedback-Weg
+        self.assertContains(resp, "WCAG")
+
+    def test_linked_from_footer(self):
+        resp = self.client.get(reverse('ats:job_list'))
+        self.assertContains(resp, reverse('ats:accessibility_statement'))

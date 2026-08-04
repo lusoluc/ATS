@@ -19,6 +19,15 @@
         input { width:100%; padding:11px 12px; background:#0d1526; border:1px solid var(--border);
                 border-radius:9px; color:var(--text); font-size:14px; }
         input:focus { outline:none; border-color:var(--accent); }
+        /* A11y-Fundament (wie base.html): sichtbarer Tastatur-Fokus + Skip-Link */
+        a:focus-visible, button:focus-visible, input:focus-visible {
+            outline:2px solid var(--accent) !important; outline-offset:2px; }
+        .skip-link { position:absolute; left:-9999px; background:var(--accent);
+            color:#fff; padding:10px 16px; border-radius:0 0 8px 0; z-index:10000; }
+        .skip-link:focus { left:0; top:0; }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { transition-duration:0.01ms !important;
+                animation-duration:0.01ms !important; } }
         button { width:100%; margin-top:22px; padding:12px; background:var(--accent); color:#fff;
                  border:none; border-radius:9px; font-size:15px; font-weight:600; cursor:pointer; }
         button:hover { filter:brightness(1.08); }
@@ -29,6 +38,8 @@
     </style>
 </head>
 <body>
+    <a href="#main" class="skip-link">Zum Inhalt springen</a>
+    <main id="main" style="display:contents;">
     <form class="card" method="post" action="{% url 'ats:login' %}">
         {% csrf_token %}
         <h1 class="brand">SecurATS</h1>
@@ -51,5 +62,6 @@
         <button type="submit">Anmelden</button>
         <p class="foot"><a href="{% url 'ats:home' %}">← Zurück zum Karriereportal</a></p>
     </form>
+    </main>
 </body>
 </html>

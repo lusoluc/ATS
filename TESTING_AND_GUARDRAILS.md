@@ -40,6 +40,10 @@ unbemerkt wiederholen. Sie stehen in `ats/tests/test_guardrails.py`.
 | `GuardrailTemplateCommentTestCase` | mehrzeilige `{# … #}`-Kommentare (lecken als Text an Nutzer) | Portal-Fund N2 (bestätigt) |
 | `GuardrailTableScrollTestCase` | Tabellen ohne Scroll-Wrapper (am Phone abgeschnitten) + mehrdeutige Wrapper-Schlüsse | Mobile-Audit M1 |
 | `GuardrailPayTransparencyTestCase` (in `test_pay_transparency.py`) | Gehaltshistorien-Fragen in Screening-Fragen (Frageverbot EU-RL 2023/970) | E2 |
+| `GuardrailAutocompleteTestCase` | PII-Felder ohne `autocomplete` in öffentlichen Formularen (WCAG 1.3.5 AA) | B2 |
+| `GuardrailImgAltTestCase` | `<img>` ohne `alt`-Attribut, in ALLEN Templates (WCAG 1.1.1) | B-Nachtrag |
+| `GuardrailFormLabelTestCase` | sichtbare Formularfelder der Bewerberstrecke ohne `label`/`aria-label` (WCAG 3.3.2) | B-Nachtrag |
+| `GuardrailStandaloneTemplateTestCase` | Standalone-Templates ohne A11y-Fundament (`lang`, Skip-Link, `:focus-visible`) — die Fehlerklasse, durch die das Portal monatelang ohne Panel/Fokus war | B-Nachtrag |
 
 **Wenn ein Wächter fehlschlägt:** Das ist ein *Feature*, kein Ärgernis. Nicht die
 Whitelist blind erweitern – erst prüfen, ob der neue Code wirklich so sein soll:
@@ -83,6 +87,30 @@ Auth-Wächter eine absichtlich ungeschützte View sofort meldet.
 - **`check --deploy`** – Djangos Sicherheits-Checkliste für den Produktivbetrieb.
 - **Volle Suite auf PostgreSQL** – dem Produktions-DB-Backend, damit die
   at-rest-Verschlüsselungs-Tests realistisch laufen.
+
+## Barrierefreiheit bei JEDER Weiterentwicklung (Definition of Done)
+
+Die Wächter oben fangen die statisch prüfbaren Fehlerklassen automatisch —
+bei jedem Testlauf und in der CI. Was ein Scanner nicht sehen kann, ist
+Pflicht-Checkliste für jedes neue Feature mit Oberfläche:
+
+1. **Tastatur-Durchlauf:** Der neue Ablauf ist komplett ohne Maus bedienbar
+   (Tab-Reihenfolge sinnvoll, Fokus sichtbar, kein Fokus-Gefängnis).
+2. **Ansagen:** Asynchrone Zustandswechsel (Laden, Erfolg, Fehler, Zähler)
+   haben eine `aria-live`-/`role="status"`-Region.
+3. **Namen:** Icon-Buttons tragen `aria-label`; Umschalter `aria-pressed`
+   bzw. `aria-expanded`; Deko-Icons `aria-hidden`.
+4. **Kontrast:** Neue Farben gegen die Kontrast-Regeln prüfen (Text ≥ 4,5:1);
+   KEINE seitenlokalen Überschreibungen zentral korrigierter Button-Farben.
+5. **Zielgrößen:** Interaktive Elemente ≥ 24 px (WCAG 2.2), am Phone ≥ 44 px;
+   Eingaben ≥ 16 px Schrift.
+6. **Erklärung aktuell halten:** Ändert ein Feature den Stand der
+   Barrierefreiheit, `templates/accessibility_statement.html` (bekannte
+   Einschränkungen) und die BFSG-Zeile der `COMPLIANCE_MATRIX.md` nachziehen.
+
+Maßstab: WCAG 2.1 AA heute, WCAG 2.2 AA mit EN 301 549 V4 (erwartet 2026/27) —
+Details und Rechtslage in der Bewerberstrecken-Checkliste (Session-Artefakt)
+und `ACCESSIBILITY_AUDIT.md`.
 
 ## Eine neue Prüfung ergänzen
 

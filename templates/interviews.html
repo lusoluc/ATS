@@ -93,7 +93,7 @@
         {% empty %}<tr><td class="empty-state">Keine anstehenden Gespräche.</td></tr>{% endfor %}
       </tbody></table></div>
       {% if round_rows %}
-      <h3 style="font-size:14px; margin: var(--space-3) 0 var(--space-2);"><i class="fa-solid fa-stairs" style="color:var(--primary-light);"></i> Gesprächsrunden ({{ round_rows|length }})</h3>
+      <h3 style="font-size:14px; margin: var(--space-3) 0 var(--space-2);"><i class="fa-solid fa-stairs" style="color:var(--primary-light);"></i> Gespräche &amp; Feedback ({{ round_rows|length }})</h3>
       <div class="table-scroll m-stack">
       <table class="data-table">
         <tbody>
@@ -109,13 +109,23 @@
             </div>
           </td>
           <td class="td-actions">
-            {% if not row.state.complete %}
+            {% if row.state.implicit %}
+              {% comment %} Ohne definierte Runden gibt es keine formale Runde zum
+                 Abschließen – das Feedback-Formular bleibt trotzdem nutzbar. {% endcomment %}
+              <span style="font-size:12px; color:var(--text-muted);">Keine Runden definiert</span>
+            {% elif row.state.complete %}
+              <span class="badge badge-accent">Alle Runden abgeschlossen</span>
+            {% elif row.auto_advanced %}
+              {% comment %} Das erfasste Gesprächs-Ergebnis rückt die Runde bereits
+                 vor – ein zusätzlicher Klick würde eine Runde überspringen. {% endcomment %}
+              <span style="font-size:12px; color:var(--text-muted);">Rückt automatisch mit dem Gesprächs-Ergebnis vor</span>
+            {% else %}
             <form method="post" action="{% url 'ats:advance_interview_round' row.app.id %}" style="display:inline;">
               {% csrf_token %}
               <input type="hidden" name="next" value="{% url 'ats:interviews' %}">
-              <button type="submit" class="btn btn-primary" style="padding:6px 12px; font-size:12px;">Runde abschließen</button>
+              <button type="submit" class="btn btn-primary" style="padding:6px 12px; font-size:12px;" title="Nur nötig, wenn kein Termin mit Ergebnis erfasst wurde (z. B. Gespräch außerhalb des Systems)">Runde abschließen</button>
             </form>
-            {% else %}<span class="badge badge-accent">Alle Runden abgeschlossen</span>{% endif %}
+            {% endif %}
             {% if row.state.done %}
             <form method="post" action="{% url 'ats:advance_interview_round' row.app.id %}" style="display:inline;">
               {% csrf_token %}

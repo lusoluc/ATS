@@ -808,7 +808,10 @@ class InterviewRoundsTestCase(TestCase):
         self._world()
         self.client.force_login(self.rec)
         page = self.client.get(reverse('ats:interviews'))
-        self.assertContains(page, "Gesprächsrunden")
+        # Ueberschrift heisst seit V3 "Gespräche & Feedback" - der Abschnitt
+        # listet auch Bewerbungen OHNE definierte Runden (dort war Feedback
+        # vorher gar nicht erfassbar).
+        self.assertContains(page, "Gespräche &amp; Feedback")
         self.assertContains(page, "Erstgespräch")
         self.assertContains(page, "Runde abschließen")
 
@@ -1403,3 +1406,75 @@ class SlotBelongsToJobTestCase(TestCase):
         self.slot_a.application = other
         self.slot_a.save()
         self.assertEqual(self._schedule(self.slot_a).status_code, 404)
+
+
+class FeedbackWithoutDefinedRoundsTestCase(TestCase):
+    """V3: Feedback ist auch ohne definierte Gespraechsrunden erfassbar.
+
+    Vorher haengte das komplette Feedback-Formular an rounds_state()['total']:
+    liess jemand das Runden-Feld im Wizard leer, gab es in der GESAMTEN
+    Oberflaeche keine Moeglichkeit, ein Gespraech zu bewerten.
+    """
+
+    def setUp(self):
+        from .factories import make_application, make_job, make_world
+        self.world = make_world()
+        # Bewusst OHNE interviewRoundsJson
+        self.job = make_job(self.world, title="Ohne Runden")
+        self.app = make_application(self.job, status="INVITED")
+        self.rec = make_user("fb-norounds", role="Recruiter")
+        self.client.force_login(self.rec)
+
+    def test_form_is_offered(self):
+        resp = self.client.get(reverse('ats:interviews'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Ohne Runden")
+        self.assertContains(resp, "Interview-Feedback")
+        self.assertContains(resp, "Keine Runden definiert")
+
+    def test_feedback_saves_on_round_zero(self):
+        from ..models import InterviewFeedback
+        self.client.post(
+            reverse('ats:save_interview_feedback', args=[self.app.id]),
+            data={"rate_Passt ins Team": "80", "strengths": "Ruhig, klar."})
+        fb = InterviewFeedback.objects.get(application=self.app,
+                                           author=self.rec)
+        self.assertEqual(fb.round, 0)
+        self.assertEqual(fb.strengths, "Ruhig, klar.")
+
+    def test_no_advance_button_without_rounds(self):
+        resp = self.client.get(reverse('ats:interviews'))
+        self.assertNotContains(resp, "Runde abschließen")
+
+
+class RoundAdvanceNotOfferedTwiceTestCase(TestCase):
+    """V3: Kein Doppel-Vorlauf - das erfasste Ergebnis rueckt die Runde
+    bereits vor; ein zusaetzlicher Klick uebersprang eine Runde."""
+
+    def setUp(self):
+        import datetime
+
+        from django.utils import timezone
+
+        from ..models import Interview
+        from .factories import make_application, make_job, make_world
+        self.world = make_world()
+        self.job = make_job(self.world, title="Mit Runden",
+                            interviewRoundsJson=["Erstgespräch", "Fachgespräch"])
+        self.app = make_application(self.job, status="INVITED")
+        self.iv = Interview.objects.create(
+            application=self.app,
+            scheduledAt=timezone.now() - datetime.timedelta(days=1),
+            locationType="REMOTE")
+        self.client.force_login(make_user("adv-rec", role="Recruiter"))
+
+    def test_button_shown_while_no_outcome(self):
+        self.assertContains(self.client.get(reverse('ats:interviews')),
+                            "Runde abschließen")
+
+    def test_button_hidden_after_outcome_recorded(self):
+        self.client.post(reverse('ats:interview_outcome', args=[self.iv.id]),
+                         data={"outcome": "COMPLETED"})
+        resp = self.client.get(reverse('ats:interviews'))
+        self.assertNotContains(resp, "Runde abschließen")
+        self.assertContains(resp, "Rückt automatisch mit dem Gesprächs-Ergebnis vor")

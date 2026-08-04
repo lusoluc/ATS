@@ -264,12 +264,30 @@ def interviews_view(request):
                 .select_related('applicant', 'jobPosting')
                 .order_by('createdAt')):
         rst = rounds_state(app)
+        # V3: Auch OHNE definierte Gespraechsrunden muss Feedback erfassbar
+        # sein. Vorher haengte das ganze Feedback-Formular an rst['total'] -
+        # liess jemand das Runden-Feld im Wizard leer, gab es in der gesamten
+        # Oberflaeche keine Moeglichkeit, ein Gespraech zu bewerten. Ohne
+        # definierte Runden gilt genau ein implizites "Gespraech".
+        if not rst['total']:
+            rst = {'rounds': ['Gespräch'], 'total': 1,
+                   'done': min(app.interviewRound or 0, 1),
+                   'complete': (app.interviewRound or 0) >= 1,
+                   'current_label': 'Gespräch' if not (app.interviewRound or 0) else None,
+                   'implicit': True}
         if rst['total']:
             fb = feedback_for_application(app)
             my = next((f for f in fb['items']
                        if f.author_id == request.user.id
                        and f.round == rst['done']), None)
+            # V3: "Runde abschliessen" nur anbieten, solange die Runde NICHT
+            # schon durch ein erfasstes Gespraechs-Ergebnis vorgerueckt ist.
+            # Wer beides klickte, uebersprang eine Runde (interview_outcome
+            # rueckt automatisch vor, advance_interview_round rechnet +1).
+            auto_advanced = app.interviews.filter(
+                outcome__isnull=False).exclude(outcome='').exists()
             round_rows.append({'app': app, 'state': rst,
+                               'auto_advanced': auto_advanced,
                                'steps': [
                                    {'label': r, 'done': i < rst['done'],
                                     'current': i == rst['done']}

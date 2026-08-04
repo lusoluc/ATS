@@ -448,14 +448,19 @@ def bewerben(request, job_id):
                 tpl = (EmailTemplate.objects
                        .filter(name__icontains='eingangsbest').first())
                 if tpl:
-                    body = (tpl.textContent or tpl.htmlContent or '')
-                    subject = (tpl.subject or 'Ihre Bewerbung ist eingegangen')
-                    for k, v in (('{name}', applicant.firstName or ''),
-                                 ('{stelle}', job.title),
-                                 ('{firma}', company),
-                                 ('{portal}', portal_url)):
-                        body = body.replace(k, v)
-                        subject = subject.replace(k, v)
+                    # Eine Wahrheit fuer Platzhalter (beide Syntaxen) und
+                    # HTML-Abbau - vorher gingen "[[COMPANY_NAME]]" und
+                    # "<h3>"-Tags woertlich an die Bewerbenden.
+                    from ..mailing import render_email
+                    subject, body = render_email(
+                        tpl, first_name=applicant.firstName or '',
+                        last_name=applicant.lastName or '',
+                        job_title=job.title, company=company,
+                        portal_url=portal_url)
+                    subject = subject or 'Ihre Bewerbung ist eingegangen'
+                    if portal_url not in body:
+                        body += (f"\n\nIhren Bewerbungsstatus sehen Sie "
+                                 f"jederzeit hier:\n{portal_url}")
                 else:
                     subject = f'Ihre Bewerbung ist eingegangen – {job.title}'
                     body = (

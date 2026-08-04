@@ -23,7 +23,9 @@ class AISettingsTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(SystemSetting.objects.filter(key="AI_TONE").exists())
         self.assertEqual(SystemSetting.objects.get(key="AI_TONE").value, "EMPATHETIC")
-        self.assertEqual(SystemSetting.objects.get(key="AI_LANGUAGE").value, "DE_DU")
+        # AI_LANGUAGE wurde als toter Schalter entfernt (nirgends gelesen; die
+        # Ansprache steuert AI_TONE) - er darf auch nicht mehr geseedet werden.
+        self.assertFalse(SystemSetting.objects.filter(key="AI_LANGUAGE").exists())
 
     def test_save_ai_settings(self):
         self.client.get(reverse('ats:dashboard'))
@@ -531,3 +533,76 @@ class BestPerformerIngestionTestCase(TestCase):
         # ... und zaehlt NICHT mehr kuenstlich hoch
         self.assertNotIn('pct += 5', block)
         self.assertNotIn('Generiere Vektor-Embeddings', block)
+
+
+class ToneOverlayTestCase(TestCase):
+    """U2: Der Tonalitaets-Regler wirkt - und das Protokoll sagt die Wahrheit.
+
+    Gefunden im Durchgang: Die KI-Zentrale bot FORMAL/EMPATHETIC/CASUAL an,
+    die Overlay-Tabelle kannte nur SIE/DU/HERZLICH/NUECHTERN. Keine
+    Ueberschneidung -> nie ein Overlay. Zugleich meldete das
+    AI-Ausfuehrungsprotokoll "eigene Tonalitaet aktiv", weil nur geprueft
+    wurde, OB ein Wert gesetzt ist - eine falsche Aussage im
+    EU-AI-Act-Nachweis.
+    """
+
+    def test_ui_values_produce_an_overlay(self):
+        from ..ai_safety import compose_system_prompt
+        for ui_value in ("FORMAL", "EMPATHETIC", "CASUAL"):
+            prompt = compose_system_prompt(ui_value)
+            self.assertIn("TONALITÄT:", prompt, f"kein Overlay für {ui_value}")
+
+    def test_unknown_value_produces_none(self):
+        from ..ai_safety import compose_system_prompt
+        self.assertNotIn("TONALITÄT:", compose_system_prompt("PHANTASIE"))
+        self.assertNotIn("TONALITÄT:", compose_system_prompt(""))
+
+    def test_audit_flag_matches_reality(self):
+        from ..ai_safety import tone_applied
+        self.assertTrue(tone_applied("EMPATHETIC"))
+        self.assertTrue(tone_applied("sie"))
+        self.assertFalse(tone_applied("PHANTASIE"))   # gesetzt, aber wirkungslos
+        self.assertFalse(tone_applied(None))
+
+    def test_guardrails_still_precede_the_tone(self):
+        """Die Stilvorgabe bleibt den Sicherheitsregeln untergeordnet."""
+        from ..ai_safety import AI_SYSTEM_GUARD, compose_system_prompt
+        prompt = compose_system_prompt("CASUAL")
+        self.assertLess(prompt.index(AI_SYSTEM_GUARD[:40]),
+                        prompt.index("TONALITÄT:"))
+
+
+class ScoringSwitchInUiTestCase(TestCase):
+    """U2: Das zentrale KI-Opt-in ist im Produkt schaltbar.
+
+    AI_SCORING_ENABLED wirkt an vier Stellen, war aber NUR per Shell
+    setzbar; die KI-Seite verwies fuer "das Scoring" auf Lernendes
+    Scoring - einen anderen Schalter.
+    """
+
+    def setUp(self):
+        self.client.force_login(make_user("scoring-admin", role="HR-Admin"))
+        self.client.get(reverse('ats:dashboard'))     # Defaults seeden
+
+    def test_switch_is_offered_on_the_ki_page(self):
+        resp = self.client.get(reverse('ats:ki_page'))
+        self.assertContains(resp, 'name="AI_SCORING_ENABLED"')
+        self.assertContains(resp, 'KI-Vorbewertung')
+
+    def test_switch_turns_scoring_on_and_off(self):
+        from ..models import SystemSetting
+        self.client.post(reverse('ats:save_ai_settings'),
+                         data={'AI_TONE': 'FORMAL', 'AI_SCORING_ENABLED': '1'})
+        self.assertEqual(SystemSetting.objects.get(
+            key='AI_SCORING_ENABLED').value, '1')
+        # Nicht angehaktes Kaestchen sendet nichts -> muss ausschalten
+        self.client.post(reverse('ats:save_ai_settings'), data={'AI_TONE': 'FORMAL'})
+        self.assertEqual(SystemSetting.objects.get(
+            key='AI_SCORING_ENABLED').value, '0')
+
+    def test_transparency_page_follows_the_switch(self):
+        """Die oeffentliche Art.-86-Seite muss den echten Stand zeigen."""
+        self.client.post(reverse('ats:save_ai_settings'),
+                         data={'AI_TONE': 'FORMAL', 'AI_SCORING_ENABLED': '1'})
+        self.assertContains(self.client.get(reverse('ats:ai_transparency')),
+                            "KI-Vorbewertung")

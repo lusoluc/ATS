@@ -518,12 +518,11 @@ def execute_workflow_actions(app, actions):
             if tpl and (tpl.textContent or tpl.htmlContent):
                 company = (Organization.objects.values_list('name', flat=True)
                            .first()) or 'unser Haus'
-                body = (tpl.textContent or tpl.htmlContent)
-                for k, v in (('{name}', app.applicant.firstName),
-                             ('{stelle}', app.jobPosting.title),
-                             ('{firma}', company)):
-                    body = body.replace(k, v)
-                subject = tpl.subject.replace('{stelle}', app.jobPosting.title)
+                from ..mailing import render_email
+                subject, body = render_email(
+                    tpl, first_name=app.applicant.firstName,
+                    last_name=app.applicant.lastName,
+                    job_title=app.jobPosting.title, company=company)
                 _Msg.objects.create(application=app, direction='OUTBOUND',
                                     content=body)
                 try:
@@ -699,11 +698,11 @@ def _send_rejection_notice(request, app):
     company = Organization.objects.values_list('name', flat=True).first() or 'unser Haus'
     tpl = EmailTemplate.objects.filter(name__icontains='absage').first()
     if tpl and (tpl.textContent or tpl.htmlContent):
-        body = (tpl.textContent or tpl.htmlContent)
-        for k, v in (('{name}', applicant.firstName), ('{stelle}', app.jobPosting.title),
-                     ('{firma}', company)):
-            body = body.replace(k, v)
-        subject = tpl.subject.replace('{stelle}', app.jobPosting.title)
+        from ..mailing import render_email
+        subject, body = render_email(
+            tpl, first_name=applicant.firstName, last_name=applicant.lastName,
+            job_title=app.jobPosting.title, company=company)
+        subject = subject or f'Ihre Bewerbung: {app.jobPosting.title}'
     else:
         subject = f'Ihre Bewerbung: {app.jobPosting.title}'
         body = (f'Guten Tag {applicant.firstName},\n\n'

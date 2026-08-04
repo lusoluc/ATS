@@ -737,3 +737,58 @@ class GuardrailConsistentHelpTestCase(TestCase):
         self.assertEqual(offenders, [],
                          "Standalone-Seite ohne konsistenten Hilfe-Weg "
                          "(WCAG 2.2 / 3.2.6): " + ", ".join(offenders))
+
+
+class GuardrailNoDeadSettingsTestCase(TestCase):
+    """Waechter: Kein Bedienelement fuer eine Einstellung, die niemand liest.
+
+    Diese Fehlerklasse ist im Projekt dreimal aufgetreten (Auto-Absage-
+    Schalter, Sprach-Dropdown, "Kontinuierliches Lernen"): Die Oberflaeche
+    bot einen Schalter an, der gespeichert und angezeigt, aber nirgends
+    ausgewertet wurde - ein Versprechen ohne Funktion.
+
+    Der Waechter sammelt alle SystemSetting-Namen aus den Einstellungs-
+    Formularen und verlangt, dass jeder davon irgendwo im Python-Code
+    GELESEN wird.
+    """
+
+    FORM_TEMPLATES = [
+        "includes/dashboard/tab_ki.html",
+        "includes/dashboard/tab_templates.html",
+    ]
+
+    def test_every_offered_setting_is_read_somewhere(self):
+        import os
+        import re
+        base = os.path.join(os.path.dirname(os.path.dirname(
+            os.path.dirname(__file__))))
+        tpl_dir = os.path.join(base, "templates")
+
+        offered = set()
+        for rel in self.FORM_TEMPLATES:
+            src = open(os.path.join(tpl_dir, *rel.split("/")),
+                       encoding="utf-8").read()
+            for m in re.finditer(r'name="(AI_[A-Z_0-9]+)"', src):
+                offered.add(m.group(1))
+
+        # Kompletten Python-Code EINMAL einlesen (ohne Tests)
+        code = []
+        for root, _dirs, files in os.walk(os.path.join(base, "ats")):
+            if "tests" in root or "migrations" in root:
+                continue
+            for fname in files:
+                if fname.endswith(".py"):
+                    code.append(open(os.path.join(root, fname),
+                                     encoding="utf-8").read())
+        blob = "\n".join(code)
+
+        dead = []
+        for key in sorted(offered):
+            # Ein Schalter, der nur im Speicher-Dict vorkommt, wird nirgends
+            # ausgewertet. Zwei Fundstellen = Speichern UND Lesen.
+            hits = blob.count(key)
+            if hits < 2:
+                dead.append(f"{key} ({hits}x im Code)")
+        self.assertEqual(dead, [],
+                         "Einstellung wird angeboten, aber nie gelesen: "
+                         + ", ".join(dead))

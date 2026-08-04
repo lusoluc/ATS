@@ -21,6 +21,7 @@ re-exportiert.
 
 from django.contrib import messages
 from django.contrib.auth.models import Group
+from django.db.models import Count
 from django.shortcuts import redirect, render
 
 from ..models import (
@@ -37,7 +38,7 @@ from ..models import (
 )
 from ..permissions import hr_admin_required, scope_applications, scope_jobs
 
-__all__ = ["stats_page", "process_page", "templates_page", "cms_page", "ki_page", "hris_page", "save_auto_reply_settings", "retention_page", "learned_scoring_view", "save_learned_scoring_settings"]
+__all__ = ["stats_page", "process_page", "templates_page", "cms_page", "ki_page", "hris_page", "save_auto_reply_settings", "retention_page", "privacy_notice_page", "learned_scoring_view", "save_learned_scoring_settings"]
 
 
 def gemma_status() -> str:
@@ -265,6 +266,78 @@ def retention_page(request):
         'days': configured_retention_days(),
         'min_days': MIN_DAYS, 'max_days': MAX_DAYS,
         'preview': dry_run_preview(),
+    })
+
+
+@hr_admin_required
+def privacy_notice_page(request):
+    """Fassungen des Datenschutzhinweises pflegen (Art. 7 Abs. 1 DSGVO).
+
+    Die Nachweispflicht verlangt, belegen zu koennen, WORIN eingewilligt
+    wurde. Bisher ging das nur ueber die Django-Administration - eine
+    technische Oberflaeche, die niemand aus der Personalabteilung oeffnet.
+    Die Governance-Sicht benannte die Luecke, aber der Weg zur Behebung
+    fuehrte aus dem Produkt heraus.
+
+    ANFUEGEN STATT AENDERN: Eine bestehende Fassung laesst sich hier nicht
+    umschreiben. Wer den Text aendert, legt eine neue Fassung an. Ein
+    nachtraeglich geaenderter Text wuerde den Nachweis zerstoeren, den er
+    sein soll - die Bewerbungen zeigen dann auf eine Fassung, die es so nie
+    gab.
+    """
+    from ..audit import write_audit
+    from ..dsgvo import privacy_notice_status
+    from ..models import PrivacyNoticeVersion
+
+    if request.method == 'POST':
+        action = (request.POST.get('action') or '').strip()
+        if action == 'activate':
+            target = PrivacyNoticeVersion.objects.filter(
+                id=request.POST.get('version_id')).first()
+            if target is not None:
+                # Genau EINE Fassung ist gueltig - sonst waere unklar, welche
+                # eine neue Bewerbung gesehen hat.
+                PrivacyNoticeVersion.objects.exclude(id=target.id).update(active=False)
+                PrivacyNoticeVersion.objects.filter(id=target.id).update(active=True)
+                write_audit('PRIVACY_NOTICE_ACTIVATED', user=request.user,
+                            version=target.version)
+                messages.success(
+                    request, f"Fassung {target.version} ist ab jetzt gültig. "
+                             "Bereits eingegangene Bewerbungen behalten die "
+                             "Fassung, die sie gesehen haben.")
+            return redirect('ats:privacy_notice')
+
+        version = (request.POST.get('version') or '').strip()[:50]
+        content = (request.POST.get('content') or '').strip()
+        if not version or not content:
+            messages.warning(request, "Fassungsnummer und Text sind beide nötig.")
+            return redirect('ats:privacy_notice')
+        if PrivacyNoticeVersion.objects.filter(version=version).exists():
+            messages.warning(
+                request, f"Fassung {version} gibt es schon. Eine bestehende "
+                         "Fassung wird nicht überschrieben – vergeben Sie eine "
+                         "neue Nummer.")
+            return redirect('ats:privacy_notice')
+        PrivacyNoticeVersion.objects.update(active=False)
+        notice = PrivacyNoticeVersion.objects.create(
+            version=version, content=content, active=True)
+        write_audit('PRIVACY_NOTICE_CREATED', user=request.user,
+                    version=notice.version, length=len(content))
+        messages.success(request, f"Fassung {version} angelegt und gültig gesetzt.")
+        return redirect('ats:privacy_notice')
+
+    versions = list(PrivacyNoticeVersion.objects.order_by('-createdAt'))
+    used = {
+        row['privacyNoticeVersion']: row['n']
+        for row in Application.objects
+        .filter(privacyNoticeVersion__isnull=False)
+        .values('privacyNoticeVersion')
+        .annotate(n=Count('id'))
+    }
+    rows = [{'notice': v, 'used': used.get(v.id, 0)} for v in versions]
+    return render(request, 'admin_pages/privacy_notice.html', {
+        'rows': rows,
+        'status': privacy_notice_status(),
     })
 
 

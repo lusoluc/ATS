@@ -48,8 +48,8 @@
     {% if notice_status.missing %}
     <p style="font-size:12px; color:var(--text-muted); margin:var(--space-3) 0 0;">
       Ohne gepflegte Fassung kann zu neuen Bewerbungen nicht belegt werden, welchen
-      Datenschutzhinweis die Person gesehen hat. Fassungen legt die HR-Administration
-      unter „Datenschutzhinweis-Versionen“ in der Django-Administration an.
+      Datenschutzhinweis die Person gesehen hat.
+      {% if can_export %}<a href="{% url 'ats:privacy_notice' %}" style="color:var(--accent-light);">Fassung anlegen</a>{% else %}Die HR-Administration kann eine Fassung anlegen.{% endif %}
     </p>
     {% elif notice_status.applications_unlinked %}
     <p style="font-size:12px; color:var(--text-muted); margin:var(--space-3) 0 0;">

@@ -5,6 +5,22 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Ergänzt (Freigaben: Rückblick und Überblick)
+
+Die Freigabe-Seite zeigte ausschließlich „wartet auf mich". Zwei Fragen, die im
+Alltag gestellt werden, konnte sie nicht beantworten — obwohl die Daten die ganze
+Zeit vorlagen:
+
+- **„Habe ich das schon freigegeben?"** Ein entschiedener Schritt verschwand
+  spurlos aus der Liste. Jetzt ein eingeklappter Rückblick auf die eigenen
+  Entscheidungen mit Datum und Begründung. § 99 wird dabei sprachlich
+  auseinandergehalten: „Zustimmung verweigert" ist nicht „abgelehnt".
+- **„Was hängt gerade, und bei wem?"** Neue Übersicht der laufenden Ketten mit
+  Fortschritt, fälliger Stufe und Alter. Die Engpass-Kennzahl in der Analytik
+  beantwortet „welche Stufe bremst im Schnitt" — nicht, welche Stelle jetzt
+  steht. Nennt Rollen statt Namen (Prozess-Transparenz, keine Personendaten)
+  und respektiert den Zugriffsbereich.
+
 ### Behoben (Tempo & Wahrheit der KI-Anzeige)
 
 - **Das Dashboard blockierte bis zu vier Sekunden pro Aufruf.** Das KI-Abzeichen

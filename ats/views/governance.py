@@ -28,7 +28,14 @@ from ..models import (
     TalentPoolSubscription,
     WorkflowState,
 )
-from ..permissions import HR_ADMIN, any_staff_required, has_full_access, hr_admin_required, recruiter_required
+from ..permissions import (
+    HR_ADMIN,
+    any_staff_required,
+    has_full_access,
+    hr_admin_required,
+    recruiter_required,
+    scope_jobs,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -225,7 +232,72 @@ def approvals_inbox(request):
     return render(request, 'approvals.html',
                   {'rows': rows, 'sla_days': sla_days,
                    'panel_rows': panel_rows,
+                   'my_decisions': _my_decisions(request.user),
+                   'open_chains': _open_chains(request.user, sla_days),
                    'w99_grounds': W99_GROUNDS})
+
+
+def _my_decisions(user, limit=15):
+    """Was diese Person selbst schon entschieden hat.
+
+    Die Freigabe-Seite zeigte ausschliesslich „wartet auf mich". Wer nach dem
+    Wochenende wissen wollte, ob er eine Stelle bereits freigegeben hat, fand
+    dazu nichts - der Schritt war aus der Liste verschwunden, sonst nichts.
+    Die Daten lagen die ganze Zeit da; seit U6 auch mit Urheber.
+    """
+    from ..models import ApprovalStep
+    return list(ApprovalStep.objects
+                .filter(actionTakenBy=user)
+                .exclude(status='PENDING')
+                .select_related('approvalTicket__jobPosting__location')
+                .order_by('-actionTakenAt')[:limit])
+
+
+def _open_chains(user, sla_days):
+    """Laufende Freigabeketten im Zugriffsbereich - wo haengt was, seit wann.
+
+    Fuer die Leitung war bisher nicht erkennbar, ob eine Ausschreibung in der
+    Kette steht oder vergessen wurde. Die Engpass-Kennzahl in der Analytik
+    beantwortet „welche Stufe bremst im Schnitt", nicht „welche Stelle haengt
+    gerade bei wem".
+
+    BOLA: nur Stellen im Zugriffsbereich; die Zeile nennt Rollen, keine Namen.
+    """
+    from ..models import ApprovalStep, ApprovalTicket
+    tickets = (ApprovalTicket.objects
+               .filter(status='PENDING')
+               .select_related('jobPosting__location'))
+    scoped_ids = set(scope_jobs(user, JobPosting.objects.all())
+                     .values_list('id', flat=True))
+    now = timezone.now()
+    rows = []
+    for ticket in tickets:
+        if ticket.jobPosting_id not in scoped_ids:
+            continue
+        pending = [s for s in ApprovalStep.objects
+                   .filter(approvalTicket=ticket, status='PENDING')
+                   .order_by('stepOrder')]
+        done = ApprovalStep.objects.filter(
+            approvalTicket=ticket, status='APPROVED').count()
+        total = ApprovalStep.objects.filter(approvalTicket=ticket).count()
+        if not pending:
+            continue
+        # Faellig ist die NIEDRIGSTE offene Stufe - hoehere warten noch auf sie.
+        current = pending[0]
+        waiting_on = [s.assignedRoleId or s.assignedUserId or '—'
+                      for s in pending if s.stepOrder == current.stepOrder]
+        age = (now - ticket.createdAt).days
+        rows.append({
+            'job': ticket.jobPosting,
+            'step_no': current.stepOrder,
+            'done': done,
+            'total': total,
+            'waiting_on': ', '.join(waiting_on),
+            'age_days': age,
+            'overdue': age > sla_days,
+        })
+    rows.sort(key=lambda r: -r['age_days'])
+    return rows
 
 
 @any_staff_required

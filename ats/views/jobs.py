@@ -109,6 +109,15 @@ def create_job(request):
 
             if workflow_state_id:
                 workflow_state = get_object_or_404(WorkflowState, id=workflow_state_id)
+            elif request.POST.get('publish_choice'):
+                # V2: Das Formular schickt eine ehrliche Ja/Nein-Entscheidung
+                # statt einer Workflow-Auswahl, die die Gates ohnehin
+                # ueberschreiben. Nicht angehakt = bewusster Entwurf.
+                _name = 'published' if request.POST.get('publish_now') else 'draft'
+                workflow_state, _ = WorkflowState.objects.get_or_create(
+                    name=_name,
+                    defaults={'description': ('Veröffentlicht' if _name == 'published'
+                                              else 'Entwurf')})
             else:
                 workflow_state = WorkflowState.objects.filter(name="published").first()
                 if not workflow_state:

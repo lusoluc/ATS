@@ -855,3 +855,47 @@ class AutomationFormEditorTestCase(TestCase):
         r = self.client.get(reverse('ats:process_page'))
         self.assertContains(r, 'automation-roles-data')
         self.assertContains(r, 'Recruiter')
+
+
+class PublishChoiceTestCase(TestCase):
+    """V2: Ehrliche Ja/Nein-Entscheidung statt Workflow-Dropdown.
+
+    Der Server ueberschrieb die Auswahl ohnehin an drei Gates - jetzt sagt
+    das Formular, was es meint, und der Hinweis erklaert, was passiert.
+    """
+
+    def setUp(self):
+        from .factories import make_world
+        self.world = make_world()
+        self.client.force_login(make_user("pub-admin", role="HR-Admin"))
+
+    def _post(self, **extra):
+        data = {"title": "Pflegefachkraft (m/w/d)", "description": "Text",
+                "facility": str(self.world.facility.id),
+                "location": str(self.world.location.id),
+                "job_family": str(self.world.job_family.id),
+                "pay_band": str(self.world.band.id)}
+        data.update(extra)
+        return self.client.post(reverse('ats:create_job'), data=data)
+
+    def test_checked_publishes(self):
+        from ..models import JobPosting
+        self._post(publish_choice="1", publish_now="1")
+        job = JobPosting.objects.get(title="Pflegefachkraft (m/w/d)")
+        self.assertEqual(job.workflowState.name, "published")
+
+    def test_unchecked_stays_draft(self):
+        from ..models import JobPosting
+        # Browser sendet ein nicht angehaktes Kaestchen gar nicht mit -
+        # deshalb traegt publish_choice die Information "Formular war neu".
+        self._post(publish_choice="1")
+        job = JobPosting.objects.get(title="Pflegefachkraft (m/w/d)")
+        self.assertEqual(job.workflowState.name, "draft")
+
+    def test_explicit_workflow_state_still_wins(self):
+        """Alt-Clients/Tests, die workflow_state senden, funktionieren weiter."""
+        from ..models import JobPosting, WorkflowState
+        draft, _ = WorkflowState.objects.get_or_create(name="draft")
+        self._post(workflow_state=str(draft.id), publish_choice="1", publish_now="1")
+        job = JobPosting.objects.get(title="Pflegefachkraft (m/w/d)")
+        self.assertEqual(job.workflowState.name, "draft")

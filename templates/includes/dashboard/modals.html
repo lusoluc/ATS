@@ -324,9 +324,9 @@ MODALS & OVERLAYS
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     <div class="form-group">
                         <label class="form-label" for="job-facility">Einrichtung *</label>
-                        <select name="facility" id="job-facility" class="filter-select" required>
+                        <select name="facility" id="job-facility" class="filter-select" required onchange="updatePublishHint()">
                             {% for fac in facilities %}
-                                <option value="{{ fac.id }}">{{ fac.name }}</option>
+                                <option value="{{ fac.id }}" data-approval="{% if fac.requiresApproval %}1{% else %}0{% endif %}">{{ fac.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -358,6 +358,15 @@ MODALS & OVERLAYS
                             {% endfor %}
                         </select>
                     </div>
+                </div>
+                {% comment %} Die Abkürzung steht dort, wo ihre Voraussetzung
+                   (Stellengruppe) gewählt wird – und VOR den Feldern, die sie
+                   füllt. Vorher lag sie ganz unten bei den Screening-Fragen. {% endcomment %}
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px; padding-top:12px; border-top:1px dashed var(--glass-border);">
+                    <button type="button" class="btn-search" style="padding:6px 12px; height:auto; font-size:12px; margin:0; border-radius: var(--border-radius-sm);" onclick="usePreviousProcess(this)" title="Übernimmt Aufgaben, Anforderungen und Screening-Fragen der jüngsten Stelle dieser Stellengruppe – und belegt leere Felder wie Einrichtung, Standort, Entgeltband, Gesprächsrunden und Leitfaden vor.">
+                        <i class="fa-solid fa-clock-rotate-left"></i> Bewährten Prozess übernehmen
+                    </button>
+                    <span style="font-size:11px; color: var(--text-muted);">Füllt Aufgaben, Anforderungen, Fragen – und belegt leere Felder aus der letzten vergleichbaren Stelle vor. Nichts wird überschrieben, was Sie schon eingetragen haben.</span>
                 </div>
 
                 </fieldset>
@@ -447,7 +456,6 @@ MODALS & OVERLAYS
                 <div class="form-group">
                     <label class="form-label">Screening-Fragen</label>
                     <div style="display:flex; gap:8px; align-items:center; margin:6px 0;">
-                        <button type="button" class="btn-search" style="padding:4px 10px; height:auto; font-size:11px; margin:0; border-radius: var(--border-radius-sm);" onclick="usePreviousProcess(this)" title="Screening-Fragen, Aufgaben und Anforderungen der jüngsten Stelle gleicher Jobfamilie (bevorzugt gleiche Einrichtung) übernehmen"><i class="fa-solid fa-clock-rotate-left"></i> Bewährten Prozess übernehmen</button>
                         <button type="button" class="btn-search" style="padding:4px 10px; height:auto; font-size:11px; margin:0; border-radius: var(--border-radius-sm);" onclick="suggestProcess(this, false)"><i class="fa-solid fa-lightbulb"></i> Prozess vorschlagen</button>
                         <button type="button" class="btn-search" style="padding:4px 10px; height:auto; font-size:11px; margin:0; border-radius: var(--border-radius-sm);" onclick="suggestProcess(this, true)"><i class="fa-solid fa-wand-magic-sparkles"></i> + KI-Zusatzfragen</button>
                         <span id="process-suggest-status" aria-live="polite" style="font-size:11px; color: var(--text-muted);"></span>
@@ -516,13 +524,18 @@ MODALS & OVERLAYS
 
                 <fieldset class="wizard-section">
                 <legend>Veröffentlichung</legend>
+                {% comment %} Statt eines Workflow-Dropdowns, dessen Auswahl der
+                   Server an drei Stellen ohnehin überschreibt (Freigabe-,
+                   Bedarfs- und Entgelt-Gate): eine ehrliche Entscheidung plus
+                   der Hinweis, was tatsächlich passiert. {% endcomment %}
+                <input type="hidden" name="publish_choice" value="1">
                 <div class="form-group">
-                    <label class="form-label" for="job-state">Workflow-Veröffentlichungsstatus</label>
-                    <select name="workflow_state" id="job-state" class="filter-select">
-                        {% for state in all_workflows %}
-                            <option value="{{ state.id }}" {% if state.name == 'published' %}selected{% endif %}>{{ state.description|default:state.name }}</option>
-                        {% endfor %}
-                    </select>
+                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:14px; color:#fff;">
+                        <input type="checkbox" name="publish_now" id="job-publish-now" value="1" checked
+                               style="width:24px; height:24px; accent-color: var(--accent); cursor:pointer;">
+                        Stelle sofort veröffentlichen
+                    </label>
+                    <p id="publish-hint" style="font-size:12px; color: var(--text-muted); margin:8px 0 0;"></p>
                 </div>
 
                 <button type="submit" class="btn-apply-now" style="width: 100%; margin: 4px 0 12px; height: 46px;">

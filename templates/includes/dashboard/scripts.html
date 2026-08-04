@@ -636,10 +636,20 @@
                     location.reload();   // Zug zurücknehmen
                 }
             } else {
-                console.error("Status-Update schlug fehl.");
+                // Jede serverseitige Ablehnung sichtbar machen und den Zug
+                // zuruecknehmen. Vorher landete z. B. "offene Gesprächsrunden"
+                // nur in der Konsole - die Karte blieb optisch verschoben, der
+                // Nutzer sah einen Erfolg, den es nicht gab.
+                alert(data.error || 'Der Statuswechsel wurde nicht übernommen.');
+                location.reload();
             }
         })
-        .catch(err => console.error("Error updating status:", err));
+        .catch(err => {
+            console.error("Error updating status:", err);
+            alert('Der Statuswechsel konnte nicht gespeichert werden. '
+                  + 'Die Ansicht wird neu geladen.');
+            location.reload();
+        });
     }
 
     function updateStatsCounters() {
@@ -668,6 +678,20 @@
     function decideFromModal(newStatus) {
         const appId = activeApplicationId;
         if (!appId || decideInFlight) return;
+        // Absage aus dem Modal verschickt SOFORT eine echte Absage-Mail und
+        // eine Portal-Nachricht - das ist nicht rueckholbar und braucht
+        // dieselbe Rueckfrage wie die Sammel-Absage (vorher: ein Klick,
+        // keine Nachfrage - genau falsch herum).
+        if (newStatus === 'REJECTED') {
+            const who = document.getElementById('modal-name');
+            const name = who ? who.innerText.trim() : 'diese Person';
+            if (!confirm(`Absage an ${name} jetzt senden?\n\n`
+                         + 'Die Person erhält sofort eine E-Mail und eine '
+                         + 'Nachricht im Bewerbungsportal. Das lässt sich nicht '
+                         + 'zurücknehmen.')) {
+                return;
+            }
+        }
         decideInFlight = true;
         document.querySelectorAll('[id^="modal-decide-"]').forEach(b => b.disabled = true);
         const decideDone = () => {
@@ -929,10 +953,31 @@
 
     // Modal controls for scheduler
     function openInterviewModal(appId, candidateName, jobTitle) {
-        if (appId) {
-            document.getElementById('schedule-app-id').value = appId;
-        } else if (activeApplicationId) {
-            document.getElementById('schedule-app-id').value = activeApplicationId;
+        const targetId = appId || activeApplicationId;
+        if (!targetId) {
+            // Ohne Bewerbung endete das Absenden frueher in einer 404-Sackgasse.
+            alert('Bitte zuerst eine Bewerbung öffnen – der Termin wird immer '
+                  + 'zu einer konkreten Bewerbung vergeben.');
+            return;
+        }
+        document.getElementById('schedule-app-id').value = targetId;
+
+        // Nur Slots DIESER Stelle anbieten (Server prueft es zusaetzlich):
+        // vorher stand hier die Gesamtliste aller freien Slots.
+        const card = document.getElementById('card-' + targetId);
+        const jobId = card && card.getAttribute('data-job-id');
+        const slotSel = document.getElementById('slot_id');
+        if (slotSel && jobId) {
+            let visible = 0;
+            slotSel.querySelectorAll('option[data-job]').forEach(o => {
+                const match = o.getAttribute('data-job') === jobId;
+                o.hidden = !match;
+                o.disabled = !match;
+                if (match) { visible++; }
+            });
+            slotSel.value = '';   // Auswahl zuruecksetzen, nie ein fremder Slot
+            const hint = document.getElementById('slot-empty-hint');
+            if (hint) { hint.style.display = visible ? 'none' : 'block'; }
         }
         // Einladungstext aus der zentralen Vorlage (UC-SB-10) vorbefuellen
         const inviteBox = document.getElementById('invite-message');
@@ -981,6 +1026,18 @@
         document.getElementById('panel_deadline_days').value = '';
         document.getElementById('interview_guide').value = '';
         document.getElementById('interview_rounds').value = '';
+        // Diese vier fehlten: eine NEUE Stelle erbte sonst still Entgeltband,
+        // Gremium, Leichte-Sprache-Text und Stellenzahl der zuletzt
+        // BEARBEITETEN Stelle - beim Entgeltband heisst das: falsche
+        // Gehaltsspanne veroeffentlicht.
+        const _payBand = document.getElementById('job-pay-band');
+        if (_payBand) { _payBand.value = ''; }
+        const _easy = document.getElementById('job-desc-easy');
+        if (_easy) { _easy.value = ''; }
+        const _headcount = document.getElementById('headcount');
+        if (_headcount) { _headcount.value = 1; }
+        document.querySelectorAll('#job-panel option').forEach(o => { o.selected = false; });
+        if (typeof refreshPanelPreview === 'function') { setTimeout(refreshPanelPreview, 0); }
         
         // Reset selections to first option
         document.getElementById('job-facility').selectedIndex = 0;

@@ -84,11 +84,21 @@ def schedule_interview(request):
                 return redirect('ats:dashboard')
 
             if slot_id:
-                slot = get_object_or_404(InterviewSlot, id=slot_id)
+                # Der Slot MUSS zur Stelle dieser Bewerbung gehoeren und darf
+                # nicht schon belegt sein - der Portal-Pfad prueft das laengst
+                # (views/public.py), hier fehlte es: fremde Slots waren buchbar.
+                slot = get_object_or_404(InterviewSlot, id=slot_id,
+                                         jobPosting=app.jobPosting,
+                                         isBooked=False)
                 slot.isBooked = True
                 slot.application = app
                 slot.save()
                 scheduled_time = slot.startTime
+                # Format aus dem Slot uebernehmen, wenn dort eines hinterlegt
+                # ist - der Portal-Pfad macht es genauso; doppelte Eingabe
+                # desselben Sachverhalts entfaellt.
+                if getattr(slot, 'kind', ''):
+                    location_type = slot.kind
             else:
                 # Custom quick schedule (default to 2 days from now)
                 scheduled_time = timezone.now() + datetime.timedelta(days=2)

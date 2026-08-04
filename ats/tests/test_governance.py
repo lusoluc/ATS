@@ -2168,3 +2168,57 @@ class VoteOnceStateTestCase(TestCase):
         self.assertContains(page, "Dafür gestimmt")            # Erledigt-Zustand
         self.assertContains(page, "Ändern: Dagegen")           # Gegenstimme bleibt
         self.assertNotContains(page, 'data-done-label="Dafür gestimmt"')
+
+
+class ApprovalGatePayBandTestCase(TestCase):
+    """V1: Das Entgelt-Gate gilt an ALLEN drei Veroeffentlichungs-Wegen.
+
+    Anlegen und Schnell-Toggle blockten eine Stelle ohne Entgeltband schon
+    immer; die automatische Veroeffentlichung nach der letzten Freigabe
+    pruefte nur den Personalbedarf - eine Stelle ohne Verguetungsangabe ging
+    darueber online (EU-RL 2023/970 Art. 5).
+    """
+
+    def _job_without_band(self):
+        import uuid as _u
+
+        from ..models import Facility, JobFamily, JobPosting, Location, Organization, WorkflowState
+        org = Organization.objects.create(name="O")
+        loc = Location.objects.create(name="HH")
+        fac = Facility.objects.create(name="Klinik Freigabe", organization=org,
+                                      requiresApproval=True)
+        fam = JobFamily.objects.create(name="JF-" + str(_u.uuid4())[:6])
+        WorkflowState.objects.get_or_create(name="published")
+        draft, _ = WorkflowState.objects.get_or_create(name="draft")
+        return JobPosting.objects.create(
+            title="Ohne Band", organization=org, facility=fac, location=loc,
+            jobFamily=fam, workflowState=draft, payBand=None)
+
+    def test_final_approval_does_not_publish_without_pay_band(self):
+        from ..approvals import ensure_approval_gate
+        from ..models import AuditLog
+        job = self._job_without_band()
+        ensure_approval_gate(job)
+        step = job.approvalTicket.steps.order_by("stepOrder").first()
+        self.client.force_login(make_user("paygate-hr", role="HR-Admin"))
+        self.client.post(reverse('ats:approvals'),
+                         data={"step_id": str(step.id), "action": "approve"})
+        job.refresh_from_db()
+        self.assertEqual(job.workflowState.name, "draft")   # bleibt Entwurf
+        self.assertTrue(AuditLog.objects.filter(action="PAY_GATE_BLOCKED").exists())
+        self.assertNotContains(self.client.get(reverse('ats:job_list')), "Ohne Band")
+
+    def test_final_approval_publishes_with_pay_band(self):
+        from ..approvals import ensure_approval_gate
+        from ..models import PayBand
+        job = self._job_without_band()
+        job.payBand = PayBand.objects.create(name="B", minAmount=3000,
+                                             maxAmount=3600)
+        job.save(update_fields=["payBand"])
+        ensure_approval_gate(job)
+        step = job.approvalTicket.steps.order_by("stepOrder").first()
+        self.client.force_login(make_user("paygate-hr2", role="HR-Admin"))
+        self.client.post(reverse('ats:approvals'),
+                         data={"step_id": str(step.id), "action": "approve"})
+        job.refresh_from_db()
+        self.assertEqual(job.workflowState.name, "published")

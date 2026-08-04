@@ -143,12 +143,18 @@ MODALS & OVERLAYS
                     <select id="slot_id" name="slot_id" class="filter-select">
                         <option value="">Direkt-Termin (in 2 Tagen, manuell abstimmen)</option>
                         <option value="CANDIDATE_CHOICE">✨ Bewerber:in wählt selbst aus freien Slots (Portal)</option>
+                        {% comment %} data-job: das Modal blendet beim Öffnen die Slots
+                           anderer Stellen aus – man sucht den Termin nicht mehr aus
+                           einer Gesamtliste heraus (Server prüft es zusätzlich). {% endcomment %}
                         {% for slot in interview_slots %}
-                            <option value="{{ slot.id }}">{{ slot.jobPosting.title }} - {{ slot.startTime|date:"d.m.Y H:i" }} Uhr</option>
+                            <option value="{{ slot.id }}" data-job="{{ slot.jobPosting_id }}">{{ slot.startTime|date:"d.m.Y H:i" }} Uhr{% if slot.kind %} · {{ slot.kind_label }}{% endif %} — {{ slot.jobPosting.title }}</option>
                         {% empty %}
                             <option value="">(Keine vordefinierten Slots frei - manueller Direkt-Slot wird erstellt)</option>
                         {% endfor %}
                     </select>
+                    <div id="slot-empty-hint" style="display:none; font-size:12px; color:var(--text-muted); margin-top:6px;">
+                        Für diese Stelle sind keine freien Termine hinterlegt – es wird ein Direkt-Termin erstellt, oder die Person wählt selbst im Portal.
+                    </div>
                 </div>
 
                 <div class="form-group">

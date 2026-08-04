@@ -103,7 +103,14 @@ def dashboard(request):
                            "einladen.\n\nFreundliche Grüße\n[[COMPANY_NAME]]")
     company_name = (Organization.objects.first().name if Organization.objects.exists()
                     else 'SecurATS')
-    interview_slots = InterviewSlot.objects.filter(isBooked=False)
+    # Nur freie Slots in der ZUKUNFT und im eigenen Zugriffsbereich. Vorher
+    # standen hier alle freien Slots aller Stellen (auch vergangene, auch
+    # fremder Bereiche) - man musste den richtigen Termin aus dem Optionstext
+    # heraussuchen. Die Zuordnung zur Stelle macht das Modal (data-job).
+    interview_slots = (InterviewSlot.objects
+                       .filter(isBooked=False, startTime__gte=timezone.now(),
+                               jobPosting__in=active_jobs)
+                       .select_related('jobPosting').order_by('startTime'))
 
     # Calculate some fast stats
     stats = {

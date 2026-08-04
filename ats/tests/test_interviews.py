@@ -1343,3 +1343,63 @@ class FeedbackModalJsonTestCase(TestCase):
         page = self.client.get(reverse('ats:dashboard'))
         self.assertContains(page, 'id="modal-feedback"')
         self.assertContains(page, 'loadCandidateFeedback')
+
+
+class SlotBelongsToJobTestCase(TestCase):
+    """V1: Ein Termin-Slot gehoert zur Stelle - fremde Slots sind nicht buchbar.
+
+    Der Portal-Pfad prueft das laengst; im Recruiter-Pfad fehlte die Bindung,
+    dadurch liess sich ein Slot einer ANDEREN Stelle buchen.
+    """
+
+    def setUp(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from ..models import InterviewSlot
+        from .factories import make_application, make_job, make_world
+        self.world = make_world()
+        self.job_a = make_job(self.world, title="Stelle A")
+        self.job_b = make_job(self.world, title="Stelle B")
+        self.app = make_application(self.job_a, status="IN_REVIEW")
+        soon = timezone.now() + timedelta(days=3)
+        self.slot_a = InterviewSlot.objects.create(
+            jobPosting=self.job_a, startTime=soon,
+            endTime=soon + timedelta(minutes=45), kind="ON_SITE")
+        self.slot_b = InterviewSlot.objects.create(
+            jobPosting=self.job_b, startTime=soon,
+            endTime=soon + timedelta(minutes=45))
+        self.client.force_login(make_user("slot-rec", role="Recruiter"))
+
+    def _schedule(self, slot):
+        return self.client.post(reverse('ats:schedule_interview'), data={
+            "application_id": str(self.app.id), "slot_id": str(slot.id),
+            "location_type": "REMOTE", "message_text": "Einladung."})
+
+    def test_foreign_slot_is_rejected(self):
+        from ..models import InterviewSlot
+        resp = self._schedule(self.slot_b)
+        self.assertEqual(resp.status_code, 404)
+        self.slot_b.refresh_from_db()
+        self.assertFalse(self.slot_b.isBooked)
+        self.assertFalse(InterviewSlot.objects.filter(
+            id=self.slot_b.id, application=self.app).exists())
+
+    def test_own_slot_books_and_takes_its_format(self):
+        from ..models import Interview
+        resp = self._schedule(self.slot_a)
+        self.assertEqual(resp.status_code, 302)
+        self.slot_a.refresh_from_db()
+        self.assertTrue(self.slot_a.isBooked)
+        # Format kommt aus dem Slot, nicht aus dem Formularfeld ("REMOTE")
+        iv = Interview.objects.get(application=self.app)
+        self.assertEqual(iv.locationType, "ON_SITE")
+
+    def test_already_booked_slot_is_rejected(self):
+        from .factories import make_application
+        other = make_application(self.job_a, status="IN_REVIEW")
+        self.slot_a.isBooked = True
+        self.slot_a.application = other
+        self.slot_a.save()
+        self.assertEqual(self._schedule(self.slot_a).status_code, 404)

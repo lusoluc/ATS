@@ -9,6 +9,7 @@
      data-id="{{ app.id }}"
      data-name="{{ app.applicant.firstName }} {{ app.applicant.lastName }}"
      data-job="{{ app.jobPosting.title }}"
+     data-job-id="{{ app.jobPosting_id }}"
      data-email="{{ app.applicant.email }}"
      data-phone="{{ app.app_phone|default:app.applicant.phone|default:'' }}"
      data-coverletter="{{ app.coverLetterTxt|default:'' }}"

@@ -142,15 +142,20 @@ def approvals_inbox(request):
                 published, _ = WorkflowState.objects.get_or_create(
                     name='published', defaults={'description': 'Öffentlich sichtbar'})
                 job = ticket.jobPosting
-                # Stellenfreigabe ist auch hier nicht umgehbar: die finale
-                # Job-Freigabe publiziert NUR mit genehmigtem Bedarf.
+                # Die Veroeffentlichungs-Gates sind auch hier nicht umgehbar.
+                # Beide muessen offen sein - vorher fehlte hier das
+                # Entgelt-Gate, wodurch eine Stelle OHNE Entgeltband ueber
+                # die Freigabekette online ging, obwohl create_job und der
+                # Schnell-Toggle sie blockieren (EU-RL 2023/970 Art. 5).
                 from ..approvals import requisition_blocked_reason
+                from ..pay_transparency import pay_blocked_reason
                 _rq = requisition_blocked_reason(job)
-                if _rq:
-                    write_audit('REQUISITION_GATE_BLOCKED',
-                                user=request.user, job=job.title,
-                                via='approval_gate')
-                    messages.warning(request, _rq)
+                _pay = pay_blocked_reason(job)
+                if _rq or _pay:
+                    write_audit(
+                        'REQUISITION_GATE_BLOCKED' if _rq else 'PAY_GATE_BLOCKED',
+                        user=request.user, job=job.title, via='approval_gate')
+                    messages.warning(request, _rq or _pay)
                 elif job.workflowState_id != published.id:
                     job.workflowState = published
                     job.save(update_fields=['workflowState', 'updatedAt'])

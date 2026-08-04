@@ -152,6 +152,126 @@ def _calibration(scope: LearningScope) -> list[BandStat]:
     return out
 
 
+# --- L5: Fruehwarnung statt Momentaufnahme -----------------------------------
+# Der Backtest sagt "heute schlaegt es die Grundlinie" - aber nicht, ob es
+# schlechter WIRD. Ein Modell, das vor drei Monaten passte, kann heute an der
+# Realitaet vorbeilaufen (neue Stellenzuschnitte, anderer Bewerbermarkt).
+# Deshalb zwei Frueh-Signale, beide aus denselben Daten, beide ehrlich
+# getrennt: das Modell lernt NUR auf der aeltesten Haelfte und wird auf zwei
+# spaeteren Fenstern geprueft.
+MIN_DRIFT_TOTAL = 24   # darunter sind zwei Pruef-Fenster nicht sinnvoll
+MIN_WINDOW = 5         # Faelle je Fenster
+DRIFT_MARGIN = 0.10    # ab 10 Punkten Abfall sprechen wir von Drift
+
+
+@dataclass
+class DriftResult:
+    """Zeitverlauf + Mensch-ueber-Modell-Quote. Jede Zahl kommt mit einer
+    Handlung - eine Kennzahl ohne naechsten Schritt waere Deko."""
+
+    scope_label: str
+    early_precision: "float | None" = None   # aelteres Pruef-Fenster
+    late_precision: "float | None" = None    # neueres Pruef-Fenster
+    trend: str = "unbekannt"                 # steigend | stabil | fallend | unbekannt
+    override_rate: "float | None" = None     # Anteil Entscheidungen GEGEN die Note
+    override_n: int = 0
+    too_optimistic: int = 0    # Note A, aber abgesagt
+    too_pessimistic: int = 0   # Note D, aber eingeladen
+    verdict: str = ""
+    action: str = ""
+
+
+def drift_report(scope: LearningScope) -> DriftResult:
+    """Wird das gelernte Score mit der Zeit schlechter - und wie oft
+    entscheidet der Mensch dagegen?
+
+    Aufbau: aelteste 50 % = Trainingsdaten, danach zwei gleich grosse
+    Pruef-Fenster (frueher / zuletzt). Beide werden mit DEMSELBEN Modell
+    bewertet; faellt die Treffsicherheit im neueren Fenster deutlich ab,
+    ist das ein Drift-Signal. Die Mensch-ueber-Modell-Quote zaehlt im
+    neueren Fenster, wie oft die Entscheidung der Note widersprach - das
+    frueheste Signal ueberhaupt, weil es kommt, bevor die Trefferquote
+    kippt."""
+    rows = _rows_sorted(scope)
+    total = len(rows)
+    if total < MIN_DRIFT_TOTAL:
+        return DriftResult(
+            scope_label=scope.label,
+            verdict=f"Zu wenig Verlauf ({total} von {MIN_DRIFT_TOTAL} Entscheidungen).",
+            action="Weiter arbeiten – die Messung startet automatisch, sobald genug Entscheidungen vorliegen.")
+
+    half = total // 2
+    rest = rows[half:]
+    cut = len(rest) // 2
+    train, early, late = rows[:half], rest[:cut], rest[cut:]
+    if min(len(early), len(late)) < MIN_WINDOW:
+        return DriftResult(
+            scope_label=scope.label,
+            verdict="Prüf-Fenster noch zu klein für einen Zeitvergleich.",
+            action="Weiter arbeiten – kein Handlungsbedarf.")
+
+    model = fit_model(train, scope.label)
+    if model is None:
+        return DriftResult(
+            scope_label=scope.label,
+            verdict="Kein Modell auf den älteren Daten lernbar.",
+            action="Weiter arbeiten – kein Handlungsbedarf.")
+
+    def _precision(window: list[tuple[dict, bool]]) -> "float | None":
+        top = [inv for feats, inv in window
+               if grade_features(feats, model)[0] == "A"]
+        return _rate(sum(1 for v in top if v), len(top)) if top else None
+
+    early_p, late_p = _precision(early), _precision(late)
+
+    # Mensch ueber Modell im neuesten Fenster: Note A -> trotzdem abgesagt,
+    # Note D -> trotzdem eingeladen. Beides heisst: die Note trug nicht.
+    too_opt = too_pes = 0
+    for feats, invited in late:
+        grade = grade_features(feats, model)[0]
+        if grade == "A" and not invited:
+            too_opt += 1
+        elif grade == "D" and invited:
+            too_pes += 1
+    override_n = too_opt + too_pes
+    override_rate = _rate(override_n, len(late))
+
+    if early_p is None or late_p is None:
+        trend = "unbekannt"
+    elif late_p + DRIFT_MARGIN < early_p:
+        trend = "fallend"
+    elif late_p > early_p + DRIFT_MARGIN:
+        trend = "steigend"
+    else:
+        trend = "stabil"
+
+    # Verdikt + HANDLUNG (nie eine Zahl ohne naechsten Schritt).
+    if trend == "fallend":
+        verdict = (f"Treffsicherheit fällt: {int((early_p or 0) * 100)} % → "
+                   f"{int((late_p or 0) * 100)} % im neueren Zeitraum.")
+        action = ("Anforderungen und Pflichtkriterien dieser Jobfamilie prüfen – "
+                  "hat sich der Zuschnitt geändert? Bis dahin die gelernte Note "
+                  "als schwächeres Signal behandeln.")
+    elif override_rate >= 0.30:
+        verdict = (f"Das Team entscheidet in {int(override_rate * 100)} % der "
+                   "Fälle gegen die gelernte Note.")
+        action = ("Stichprobe dieser Fälle im Aktionsverlauf ansehen: Fehlt dem "
+                  "Modell ein Kriterium, das im Gespräch offensichtlich ist?")
+    elif trend == "steigend":
+        verdict = (f"Treffsicherheit steigt: {int((early_p or 0) * 100)} % → "
+                   f"{int((late_p or 0) * 100)} %.")
+        action = "Kein Handlungsbedarf – Kurs beibehalten."
+    else:
+        verdict = "Stabil im Zeitverlauf, keine auffälligen Gegenentscheidungen."
+        action = "Kein Handlungsbedarf – nächste Prüfung läuft automatisch mit."
+
+    return DriftResult(
+        scope_label=scope.label, early_precision=early_p, late_precision=late_p,
+        trend=trend, override_rate=override_rate, override_n=override_n,
+        too_optimistic=too_opt, too_pessimistic=too_pes,
+        verdict=verdict, action=action)
+
+
 def is_trustworthy(scope: LearningScope) -> tuple[bool, str]:
     """Ehrlichkeits-Schranke: darf das gelernte Score angezeigt/genutzt werden?
     Nur wenn der Backtest die Grundlinie schlaegt."""

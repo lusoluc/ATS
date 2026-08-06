@@ -5,6 +5,32 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Geändert (Testlauf: von ~23 Minuten auf wenige)
+
+Gemessen statt vermutet: 970 Tests brauchten 1.374 Sekunden — im Schnitt
+1,4 Sekunden je Test. Genau so lange dauert auf dieser Maschine **ein**
+Passwort-Hash. Django hängt an jedes `create_user()` den Produktions-Hasher
+(PBKDF2, 1,2 Mio. Iterationen), und die Testhilfe `make_user()` steht an über
+300 Stellen, die meisten davon in `setUp` — also einmal pro Testmethode. Die
+langsamsten Fälle waren folgerichtig die Gremien-Tests mit vier bis sechs
+Beteiligten: rund sieben Sekunden, fast alles davon Hashen. Dieselbe Klasse
+läuft jetzt in 0,36 Sekunden.
+
+- Neuer `TEST_RUNNER` (`ats/test_runner.py`) setzt einen schnellen Hasher —
+  **nur** während eines Testlaufs. Die naheliegende Abkürzung
+  `if 'test' in sys.argv` in den Einstellungen hätte die Passwortsicherheit der
+  Produktion an eine Zeichenkette in der Kommandozeile gehängt.
+- Wächter `GuardrailNoWeakHasherInSettingsTestCase` verhindert genau diese
+  Abkürzung. Dazu Tests, dass Anmeldung und `check_password` unverändert
+  funktionieren — ein schnellerer Hasher darf nichts am Verhalten ändern.
+- Nachgetragen: Der Wächter aus dem Vorlagen-Paket
+  (`GuardrailNoTemplateNameGuessingTestCase`) fehlte in der Wächter-Tabelle in
+  `TESTING_AND_GUARDRAILS.md`.
+
+Eine Suite, die eine halbe Stunde braucht, wird vor dem Commit übersprungen —
+und dann schützt sie niemanden mehr. Das ist der eigentliche Grund für dieses
+Paket, nicht die Wartezeit.
+
 ### Behoben (Audit-Log endete bei den jüngsten 500 Einträgen)
 
 Das Protokoll ist der Nachweis gegenüber Betriebsrat, Datenschutzbeauftragten

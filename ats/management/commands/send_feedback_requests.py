@@ -12,11 +12,11 @@ Gespraech noch kein Feedback abgegeben haben, werden GENAU EINMAL erinnert
 """
 import datetime
 
-from django.core.mail import send_mail
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from ats.audit import write_audit
+from ats.mail_send import send_notice
 from ats.models import AuditLog, Interview, pending_feedback_participants
 
 
@@ -54,14 +54,14 @@ class Command(BaseCommand):
                 for person in pending_feedback_participants(iv, rnd):
                     if self._already(iv.id, person.id):
                         continue
-                    send_mail(
+                    send_notice(
                         f"Erinnerung: Feedback zu {name} steht noch aus",
                         (f"Ihr Gespräch mit {name} "
                          f"({app.jobPosting.title}) liegt einige Tage "
                          "zurück – Ihre Einschätzung fehlt noch. Bitte "
                          "kurz erfassen, damit die Entscheidung auf realem "
                          "Feedback steht.\nFeedback: /recruiter/interviews/"),
-                        None, [person.email], fail_silently=True)
+                        None, [person.email], context="Feedback-Anfrage")
                     write_audit("FEEDBACK_REMINDER_SENT",
                                 marker=f"FB:{iv.id}:{person.id}")
                     sent += 1

@@ -8,6 +8,7 @@ hatte. Und das Audit schrieb `"status": "SENT"`, ohne hinzusehen.
 import os
 from unittest import mock
 
+from django.core import mail as django_mail
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
@@ -32,7 +33,7 @@ class SendNoticeTestCase(TestCase):
 
     @override_settings(EMAIL_BACKEND=SMTP_BACKEND)
     def test_without_a_mailserver_nothing_is_claimed(self):
-        self.assertFalse(send_notice("Betreff", "Text", ["a@b.de"]))
+        self.assertFalse(send_notice("Betreff", "Text", None, ["a@b.de"]))
         self.assertIn("kein Mailserver", mail_status()['last']['detail'])
 
     def test_server_error_is_recorded_with_its_reason(self):
@@ -40,7 +41,7 @@ class SendNoticeTestCase(TestCase):
         SystemSetting.objects.create(key="MAIL_FROM", value="postfach@example.invalid")
         with mock.patch('ats.mail_send.send_mail',
                         side_effect=OSError("Connection refused")):
-            self.assertFalse(send_notice("Betreff", "Text", ["a@b.de"],
+            self.assertFalse(send_notice("Betreff", "Text", None, ["a@b.de"],
                                          context="Absage"))
         last = mail_status()['last']
         self.assertFalse(last['ok'])
@@ -48,14 +49,14 @@ class SendNoticeTestCase(TestCase):
         self.assertIn("Absage", last['detail'])
 
     def test_empty_recipient_list_is_not_an_error_report(self):
-        self.assertFalse(send_notice("Betreff", "Text", []))
+        self.assertFalse(send_notice("Betreff", "Text", None, []))
         self.assertIsNone(mail_status()['last'])
 
     def test_success_is_recorded(self):
         SystemSetting.objects.create(key=HOST_KEY, value="smtp.example.invalid")
         SystemSetting.objects.create(key="MAIL_FROM", value="postfach@example.invalid")
         with mock.patch('ats.mail_send.send_mail', return_value=1):
-            self.assertTrue(send_notice("Betreff", "Text", ["a@b.de"]))
+            self.assertTrue(send_notice("Betreff", "Text", None, ["a@b.de"]))
         self.assertTrue(mail_status()['last']['ok'])
 
 
@@ -134,3 +135,84 @@ class DeliveryPathTestCase(TestCase):
         from ..mail_config import delivery_possible
         with mock.patch.dict(os.environ, {"EMAIL_HOST": ""}, clear=False):
             self.assertFalse(delivery_possible())
+
+
+class SilentBackgroundFailureTestCase(TestCase):
+    """Der wahrscheinlichste Ausfall war unsichtbar.
+
+    Djangos SMTP-Backend gibt bei `fail_silently=True` und nicht erreichbarem
+    Server schlicht 0 zurück — OHNE Ausnahme. Der Zustands-Vermerk lief vorher
+    nur über `if sent:`, also wurde in genau diesem Fall gar nichts notiert:
+    Der nächtliche Job schwieg, und die Warnung auf dem Board erschien nie.
+    """
+
+    @override_settings(EMAIL_BACKEND=SMTP_BACKEND)
+    def test_zero_delivered_counts_as_failure(self):
+        from ..mail_backend import ConfiguredSmtpBackend
+        from ..mail_config import HOST_KEY
+        SystemSetting.objects.create(key=HOST_KEY, value="smtp.example.invalid")
+        SystemSetting.objects.create(key="MAIL_FROM", value="postfach@example.invalid")
+
+        backend = ConfiguredSmtpBackend(fail_silently=True)
+        message = django_mail.EmailMessage("Erinnerung", "Text",
+                                           "postfach@example.invalid",
+                                           ["empfang@example.invalid"])
+        # Genau das Verhalten von Djangos SMTP-Backend bei stillem Verbindungs-
+        # fehler: 0 zurueck, keine Ausnahme.
+        with mock.patch(
+                'django.core.mail.backends.smtp.EmailBackend.send_messages',
+                return_value=0), \
+             self.assertLogs('ats.mail_backend', level='ERROR'):
+            sent = backend.send_messages([message])
+
+        self.assertEqual(sent, 0)
+        last = mail_status()['last']
+        self.assertIsNotNone(last, "Ein stiller Fehlschlag muss vermerkt werden")
+        self.assertFalse(last['ok'])
+        self.assertIn("nicht zugestellt", last['detail'])
+
+    @override_settings(EMAIL_BACKEND=SMTP_BACKEND)
+    def test_successful_send_is_still_recorded_as_success(self):
+        from ..mail_backend import ConfiguredSmtpBackend
+        from ..mail_config import HOST_KEY
+        SystemSetting.objects.create(key=HOST_KEY, value="smtp.example.invalid")
+        SystemSetting.objects.create(key="MAIL_FROM", value="postfach@example.invalid")
+        backend = ConfiguredSmtpBackend()
+        message = django_mail.EmailMessage("Betreff", "Text",
+                                           "postfach@example.invalid",
+                                           ["empfang@example.invalid"])
+        with mock.patch(
+                'django.core.mail.backends.smtp.EmailBackend.send_messages',
+                return_value=1):
+            self.assertEqual(backend.send_messages([message]), 1)
+        self.assertTrue(mail_status()['last']['ok'])
+
+
+class BackgroundCommandsUseTheLayerTestCase(TestCase):
+    """Die nächtlichen Befehle müssen über die Versand-Schicht gehen.
+
+    Sonst fehlt im Zustand der Kontext: „1 Nachricht(en) nicht zugestellt"
+    sagt niemandem, ob eine Termin-Erinnerung oder ein Job-Alert liegen blieb.
+    """
+
+    def test_no_background_command_calls_send_mail_directly(self):
+        import os
+        import re
+        base = os.path.dirname(os.path.dirname(__file__))
+        offenders = []
+        for folder in (os.path.join(base, "management", "commands"), base):
+            for fname in sorted(os.listdir(folder)):
+                if not fname.endswith(".py"):
+                    continue
+                path = os.path.join(folder, fname)
+                if "tests" in path or fname in ("mail_send.py", "mail_config.py",
+                                                "mail_backend.py"):
+                    continue
+                src = open(path, encoding="utf-8").read()
+                if re.search(r"\bsend_mail\s*\(", src):
+                    offenders.append(os.path.relpath(path, base))
+        self.assertEqual(
+            offenders, [],
+            "Direkter send_mail-Aufruf an der Versand-Schicht vorbei - ein "
+            "Fehlschlag bliebe dort ohne Kontext und ohne Vermerk: "
+            + ", ".join(offenders))

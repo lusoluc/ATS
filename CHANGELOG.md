@@ -5,6 +5,26 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (nächtliche Versandfehler blieben unsichtbar)
+
+Nachtrag zum Paket davor — die dort gebaute Warnung deckte den wahrscheinlichsten
+Ausfall **nicht** ab. Djangos SMTP-Backend gibt bei `fail_silently=True` und
+nicht erreichbarem Server schlicht `0` zurück, **ohne Ausnahme**. Der
+Zustands-Vermerk lief nur über „wurde etwas verschickt?", also wurde in genau
+diesem Fall gar nichts notiert: Der nächtliche Job schwieg, die Board-Warnung
+erschien nie.
+
+- Ein Versand, der nichts zugestellt hat, gilt jetzt als Fehlschlag — auch ohne
+  Ausnahme.
+- Die sechs Hintergrund-Wege (Entscheidungs- und Termin-Erinnerungen,
+  Feedback-Anfragen, Job-Alerts, Talent-Pool, Freigabe-Fälligkeiten) laufen über
+  die Versand-Schicht und liefern Kontext mit: „Termin-Erinnerung nicht
+  zugestellt" statt einer nackten Zahl.
+- Neuer Wächter gegen direkte `send_mail`-Aufrufe an der Schicht vorbei.
+- `send_notice` folgt jetzt der Argument-Reihenfolge von `send_mail`
+  (Betreff, Text, Absender, Empfänger). Beim Umstellen war genau hier ein Fehler
+  entstanden — eine Signatur, die von der gewohnten abweicht, lädt dazu ein.
+
 ### Vereinfacht (ein Seiten-Editor statt zwei halben)
 
 Es gab **zwei** Editoren für Inhaltsseiten, und beide waren unvollständig — und

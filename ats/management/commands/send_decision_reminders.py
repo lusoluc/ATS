@@ -15,11 +15,11 @@ eigener Marker, damit keine Vermischung).
 import datetime
 
 from django.contrib.auth.models import User
-from django.core.mail import send_mail
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from ats.audit import write_audit
+from ats.mail_send import send_notice
 from ats.models import Application, ApplicationVote, ApprovalStep, AuditLog, RoleDelegation
 from ats.panel import panel_member_ids
 
@@ -80,12 +80,12 @@ class Command(BaseCommand):
                         continue
                     prefix = ("" if person == holder
                               else f"(In Vertretung für {holder.get_full_name() or holder.username}) ")
-                    send_mail(
+                    send_notice(
                         f"Erinnerung: Freigabe wartet seit {days} Tagen – {job.title}",
                         (f"{prefix}Die Freigabe '{job.title}' wartet seit {days} Tagen "
                          f"auf die Rolle {step.assignedRoleId or step.assignedUserId}.\n"
                          "Entscheiden: /recruiter/approvals/"),
-                        None, [person.email], fail_silently=True)
+                        None, [person.email], context="Erinnerung")
                     self._mark("APPROVAL", step.id, person.id)
                     sent += 1
 
@@ -112,12 +112,12 @@ class Command(BaseCommand):
                         continue
                     prefix = ("" if person == member
                               else f"(In Vertretung für {member.get_full_name() or member.username}) ")
-                    send_mail(
+                    send_notice(
                         f"Erinnerung: Gremium wartet – {app.jobPosting.title}",
                         (f"{prefix}Ihre Stimme zur Bewerbung auf '{app.jobPosting.title}' "
                          f"steht seit {days} Tagen aus – ohne Mehrheit kann nicht "
                          "eingeladen werden.\nAbstimmen: /recruiter/approvals/"),
-                        None, [person.email], fail_silently=True)
+                        None, [person.email], context="Erinnerung")
                     self._mark("PANEL", f"{app.id}:{uid}", person.id)
                     sent += 1
             # Eskalation bei ueberschrittener Abstimmungs-Frist: einmalig,
@@ -132,7 +132,7 @@ class Command(BaseCommand):
                             or self._already("PANEL_OVERDUE",
                                              f"{app.id}:{uid}", member.id)):
                         continue
-                    send_mail(
+                    send_notice(
                         f"Frist überschritten: Gremium blockiert – "
                         f"{app.jobPosting.title}",
                         (f"Die vereinbarte Abstimmungs-Frist "
@@ -140,7 +140,7 @@ class Command(BaseCommand):
                          f"– die Bewerbung ist seit {state['days_open']} "
                          f"Tagen offen und kann ohne Ihre Stimme nicht "
                          "weitergehen.\nJetzt abstimmen: /recruiter/approvals/"),
-                        None, [member.email], fail_silently=True)
+                        None, [member.email], context="Erinnerung")
                     self._mark("PANEL_OVERDUE", f"{app.id}:{uid}", member.id)
                     sent += 1
 
@@ -193,13 +193,13 @@ class Command(BaseCommand):
                               else f"(In Vertretung für "
                                    f"{holder.get_full_name() or holder.username}) ")
                     fac = req.facility.name if req.facility else "-"
-                    send_mail(
+                    send_notice(
                         f"Erinnerung: Stellenfreigabe wartet seit {days} "
                         f"Tagen – {req.title}",
                         (f"{prefix}Der Personalbedarf '{req.title}' ({fac}) "
                          f"wartet seit {days} Tagen auf die Stufe {roles}.\n"
                          "Entscheiden: /recruiter/bedarf/"),
-                        None, [person.email], fail_silently=True)
+                        None, [person.email], context="Erinnerung")
                     self._mark("REQUISITION", ref, person.id)
                     sent += 1
 

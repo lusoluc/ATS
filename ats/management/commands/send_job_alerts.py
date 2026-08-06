@@ -12,12 +12,12 @@
 import json
 from datetime import timedelta
 
-from django.core.mail import send_mail
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from ats.audit import write_audit
 from ats.job_alerts import is_expired, match_subscribers_for_job
+from ats.mail_send import send_notice
 from ats.models import JobAlertLog, JobAlertSubscription, JobPosting
 
 
@@ -40,12 +40,12 @@ class Command(BaseCommand):
                 JobAlertLog.objects.create(
                     subscription=sub, action="ALERT_SENT",
                     metadata=json.dumps({"job": job.title, "job_id": str(job.id)}))
-                send_mail(
+                send_notice(
                     f"Neue Stelle: {job.title}",
                     (f"Passend zu Ihrem Job-Alert: {job.title} "
                      f"({getattr(job.location, 'name', '—')}).\n"
                      f"Abmelden/verwalten: /job-alert/manage/{sub.managementToken}/"),
-                    None, [sub.email], fail_silently=True)
+                    None, [sub.email], context="Job-Alert")
                 sub.lastAlertSentAt = timezone.now()
                 sub.save(update_fields=["lastAlertSentAt", "updatedAt"])
                 sent += 1

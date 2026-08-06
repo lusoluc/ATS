@@ -257,10 +257,10 @@ def notify_due_requisition_steps(req: "StaffingRequest") -> int:
     decken Bedarf nicht). Ereignisgetrieben beim Faelligwerden einer
     Stufe – kein Cron, kein Doppellauf. Liefert die Empfaengerzahl."""
     from django.contrib.auth.models import Group
-    from django.core.mail import send_mail
     from django.utils import timezone as _tz
 
     from .audit import write_audit
+    from .mail_send import send_notice
     from .models import RoleDelegation
 
     due = due_requisition_steps(req)
@@ -291,7 +291,7 @@ def notify_due_requisition_steps(req: "StaffingRequest") -> int:
     for email, deputy_for in recipients.items():
         extra = (f"\nSie erhalten diese Nachricht als Vertretung von "
                  f"{deputy_for}." if deputy_for else "")
-        send_mail(
+        send_notice(
             f"Stellenfreigabe wartet auf Ihre Entscheidung: {req.title}",
             (f"Der Personalbedarf \u201e{req.title}\u201c "
              f"({req.facility.name if req.facility else '-'}) wartet auf "
@@ -299,7 +299,7 @@ def notify_due_requisition_steps(req: "StaffingRequest") -> int:
              f"Beantragt von: "
              f"{req.requestedBy.get_username() if req.requestedBy else '-'}\n"
              f"Entscheiden: /recruiter/bedarf/" + extra),
-            None, [email], fail_silently=True)
+            None, [email], context="Freigabe-Faelligkeit")
     if recipients:
         write_audit('REQUISITION_DUE_NOTIFIED', request_id=str(req.id),
                     roles=roles, recipients=len(recipients))

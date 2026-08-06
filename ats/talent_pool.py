@@ -105,8 +105,8 @@ def invite_pool_person(sub: TalentPoolSubscription, job: "JobPosting",
     if not created:
         return False
     try:
-        from django.core.mail import send_mail
-        send_mail(
+        from .mail_send import send_notice
+        send_notice(
             f"Eine Stelle, die zu Ihnen passen könnte: {job.title}",
             (f"Guten Tag,\n\nSie sind in unserem Talent-Pool – und wir haben "
              f"eine neue Stelle, die zu Ihren bisherigen Bewerbungen passt:\n\n"
@@ -115,7 +115,7 @@ def invite_pool_person(sub: TalentPoolSubscription, job: "JobPosting",
              f"Details und Bewerbung: /jobs/{job.id}/\n\n"
              "Kein Interesse mehr? In Ihrem Bewerbungsportal können Sie "
              "jederzeit aus dem Talent-Pool austreten.\n\nFreundliche Grüße"),
-            None, [sub.email], fail_silently=True)
+            None, [sub.email], context="Talent-Pool")
     except Exception:
         logger.exception("Talent-Pool-Ansprache fehlgeschlagen")
     write_audit("TALENT_POOL_CONTACTED", user=user,

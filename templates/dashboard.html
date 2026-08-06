@@ -332,10 +332,6 @@
             <i class="fa-solid fa-envelope-open-text"></i> E-Mail & Variablen
         </a>
 
-        <a class="sidebar-link" href="{% url 'ats:cms_page' %}">
-            <i class="fa-solid fa-file-signature"></i> CMS Seiten-Editor
-        </a>
-
         <a class="sidebar-link" href="{% url 'ats:ki_page' %}">
             <i class="fa-solid fa-robot"></i> KI-Zentrale & Spam
             <span class="badge {% if gemma_status == 'ONLINE' %}badge-accent{% else %}badge-primary{% endif %}" style="padding: 2px 6px; font-size: 9px; margin-left: auto;">{{ gemma_status }}</span>

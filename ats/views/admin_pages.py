@@ -32,13 +32,12 @@ from ..models import (
     JobFamily,
     JobPosting,
     Location,
-    Page,
     SystemSetting,
     WorkflowState,
 )
 from ..permissions import hr_admin_required, scope_applications, scope_jobs
 
-__all__ = ["stats_page", "process_page", "templates_page", "cms_page", "ki_page", "hris_page", "save_auto_reply_settings", "retention_page", "privacy_notice_page", "settings_hub", "mail_settings_page", "learned_scoring_view", "save_learned_scoring_settings"]
+__all__ = ["stats_page", "process_page", "templates_page", "ki_page", "hris_page", "save_auto_reply_settings", "retention_page", "privacy_notice_page", "settings_hub", "mail_settings_page", "learned_scoring_view", "save_learned_scoring_settings"]
 
 
 def gemma_status() -> str:
@@ -114,14 +113,6 @@ def templates_page(request):
     return render(request, 'admin_pages/templates.html', {
         'all_system_settings': SystemSetting.objects.all().order_by('key'),
         'all_email_templates': EmailTemplate.objects.all().order_by('name'),
-    })
-
-
-@hr_admin_required
-def cms_page(request):
-    """CMS Seiten-Editor: Karriere-Landingpages und Hauptseiten."""
-    return render(request, 'admin_pages/cms.html', {
-        'all_pages': Page.objects.all().order_by('navOrder'),
     })
 
 
@@ -407,12 +398,8 @@ def settings_hub(request):
                  'state': None},
                 {'name': 'Seiten & Navigation', 'url': 'ats:pages_manage',
                  'icon': 'fa-file-lines',
-                 'hint': 'Inhaltsseiten des Karriereportals anlegen und in die '
-                         'Navigation nehmen', 'state': None},
-                {'name': 'Seiten-Baukasten', 'url': 'ats:cms_page',
-                 'icon': 'fa-cubes',
-                 'hint': 'Blöcke einer Seite zusammenstellen (Hero, Text, '
-                         'Stellen, Zitat …)', 'state': None},
+                 'hint': 'Anlegen, veröffentlichen, in die Navigation nehmen – '
+                         'Baukasten je Seite in der Liste', 'state': None},
                 {'name': 'Landingpages', 'url': 'ats:landing_pages',
                  'icon': 'fa-flag',
                  'hint': 'Kampagnen-Seiten mit QR-Code und Ablaufdatum',

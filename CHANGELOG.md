@@ -5,6 +5,24 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Vereinfacht (ein Seiten-Editor statt zwei halben)
+
+Es gab **zwei** Editoren für Inhaltsseiten, und beide waren unvollständig — und
+zwar gegenläufig. „Seiten & Navigation" konnte löschen und führte zum
+Block-Baukasten, kannte aber nur vier Felder. Der „CMS Seiten-Editor" hatte
+Navigations-Beschriftung, Position, SEO-Text und Sichtbarkeit, dafür weder
+Löschen noch Baukasten. Wer eine Seite anlegte **und** veröffentlichte, brauchte
+beide Bildschirme.
+
+Geblieben ist **„Seiten & Navigation"** mit allen acht Feldern; gespeichert wird
+über den vorhandenen, auditierten Endpunkt, dessen Feldsatz ohnehin vollständig
+war. Die zweite, ärmere Speicher-Logik ist ersatzlos entfallen. Der echte
+Baukasten sitzt weiterhin pro Seite in der Liste — die richtige Stelle: erst
+existiert die Seite, dann füllt man sie.
+
+Nebenbei: Der Slug ist jetzt Pflichtfeld statt still aus dem Titel erzeugt. Die
+Adresse einer öffentlichen Seite sollte man sehen, bevor man sie festlegt.
+
 ### Behoben (fehlgeschlagener Versand ging als Erfolg durch)
 
 `fail_silently=True` an 31 Stellen war einmal richtig gedacht — ein Absturz im

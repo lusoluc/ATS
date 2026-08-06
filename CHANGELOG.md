@@ -5,6 +5,24 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Ergänzt (Umkreissuche funktioniert ohne Handarbeit)
+
+Standort-Koordinaten ließen sich zwar eintragen, aber niemand kennt sie auswendig.
+Blieben sie leer, fiel der Job-Alert still auf „exakt derselbe Standort" zurück —
+50 km eingestellt, ein Ort getroffen.
+
+Neu: eine **mitgelieferte Postleitzahlen-Tabelle** (10.813 Einträge, 238 KB;
+GeoNames, CC BY 4.0 — Nachweis in `README.md`). Beim Anlegen eines Standorts werden
+die Koordinaten daraus ergänzt; von Hand eingetragene Werte haben Vorrang. Für
+Bestandsstandorte gibt es einen Knopf zum Nachtragen, der vorhandene Koordinaten
+nie überschreibt und nur erscheint, wenn es etwas zu tun gibt.
+
+**Bewusst kein Geocoding-Dienst:** Der wäre bequemer und hausnummerngenau, doch
+jede Standortanlage schickte dann eine Trägeradresse an einen fremden Anbieter.
+Die Tabelle funktioniert offline, auch in einer Installation ohne Internetzugang.
+Genauigkeit auf Ortsebene — für „im Umkreis von X km" reichlich, für
+Wegbeschreibungen ungeeignet.
+
 ### Ergänzt (Datenschutzhinweis im Produkt pflegbar)
 
 Art. 7 Abs. 1 DSGVO verlangt den Nachweis, **worin** eingewilligt wurde. Fassungen

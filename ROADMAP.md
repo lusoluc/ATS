@@ -32,7 +32,7 @@ Daraus folgen vier verbindliche Prinzipien:
 
 ---
 
-## 1. Phase V0 – „Beweis der Nachfrage" (Monat 0–3, bis Okt 2026)
+## 1. Phase V0 – „Beweis der Nachfrage" (Gespraechs-Teil auf 2027 verschoben)
 
 **Gate für V1: 10 geführte Discovery-Gespräche mit echten Zielrollen**
 (Pflegedienstleitung, HR-Leitung, IT-Leitung in Gesundheits-/Sozialträgern).
@@ -42,12 +42,12 @@ oder bekannte Deal-Killer entschärft:
 
 | # | Paket | Premortem-Grund | Definition of Done |
 |---|---|---|---|
-| P0.1 ✅ | **Release- & Update-Pfad** – umgesetzt: SemVer (`securats/version.py` 1.0.0, im `/healthz/` sichtbar), CHANGELOG (Keep-a-Changelog), Produktions-Compose (Postgres, Healthchecks, optionales KI-Profil mit Ollama+Worker), Entrypoint mit Auto-Migration = Ein-Befehl-Update (`docker compose pull && up -d`), Release-Workflow (Tag → ghcr.io-Image + Konsistenz-Check + Tests), INSTALL.md fuer Fremd-Admins inkl. Rollback | #3 On-Prem-Betriebsfalle | ◐ DoD-Rest: realer Fremd-Admin-Test steht aus (nur mit echter Person durchfuehrbar) |
+| P0.1 ✅ | **Release- & Update-Pfad** – umgesetzt: SemVer (`securats/version.py` 1.0.0, im `/healthz/` sichtbar), CHANGELOG (Keep-a-Changelog), Produktions-Compose (Postgres, Healthchecks, optionales KI-Profil mit Ollama+Worker), Entrypoint mit Auto-Migration = Ein-Befehl-Update (`docker compose pull && up -d`), Release-Workflow (Tag → ghcr.io-Image + Konsistenz-Check + Tests), INSTALL.md fuer Fremd-Admins inkl. Rollback | #3 On-Prem-Betriebsfalle | ◐ DoD-Rest: realer Fremd-Admin-Test - **eingeplant fuer 2027** (Entscheidung Carlos, 05.08.2026) |
 | P0.2 ✅ | **KI-Scoring per Default AUS** – umgesetzt: `AI_SCORING_ENABLED` (Default AUS), keine Platzhalter-Scores mehr (ehrliche „–"-Badges in Kanban & Modal), README/OPERATIONS/Matrix repositioniert auf „Assistenz, keine automatische Bewertung" | #4 AI-Act-Hypothek | ✅ erfüllt: frische Installation berührt die KI nachweislich nicht (`ScoringDefaultOffTestCase`) |
 | P0.3 ✅ | **Preismodell-Hypothese + Preisseite** – umgesetzt: PRICING.md (Modell mit Begruendung, 50er-Ziel-Rechnung ~320 T€ ARR, Test-Protokoll mit Revisionsregel „≥ 4 gleichgerichtete Signale nach 10 Reaktionen"); Modell: Open-Source-Kern frei, Support-Abo je Einrichtung 390/690/990 €/Monat nach Hausgroesse + 2.900 € Einfuehrung, Design-Partner-Konditionen; oeffentliche Seite `/preise/` NUR auf der Demo-Instanz (Kunden-Karriereseiten zeigen keine Anbieterpreise – getestet: 404 ohne DEMO_MODE) | #5 Geschaeftsmodell | ◐ DoD-Rest: Preis in Gespraechen nennen + Reaktionen protokollieren (P0.6, dein Part) |
-| P0.4 ✅ | **Demo-Instanz** – umgesetzt: `seed_demo`-Command (deterministische, fiktive Gesundheits-Demo: 7 Stellen inkl. Leichte-Sprache- und K.O.-Frage-Beispiel, 32 Bewerbungen ueber 90 Tage mit Anomalie-/Prognose-Material, offenes Freigabe-Gate, 2 Job-Alerts, BOLA-Demo-Logins), naechtlicher `--reset` NUR mit `DEMO_MODE=1` (Produktionsschutz, getestet), Demo-Banner auf jeder Seite, Betriebsanleitung in INSTALL.md | #1 kein Vertrieb | ◐ DoD-Rest: oeffentliches Hosting ist Betriebsschritt (Server + Domain), Anleitung liegt bei |
+| P0.4 ✅ | **Demo-Instanz** – umgesetzt: `seed_demo`-Command (deterministische, fiktive Gesundheits-Demo: 7 Stellen inkl. Leichte-Sprache- und K.O.-Frage-Beispiel, 32 Bewerbungen ueber 90 Tage mit Anomalie-/Prognose-Material, offenes Freigabe-Gate, 2 Job-Alerts, BOLA-Demo-Logins), naechtlicher `--reset` NUR mit `DEMO_MODE=1` (Produktionsschutz, getestet), Demo-Banner auf jeder Seite, Betriebsanleitung in INSTALL.md | #1 kein Vertrieb | ◐ DoD-Rest: oeffentliches Hosting (Server + Domain) - **bewusst zurueckgestellt** (Entscheidung Carlos, 05.08.2026: nicht der aktuelle Fokus), Anleitung liegt bei |
 | P0.5 ✅ | **CSV-Bewerberdaten-Import** – umgesetzt: `/recruiter/import/` mit Pflicht-Testlauf-Option (Dry-Run per Transaktions-Rollback garantiert aenderungsfrei), Duplikat-Erkennung ueber den E-Mail-Blind-Index, Zeilen-genauer Fehlerbericht, deutsche+englische Spaltenkoepfe, Komma/Semikolon/BOM (Excel-direkt), Status-Aliasse, Standard-Stelle fuer Zeilen ohne Stellenangabe, Vorlagen-Download, `DATA_IMPORT`-Audit | #7 Wechselkosten | ✅ erfuellt (`CsvImportTestCase`, 7 Tests) |
-| P0.6 ◐ | **Interview-Programm** – Materialien fertig: INTERVIEW_LEITFADEN.md (30-Min-Struktur, Premortem-Hypothesen #2/#4/#6/#7 als Pruef-Fragen, woertlicher Preis-Test, Protokoll-Vorlage, Ablage `research/interviews/`) + versandfertiger Design-Partner-Onepager (PDF, 1 Seite). **Offen: die Gespraeche selbst** – 25 Kaltkontakte, 10 Gespraeche bis Okt 2026 (Kill-Kriterium #1) | #1, Gegen-Check | Gate haengt jetzt ausschliesslich an gefuehrten Gespraechen |
+| P0.6 ◐ | **Interview-Programm** – Materialien fertig: INTERVIEW_LEITFADEN.md (30-Min-Struktur, Premortem-Hypothesen #2/#4/#6/#7 als Pruef-Fragen, woertlicher Preis-Test, Protokoll-Vorlage, Ablage `research/interviews/`) + versandfertiger Design-Partner-Onepager (PDF, 1 Seite). **Offen: die Gespraeche selbst** – 25 Kaltkontakte, 10 Gespraeche. **Termin auf 2027 verschoben** (Entscheidung Carlos, 05.08.2026): Bis dahin liegt der Fokus auf dem Produkt, nicht auf Vertrieb. Kill-Kriterium #1 bleibt, nur der Stichtag wandert | #1, Gegen-Check | Gate haengt jetzt ausschliesslich an gefuehrten Gespraechen |
 
 **Explizit NICHT in V0** (on hold, siehe Abschnitt 5): i18n, visueller
 Seiten-Builder (B16), OData, weitere Analytics-/Governance-Ausbauten.
@@ -123,7 +123,7 @@ Risiken reduziert.
 
 | Frist | Signal fehlt | Konsequenz |
 |---|---|---|
-| **Okt 2026** (+3 Mon) | keine 10 Discovery-Gespräche mit Zielrollen | Feature-Stopp komplett; 100 % Zeit auf Zugang (Verbände, Messen, Partner) |
+| **2027** (verschoben von Okt 2026) | keine 10 Discovery-Gespräche mit Zielrollen | Feature-Stopp komplett; 100 % Zeit auf Zugang (Verbände, Messen, Partner) |
 | **Jan 2027** (+6 Mon) | kein unterschriebener Design-Partner | Vertriebsmodell-Pivot: Vertrieb über Systemhaus/MSP statt direkt, oder Segmentwechsel |
 | **Jul 2027** (+12 Mon) | < 3 produktive Referenzen ODER kein bezahlter Vertrag | 50er-Ziel beerdigen; SecurATS bewusst als Open-Source-Referenzprojekt weiterführen |
 

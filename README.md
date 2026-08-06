@@ -85,3 +85,19 @@ Für den Produktivbetrieb per Cron einplanen, z.B. täglich:
 ## Weiterentwicklung
 Ziele, Personas, Funktionsumfang und die priorisierte Roadmap sind in
 **`NORTHSTAR.md`** dokumentiert.
+
+## Mitgelieferte Fremddaten
+
+`ats/data/plz_de.csv` — deutsche Postleitzahlen mit Mittelpunkt-Koordinaten,
+Grundlage der Umkreissuche im Job-Alert.
+
+- **Quelle:** [GeoNames](https://www.geonames.org), Lizenz **CC BY 4.0**
+- **Änderungen:** auf Postleitzahl und Koordinaten reduziert, Mehrfacheinträge
+  je Postleitzahl zum Mittelwert zusammengefasst, auf vier Nachkommastellen
+  gerundet. Der Ortsname der Quelle ist bewusst nicht enthalten — bei
+  Großkunden-Postleitzahlen steht dort ein Firmenname.
+
+Die Tabelle liegt bewusst im Repo statt hinter einem Geocoding-Dienst: Sonst
+ginge bei jeder Standortanlage eine Trägeradresse an einen fremden Anbieter.
+Genauigkeit auf Ortsebene, keine Hausnummern — für „im Umkreis von X km"
+reichlich, für Wegbeschreibungen ungeeignet.

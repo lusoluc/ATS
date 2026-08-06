@@ -12,7 +12,10 @@
   <div class="card">
     <form method="post" enctype="multipart/form-data" class="form-row" style="margin-bottom: var(--space-4);">
       {% csrf_token %}
-      <input type="file" name="file" required style="color:var(--text-main);" aria-label="Datei auswählen">
+      {% comment %} `class="input"` wie die Nachbarfelder: Der Kasten kommt aus
+         dem Design-System, nicht aus einer Sonderregel für Datei-Felder.
+      {% endcomment %}
+      <input type="file" name="file" required class="input" aria-label="Datei auswählen">
       <input name="name" class="input" placeholder="Anzeigename (optional)" aria-label="Anzeigename (optional)">
       <!-- WP8/WCAG 1.1.1: Alt-Text ist Pflicht (HTML + serverseitig erzwungen) -->
       <input name="altText" class="input" required placeholder="Alt-Text: Was ist auf dem Bild zu sehen? *"

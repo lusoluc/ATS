@@ -5,6 +5,36 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (helle Träger-Palette ließ die Eingabefelder aus)
+
+Aufgefallen an einem grauen Kasten in der Medien-Verwaltung, dahinter lag
+Größeres. `branding_css.html` stellt im LIGHT-Modus Karten, Titel, Tabs, Kopf-
+und Fußbereich um — die **Formularfelder standen nicht auf der Liste**. Sie
+behielten die dunklen Werte aus `base.html` (`rgba(11,13,25,0.5)` mit weißer
+Schrift). Über weißem Grund ergibt das einen grauen Kasten mit weißer Schrift:
+rund **3,6:1** für den Text, etwa **2,3:1** für den Platzhalter, gefordert sind
+4,5:1. Betroffen war das Bewerbungsformular — der eine Bildschirm, an dem
+Bewerbende ihre Daten eintippen, bei jedem Träger mit heller Corporate
+Identity.
+
+- Felder, Textbereiche, Auswahllisten, Platzhalter und die Lebenslauf-Dropzone
+  gehören jetzt zu den hellen Regeln. Gemessen: Text **14,7:1**, Platzhalter
+  **7,6:1**.
+- **Native Datei-Knöpfe** waren projektweit ungestylt — ein weißer Systemknopf
+  mit schwarzer Schrift mitten im dunklen Panel, auch im Bewerbungsformular.
+  Sie folgen jetzt dem Feld, in dem sie sitzen: Farben aus `currentColor`
+  statt fester Tokens, damit sie auf heller wie dunkler Palette sitzen. Der
+  Kasten bleibt Sache der bestehenden Klassen.
+- Wächter `GuardrailDarkOnlyControlsTestCase`: Jede Regel in `base.html`, die
+  Hintergrund **und** Schriftfarbe hart auf dunkel/weiß setzt, braucht ein
+  helles Gegenstück — sonst ist sie auf einer gebrandeten Seite ein
+  Kontrastloch. Genau so ist das Bewerbungsformular durchgerutscht.
+
+Zwei bestehende Wächter haben dabei eigene Fehler von mir gefangen: Ein
+CSS-Kommentar nannte einen Menüpunkt, den ein Recruiter nicht sehen darf
+(Kommentare stehen im ausgelieferten HTML), und ein mehrzeiliger
+`{# … #}`-Kommentar war gesperrt, weil er als Text durchschlägt.
+
 ### Behoben (Mediathek endete bei den jüngsten 200 Dateien)
 
 Die Medien-Verwaltung lud `MediaAsset.objects.order_by('-createdAt')[:200]` und

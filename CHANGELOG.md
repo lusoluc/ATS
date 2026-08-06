@@ -5,6 +5,24 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (der eigene CI-Umbau hat den Testlauf lahmgelegt)
+
+Der Deploy-Check sollte gegen eine produktionsnahe Umgebung laufen — dafür
+standen `SECURE_SSL_REDIRECT` und `SECURE_HSTS_PRELOAD` in der Umgebung des
+**ganzen** Jobs statt nur bei diesem einen Schritt. Damit beantwortete Django
+jede Anfrage des Test-Clients mit einer 301 auf https; die Views liefen nie.
+Ergebnis: rund 40 Fehler, keiner mit erkennbarem Bezug zur Ursache
+(„Content-Type ist text/html, nicht application/json", „Application matching
+query does not exist"). Lokal war nichts zu sehen, weil dort `DEBUG=True` gilt
+und der ganze Zweig nicht greift.
+
+- Die beiden Schalter gelten jetzt nur noch beim Deploy-Check.
+- Der Test-Runner setzt `SECURE_SSL_REDIRECT` im Testlauf hart auf aus. Der
+  Test-Client spricht http; eine https-Umleitung ist dort nie gewollt, und
+  dass die Einstellung im Betrieb wirkt, prüft der Deploy-Check ohnehin.
+- Zwei Tests halten das fest — einer auf die Einstellung, einer auf die
+  Wirkung (kommt eine Antwort an?).
+
 ### Geändert (der Backlog las sich wie eine To-do-Liste, war aber ein Foto von damals)
 
 `FEATURE_BACKLOG.md` trug eine Spalte „Django-Ist" mit 15 ❌-Zeilen — für Dinge,

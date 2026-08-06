@@ -35,3 +35,14 @@ class SecurATSTestRunner(DiscoverRunner):
         settings.PASSWORD_HASHERS = [
             "django.contrib.auth.hashers.MD5PasswordHasher",
         ]
+        # Der Django-Test-Client spricht http. Ist SECURE_SSL_REDIRECT an,
+        # beantwortet Django JEDE Anfrage mit einer 301 auf https – die Views
+        # laufen nie. Die Tests scheitern dann reihenweise an Symptomen
+        # ("HTML statt JSON", "Datensatz nicht angelegt"), die alle nichts mit
+        # der eigentlichen Ursache zu tun haben. Genau so ist am 06.08.2026
+        # ein CI-Lauf gekippt, nachdem der Schalter versehentlich fuer den
+        # ganzen Job statt nur fuer den Deploy-Check gesetzt war.
+        #
+        # Dass die Einstellung im Betrieb wirkt, prueft der Deploy-Check –
+        # dafuer braucht es keinen Testlauf gegen 301er.
+        settings.SECURE_SSL_REDIRECT = False

@@ -93,9 +93,6 @@ jobs:
       POSTGRES_PASSWORD: "securats"
       # ALLOWED_HOSTS für den System-Check unter DEBUG=False
       DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,testserver"
-      # Wie eine sauber eingerichtete Produktion hinter TLS-Proxy (INSTALL.md).
-      SECURE_SSL_REDIRECT: "True"
-      SECURE_HSTS_PRELOAD: "True"
 
     steps:
       - uses: actions/checkout@v7
@@ -113,9 +110,17 @@ jobs:
       - name: Django System-Check (Deploy-Modus)
         # Vorher stand hier `... --fail-level WARNING || python manage.py check`.
         # Der Schritt hiess "Deploy-Modus" und KONNTE nicht fehlschlagen: Jede
-        # Sicherheitswarnung fiel auf den harmlosen Normal-Check zurueck. Die
-        # Umgebung oben setzt jetzt das, was INSTALL.md fuer Produktion
-        # verlangt – damit ist die Pruefung eine Aussage statt einer Geste.
+        # Sicherheitswarnung fiel auf den harmlosen Normal-Check zurueck. Mit
+        # der Produktions-Umgebung unten ist die Pruefung eine Aussage.
+        #
+        # Die beiden Schalter gelten NUR hier, nicht fuer den ganzen Job:
+        # SECURE_SSL_REDIRECT laesst Django jede http-Anfrage auf https
+        # umleiten – auch die des Test-Clients. Job-weit gesetzt liefen die
+        # Tests gegen 301er statt gegen Views (HTML statt JSON, keine
+        # angelegten Datensaetze). Genau das ist am 06.08.2026 passiert.
+        env:
+          SECURE_SSL_REDIRECT: "True"
+          SECURE_HSTS_PRELOAD: "True"
         run: python manage.py check --deploy --fail-level WARNING
 
       - name: Fehlende Migrationen erkennen

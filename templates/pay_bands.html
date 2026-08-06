@@ -33,7 +33,7 @@
           <td>{{ b.range_label }}</td>
           <td style="color:var(--text-muted);">{{ b.collectiveAgreement|default:"–" }}</td>
           <td>{% if b.has_evaluation %}<span class="badge badge-accent">✓ bewertet</span>{% else %}<span class="badge" style="color:var(--text-muted);">offen</span>{% endif %}</td>
-          <td style="text-align:right;"><form method="post" action="{% url 'ats:archive_pay_band' b.id %}" onsubmit="return confirm('Band archivieren? Bestehende Stellen behalten ihre Zuordnung.');">{% csrf_token %}<button type="submit" class="btn-icon danger" title="Archivieren"><i class="fa-solid fa-box-archive"></i></button></form></td>
+          <td style="text-align:right;"><form method="post" action="{% url 'ats:archive_pay_band' b.id %}" onsubmit="return confirm('Band archivieren? Bestehende Stellen behalten ihre Zuordnung.');">{% csrf_token %}<button aria-label="Archivieren" type="submit" class="btn-icon danger" title="Archivieren"><i class="fa-solid fa-box-archive"></i></button></form></td>
         </tr>
         <tr>
           <td colspan="6" style="padding-top:0;">

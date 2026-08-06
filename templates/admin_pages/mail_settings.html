@@ -2,8 +2,8 @@
 {% block title %}E-Mail-Versand · SecurATS{% endblock %}
 {% block content %}
 <div class="page-wrap">
-  <p style="margin:0 0 var(--space-2);"><a href="{% url 'ats:settings_hub' %}" style="color:var(--accent-light);"><i class="fa-solid fa-arrow-left"></i> Einstellungen</a></p>
-  <h1 class="page-title"><i class="fa-solid fa-paper-plane"></i> E-Mail-Versand</h1>
+  <p style="margin:0 0 var(--space-2);"><a href="{% url 'ats:settings_hub' %}" style="color:var(--accent-light);"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Einstellungen</a></p>
+  <h1 class="page-title"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i> E-Mail-Versand</h1>
   <p class="page-lead">Über diesen Weg gehen Eingangsbestätigungen, Einladungen, Absagen und die Zugangslinks zum Bewerberportal.</p>
 
   {% comment %} Ehrlicher Zustand statt stiller Annahme: Ohne hinterlegten
@@ -95,7 +95,7 @@
           Diese Adresse sehen Bewerbende — sie sollte Antworten auch empfangen können.
         </p>
       </div>
-      <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Speichern</button>
+      <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Speichern</button>
     </form>
   </div>
 
@@ -117,7 +117,7 @@
         <input id="mail-test" name="recipient" type="email" class="input"
                placeholder="ihre.adresse@traeger.de" required>
       </div>
-      <button type="submit" class="btn btn-ghost"><i class="fa-solid fa-vial"></i> Testnachricht senden</button>
+      <button type="submit" class="btn btn-ghost"><i class="fa-solid fa-vial" aria-hidden="true"></i> Testnachricht senden</button>
     </form>
   </div>
   {% endif %}

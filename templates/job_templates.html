@@ -32,7 +32,7 @@
             </button>
             <form method="post" action="{% url 'ats:delete_job_template' t.id %}" onsubmit="return confirm('Gesamte Vorlage löschen? (Entfernt alle Versionen dieses Titels)');" style="margin:0;">
               {% csrf_token %}
-              <button type="submit" class="btn-icon danger" title="Vorlage löschen"><i class="fa-solid fa-trash"></i></button>
+              <button aria-label="Vorlage löschen" type="submit" class="btn-icon danger" title="Vorlage löschen"><i class="fa-solid fa-trash"></i></button>
             </form>
           </div>
         </div>

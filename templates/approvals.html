@@ -2,7 +2,7 @@
 {% block title %}Freigaben · SecurATS{% endblock %}
 {% block content %}
 <div class="page-wrap">
-  <h1 class="page-title"><i class="fa-solid fa-stamp"></i> Freigaben – wartet auf mich</h1>
+  <h1 class="page-title"><i class="fa-solid fa-stamp" aria-hidden="true"></i> Freigaben – wartet auf mich</h1>
   <p class="page-lead">Ausschreibungen, deren Freigabe bei Ihnen liegt. Frist: {{ sla_days }} Tage (SLA, einstellbar über APPROVAL_SLA_DAYS).</p>
 
   <div class="card">
@@ -25,10 +25,10 @@
         <input type="hidden" name="step_id" value="{{ r.step.id }}">
         <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
           <input name="comment" class="input" placeholder="{% if r.is_br %}Begründung (für Widerspruch erforderlich){% else %}Kommentar / Rückfrage (für Rückfrage erforderlich){% endif %}" style="flex:1; min-width:220px;">
-          <button type="submit" name="action" value="approve" class="btn btn-primary"><i class="fa-solid fa-check"></i> {% if r.is_br %}Zustimmen{% else %}Freigeben{% endif %}</button>
-          <button type="submit" name="action" value="return" class="btn btn-ghost"><i class="fa-solid fa-rotate-left"></i> Rückfrage</button>
+          <button type="submit" name="action" value="approve" class="btn btn-primary"><i class="fa-solid fa-check" aria-hidden="true"></i> {% if r.is_br %}Zustimmen{% else %}Freigeben{% endif %}</button>
+          <button type="submit" name="action" value="return" class="btn btn-ghost"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Rückfrage</button>
           {% if not r.is_br %}
-          <button type="submit" name="action" value="reject" class="btn btn-ghost" style="color:var(--danger-light); border-color:var(--danger);"><i class="fa-solid fa-xmark"></i> Ablehnen</button>
+          <button type="submit" name="action" value="reject" class="btn btn-ghost" style="color:var(--danger-light); border-color:var(--danger);"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Ablehnen</button>
           {% endif %}
         </div>
         {% if r.is_br %}
@@ -36,7 +36,7 @@
              gesetzlichen Gruenden, mit Begruendung. Eingeklappt, damit der
              Standard-Flow (Zustimmen) aufgeraeumt bleibt. -->
         <details style="margin-top:8px;">
-          <summary style="cursor:pointer; color:var(--danger-light); font-size:13px;"><i class="fa-solid fa-scale-balanced"></i> Zustimmung verweigern (§ 99 Abs. 2 BetrVG)</summary>
+          <summary style="cursor:pointer; color:var(--danger-light); font-size:13px;"><i class="fa-solid fa-scale-balanced" aria-hidden="true"></i> Zustimmung verweigern (§ 99 Abs. 2 BetrVG)</summary>
           <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px; padding:10px 12px; border:1px solid var(--danger); border-radius:var(--border-radius-sm);">
             <span style="font-size:12px; color:var(--text-muted);">Grund/Gründe wählen (Pflicht) und oben die Begründung eintragen:</span>
             {% for code, label in w99_grounds.items %}
@@ -44,7 +44,7 @@
               <input type="checkbox" name="w99_grounds" value="{{ code }}" style="margin-top:3px;"> {{ label }}
             </label>
             {% endfor %}
-            <button type="submit" name="action" value="reject" class="btn btn-ghost" style="color:var(--danger-light); border-color:var(--danger); align-self:flex-start;"><i class="fa-solid fa-xmark"></i> Widersprechen</button>
+            <button type="submit" name="action" value="reject" class="btn btn-ghost" style="color:var(--danger-light); border-color:var(--danger); align-self:flex-start;"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Widersprechen</button>
           </div>
         </details>
         {% endif %}
@@ -58,7 +58,7 @@
 
   {% if panel_rows %}
   <div class="card" style="margin-top: var(--space-4);">
-    <h2 style="font-size:16px; margin:0 0 var(--space-1);"><i class="fa-solid fa-users-rectangle" style="color:var(--accent-light);"></i> Sichtungs-Gremium</h2>
+    <h2 style="font-size:16px; margin:0 0 var(--space-1);"><i class="fa-solid fa-users-rectangle" style="color:var(--accent-light);" aria-hidden="true"></i> Sichtungs-Gremium</h2>
     <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--space-3);">Bewerbungen auf Stellen mit Gremium: Einladung erst nach absoluter Mehrheit dafür. Kommentare/Fragen landen in den internen Notizen der Bewerbung.</p>
     <div class="table-scroll m-stack">
     <table class="data-table"><thead><tr><th>Bewerbung</th><th>Stand</th><th>Meine Stimme</th></tr></thead><tbody>
@@ -67,7 +67,7 @@
         <td>{{ r.app.applicant.firstName }} {{ r.app.applicant.lastName }}<br><span style="color:var(--text-muted); font-size:12px;">{{ r.app.jobPosting.title }}</span></td>
         <td>
           <div class="seat-row" aria-label="{{ r.state.summary }}">
-            {% if r.state.overdue %}<span class="badge badge-danger" style="margin-right:8px;"><i class="fa-solid fa-hourglass-end"></i> Frist überschritten ({{ r.state.days_open }}/{{ r.state.deadline_days }} Tage)</span>{% endif %}
+            {% if r.state.overdue %}<span class="badge badge-danger" style="margin-right:8px;"><i class="fa-solid fa-hourglass-end" aria-hidden="true"></i> Frist überschritten ({{ r.state.days_open }}/{{ r.state.deadline_days }} Tage)</span>{% endif %}
             {% for seat in r.state.seats %}
             <span class="seat {% if seat.vote == 'FOR' %}for{% elif seat.vote == 'AGAINST' %}against{% endif %}"
                   title="{{ seat.name }}{% if seat.via %} (in Vertretung: {{ seat.via }}){% endif %}{% if seat.vote == 'FOR' %} – dafür{% elif seat.vote == 'AGAINST' %} – dagegen{% else %} – ausstehend{% endif %}">
@@ -84,14 +84,14 @@
             <input type="text" name="comment" class="input" placeholder="Kommentar / Frage (optional, intern)" style="padding:6px 8px; font-size:12px;">
             <div style="display:flex; gap:6px;">
               {% if r.my_vote == 'FOR' %}
-              <button type="button" class="btn btn-primary btn-done" disabled style="padding:6px 10px; font-size:12px;"><i class="fa-solid fa-check"></i> Dafür gestimmt</button>
-              <button type="submit" name="vote" value="AGAINST" class="btn btn-ghost" style="padding:6px 10px; font-size:12px;" data-done-label="Geändert"><i class="fa-solid fa-thumbs-down"></i> Ändern: Dagegen</button>
+              <button type="button" class="btn btn-primary btn-done" disabled style="padding:6px 10px; font-size:12px;"><i class="fa-solid fa-check" aria-hidden="true"></i> Dafür gestimmt</button>
+              <button type="submit" name="vote" value="AGAINST" class="btn btn-ghost" style="padding:6px 10px; font-size:12px;" data-done-label="Geändert"><i class="fa-solid fa-thumbs-down" aria-hidden="true"></i> Ändern: Dagegen</button>
               {% elif r.my_vote == 'AGAINST' %}
-              <button type="submit" name="vote" value="FOR" class="btn btn-ghost" style="padding:6px 10px; font-size:12px;" data-done-label="Geändert"><i class="fa-solid fa-thumbs-up"></i> Ändern: Dafür</button>
-              <button type="button" class="btn btn-primary btn-done" disabled style="padding:6px 10px; font-size:12px;"><i class="fa-solid fa-check"></i> Dagegen gestimmt</button>
+              <button type="submit" name="vote" value="FOR" class="btn btn-ghost" style="padding:6px 10px; font-size:12px;" data-done-label="Geändert"><i class="fa-solid fa-thumbs-up" aria-hidden="true"></i> Ändern: Dafür</button>
+              <button type="button" class="btn btn-primary btn-done" disabled style="padding:6px 10px; font-size:12px;"><i class="fa-solid fa-check" aria-hidden="true"></i> Dagegen gestimmt</button>
               {% else %}
-              <button type="submit" name="vote" value="FOR" class="btn btn-primary" style="padding:6px 10px; font-size:12px;" data-done-label="Dafür gestimmt"><i class="fa-solid fa-thumbs-up"></i> Dafür</button>
-              <button type="submit" name="vote" value="AGAINST" class="btn btn-ghost" style="padding:6px 10px; font-size:12px;" data-done-label="Dagegen gestimmt"><i class="fa-solid fa-thumbs-down"></i> Dagegen</button>
+              <button type="submit" name="vote" value="FOR" class="btn btn-primary" style="padding:6px 10px; font-size:12px;" data-done-label="Dafür gestimmt"><i class="fa-solid fa-thumbs-up" aria-hidden="true"></i> Dafür</button>
+              <button type="submit" name="vote" value="AGAINST" class="btn btn-ghost" style="padding:6px 10px; font-size:12px;" data-done-label="Dagegen gestimmt"><i class="fa-solid fa-thumbs-down" aria-hidden="true"></i> Dagegen</button>
               {% endif %}
             </div>
             {% if not r.my_vote_pending %}<span style="font-size:11px; color:var(--text-muted);">Stimme abgegeben – Ändern ist möglich und wird auditiert.</span>{% endif %}
@@ -109,7 +109,7 @@
      Namen – es geht um den Prozess, nicht um Personen. {% endcomment %}
   {% if open_chains %}
   <div class="card" style="margin-top: var(--space-4);">
-    <h2 style="font-size:16px; margin:0 0 var(--space-1);"><i class="fa-solid fa-diagram-project" style="color:var(--accent-light);"></i> Laufende Freigaben</h2>
+    <h2 style="font-size:16px; margin:0 0 var(--space-1);"><i class="fa-solid fa-diagram-project" style="color:var(--accent-light);" aria-hidden="true"></i> Laufende Freigaben</h2>
     <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--space-3);">Ausschreibungen in der Kette – in Ihrem Zugriffsbereich, älteste zuerst.</p>
     <div class="table-scroll">
     <table class="data-table">
@@ -137,7 +137,7 @@
   <div class="card" style="margin-top: var(--space-4);">
     <details>
       <summary style="cursor:pointer; font-size:16px; color:var(--text-color);">
-        <i class="fa-solid fa-clock-rotate-left" style="color:var(--accent-light);"></i> Von mir entschieden ({{ my_decisions|length }})
+        <i class="fa-solid fa-clock-rotate-left" style="color:var(--accent-light);" aria-hidden="true"></i> Von mir entschieden ({{ my_decisions|length }})
       </summary>
       <div class="table-scroll" style="margin-top: var(--space-3);">
       <table class="data-table">

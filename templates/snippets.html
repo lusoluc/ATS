@@ -33,7 +33,7 @@
         </span>
         <form method="post" onsubmit="return confirm('Baustein löschen?');">{% csrf_token %}
           <input type="hidden" name="delete_id" value="{{ s.id }}">
-          <button type="submit" class="btn-icon danger"><i class="fa-solid fa-trash"></i></button>
+          <button type="submit" class="btn-icon danger" aria-label="Baustein löschen: {{ s.category }} – {{ s.content|truncatechars:40 }}"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
         </form>
       </li>
       {% empty %}<li class="empty-state">Noch keine Bausteine.</li>{% endfor %}

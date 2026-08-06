@@ -1000,3 +1000,41 @@ class GuardrailAdminPageInHubTestCase(TestCase):
         self.assertEqual(stale, [],
                          "NOT_IN_HUB nennt Views, die es nicht mehr gibt: "
                          + ", ".join(stale))
+
+
+class GuardrailIconButtonNameTestCase(TestCase):
+    """Waechter: Kein Knopf, der nur aus einem Symbol besteht, ohne Namen.
+
+    Ein solcher Knopf wird von einem Screenreader als "Schaltflaeche"
+    vorgelesen - ohne jeden Hinweis, was er tut. Ein `title` genuegt nicht: Er
+    wird nicht von allen Ausgabe-Programmen beachtet und erscheint nicht in der
+    Elementliste, mit der sich blinde Nutzende ueber eine Seite bewegen.
+
+    Gefunden wurden zehn solcher Knoepfe (Loeschen, Archivieren, Bearbeiten) -
+    quer durch die Verwaltungsseiten. Punkt 3 der Definition of Done in diesem
+    Dokument verlangt sie seit Langem; ein Waechter dafuer fehlte.
+    """
+
+    def test_every_icon_only_button_has_an_accessible_name(self):
+        import os
+        import re
+        base = os.path.join(os.path.dirname(os.path.dirname(
+            os.path.dirname(__file__))), "templates")
+        tag = re.compile(r"<(a|button)\b[^>]*class=\"btn-icon[^\"]*\"[^>]*>",
+                         re.S)
+        offenders = []
+        for root, _dirs, files in os.walk(base):
+            for fname in files:
+                if not fname.endswith(".html"):
+                    continue
+                path = os.path.join(root, fname)
+                src = open(path, encoding="utf-8").read()
+                for match in tag.finditer(src):
+                    if "aria-label" not in match.group(0):
+                        rel = os.path.relpath(path, base)
+                        offenders.append(f"{rel}: {match.group(0)[:60]}")
+        self.assertEqual(
+            offenders, [],
+            "Icon-Knopf ohne aria-label - fuer Screenreader ein namenloser "
+            "Knopf. Namen ergaenzen (moeglichst mit dem betroffenen Eintrag, "
+            "sonst heisst jede Zeile gleich): " + " | ".join(offenders))

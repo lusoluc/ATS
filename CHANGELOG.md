@@ -5,6 +5,29 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (namenlose Icon-Knöpfe, vorgelesene Deko-Symbole)
+
+Nachträgliche Barrierefreiheits-Abnahme der Bildschirme, die zuletzt entstanden
+sind — die Definition of Done im `TESTING_AND_GUARDRAILS.md` war bei fünf Seiten
+am Stück übersprungen worden.
+
+- **Zehn Icon-Knöpfe im ganzen Projekt hatten keinen Namen** (Löschen,
+  Archivieren, Bearbeiten in Kategorien, Kontakten, Vertretungen, Vorlagen,
+  Standorten, Entgeltbändern, Screening-Fragen, Mediathek, Textbausteinen). Ein
+  Screenreader las dort nur „Schaltfläche". Ein `title` genügt dafür nicht. Alle
+  tragen jetzt einen Namen samt betroffenem Eintrag — sonst hört man in der
+  Elementliste zehnmal „Löschen" ohne Bezug.
+- 30 Deko-Symbole wurden mitgelesen und sind jetzt `aria-hidden`.
+- Der Wechsel in den Bearbeiten-Modus der Seitenverwaltung war für
+  Screenreader unsichtbar; die Überschrift sagt ihn jetzt an (`role="status"`).
+- Neuer Wächter `GuardrailIconButtonNameTestCase`: Punkt 3 der Definition of Done
+  stand seit Langem da, und zehn Knöpfe waren trotzdem namenlos. Eine Regel, die
+  nur auf Disziplin baut, hält nicht.
+
+Geprüft und in Ordnung befunden statt angenommen: Zielgrößen (27 px Desktop,
+44 px Phone) und die Rückmeldungen nach dem Speichern (zentrale Meldungsleiste
+mit `role="status"`).
+
 ### Behoben (nächtliche Versandfehler blieben unsichtbar)
 
 Nachtrag zum Paket davor — die dort gebaute Warnung deckte den wahrscheinlichsten

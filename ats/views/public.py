@@ -445,7 +445,6 @@ def bewerben(request, job_id):
                                'portal_url': portal_url, 'ko_rejected': True})
 
             try:
-                from django.core.mail import send_mail
 
                 from ..models import EmailTemplate
                 _fs = SystemSetting.objects.filter(key='FIRMA').first()
@@ -480,10 +479,17 @@ def bewerben(request, job_id):
                         f'wahrnehmen und uns Rückfragen stellen.\n\n'
                         f'Freundliche Grüße\n{company}')
                 if applicant.email:
-                    send_mail(subject, body, None, [applicant.email],
-                              fail_silently=True)
+                    # Bewusst OHNE request: Die bewerbende Person kann an
+                    # einem Mailserver-Problem nichts aendern, und eine
+                    # technische Fehlermeldung auf der Danke-Seite wuerde nur
+                    # verunsichern. Der Fehler landet im Log und im Zustand,
+                    # den die Personalabteilung sieht.
+                    from ..mail_send import send_notice
+                    delivered = send_notice(subject, body, [applicant.email],
+                                            context='Eingangsbestätigung')
                     write_audit('APPLICATION_CONFIRMATION_SENT',
-                                application_id=application.id)
+                                application_id=application.id,
+                                delivered=delivered)
             except Exception:
                 # Bewerbung ist bereits gespeichert – sie darf an einer
                 # fehlgeschlagenen Mail nicht scheitern.

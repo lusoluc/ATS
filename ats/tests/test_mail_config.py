@@ -42,24 +42,24 @@ class MailConfigTestCase(TestCase):
         self.assertFalse(mail_status()['configured'])
 
     def test_settings_from_the_database_are_used(self):
-        SystemSetting.objects.create(key=HOST_KEY, value="mail.traeger.de")
-        SystemSetting.objects.create(key="MAIL_FROM", value="bewerbung@traeger.de")
+        SystemSetting.objects.create(key=HOST_KEY, value="smtp.example.invalid")
+        SystemSetting.objects.create(key="MAIL_FROM", value="postfach@example.invalid")
         cfg = mail_settings()
         self.assertTrue(cfg.configured)
-        self.assertEqual(cfg.host, "mail.traeger.de")
+        self.assertEqual(cfg.host, "smtp.example.invalid")
         self.assertEqual(cfg.port, 587)      # STARTTLS-Regelfall
         self.assertTrue(cfg.use_tls)
 
     def test_environment_beats_the_database(self):
         """Eine Deployment-Entscheidung wiegt schwerer als ein Formular."""
-        SystemSetting.objects.create(key=HOST_KEY, value="aus-der-datenbank")
-        with mock.patch.dict(os.environ, {"EMAIL_HOST": "aus-der-umgebung"}):
+        SystemSetting.objects.create(key=HOST_KEY, value="smtp.datenbank.invalid")
+        with mock.patch.dict(os.environ, {"EMAIL_HOST": "smtp.umgebung.invalid"}):
             cfg = mail_settings()
-            self.assertEqual(cfg.host, "aus-der-umgebung")
+            self.assertEqual(cfg.host, "smtp.umgebung.invalid")
             self.assertIn("host", cfg.from_env)
 
     def test_ssl_defaults_to_port_465(self):
-        SystemSetting.objects.create(key=HOST_KEY, value="mail.traeger.de")
+        SystemSetting.objects.create(key=HOST_KEY, value="smtp.example.invalid")
         SystemSetting.objects.create(key="MAIL_SECURITY", value="ssl")
         cfg = mail_settings()
         self.assertEqual(cfg.port, 465)
@@ -67,15 +67,15 @@ class MailConfigTestCase(TestCase):
         self.assertFalse(cfg.use_tls)
 
     def test_password_is_stored_encrypted_and_never_plain(self):
-        store_password("geheim123")
+        store_password("NICHT-ECHT-nur-Test")
         raw = SystemSetting.objects.get(key=PASSWORD_KEY).value
-        self.assertNotIn("geheim123", raw)
-        self.assertEqual(mail_settings().password, "geheim123")
+        self.assertNotIn("NICHT-ECHT-nur-Test", raw)
+        self.assertEqual(mail_settings().password, "NICHT-ECHT-nur-Test")
         self.assertTrue(has_password())
 
     def test_status_never_reveals_the_password(self):
-        store_password("geheim123")
-        self.assertNotIn("geheim123", str(mail_status()))
+        store_password("NICHT-ECHT-nur-Test")
+        self.assertNotIn("NICHT-ECHT-nur-Test", str(mail_status()))
         self.assertTrue(mail_status()['has_password'])
 
     def test_undecryptable_password_counts_as_missing(self):
@@ -132,48 +132,48 @@ class MailSettingsPageTestCase(TestCase):
                             "es wird nichts zugestellt")
 
     def test_saving_the_server_and_auditing_it(self):
-        self.client.post(self.url, {'host': 'mail.traeger.de', 'port': '587',
-                                    'security': 'starttls', 'user': 'ats',
-                                    'password': 'geheim',
-                                    'from_address': 'bewerbung@traeger.de'})
+        self.client.post(self.url, {'host': 'smtp.example.invalid', 'port': '587',
+                                    'security': 'starttls', 'user': 'test-benutzer',
+                                    'password': 'NICHT-ECHT-nur-Test',
+                                    'from_address': 'postfach@example.invalid'})
         cfg = mail_settings()
-        self.assertEqual(cfg.host, 'mail.traeger.de')
-        self.assertEqual(cfg.password, 'geheim')
+        self.assertEqual(cfg.host, 'smtp.example.invalid')
+        self.assertEqual(cfg.password, 'NICHT-ECHT-nur-Test')
         self.assertTrue(AuditLog.objects.filter(
             action='MAIL_SETTINGS_CHANGED').exists())
 
     def test_empty_password_field_keeps_the_stored_one(self):
         """Sonst löschte jedes Speichern das Passwort — es steht ja nie im
         Formular."""
-        store_password('bleibt')
-        self.client.post(self.url, {'host': 'mail.traeger.de',
-                                    'from_address': 'x@y.de', 'password': ''})
-        self.assertEqual(mail_settings().password, 'bleibt')
+        store_password('NICHT-ECHT-bleibt')
+        self.client.post(self.url, {'host': 'smtp.example.invalid',
+                                    'from_address': 'postfach@example.invalid', 'password': ''})
+        self.assertEqual(mail_settings().password, 'NICHT-ECHT-bleibt')
 
     def test_password_can_be_removed_deliberately(self):
-        store_password('weg damit')
-        self.client.post(self.url, {'host': 'mail.traeger.de',
-                                    'from_address': 'x@y.de',
+        store_password('NICHT-ECHT-weg-damit')
+        self.client.post(self.url, {'host': 'smtp.example.invalid',
+                                    'from_address': 'postfach@example.invalid',
                                     'clear_password': '1'})
         self.assertEqual(mail_settings().password, '')
 
     def test_environment_values_are_locked_not_silently_ignored(self):
-        with mock.patch.dict(os.environ, {"EMAIL_HOST": "fix.example"}):
+        with mock.patch.dict(os.environ, {"EMAIL_HOST": "smtp.fest.invalid"}):
             resp = self.client.get(self.url)
             self.assertContains(resp, "Umgebungsvariablen")
             # Ein Formularwert darf den Umgebungswert nicht ueberschreiben
-            self.client.post(self.url, {'host': 'versuch.example',
-                                        'from_address': 'x@y.de'})
-            self.assertEqual(mail_settings().host, "fix.example")
+            self.client.post(self.url, {'host': 'smtp.versuch.invalid',
+                                        'from_address': 'postfach@example.invalid'})
+            self.assertEqual(mail_settings().host, "smtp.fest.invalid")
         self.assertEqual(SystemSetting.objects.filter(key=HOST_KEY).count(), 0)
 
     def test_test_send_reports_the_real_error(self):
-        SystemSetting.objects.create(key=HOST_KEY, value="mail.traeger.de")
-        SystemSetting.objects.create(key="MAIL_FROM", value="x@y.de")
+        SystemSetting.objects.create(key=HOST_KEY, value="smtp.example.invalid")
+        SystemSetting.objects.create(key="MAIL_FROM", value="postfach@example.invalid")
         with mock.patch('django.core.mail.send_mail',
                         side_effect=OSError("Connection refused")):
             resp = self.client.post(self.url, {'action': 'test',
-                                               'recipient': 'chef@traeger.de'},
+                                               'recipient': 'leitung@example.invalid'},
                                     follow=True)
         self.assertContains(resp, "Connection refused")
         self.assertTrue(AuditLog.objects.filter(action='MAIL_TEST_SENT').exists())

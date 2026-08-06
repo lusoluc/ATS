@@ -141,6 +141,21 @@ def is_configured() -> bool:
     return mail_settings().configured
 
 
+def delivery_possible() -> bool:
+    """Gibt es ueberhaupt einen Zustellweg?
+
+    Ein Mailserver ist nur noetig, wenn auch wirklich per SMTP verschickt wird.
+    Wer das Backend bewusst umstellt - Konsole fuer einen Trockenlauf, Datei
+    fuer eine Abnahme, locmem im Test - hat einen gueltigen Weg, und den darf
+    diese Schicht nicht mit "kein Mailserver hinterlegt" blockieren.
+    """
+    from django.conf import settings as dj_settings
+    backend = getattr(dj_settings, 'EMAIL_BACKEND', '')
+    if 'ats.mail_backend' not in backend and 'smtp' not in backend:
+        return True
+    return is_configured()
+
+
 def record_result(ok: bool, detail: str = "") -> None:
     """Ergebnis des letzten Versands festhalten.
 

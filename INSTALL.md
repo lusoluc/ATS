@@ -21,6 +21,19 @@ cp .env.example .env
 | `POSTGRES_PASSWORD` | DB-Passwort (nur intern im Compose-Netz) |
 | `SECURATS_ADMIN_USER` / `SECURATS_ADMIN_PASSWORD` | Erst-Admin (wird beim Start idempotent angelegt) |
 
+### Zwei Schalter für den Betrieb hinter HTTPS
+
+Beide sind aus Vorsicht **aus** — falsch gesetzt legen sie die Anwendung lahm.
+Wer sie einschaltet, sollte wissen warum:
+
+| Variable | Wann auf `True` |
+|---|---|
+| `SECURE_SSL_REDIRECT` | Sobald ein Reverse-Proxy (nginx, Traefik, Caddy) die TLS-Terminierung übernimmt **und** `X-Forwarded-Proto` durchreicht. Ohne diesen Header entsteht eine Endlosschleife: SecurATS sieht `http`, leitet auf `https`, der Proxy reicht wieder `http` herein. |
+| `SECURE_HSTS_PRELOAD` | Nur bei bewusster Entscheidung. Preload ist eine Einbahnstraße — eine Domain, die einmal in der Browser-Liste steht, kommt monatelang nicht mehr heraus, und bis dahin ist sie ohne gültiges Zertifikat nicht erreichbar. |
+
+Mit beiden auf `True` besteht die Installation Djangos Deploy-Check ohne
+Warnung; genau so prüft es auch die CI.
+
 Dann:
 
 ```bash

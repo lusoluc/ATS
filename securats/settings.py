@@ -261,6 +261,24 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 
+    # HTTPS-Zwang und HSTS-Preload sind NICHT blind aktivierbar, deshalb
+    # env-gesteuert mit sicherem Vorgabewert (aus = wie bisher):
+    #
+    # * Django darf nur dann selbst auf HTTPS umleiten, wenn ihm ein
+    #   vorgelagerter Proxy die TLS-Terminierung meldet. Ohne den
+    #   Proxy-Header endet das in einer Endlosschleife – der Server sieht
+    #   http, leitet auf https, der Proxy reicht wieder http herein.
+    # * Preload ist eine Einbahnstrasse: Wer die Domain in die Browser-Liste
+    #   eintraegt, kommt monatelang nicht mehr heraus. Das ist eine
+    #   Entscheidung des Traegers, keine Voreinstellung.
+    #
+    # INSTALL.md nennt beide Schalter; CI prueft mit ihnen, dass eine so
+    # eingerichtete Produktion den Django-Deploy-Check sauber besteht.
+    SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'False') == 'True'
+    if SECURE_SSL_REDIRECT:
+        SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_HSTS_PRELOAD = os.environ.get('SECURE_HSTS_PRELOAD', 'False') == 'True'
+
 # Custom setting for PII Encryption Key.
 # In Produktion (DEBUG=False) ist ein explizit gesetzter Schluessel Pflicht,
 # damit nicht versehentlich mit dem oeffentlich bekannten Fallback verschluesselt wird.

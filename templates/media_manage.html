@@ -22,7 +22,7 @@
           <td><a href="{{ a.file.url }}" target="_blank">{{ a.name }}</a></td>
           <td style="color:var(--text-muted);">{{ a.contentType|default:"–" }}</td>
           <td>{{ a.createdAt|date:"d.m.Y H:i" }}</td>
-          <td style="text-align:right;"><form method="post" action="{% url 'ats:delete_media' a.id %}" onsubmit="return confirm('Datei löschen?');">{% csrf_token %}<button type="submit" class="btn-icon danger"><i class="fa-solid fa-trash"></i></button></form></td>
+          <td style="text-align:right;"><form method="post" action="{% url 'ats:delete_media' a.id %}" onsubmit="return confirm('Datei löschen?');">{% csrf_token %}<button type="submit" class="btn-icon danger" aria-label="Datei löschen: {{ a.name }}"><i class="fa-solid fa-trash" aria-hidden="true"></i></button></form></td>
         </tr>
       {% empty %}<tr><td colspan="4" class="empty-state">Noch keine Medien.</td></tr>{% endfor %}
       </tbody>

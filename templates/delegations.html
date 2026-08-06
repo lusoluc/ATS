@@ -45,7 +45,7 @@
             {% if d.validUntil > now %}
             <form method="post" onsubmit="return confirm('Delegation jetzt beenden?');">{% csrf_token %}
               <input type="hidden" name="end_id" value="{{ d.id }}">
-              <button type="submit" class="btn-icon danger" title="Jetzt beenden"><i class="fa-solid fa-stop-circle"></i></button>
+              <button aria-label="Jetzt beenden" type="submit" class="btn-icon danger" title="Jetzt beenden"><i class="fa-solid fa-stop-circle"></i></button>
             </form>
             {% else %}<span class="badge">beendet</span>{% endif %}
           </td>

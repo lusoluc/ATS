@@ -57,12 +57,12 @@
           </td>
           <td>{% if c.jobs_count %}<span class="badge badge-accent">{{ c.jobs_count }} aktiv</span>{% else %}–{% endif %}</td>
           <td style="text-align:right; white-space:nowrap;">
-            <button type="button" class="btn-icon" title="Bearbeiten"
+            <button aria-label="Bearbeiten" type="button" class="btn-icon" title="Bearbeiten"
               onclick="editCp('{{ c.obj.id }}','{{ c.obj.firstName|escapejs }}','{{ c.obj.lastName|escapejs }}','{{ c.obj.email|escapejs }}','{{ c.obj.phone|default:''|escapejs }}','{{ c.obj.globalJobTitle|default:''|escapejs }}','{{ c.obj.photoUrl|default:''|escapejs }}','{{ c.obj.quote|default:''|escapejs }}')"><i class="fa-solid fa-pen"></i></button>
             {% if c.jobs_count == 0 %}
             <form method="post" style="display:inline;" onsubmit="return confirm('Ansprechperson löschen?');">{% csrf_token %}
               <input type="hidden" name="action" value="delete"><input type="hidden" name="cp_id" value="{{ c.obj.id }}">
-              <button type="submit" class="btn-icon danger" title="Löschen"><i class="fa-solid fa-trash"></i></button>
+              <button aria-label="Löschen" type="submit" class="btn-icon danger" title="Löschen"><i class="fa-solid fa-trash"></i></button>
             </form>
             {% else %}<span class="btn-icon" title="In Verwendung – zuerst „Überall ersetzen“ nutzen" style="opacity:.4;"><i class="fa-solid fa-lock"></i></span>{% endif %}
           </td>

@@ -2,8 +2,8 @@
 {% block title %}Seiten · SecurATS{% endblock %}
 {% block content %}
 <div class="page-wrap">
-  <p style="margin:0 0 var(--space-2);"><a href="{% url 'ats:settings_hub' %}" style="color:var(--accent-light);"><i class="fa-solid fa-arrow-left"></i> Einstellungen</a></p>
-  <h1 class="page-title"><i class="fa-solid fa-file-lines"></i> Seiten &amp; Navigation</h1>
+  <p style="margin:0 0 var(--space-2);"><a href="{% url 'ats:settings_hub' %}" style="color:var(--accent-light);"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Einstellungen</a></p>
+  <h1 class="page-title"><i class="fa-solid fa-file-lines" aria-hidden="true"></i> Seiten &amp; Navigation</h1>
   <p class="page-lead">Inhalts-Seiten des Karriereportals anlegen, in die Navigation nehmen und veröffentlichen. Der Baukasten je Seite (Hero, Text, Stellen, Zitat …) sitzt in der Liste unten.</p>
 
   {% comment %} Bis hierher gab es ZWEI Seiten-Editoren: dieser hier mit Löschen
@@ -11,7 +11,12 @@
      Feldern, die hier fehlten. Wer eine Seite anlegte und veröffentlichte,
      brauchte beide. Jetzt einer – mit allem. {% endcomment %}
   <div class="card" style="margin-bottom: var(--space-4);">
-    <h2 style="font-size:16px; margin:0 0 var(--space-3);" id="form-heading">Seite anlegen oder bearbeiten</h2>
+    {% comment %} role="status": „Bearbeiten" fuellt das Formular per Skript und
+       aendert diese Ueberschrift. Ohne Ansage waere fuer Screenreader-Nutzende
+       nicht erkennbar, dass sie jetzt eine BESTEHENDE Seite bearbeiten – sie
+       wuerden eine Aenderung fuer eine Neuanlage halten. {% endcomment %}
+    <h2 style="font-size:16px; margin:0 0 var(--space-3);" id="form-heading"
+        role="status" aria-live="polite">Seite anlegen oder bearbeiten</h2>
     <form method="post" action="{% url 'ats:save_page' %}" style="display:flex;flex-direction:column;gap: var(--space-3);">
       {% csrf_token %}
       <input type="hidden" name="page_id" id="page_id">
@@ -79,12 +84,18 @@
           <td>{% if p.navEnabled %}Ja · Pos. {{ p.navOrder }}{% else %}–{% endif %}</td>
           <td>{% if p.status == 'published' %}<span class="badge badge-accent">veröffentlicht</span>{% else %}<span class="badge">{{ p.status }}</span>{% endif %}</td>
           <td style="text-align:right; white-space:nowrap;">
-            <a href="{% url 'ats:blocks_editor' kind='page' obj_id=p.id %}" class="btn-icon" title="Baukasten: Blöcke dieser Seite"><i class="fa-solid fa-cubes"></i></a>
-            <button type="button" class="btn-icon" title="Bearbeiten"
+            {% comment %} aria-label statt nur title: Ein `title` wird nicht von
+               allen Screenreadern vorgelesen – und in der Linkliste hiesse sonst
+               jeder Knopf gleich. Der Seitentitel gehoert in den Namen, sonst
+               steht dort dreimal „Loeschen" ohne Bezug. {% endcomment %}
+            <a href="{% url 'ats:blocks_editor' kind='page' obj_id=p.id %}" class="btn-icon"
+               aria-label="Baukasten öffnen: {{ p.title }}" title="Baukasten: Blöcke dieser Seite"><i class="fa-solid fa-cubes" aria-hidden="true"></i></a>
+            <button type="button" class="btn-icon"
+                    aria-label="Bearbeiten: {{ p.title }}" title="Bearbeiten"
                     onclick="editPage('{{ p.id }}','{{ p.title|escapejs }}','{{ p.slug|escapejs }}',`{{ p.content|escapejs }}`,'{{ p.navLabel|default:""|escapejs }}','{{ p.navOrder }}',{% if p.navEnabled %}true{% else %}false{% endif %},'{{ p.metaDesc|default:""|escapejs }}','{{ p.status }}')">
-              <i class="fa-solid fa-pen"></i>
+              <i class="fa-solid fa-pen" aria-hidden="true"></i>
             </button>
-            <form method="post" action="{% url 'ats:delete_page' p.id %}" style="display:inline;" onsubmit="return confirm('Seite „{{ p.title|escapejs }}“ löschen?');">{% csrf_token %}<button type="submit" class="btn-icon danger" title="Löschen"><i class="fa-solid fa-trash"></i></button></form>
+            <form method="post" action="{% url 'ats:delete_page' p.id %}" style="display:inline;" onsubmit="return confirm('Seite „{{ p.title|escapejs }}“ löschen?');">{% csrf_token %}<button type="submit" class="btn-icon danger" aria-label="Löschen: {{ p.title }}" title="Löschen"><i class="fa-solid fa-trash" aria-hidden="true"></i></button></form>
           </td>
         </tr>
       {% empty %}<tr><td colspan="5" class="empty-state">Noch keine Seiten.</td></tr>{% endfor %}

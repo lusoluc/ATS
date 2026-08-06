@@ -15,7 +15,7 @@
       <li class="list-row">
         <span>{{ q.question }}</span>
         <form method="post" action="{% url 'ats:archive_screening_question' q.id %}">{% csrf_token %}
-          <button type="submit" title="Archivieren" class="btn-icon danger"><i class="fa-solid fa-box-archive"></i></button>
+          <button aria-label="Archivieren" type="submit" title="Archivieren" class="btn-icon danger"><i class="fa-solid fa-box-archive"></i></button>
         </form>
       </li>
       {% empty %}<li class="empty-state">Noch keine Fragen angelegt.</li>{% endfor %}

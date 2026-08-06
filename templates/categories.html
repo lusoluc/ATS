@@ -16,7 +16,7 @@
       {% for f in families %}
       <li class="list-row">
         <span><strong>{{ f.name }}</strong>{% if f.description %} – <span style="color:var(--text-muted);">{{ f.description }}</span>{% endif %}</span>
-        <form method="post" action="{% url 'ats:archive_category' f.id %}">{% csrf_token %}<button type="submit" class="btn-icon danger" title="Archivieren"><i class="fa-solid fa-box-archive"></i></button></form>
+        <form method="post" action="{% url 'ats:archive_category' f.id %}">{% csrf_token %}<button aria-label="Archivieren" type="submit" class="btn-icon danger" title="Archivieren"><i class="fa-solid fa-box-archive"></i></button></form>
       </li>
       {% empty %}<li class="empty-state">Noch keine Kategorien.</li>{% endfor %}
     </ul>

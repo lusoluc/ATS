@@ -2,7 +2,7 @@
 {% block title %}Einstellungen · SecurATS{% endblock %}
 {% block content %}
 <div class="page-wrap">
-  <h1 class="page-title"><i class="fa-solid fa-sliders"></i> Einstellungen</h1>
+  <h1 class="page-title"><i class="fa-solid fa-sliders" aria-hidden="true"></i> Einstellungen</h1>
   <p class="page-lead">Alles, was eingerichtet wird — an einem Ort, mit Zustand statt bloßem Link.</p>
 
   {% comment %} Offene Punkte zuerst: Wer SecurATS neu aufsetzt, soll nicht raten
@@ -10,7 +10,7 @@
      Entgeltband), fällt sonst erst im Betrieb auf. {% endcomment %}
   {% if open_points %}
   <div class="card" style="border-color: var(--danger);">
-    <h2 style="font-size:16px; margin:0 0 var(--space-2);"><i class="fa-solid fa-triangle-exclamation" style="color:var(--danger-light);"></i> Noch einzurichten</h2>
+    <h2 style="font-size:16px; margin:0 0 var(--space-2);"><i class="fa-solid fa-triangle-exclamation" style="color:var(--danger-light);" aria-hidden="true"></i> Noch einzurichten</h2>
     <ul class="list-reset">
       {% for item in open_points %}
       <li class="list-row">
@@ -22,7 +22,7 @@
   </div>
   {% else %}
   <div class="card">
-    <p style="margin:0; color:var(--text-muted);"><i class="fa-solid fa-circle-check" style="color:var(--accent-light);"></i> Alles Nötige ist eingerichtet.</p>
+    <p style="margin:0; color:var(--text-muted);"><i class="fa-solid fa-circle-check" style="color:var(--accent-light);" aria-hidden="true"></i> Alles Nötige ist eingerichtet.</p>
   </div>
   {% endif %}
 

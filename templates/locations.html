@@ -48,7 +48,7 @@
           <td>{{ l.address|default:"–" }}</td>
           <td>{{ l.postalCode|default:"" }} {{ l.city|default:"" }}</td>
           <td>{% if l.lat is not None and l.lng is not None %}<span class="badge badge-accent">möglich</span>{% else %}<span class="badge" title="Ohne Koordinaten trifft der Job-Alert nur exakt diesen Standort">ohne Koordinaten</span>{% endif %}</td>
-          <td style="text-align:right;"><form method="post" action="{% url 'ats:archive_location' l.id %}">{% csrf_token %}<button type="submit" class="btn-icon danger" title="Archivieren"><i class="fa-solid fa-box-archive"></i></button></form></td>
+          <td style="text-align:right;"><form method="post" action="{% url 'ats:archive_location' l.id %}">{% csrf_token %}<button aria-label="Archivieren" type="submit" class="btn-icon danger" title="Archivieren"><i class="fa-solid fa-box-archive"></i></button></form></td>
         </tr>
       {% empty %}<tr><td colspan="5" class="empty-state">Noch keine Standorte.</td></tr>{% endfor %}
       </tbody>

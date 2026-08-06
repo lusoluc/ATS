@@ -49,6 +49,7 @@ unbemerkt wiederholen. Sie stehen in `ats/tests/test_guardrails.py`.
 | `GuardrailNoOrphanRouteTestCase` | fertige Seite, zu der kein Link führt. Die häufigste Fehlerklasse des Projekts: gebaut, geschützt, getestet — und für niemanden erreichbar. Reine Maschinen-Endpunkte (Monitoring, Jobbörsen-Feeds) stehen in einer begründeten Allowlist | U3 |
 | `GuardrailNoDeadModelTestCase` | Modell, das ausser im Django-Admin niemand anfasst. Registrierung ist keine Nutzung – dieser Fehlschluss hat sieben leere Prisma-Tabellen jahrelang durchgewunken, darunter das tote `User`-Modell, das den Urheber jeder Freigabe unbefuellbar machte | W1 |
 | `GuardrailAdminPageInHubTestCase` | Admin-Seite, die nicht ueber die Einstellungs-Zentrale erreichbar ist. Aktionen/Exporte stehen mit Begruendung auf einer Ausnahmeliste, die selbst auf tote Eintraege geprueft wird | AA |
+| `GuardrailIconButtonNameTestCase` | Knopf, der nur aus einem Symbol besteht, ohne `aria-label` - fuer Screenreader ein namenloser Knopf. Ein `title` genuegt nicht. Punkt 3 der Definition of Done stand seit Langem da; der Waechter dazu fehlte, und zehn Knoepfe waren namenlos | AE |
 
 **Wenn ein Wächter fehlschlägt:** Das ist ein *Feature*, kein Ärgernis. Nicht die
 Whitelist blind erweitern – erst prüfen, ob der neue Code wirklich so sein soll:

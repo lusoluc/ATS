@@ -109,10 +109,20 @@ def process_page(request):
 
 @hr_admin_required
 def templates_page(request):
-    """E-Mail-Vorlagen und globale Variablen (SystemSettings)."""
+    """E-Mail-Vorlagen und globale Variablen (SystemSettings).
+
+    `purposes` zeigt, welcher Zweck unbesetzt ist - samt der Folge. Frueher
+    suchte die Automatik ihre Vorlage ueber den Namen und fiel bei einer
+    Umbenennung still auf einen fest einprogrammierten Text zurueck; dass
+    ueberhaupt etwas fehlte, sah niemand.
+    """
+    from ..models.system import TEMPLATE_PURPOSES
+    from ..templates_registry import purpose_overview
     return render(request, 'admin_pages/templates.html', {
         'all_system_settings': SystemSetting.objects.all().order_by('key'),
         'all_email_templates': EmailTemplate.objects.all().order_by('name'),
+        'template_purposes': TEMPLATE_PURPOSES,
+        'purposes': purpose_overview(),
     })
 
 
@@ -260,6 +270,15 @@ def retention_page(request):
     })
 
 
+def _missing_purposes():
+    """Zwecke ohne Vorlage - siehe ats/templates_registry.py.
+
+    Hilfsfunktion, keine View: Der Zugriffsschutz sitzt an settings_hub.
+    """
+    from ..templates_registry import missing_purposes
+    return missing_purposes()
+
+
 @hr_admin_required
 def settings_hub(request):
     """Eine Startseite für alles, was eingerichtet wird.
@@ -276,7 +295,7 @@ def settings_hub(request):
     from ..dsgvo import privacy_notice_status
     from ..geo import lookup_plz
     from ..mail_config import mail_status
-    from ..models import EmailTemplate, Location, PayBand, SourceChannel
+    from ..models import Location, PayBand, SourceChannel
 
     mail = mail_status()
     notice = privacy_notice_status()
@@ -300,9 +319,13 @@ def settings_hub(request):
                 {'name': 'E-Mail-Vorlagen', 'url': 'ats:templates_page',
                  'icon': 'fa-envelope-open-text',
                  'hint': 'Texte für Eingangsbestätigung, Einladung, Absage',
-                 'state': state(EmailTemplate.objects.exists(),
-                                f"{EmailTemplate.objects.count()} Vorlagen",
-                                'keine Vorlagen')},
+                 # Nicht die ANZAHL zaehlt, sondern ob jeder Zweck belegt ist.
+                 # Zehn freie Bausteine und keine Absage-Vorlage waeren sonst
+                 # ein gruener Haken.
+                 'state': state(not _missing_purposes(),
+                                'alle Zwecke belegt',
+                                f"ohne Vorlage: {', '.join(_missing_purposes())}"
+                                " – es geht ein Standardtext raus")},
                 {'name': 'Textbausteine', 'url': 'ats:snippets',
                  'icon': 'fa-quote-right',
                  'hint': 'Antwort-Bausteine für das Sammel-Postfach',

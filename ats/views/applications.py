@@ -108,11 +108,15 @@ def dashboard(request):
 
     # Extra data for interactive modals
     active_jobs = scope_jobs(request.user, JobPosting.objects.all().select_related('location', 'facility', 'department', 'workflowState', 'contactPerson', 'jobTemplate').order_by('-createdAt'))
-    from ..models import EmailTemplate, TextSnippet
+    from ..models import TextSnippet
     text_snippets = TextSnippet.objects.select_related('jobFamily').order_by('category')[:50]
     # Einlade-Vorlage (UC-SB-10): HTML der zentralen Vorlage -> Klartext fuers Modal
     import re as _re
-    tmpl = EmailTemplate.objects.filter(name__icontains='Einladung').first()
+
+    from ..templates_registry import template_for
+    # Zweck statt Namenssuche: Wer die Vorlage umbenennt, soll nicht
+    # unbemerkt den Ersatztext bekommen.
+    tmpl = template_for('INVITATION')
     if tmpl:
         raw = tmpl.textContent or _re.sub(r'<[^>]+>', '\n', tmpl.htmlContent or '')
         invite_template = _re.sub(r'\n{2,}', '\n\n', raw).strip()
@@ -538,11 +542,19 @@ def execute_workflow_actions(app, actions, request=None):
         action_type = action.get('type')
 
         if action_type == 'EMAIL_NOTIFICATION' and action.get('recipient') == 'applicant':
+            # Die Pipeline-Konfiguration nennt bis heute einen Vorlagen-NAMEN
+            # ("Absage"). Aufgeloest wird er ueber den Zweck; nur wenn kein
+            # Zweck passt, gilt der Name als exakter Treffer. Kein icontains
+            # mehr - eine ungefaehr passende Vorlage ist schlimmer als keine.
+            from ..templates_registry import guess_purpose, template_for
             template_name = (action.get('template') or '').strip()
             tpl = None
             if template_name:
-                tpl = (EmailTemplate.objects.filter(name__iexact=template_name).first()
-                       or EmailTemplate.objects.filter(name__icontains=template_name).first())
+                purpose = guess_purpose(template_name)
+                tpl = (template_for(purpose) if purpose else None)
+                if tpl is None:
+                    tpl = EmailTemplate.objects.filter(
+                        name__iexact=template_name).first()
             if tpl and (tpl.textContent or tpl.htmlContent):
                 company = (Organization.objects.values_list('name', flat=True)
                            .first()) or 'unser Haus'
@@ -721,14 +733,14 @@ def _send_rejection_notice(request, app):
     (Platzhalter {name}, {stelle}, {firma}); sonst wuerdevoller Standardtext.
     Genau eine Zustellung je Bewerbung (REJECTION_NOTICE_SENT-Audit als Marker).
     """
-    from ..models import EmailTemplate
     from ..models import Message as _Msg
     if AuditLog.objects.filter(action='REJECTION_NOTICE_SENT',
                                applicationId=str(app.id)).exists():
         return
     applicant = app.applicant
     company = Organization.objects.values_list('name', flat=True).first() or 'unser Haus'
-    tpl = EmailTemplate.objects.filter(name__icontains='absage').first()
+    from ..templates_registry import template_for
+    tpl = template_for('REJECTION')
     if tpl and (tpl.textContent or tpl.htmlContent):
         from ..mailing import render_email
         subject, body = render_email(

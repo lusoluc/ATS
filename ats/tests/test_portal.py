@@ -273,7 +273,11 @@ class RejectionNoticeTestCase(TestCase):
 
         from ..models import EmailTemplate
         self._world()
+        # Der ZWECK steuert, nicht der Name: Frueher wurde die Vorlage ueber
+        # `name__icontains='absage'` gesucht - wer sie umbenannte, bekam still
+        # einen fest einprogrammierten Ersatztext.
         EmailTemplate.objects.create(name="Absage Standard",
+                                     purpose="REJECTION",
                                      subject="Zu Ihrer Bewerbung: {stelle}",
                                      htmlContent="x",
                                      textContent="Liebe/r {name}, danke für Ihr "

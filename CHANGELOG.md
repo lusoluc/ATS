@@ -5,6 +5,23 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Geändert (der Backlog las sich wie eine To-do-Liste, war aber ein Foto von damals)
+
+`FEATURE_BACKLOG.md` trug eine Spalte „Django-Ist" mit 15 ❌-Zeilen — für Dinge,
+die längst laufen. Die Spalte hält den Stand **bei der Analyse** fest, nicht den
+heutigen; der steht in der ersten Spalte. Wer sie als offene Punkte liest, baut
+etwas ein zweites Mal oder übersieht einen echten Fund.
+
+- Spalte heißt jetzt „Ausgangslage bei der Analyse", mit einem Absatz davor, der
+  den Unterschied benennt.
+- Stichprobe an der Zeile, die sicherheitsrelevant klang: B1 („CV wird
+  ungeschützt ausgeliefert") ist erledigt — `download_cv` prüft Auth und Rolle,
+  `/media/` wird nur unter `DEBUG` von Django ausgeliefert, und in der
+  Produktions-Compose liegt es als Volume ohne eigene Route. Kein Befund.
+- Feste Testzahlen aus `FEATURE_BACKLOG.md` und `TESTING_AND_GUARDRAILS.md`
+  entfernt. „748 Testmethoden" stand dort, während es tausend waren — eine Zahl
+  von Hand zu pflegen heißt, sie veralten zu lassen.
+
 ### Behoben (weitere Listen schnitten still ab)
 
 Nachdem dieselbe Fehlerklasse an einem Tag zweimal auftrat — `logs[:500]` im

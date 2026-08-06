@@ -5,6 +5,35 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (Farbverläufe trugen nur an einem Ende)
+
+Systematischer Durchgang durch alle öffentlichen Seiten im hellen
+Träger-Modus — mit einem Prüfer, der für jedes sichtbare Textelement den
+tatsächlich wirksamen Hintergrund berechnet, Verlaufs-Stopps eingeschlossen.
+Ein Fund, dreimal dieselbe Ursache:
+
+- **Der Absende-Knopf des Bewerbungsformulars** stand auf
+  `linear-gradient(#0f766e → #0d9488)`, direkt darüber der Vermerk „dunkleres
+  Teal: weiße Schrift erreicht AA-Kontrast". Abgedunkelt worden war aber nur
+  der **erste** Stopp. Am hellen Ende blieben **3,74:1** bei 16 px fett — fett
+  zählt erst ab 18,66 px als große Schrift, gefordert sind also 4,5:1. Rund die
+  halbe Fläche des wichtigsten Knopfes der Bewerberstrecke fiel durch, unter
+  einem Kommentar, der das Gegenteil behauptete. Jetzt 5,47:1 bis 4,82:1.
+- **Beim Überfahren wurde es schlechter statt besser** (bis 2,49:1) — der Knopf
+  hellte auf. Er wird jetzt dunkler; Rückmeldung geben ohnehin Anheben und
+  Schatten.
+- **Ausgerechnet der Knopf für die Barrierefreiheits-Hilfen** lag bei 2,49:1 an
+  seinem hellen Ende. Für das Symbol darin fordert WCAG 1.4.11 mindestens 3:1.
+
+Neuer Wächter `GuardrailGradientContrastTestCase`: Steht in einer CSS-Regel ein
+Verlauf **und** eine Schriftfarbe, muss jeder Stopp die Schrift tragen. Dazu
+eine Gegenprobe mit den historischen Werten — ein Wächter, der immer grün ist,
+beweist nichts.
+
+Alle übrigen öffentlichen Seiten (Start, Stellenliste, Stellendetail,
+Bewerbungsformular, Job-Alert, Kandidatenportal, Barrierefreiheitserklärung,
+KI-Transparenz) sind im hellen Modus ohne Befund.
+
 ### Geändert (CI: abgekündigte Actions, ein Check ohne Wirkung, ein halber Wächter-Vorlauf)
 
 Ausgelöst durch einen Tag, an dem CI mehrfach rot war, ohne dass am Code etwas

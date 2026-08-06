@@ -51,6 +51,26 @@ class FastHasherTestCase(TestCase):
                         f"Produktions-Hasher? ({settings.PASSWORD_HASHERS[0]})")
 
 
+class NoHttpsRedirectDuringTestsTestCase(TestCase):
+    """Der Test-Client spricht http – eine 301 auf https trifft jeden Test.
+
+    Am 06.08.2026 stand `SECURE_SSL_REDIRECT=True` versehentlich in der
+    Umgebung des ganzen CI-Jobs statt nur beim Deploy-Check. Ergebnis: rund
+    40 Fehler, keiner davon mit erkennbarem Bezug zur Ursache („Content-Type
+    ist text/html, nicht application/json", „Application matching query does
+    not exist"). Der Runner schaltet den Schalter jetzt ab; dieser Test hält
+    fest, dass er das tut.
+    """
+
+    def test_the_test_run_never_redirects_to_https(self):
+        self.assertFalse(getattr(settings, "SECURE_SSL_REDIRECT", False))
+
+    def test_a_plain_request_reaches_its_view(self):
+        """Die Wirkung, nicht die Einstellung: Kommt eine Antwort an?"""
+        resp = self.client.get("/jobs/")
+        self.assertEqual(resp.status_code, 200)
+
+
 class GuardrailNoWeakHasherInSettingsTestCase(TestCase):
     """Der schwache Hasher gehört in den Runner, nicht in die Einstellungen.
 

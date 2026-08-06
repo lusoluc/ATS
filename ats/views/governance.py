@@ -6,7 +6,10 @@ urls.py und bestehende Importe (`from ats.views import X`) unveraendert
 funktionieren.
 """
 import datetime
+import json
 import logging
+from typing import Any
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.http import Http404, HttpResponse, JsonResponse
@@ -573,17 +576,138 @@ def delegations_view(request):
 
 
 # --- B2: Audit-Log-Viewer ---------------------------------------------------
+
+#: Zeilen je Seite. Steht hier und nicht zweimal im Code, damit Ansicht und
+#: Export nie unterschiedlich rechnen.
+AUDIT_PAGE_SIZE = 100
+
+#: Wie lange ein Personen-Filter als derselbe Vorgang gilt (Minuten).
+PERSON_FILTER_DEDUP_MINUTES = 15
+
+
+class AuditSelectionError(ValueError):
+    """Unbrauchbare Filterangabe – Text ist fuer die Anzeige gedacht."""
+
+
+def _audit_selection(request) -> tuple[Any, dict[str, str]]:
+    """Die EINE Auswahl-Logik – fuer Ansicht und Export.
+
+    Vorher hatten beide ihre eigene: Die Seite kannte nur `action`, der Export
+    zusaetzlich `von`/`bis`. Der Knopf verspricht „aktuelle Auswahl als CSV" –
+    und lieferte etwas anderes als der Bildschirm zeigte. Bei einem Nachweis
+    fuer Betriebsrat oder Datenschutzbeauftragte ist das keine Kleinigkeit.
+    """
+    qs = AuditLog.objects.all()
+    active = {
+        'von': (request.GET.get('von') or '').strip()[:10],
+        'bis': (request.GET.get('bis') or '').strip()[:10],
+        'action': (request.GET.get('action') or '').strip()[:100],
+        'person': (request.GET.get('person') or '').strip()[:255],
+        'bewerbung': (request.GET.get('bewerbung') or '').strip()[:255],
+    }
+    try:
+        if active['von']:
+            qs = qs.filter(createdAt__date__gte=datetime.date.fromisoformat(active['von']))
+        if active['bis']:
+            qs = qs.filter(createdAt__date__lte=datetime.date.fromisoformat(active['bis']))
+    except ValueError:
+        raise AuditSelectionError("Ungültiges Datum (Format: JJJJ-MM-TT).") from None
+    if active['von'] and active['bis'] and active['von'] > active['bis']:
+        raise AuditSelectionError("Das Bis-Datum liegt vor dem Von-Datum.")
+    if active['action']:
+        qs = qs.filter(action=active['action'])
+    if active['person']:
+        qs = qs.filter(userId=active['person'])
+    if active['bewerbung']:
+        # Die Tabelle zeigt die ID gekuerzt – wer sie abschreibt, hat einen
+        # Praefix. Der Filter nimmt beides an.
+        qs = qs.filter(applicationId__startswith=active['bewerbung'])
+    return qs, active
+
+
+def _selection_label(active: dict[str, str]) -> str:
+    """Die Auswahl in Worten – fuer die Kopfzeile des Nachweises."""
+    teile = [f"Zeitraum {active['von'] or 'Anfang'} bis {active['bis'] or 'heute'}"]
+    if active['action']:
+        teile.append(f"Aktion {active['action']}")
+    if active['person']:
+        teile.append(f"Person {active['person']}")
+    if active['bewerbung']:
+        teile.append(f"Bewerbung {active['bewerbung']}…")
+    return " · ".join(teile)
+
+
+def _note_person_filter(request, person: str) -> None:
+    """§ 87 Abs. 1 Nr. 6 BetrVG: Wer nach einer Person sucht, wird selbst notiert.
+
+    Ohne diesen Vermerk waere der Personen-Filter ein Werkzeug zur
+    Verhaltenskontrolle ohne Gegengewicht – jemand koennte unbemerkt nachsehen,
+    was eine Kollegin den ganzen Tag getan hat. Mit ihm bleibt es
+    nachvollziehbar, und der Betriebsrat kann es im selben Log nachlesen.
+
+    Entprellt: Blaettern und Nachjustieren gehoeren zu EINEM Vorgang. Zwanzig
+    gleiche Eintraege waeren zwar vollstaendig, aber unlesbar – und eine Kette,
+    die niemand mehr liest, schuetzt niemanden.
+    """
+    since = timezone.now() - datetime.timedelta(minutes=PERSON_FILTER_DEDUP_MINUTES)
+    marker = json.dumps({"person": person}, default=str)
+    recent = (AuditLog.objects
+              .filter(action='AUDIT_PERSON_FILTER',
+                      userId=request.user.get_username(), createdAt__gte=since)
+              .values_list('metadataJson', flat=True)[:50])
+    if marker not in list(recent):
+        write_audit('AUDIT_PERSON_FILTER', user=request.user, person=person)
+
+
 @hr_admin_required
 def audit_log_view(request):
-    logs = AuditLog.objects.order_by("-createdAt")
-    active_action = request.GET.get("action", "").strip()
-    if active_action:
-        logs = logs.filter(action=active_action)
-    actions = list(AuditLog.objects.values_list("action", flat=True).distinct())
+    """Audit-Log durchsuchen – ohne stille Kappung.
+
+    Vorher endete die Seite bei `logs[:500]`. Fuer eine Anfrage zu einem
+    Vorgang von vor drei Monaten war der Eintrag damit schlicht nicht
+    auffindbar, und die Seite schrieb ihre eigene Grenze als Merkmal hin
+    („max. 500 Eintraege"). Ein Nachweis, der nur die juengste Vergangenheit
+    kennt, ist fuer § 99 BetrVG oder Art. 15 DSGVO wertlos.
+
+    Die Ketten-Pruefung laeuft NUR auf Anforderung: sie liest und hasht jeden
+    Eintrag. Bei jedem Seitenaufruf mitzulaufen waere derselbe Fehler wie die
+    KI-Abfrage, die frueher das Dashboard blockiert hat.
+    """
+    from django.core.paginator import Paginator
+
+    try:
+        qs, active = _audit_selection(request)
+        fehler = ""
+    except AuditSelectionError as exc:
+        qs, active, fehler = AuditLog.objects.none(), {
+            'von': '', 'bis': '', 'action': '', 'person': '', 'bewerbung': ''}, str(exc)
+
+    if active['person']:
+        _note_person_filter(request, active['person'])
+
+    paginator = Paginator(qs.order_by('-createdAt', '-seq'), AUDIT_PAGE_SIZE)
+    page = paginator.get_page(request.GET.get('seite'))
+
+    chain = None
+    if request.GET.get('pruefen'):
+        from ..audit import verify_audit_chain
+        chain = verify_audit_chain()
+        write_audit('AUDIT_CHAIN_VERIFIED', user=request.user,
+                    ok=bool(chain.get('ok')), checked=chain.get('checked'))
+
+    query = {k: v for k, v in active.items() if v}
     return render(request, "audit_log.html", {
-        "logs": logs[:500],
-        "actions": sorted(a for a in actions if a),
-        "active_action": active_action,
+        "page": page,
+        "logs": page.object_list,
+        "gesamt": paginator.count,
+        "actions": sorted(a for a in AuditLog.objects
+                          .values_list("action", flat=True).distinct() if a),
+        "personen": sorted(p for p in AuditLog.objects
+                           .values_list("userId", flat=True).distinct() if p),
+        "active": active,
+        "fehler": fehler,
+        "chain": chain,
+        "querystring": urlencode(query),
     })
 
 
@@ -599,24 +723,21 @@ def audit_export(request):
     sich konsistent bleibt. Zugriff: HR-Admin erstellt den Nachweis auf
     Anforderung von Betriebsrat/DSB (die Governance-Sicht selbst bleibt
     bewusst aggregiert und namenfrei).
+
+    Gefiltert wird ueber `_audit_selection` – dieselbe Funktion wie die
+    Ansicht, damit „aktuelle Auswahl" auch wirklich die aktuelle Auswahl ist.
     """
     import csv as _csv
 
     from ..audit import verify_audit_chain
 
-    qs = AuditLog.objects.order_by('createdAt')
-    von = request.GET.get('von')
-    bis = request.GET.get('bis')
-    action = (request.GET.get('action') or '').strip()[:100]
     try:
-        if von:
-            qs = qs.filter(createdAt__date__gte=datetime.date.fromisoformat(von))
-        if bis:
-            qs = qs.filter(createdAt__date__lte=datetime.date.fromisoformat(bis))
-    except ValueError:
-        return HttpResponse("Ungültiges Datum (Format: JJJJ-MM-TT).", status=400)
-    if action:
-        qs = qs.filter(action=action)
+        qs, active = _audit_selection(request)
+    except AuditSelectionError as exc:
+        return HttpResponse(str(exc), status=400)
+    qs = qs.order_by('createdAt')
+    if active['person']:
+        _note_person_filter(request, active['person'])
 
     chain = verify_audit_chain()
     ok = bool(chain.get('ok'))
@@ -625,8 +746,9 @@ def audit_export(request):
                                'applicationId', 'metadataJson', 'entryHash'))
 
     write_audit('AUDIT_EXPORTED', user=request.user,
-                rows=len(rows), von=von or '', bis=bis or '',
-                action_filter=action, chain_ok=ok)
+                rows=len(rows), von=active['von'], bis=active['bis'],
+                action_filter=active['action'], person_filter=active['person'],
+                application_filter=active['bewerbung'], chain_ok=ok)
 
     resp = HttpResponse(content_type='text/csv; charset=utf-8')
     fname = f"securats-audit-{timezone.localdate().isoformat()}.csv"
@@ -634,7 +756,7 @@ def audit_export(request):
     resp.write('\ufeff')
     w = _csv.writer(resp, delimiter=';')
     w.writerow([f"# SecurATS Audit-Nachweis · erstellt {timezone.localtime():%d.%m.%Y %H:%M} "
-                f"· Zeitraum: {von or 'Anfang'} bis {bis or 'heute'} "
+                f"· Auswahl: {_selection_label(active)} "
                 f"· Hash-Kette: {'INTAKT' if ok else 'VERLETZT – ' + str(detail)} "
                 f"· {len(rows)} Einträge"])
     w.writerow(['Zeitpunkt', 'Aktion', 'Nutzer', 'Bewerbungs-ID', 'Metadaten', 'Hash'])

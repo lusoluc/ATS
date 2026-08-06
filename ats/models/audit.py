@@ -33,6 +33,9 @@ class AuditLog(models.Model):
             models.Index(fields=["action"]),
             models.Index(fields=["applicationId"]),
             models.Index(fields=["createdAt"]),
+            # Personen-Filter im Audit-Viewer (§ 99 BetrVG, Art. 15 DSGVO):
+            # ohne Index ein Full Scan ueber die groesste Tabelle im System.
+            models.Index(fields=["userId"]),
         ]
 
     def __str__(self):

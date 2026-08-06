@@ -5,6 +5,42 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (Audit-Log endete bei den jüngsten 500 Einträgen)
+
+Das Protokoll ist der Nachweis gegenüber Betriebsrat, Datenschutzbeauftragten
+und bei Auskunftsersuchen nach Art. 15 DSGVO. Die Ansicht schnitt bei
+`logs[:500]` ab und schrieb die eigene Grenze als Merkmal auf die Seite
+(„max. 500 Einträge"). Zu einem Vorgang von vor drei Monaten war der Eintrag
+damit schlicht nicht auffindbar — auf einer Installation im Betrieb sind 500
+Zeilen wenige Tage.
+
+- **Blätterung statt Kappung**: 100 Zeilen je Seite, die Seite nennt Bereich
+  und Gesamtzahl („101–200 von 3.412"). Auch der älteste Eintrag ist erreichbar.
+- **Filter, die den Zweck treffen**: Zeitraum, Aktion, Person und Bewerbung
+  (die Tabelle kürzt die ID — der Filter nimmt deshalb auch den Anfang).
+- **Eine Auswahl-Logik für Ansicht und Export.** Vorher hatten beide ihre
+  eigene: Die Seite kannte nur `action`, der Export zusätzlich `von`/`bis`. Der
+  Knopf versprach „aktuelle Auswahl als CSV" und lieferte etwas anderes als der
+  Bildschirm zeigte. Bei einem Nachweis ist das keine Kleinigkeit.
+- **Integrität der Hash-Kette steht jetzt auf der Seite**, nicht nur in der
+  Kopfzeile der CSV-Datei. Auf Anforderung, nicht bei jedem Aufruf: die Prüfung
+  liest und hasht jeden Eintrag, und ein Dashboard, das auf so etwas wartet,
+  hatten wir schon einmal.
+- **§ 87 Abs. 1 Nr. 6 BetrVG**: Die Suche nach einer einzelnen Person wird
+  ihrerseits protokolliert, und die Seite sagt das dazu. Ohne dieses
+  Gegengewicht wäre der Filter ein Werkzeug zur Verhaltenskontrolle, mit dem
+  jemand unbemerkt nachsehen könnte, was eine Kollegin den ganzen Tag getan hat.
+  Entprellt auf 15 Minuten — zwanzig Einträge fürs Blättern wären vollständig,
+  aber unlesbar.
+- Ein verdrehter Zeitraum wird benannt statt als „keine Treffer" ausgegeben;
+  ein ungültiges Datum im Export liefert 400 statt stillschweigend alles.
+- Index auf `AuditLog.userId` — ohne ihn wäre der Personen-Filter ein Full Scan
+  über die größte Tabelle im System.
+- Das Filter-Select löste bisher `onchange` ein Auto-Submit aus (WCAG 3.2.2).
+  Jetzt: expliziter Knopf „Auswahl anwenden". Die Zeile in
+  `ACCESSIBILITY_AUDIT.md` behauptete „Keine Auto-Submits" und nannte im selben
+  Satz diese Ausnahme — sie ist korrigiert.
+
 ### Behoben (E-Mail-Vorlagen wurden über ihren Namen gesucht)
 
 Die Automatik fand ihre Vorlage bisher per Namenssuche:

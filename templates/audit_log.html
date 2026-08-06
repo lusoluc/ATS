@@ -2,28 +2,92 @@
 {% block title %}Audit-Log · SecurATS{% endblock %}
 {% block content %}
 <div class="page-wrap">
-  <h1 class="page-title"><i class="fa-solid fa-clipboard-list"></i> Audit-Log</h1>
-  <p class="page-lead">Revisionssichere Protokollierung sensibler Zugriffe (max. 500 Einträge).</p>
+  <h1 class="page-title"><i class="fa-solid fa-clipboard-list" aria-hidden="true"></i> Audit-Log</h1>
+  <p class="page-lead">Revisionssichere Protokollierung sensibler Zugriffe — Nachweis für
+     Betriebsrat, Datenschutzbeauftragte und Auskunftsersuchen nach Art. 15 DSGVO.</p>
+
+  {% comment %} Vorher endete die Seite bei den jüngsten 500 Einträgen und
+     schrieb diese Grenze als Merkmal hin. Für eine Anfrage zu einem Vorgang
+     von vor drei Monaten war der Eintrag damit unauffindbar. {% endcomment %}
+
+  {% if fehler %}
+  <div class="card" role="alert" style="border-color:var(--danger);">
+    <p style="margin:0;"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> {{ fehler }}</p>
+  </div>
+  {% endif %}
+
+  <form method="get" action="{% url 'ats:audit_log' %}" class="card" style="margin-bottom:var(--space-4);">
+    <fieldset style="border:0; padding:0; margin:0;">
+      <legend class="sr-only">Auswahl eingrenzen</legend>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:var(--space-3);">
+        <div>
+          <label class="form-label" for="audit-von">Zeitraum von</label>
+          <input type="date" id="audit-von" name="von" class="input" value="{{ active.von }}">
+        </div>
+        <div>
+          <label class="form-label" for="audit-bis">bis</label>
+          <input type="date" id="audit-bis" name="bis" class="input" value="{{ active.bis }}">
+        </div>
+        <div>
+          <label class="form-label" for="audit-action">Aktion</label>
+          <select name="action" id="audit-action" class="input">
+            <option value="">Alle Aktionen</option>
+            {% for a in actions %}<option value="{{ a }}" {% if a == active.action %}selected{% endif %}>{{ a }}</option>{% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="audit-person">Person</label>
+          <select name="person" id="audit-person" class="input"
+                  aria-describedby="audit-person-hinweis">
+            <option value="">Alle Personen</option>
+            {% for p in personen %}<option value="{{ p }}" {% if p == active.person %}selected{% endif %}>{{ p }}</option>{% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="audit-bewerbung">Bewerbung (ID oder Anfang)</label>
+          <input type="text" id="audit-bewerbung" name="bewerbung" class="input"
+                 value="{{ active.bewerbung }}" autocomplete="off" spellcheck="false"
+                 placeholder="z. B. b88ae34d">
+        </div>
+      </div>
+      {% comment %} Ohne diesen Vermerk wäre der Personen-Filter ein Werkzeug
+         zur Verhaltenskontrolle ohne Gegengewicht. {% endcomment %}
+      <p id="audit-person-hinweis" style="font-size:12px; color:var(--text-muted); margin:var(--space-3) 0 0;">
+        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+        Die Suche nach einer einzelnen Person wird ihrerseits protokolliert
+        (§ 87 Abs. 1 Nr. 6 BetrVG) — sie ist für konkrete Anlässe gedacht,
+        nicht für Stichproben.
+      </p>
+      <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:var(--space-4);">
+        <button type="submit" class="btn btn-primary">
+          <i class="fa-solid fa-filter" aria-hidden="true"></i> Auswahl anwenden
+        </button>
+        <a class="btn btn-ghost" href="{% url 'ats:audit_log' %}">Filter zurücksetzen</a>
+        <a class="btn btn-ghost" href="{% url 'ats:audit_export' %}{% if querystring %}?{{ querystring }}{% endif %}"
+           title="Genau diese Auswahl als CSV – mit Integritäts-Kopfzeile (Hash-Kette)">
+          <i class="fa-solid fa-file-csv" aria-hidden="true"></i> Auswahl als CSV exportieren
+        </a>
+      </div>
+    </fieldset>
+  </form>
 
   <div class="card">
-    <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom: var(--space-4);">
-      <form method="get" style="margin:0;">
-        <label for="audit-action" class="sr-only">Nach Aktion filtern</label>
-        <select name="action" id="audit-action" class="input" onchange="this.form.submit()" style="max-width:280px;">
-          <option value="">Alle Aktionen</option>
-          {% for a in actions %}<option value="{{ a }}" {% if a == active_action %}selected{% endif %}>{{ a }}</option>{% endfor %}
-        </select>
-      </form>
-      {% comment %} Der Export existierte, war aber nur per manuell getippter
-         URL erreichbar – für BR/DSB genau der Nachweis, den sie brauchen. {% endcomment %}
-      <a class="btn btn-ghost" href="{% url 'ats:audit_export' %}{% if active_action %}?action={{ active_action }}{% endif %}"
-         title="Aktuelle Auswahl als CSV – mit Integritäts-Kopfzeile (Hash-Kette)">
-        <i class="fa-solid fa-file-csv"></i> Als CSV exportieren
-      </a>
+    <div style="display:flex; gap:12px; align-items:baseline; flex-wrap:wrap; margin-bottom:var(--space-3);">
+      <p role="status" style="margin:0; font-weight:600;">
+        {% if gesamt %}
+          {{ page.start_index }}–{{ page.end_index }} von {{ gesamt }} {% if gesamt == 1 %}Eintrag{% else %}Einträgen{% endif %}
+        {% else %}
+          Keine Einträge für diese Auswahl
+        {% endif %}
+      </p>
+      {% if page.paginator.num_pages > 1 %}
+      <span style="font-size:12px; color:var(--text-muted);">Seite {{ page.number }} von {{ page.paginator.num_pages }}</span>
+      {% endif %}
     </div>
+
     <div class="table-scroll">
     <table class="data-table">
-      <thead><tr><th>Zeitpunkt</th><th>Aktion</th><th>Benutzer</th><th>Application</th><th>Details</th></tr></thead>
+      <thead><tr><th>Zeitpunkt</th><th>Aktion</th><th>Person</th><th>Bewerbung</th><th>Details</th></tr></thead>
       <tbody>
         {% for log in logs %}
         <tr>
@@ -37,6 +101,60 @@
       </tbody>
     </table>
     </div>
+
+    {% if page.paginator.num_pages > 1 %}
+    <nav aria-label="Seiten des Audit-Logs" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:var(--space-4);">
+      {% if page.has_previous %}
+      <a class="btn btn-ghost" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}seite={{ page.previous_page_number }}">
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Neuere Einträge
+      </a>
+      {% endif %}
+      {% if page.has_next %}
+      <a class="btn btn-ghost" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}seite={{ page.next_page_number }}">
+        Ältere Einträge <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+      </a>
+      <a class="btn btn-ghost" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}seite={{ page.paginator.num_pages }}">
+        Älteste Einträge
+      </a>
+      {% endif %}
+    </nav>
+    {% endif %}
+  </div>
+
+  {% comment %} Die Prüfung liest und hasht jeden Eintrag. Bei jedem
+     Seitenaufruf mitzulaufen wäre derselbe Fehler wie die KI-Abfrage, die
+     früher das Dashboard blockiert hat – deshalb auf Anforderung. {% endcomment %}
+  <div class="card">
+    <h2 style="font-size:16px; margin:0 0 var(--space-3);">Integrität der Hash-Kette</h2>
+    {% if chain %}
+      {% if chain.ok %}
+      <p role="status" style="margin:0 0 var(--space-2);">
+        <span class="badge badge-accent">Kette intakt</span>
+        {{ chain.checked }} Einträge geprüft{% if chain.unchained %}, {{ chain.unchained }} ohne Hash aus der Zeit vor der Kette{% endif %}.
+      </p>
+      <p style="font-size:13px; color:var(--text-muted); margin:0;">
+        Kein Eintrag wurde nachträglich verändert oder entfernt.
+      </p>
+      {% else %}
+      <p role="alert" style="margin:0 0 var(--space-2);">
+        <span class="badge badge-danger">Kette verletzt</span>
+        Bruch ab Eintrag {{ chain.broken_id }} ({{ chain.checked }} Einträge bis dahin geprüft).
+      </p>
+      <p style="font-size:13px; margin:0;">
+        Das Protokoll ist ab dieser Stelle als Nachweis nicht mehr belastbar.
+        Bitte Datenschutzbeauftragte und Betriebsrat informieren.
+      </p>
+      {% endif %}
+    {% else %}
+    <p style="font-size:13px; color:var(--text-muted); margin:0 0 var(--space-3);">
+      Jeder Eintrag hasht seinen Vorgänger. Die Prüfung liest dafür das gesamte
+      Protokoll — sie läuft deshalb nur auf Anforderung und dauert bei großen
+      Beständen einen Moment.
+    </p>
+    <a class="btn btn-ghost" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}pruefen=1">
+      <i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Integrität jetzt prüfen
+    </a>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

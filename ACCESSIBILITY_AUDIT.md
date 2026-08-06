@@ -35,7 +35,7 @@ Legende: ✅ erfüllt · ◐ teilweise · ❌ offen · n/a nicht anwendbar
 |---|---|---|
 | 3.1.1 Sprache der Seite | ✅ | `<html lang="de">` |
 | 3.1.5 Leseniveau (AAA, freiwillig) | ✅ | **Leichte-Sprache-Umschaltung** am Stellendetail (WP1) |
-| 3.2.2 Bei Eingabe (keine Kontextwechsel) | ✅ | Keine Auto-Submits; Filter-Select im Audit-Log ist explizit gekennzeichnet |
+| 3.2.2 Bei Eingabe (keine Kontextwechsel) | ✅ | Keine Auto-Submits. Der Filter im Audit-Log war die letzte Ausnahme (`onchange="this.form.submit()"` — die Zeile hier nannte ihn „gekennzeichnet", was kein Ersatz für Absenden auf Knopfdruck ist) und hat seit dem Audit-Paket einen expliziten „Auswahl anwenden"-Knopf |
 | 3.3.1/3.3.2 Fehler & Beschriftungen | ✅ | Pflichtfelder markiert (*), HTML5- **und serverseitige** Validierung: Fehler-Zusammenfassung (`role="alert"`) + Inline-Feldfehler mit `aria-invalid`/`aria-describedby`, Eingaben bleiben erhalten (bewerben + Job-Alert, getestet) |
 
 ## 4. Robustheit

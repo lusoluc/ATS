@@ -554,7 +554,7 @@ def execute_workflow_actions(app, actions, request=None):
                 _Msg.objects.create(application=app, direction='OUTBOUND',
                                     content=body)
                 from ..mail_send import send_notice
-                delivered = send_notice(subject, body, [app.applicant.email],
+                delivered = send_notice(subject, body, None, [app.applicant.email],
                                         request=request,
                                         context=f'Automatik „{tpl.name}"')
                 AuditLog.objects.create(
@@ -610,7 +610,7 @@ def execute_workflow_actions(app, actions, request=None):
                         f"{app.status} erreicht.\n"
                         "Zum Board: /recruiter/dashboard/")
                 from ..mail_send import send_notice
-                notified = send_notice(subject, body, targets, request=request,
+                notified = send_notice(subject, body, None, targets, request=request,
                                        context='Interne Benachrichtigung')
                 AuditLog.objects.create(
                     action="AUTOMATION_NOTIFY_INTERNAL",
@@ -775,7 +775,7 @@ def _send_rejection_notice(request, app):
     # im Log. Eine Absage, die niemanden erreicht, ist die unangenehmste Sorte
     # verlorener Nachricht: Die bewerbende Person wartet weiter.
     from ..mail_send import send_notice
-    delivered = send_notice(subject, body + pool_line, [applicant.email],
+    delivered = send_notice(subject, body + pool_line, None, [applicant.email],
                             request=request, context='Absage')
     write_audit('REJECTION_NOTICE_SENT', application_id=str(app.id),
                 delivered=delivered)
@@ -1075,7 +1075,8 @@ def job_series_message(request, job_id):
                 # Gemeldet wird einmal, aggregiert - aber ehrlich.
                 delivered = send_notice(
                     f"Neuigkeit zu Ihrer Bewerbung – {job.title}",
-                    text, [app.applicant.email], context='Serien-Nachricht')
+                    text, None, [app.applicant.email],
+                    context='Serien-Nachricht')
             write_audit('SERIES_MESSAGE_SENT', user=request.user,
                         application_id=app.id, delivered=delivered)
             sent += 1

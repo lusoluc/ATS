@@ -485,7 +485,7 @@ def bewerben(request, job_id):
                     # verunsichern. Der Fehler landet im Log und im Zustand,
                     # den die Personalabteilung sieht.
                     from ..mail_send import send_notice
-                    delivered = send_notice(subject, body, [applicant.email],
+                    delivered = send_notice(subject, body, None, [applicant.email],
                                             context='Eingangsbestätigung')
                     write_audit('APPLICATION_CONFIRMATION_SENT',
                                 application_id=application.id,

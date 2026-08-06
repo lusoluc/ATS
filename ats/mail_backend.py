@@ -50,11 +50,26 @@ class ConfiguredSmtpBackend(SmtpBackend):
                 "(%s Nachricht(en) nicht zugestellt).", count)
             record_result(False, "Kein Mailserver hinterlegt")
             return 0
+        wanted = len(list(email_messages))
         try:
             sent = super().send_messages(email_messages)
         except Exception as exc:            # noqa: BLE001
             record_result(False, f"{type(exc).__name__}: {exc}")
             raise
-        if sent:
+
+        # WARUM DIE NULL EIN FEHLER IST: Djangos SMTP-Backend gibt bei
+        # `fail_silently=True` und nicht erreichbarem Server schlicht 0 zurueck
+        # - OHNE Ausnahme. Frueher stand hier nur `if sent: record_result(True)`,
+        # also wurde in genau diesem Fall gar nichts vermerkt. Damit blieb der
+        # wahrscheinlichste Ausfall (Server konfiguriert, antwortet aber nicht)
+        # unsichtbar, und die Warnung auf dem Board erschien nie. Ein Versand,
+        # der nichts zugestellt hat, ist ein Fehlschlag - auch wenn niemand
+        # geschrien hat.
+        if sent == 0 and wanted:
+            logger.error("Mailversand ohne Zustellung: %s Nachricht(en) "
+                         "angenommen, 0 verschickt.", wanted)
+            record_result(False, f"{wanted} Nachricht(en) nicht zugestellt "
+                                 "(Server nicht erreichbar oder abgelehnt)")
+        elif sent:
             record_result(True, f"{sent} Nachricht(en)")
         return sent

@@ -16,11 +16,11 @@ Verhalten:
 """
 import datetime
 
-from django.core.mail import send_mail
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from ats.audit import write_audit
+from ats.mail_send import send_notice
 from ats.models import Interview, Message
 
 
@@ -50,7 +50,7 @@ class Command(BaseCommand):
                                        else "Details in Ihrer Einladung")
 
             # 1) Bewerber:in – Mail + Portal-Nachricht
-            send_mail(
+            send_notice(
                 f"Erinnerung: Ihr Gespräch am {when} Uhr",
                 (f"Guten Tag {app.applicant.firstName},\n\n"
                  f"morgen ist es so weit: Ihr Gespräch zur Stelle "
@@ -58,7 +58,7 @@ class Command(BaseCommand):
                  f"Ort/Link: {where}\n\n"
                  "Falls etwas dazwischenkommt, antworten Sie einfach auf diese "
                  "E-Mail – wir finden einen neuen Termin.\n\nFreundliche Grüße"),
-                None, [app.applicant.email], fail_silently=True)
+                None, [app.applicant.email], context="Termin-Erinnerung")
             Message.objects.create(
                 application=app, direction="OUTBOUND",
                 content=f"Erinnerung: Ihr Gespräch findet am {when} Uhr statt. "
@@ -70,14 +70,14 @@ class Command(BaseCommand):
             if slot and slot.createdBy_id and slot.createdBy.email:
                 team_emails.add(slot.createdBy.email)
             if team_emails:
-                send_mail(
+                send_notice(
                     f"Erinnerung: {iv.kind_label} {when} Uhr – "
                     f"{app.applicant.firstName} {app.applicant.lastName}",
                     (f"Kurze Erinnerung: Am {when} Uhr – {iv.kind_label} mit "
                      f"{app.applicant.firstName} {app.applicant.lastName} "
                      f"({app.jobPosting.title}).\nOrt/Link: {where}\n\n"
                      "Details im Team-Kalender: /recruiter/interviews/"),
-                    None, sorted(team_emails), fail_silently=True)
+                    None, sorted(team_emails), context="Termin-Erinnerung")
 
             iv.reminderSentAt = now
             iv.save(update_fields=["reminderSentAt"])

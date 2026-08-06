@@ -30,13 +30,21 @@ from .mail_config import delivery_possible, record_result
 logger = logging.getLogger(__name__)
 
 
-def send_notice(subject: str, body: str, recipients: list[str] | tuple[str, ...],
-                request=None, from_email: str | None = None,
-                context: str = "") -> bool:
+def send_notice(subject: str, body: str, from_email: str | None,
+                recipients: list[str] | tuple[str, ...], *,
+                request=None, context: str = "") -> bool:
     """Nachricht verschicken und ehrlich melden, ob sie rausging.
 
+    ARGUMENT-REIHENFOLGE wie `django.core.mail.send_mail`
+    (Betreff, Text, Absender, Empfänger). Bewusst so: Beim Umstellen der
+    Aufrufstellen wurde genau hier ein Fehler eingebaut - Absender und
+    Empfänger vertauscht, weil diese Funktion die Empfänger zuerst erwartete.
+    Eine Signatur, die von der gewohnten abweicht, lädt dazu ein.
+
     `context` beschreibt den Vorgang für Protokoll und Fehlermeldung
-    ("Absage", "Einladung") - der Nutzer soll wissen, WAS nicht ankam.
+    ("Absage", "Termin-Erinnerung") - wer die Meldung liest, soll wissen, WAS
+    nicht ankam. Nur benannt übergebbar, damit sie nicht versehentlich in der
+    Positionsliste landet.
     """
     targets = [r for r in (recipients or []) if r]
     if not targets:

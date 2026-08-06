@@ -177,7 +177,17 @@
 
   {% if show_inbox %}
   <div class="card">
-    <h2 style="font-size:16px; margin:0 0 var(--space-3);"><i class="fa-solid fa-inbox" style="color:var(--primary-light);"></i> Eingegangene Meldungen</h2>
+    <h2 style="font-size:16px; margin:0 0 var(--space-3);"><i class="fa-solid fa-inbox" style="color:var(--primary-light);" aria-hidden="true"></i> Eingegangene Meldungen</h2>
+    {% comment %} Offene Meldungen stehen vollständig da. Nur die eigene
+       Entscheidungs-Historie ist gedeckelt — und sagt es. {% endcomment %}
+    {% if entschieden_gekappt %}
+    <p role="status" style="font-size:13px; color:var(--text-muted); margin:0 0 var(--space-3);">
+      <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+      Ihre {{ entschieden_gezeigt }} zuletzt entschiedenen Meldungen sind dabei —
+      insgesamt haben Sie {{ entschieden_gesamt }} entschieden. Ältere finden Sie
+      über das <a href="{% url 'ats:audit_log' %}?person={{ request.user.username }}">Audit-Log</a>.
+    </p>
+    {% endif %}
     <div class="table-scroll m-stack">
     <table class="data-table"><thead><tr><th>Bedarf</th><th>Von</th><th>Begründung</th><th>Aktion</th></tr></thead><tbody>
       {% for row in inbox_rows %}{% with r=row.req %}

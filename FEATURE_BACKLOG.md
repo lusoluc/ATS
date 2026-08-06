@@ -8,8 +8,9 @@
 **Alle 18 Punkte umgesetzt & getestet.** (Dieser Ursprungs-Backlog stammt aus der
 Stack-Konsolidierung; die seither entstandene Governance-Ebene – Stellenfreigabe,
 Gremien-Quorum, Gesprächsrunden – ist ein EIGENES Arbeitsfeld und unten als
-Abschnitt „Nach dem Backlog" geführt. Gesamt-Teststand aktuell: 748 Testmethoden
-in 40 Dateien, alle grün.)
+Abschnitt „Nach dem Backlog" geführt. Aktueller Teststand steht in
+`TESTING_AND_GUARDRAILS.md` — hier eine Zahl zu pflegen hiesse, sie veralten zu
+lassen.)
 - Vollständig: B1–B15, B17, B18 + BOLA-Scoping – inkl. **B12** (Versionierung/
   Wiederherstellen: `JobTemplate.version`/`parent`, `job_template_detail`) und
   **B10** (positionsgenaues Drag&Drop mit persistierter Reihenfolge, `reorder_board`).
@@ -24,14 +25,25 @@ Schema portiert: `RoleDelegation`, `AuditLog`, `JobAlertSubscription`,
 Der Gap ist daher überwiegend **Views/Endpoints/UI auf vorhandenen Modellen** – nicht
 die Datenschicht. Das reduziert Aufwand und Risiko erheblich.
 
-Legende Ist-Stand: ❌ fehlt · ◐ teilweise · ✅ vorhanden (nur Modell = „Modell ✅, UI ❌")
-Aufwand: S/M/L.
+Legende **Ausgangslage bei der Analyse**: ❌ fehlte · ◐ teilweise · ✅ vorhanden
+(nur Modell = „Modell ✅, UI ❌"). Aufwand: S/M/L.
+
+> **Diese Spalte ist ein Foto von damals, kein Statusbericht.** Sie hält fest,
+> was beim Start der Stack-Konsolidierung fehlte — nicht, was heute fehlt. Den
+> heutigen Stand trägt die **erste Spalte** (`B1 ✅`). Wer die alte Spalte als
+> To-do liest, baut etwas ein zweites Mal oder übersieht einen echten Fund: In
+> 15 Zeilen steht dort ❌ für Dinge, die längst laufen — die Medien-Verwaltung
+> etwa wurde am 06.08.2026 um Blätterung und Suche erweitert und steht in
+> dieser Spalte trotzdem auf ❌. Stichprobe am selben Tag, weil die Zeile
+> sicherheitsrelevant klang: B1 („CV wird ungeschützt ausgeliefert") ist
+> erledigt — `download_cv` prüft Auth und Rolle, und `/media/` wird nur unter
+> `DEBUG` von Django ausgeliefert.
 
 ---
 
 ## P1 – Sicherheit & Compliance (zuerst)
 
-| # | Feature | Frontend-Referenz | Django-Modell | Django-Ist | Aufwand |
+| # | Feature | Frontend-Referenz | Django-Modell | Ausgangslage bei der Analyse | Aufwand |
 |---|---|---|---|---|---|
 | B1 ✅ | **Sicherer CV-Download** (auth + Rolle + Audit-Log; kein direkter `media/`-Zugriff) | `cms/applications/[id]/cv` | `Application.cvStorageId` | ❌ Endpoint fehlt (CV wird gespeichert, aber ungeschützt ausgeliefert) | M |
 | B2 ✅ | **Audit-Log-Viewer** (Filter, Export) | `cms/audit` | `AuditLog` ✅ | Modell ✅, UI ❌ | M |
@@ -39,7 +51,7 @@ Aufwand: S/M/L.
 
 ## P2 – Kandidaten-facing
 
-| # | Feature | Frontend-Referenz | Django-Modell | Django-Ist | Aufwand |
+| # | Feature | Frontend-Referenz | Django-Modell | Ausgangslage bei der Analyse | Aufwand |
 |---|---|---|---|---|---|
 | B4 ✅ | **Magic-Link-Statusportal** (passwortloser Kandidaten-Login via Token, Status/Rückfragen) | `/bewerber/[token]` | `ApplicantToken` ✅, `Message` ✅ | Modell ✅, Views ❌ | L |
 | B5 ✅ | **Job-Alerts** (öffentliches Abo + Matching/Benachrichtigung) | `public/job-alerts`, `cms/job-alerts`, `/job-alert` | `JobAlertSubscription` ✅, `JobAlertLog` ✅ | Modell ✅, Endpoints/UI ❌ | M |
@@ -47,7 +59,7 @@ Aufwand: S/M/L.
 
 ## P3 – Recruiter-Produktivität
 
-| # | Feature | Frontend-Referenz | Django-Modell | Django-Ist | Aufwand |
+| # | Feature | Frontend-Referenz | Django-Modell | Ausgangslage bei der Analyse | Aufwand |
 |---|---|---|---|---|---|
 | B7 ✅ | **Analytics/Insight-Dashboard ausbauen** (Quellen, Verweildauer je Phase, Prognosen, KI-Analyst – NORTHSTAR §4) | `cms/analytics` | (aggregiert) | ✅ eigene Analytics-Seite + „Erkenntnisse & Vorschläge" (`ats/insights.py`, `ats/suggestions.py`), Board-Signale (`ats/board_insights.py`), KI-Analyst `analytics_ask` | L |
 | B8 ✅ | **Delegationen** (Vertretung/Zuweisung von Bewerbungen) | `cms/delegations` | `RoleDelegation` ✅ | Modell ✅, UI ❌ | M |
@@ -57,7 +69,7 @@ Aufwand: S/M/L.
 
 ## P4 – Stammdaten & Konfiguration
 
-| # | Feature | Frontend-Referenz | Django-Modell | Django-Ist | Aufwand |
+| # | Feature | Frontend-Referenz | Django-Modell | Ausgangslage bei der Analyse | Aufwand |
 |---|---|---|---|---|---|
 | B12 ✅ | **Job-Vorlagen-Bibliothek** (NORTHSTAR §3.7: Vorschlag, 1-Klick, Tonalitäts-Overlay, Master/Version) | (Teil `cms/jobs`) | `JobTemplate` ✅, `TextSnippet` ✅ | Modell ✅, Logik/UI ❌ | L |
 | B13 ✅ | **Kategorien / Jobfamilien-CRUD** | `cms/categories`, `cms/job-metadata` | `JobFamily` ✅, `CareerPath` ✅ | Modell ✅, CRUD ❌ | S |
@@ -66,7 +78,7 @@ Aufwand: S/M/L.
 
 ## P5 – CMS & Content
 
-| # | Feature | Frontend-Referenz | Django-Modell | Django-Ist | Aufwand |
+| # | Feature | Frontend-Referenz | Django-Modell | Ausgangslage bei der Analyse | Aufwand |
 |---|---|---|---|---|---|
 | B16 ◐ | **Seiten-Builder** (früher Puck-Drag-&-Drop) | `cms/pages`, `cms/pages/seed` | `Page` ✅ | ◐ (`save_page` einfach vorhanden; visueller Builder ❌) | L |
 | B17 ✅ | **Content-Seiten** (Arbeitgeber, Einrichtungen, Info) | `/arbeitgeber`, `/einrichtungen/[slug]`, `/info/[slug]` | `Page` ✅, `FacilityProfile` ✅ | ◐ | M |

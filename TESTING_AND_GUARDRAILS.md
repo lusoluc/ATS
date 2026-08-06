@@ -8,8 +8,10 @@ ergänze oder verändere."*
 
 ## TL;DR – so bleibt alles abgesichert
 
-1. **Bei jeder Änderung lokal:** `python manage.py test` — 974 Testmethoden, rund
-   eine Minute (Stand 06.08.2026). Bis zum Laufzeit-Paket waren es 23 Minuten;
+1. **Bei jeder Änderung lokal:** `python manage.py test` — rund tausend
+   Testmethoden in etwa einer Minute (Stand 06.08.2026; die genaue Zahl steht
+   am Ende jedes Laufs, sie hier zu pflegen hiesse, sie veralten zu lassen).
+   Bis zum Laufzeit-Paket waren es 23 Minuten;
    die Zeit ging fast vollständig für Passwort-Hashes beim Anlegen von
    Testbenutzern drauf (siehe `ats/test_runner.py`). Eine Suite, die eine halbe
    Stunde braucht, wird vor dem Commit übersprungen — und schützt dann niemanden.

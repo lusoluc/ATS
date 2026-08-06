@@ -128,9 +128,26 @@ class RequisitionStep(models.Model):
     class Meta:
         ordering = ["order"]
 
+#: Wofuer eine Vorlage benutzt wird. Der ZWECK entscheidet, nicht der Name.
+#: Vorher suchte die Automatik ihre Vorlage ueber `name__icontains='absage'`:
+#: Wer sie "Ablehnung" nannte oder umbenannte, bekam keinen Fehler - die
+#: Absage fiel still auf einen fest einprogrammierten Text zurueck, den
+#: niemand im Haus je freigegeben hatte.
+TEMPLATE_PURPOSES = [
+    ("CONFIRMATION", "Eingangsbestätigung"),
+    ("INVITATION", "Einladung zum Gespräch"),
+    ("REJECTION", "Absage"),
+    ("", "Freier Textbaustein (keine Automatik)"),
+]
+
+
 class EmailTemplate(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255, unique=True)
+    # Leer = freie Vorlage. Je Zweck gilt genau EINE Vorlage; welche, entscheidet
+    # die Verwaltungsseite - nicht die Schreibweise des Namens.
+    purpose = models.CharField(max_length=20, blank=True, default="",
+                               choices=TEMPLATE_PURPOSES)
     subject = models.CharField(max_length=255)
     htmlContent = models.TextField()
     textContent = models.TextField(blank=True, null=True)

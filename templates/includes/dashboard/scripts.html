@@ -1516,11 +1516,15 @@
             document.getElementById('email-name').value = '';
             document.getElementById('email-subject').value = '';
             document.getElementById('email-html').value = '';
+            document.getElementById('email-purpose').value = '';
         } else {
             document.getElementById('email-template-id').value = select.value;
             document.getElementById('email-name').value = selectedOpt.getAttribute('data-name');
             document.getElementById('email-subject').value = selectedOpt.getAttribute('data-subject');
             document.getElementById('email-html').value = selectedOpt.getAttribute('data-html');
+            // Zweck mitladen - sonst setzt ein Speichern ihn versehentlich zurueck
+            document.getElementById('email-purpose').value =
+                selectedOpt.getAttribute('data-purpose') || '';
         }
     }
 

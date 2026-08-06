@@ -1038,3 +1038,42 @@ class GuardrailIconButtonNameTestCase(TestCase):
             "Icon-Knopf ohne aria-label - fuer Screenreader ein namenloser "
             "Knopf. Namen ergaenzen (moeglichst mit dem betroffenen Eintrag, "
             "sonst heisst jede Zeile gleich): " + " | ".join(offenders))
+
+
+class GuardrailNoTemplateNameGuessingTestCase(TestCase):
+    """Waechter: Keine E-Mail-Vorlage mehr ueber ihren Namen suchen.
+
+    `EmailTemplate.objects.filter(name__icontains=...)` war der Grund, warum
+    eine umbenannte Vorlage still durch einen fest einprogrammierten Text
+    ersetzt wurde - Bewerbende lasen Wortlaut, den niemand freigegeben hatte.
+    Die Zuordnung laeuft ueber `EmailTemplate.purpose`; geraten wird nur noch
+    in der einmaligen Migration.
+    """
+
+    def test_no_fuzzy_template_lookup_in_application_code(self):
+        import os
+        import re
+        base = os.path.dirname(os.path.dirname(__file__))
+        pattern = re.compile(r"EmailTemplate\.objects[^\n]*name__icontains")
+        offenders = []
+        for root, _dirs, files in os.walk(base):
+            parts = root.split(os.sep)
+            if "tests" in parts or "migrations" in parts:
+                continue
+            for fname in files:
+                # templates_registry.py ist das Modul, das die Namenssuche
+                # ERSETZT - es beschreibt sie in seiner Doku. Es hier zu
+                # melden waere ein Eigentor.
+                if not fname.endswith(".py") or fname == "templates_registry.py":
+                    continue
+                path = os.path.join(root, fname)
+                for num, line in enumerate(
+                        open(path, encoding="utf-8"), start=1):
+                    if pattern.search(line):
+                        offenders.append(
+                            f"{os.path.relpath(path, base)}:{num}")
+        self.assertEqual(
+            offenders, [],
+            "Vorlage wird ueber den Namen gesucht statt ueber den Zweck - "
+            "eine Umbenennung wuerde wieder still den Ersatztext ausloesen: "
+            + ", ".join(offenders))

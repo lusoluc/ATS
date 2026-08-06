@@ -196,11 +196,24 @@ def save_email_template(request):
         subject = request.POST.get('subject', '').strip()
         html_content = request.POST.get('html_content', '').strip()
         text_content = request.POST.get('text_content', '').strip()
+        # Der Zweck steuert die Automatik - der Name tut es seit dem Umbau
+        # nicht mehr. Ein unbekannter Wert gilt als "freie Vorlage".
+        from ..models.system import TEMPLATE_PURPOSES
+        valid_purposes = {code for code, _ in TEMPLATE_PURPOSES}
+        purpose = (request.POST.get('purpose') or '').strip()
+        if purpose not in valid_purposes:
+            purpose = ''
 
         with transaction.atomic():
+            # Je Zweck genau EINE Vorlage: Sonst waere wieder unklar, welche
+            # gilt - und die Auswahl liefe auf Raten hinaus.
+            if purpose:
+                EmailTemplate.objects.filter(purpose=purpose).exclude(
+                    id=template_id or None).update(purpose='')
             if template_id:
                 template = get_object_or_404(EmailTemplate, id=template_id)
                 template.name = name
+                template.purpose = purpose
                 template.subject = subject
                 template.htmlContent = html_content
                 template.textContent = text_content
@@ -209,6 +222,7 @@ def save_email_template(request):
             else:
                 template = EmailTemplate.objects.create(
                     name=name,
+                    purpose=purpose,
                     subject=subject,
                     htmlContent=html_content,
                     textContent=text_content

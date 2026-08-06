@@ -59,14 +59,25 @@
                                 <select id="email-select" class="filter-select" onchange="loadEmailTemplateToForm()">
                                     <option value="">-- Neue Vorlage erstellen --</option>
                                     {% for et in all_email_templates %}
-                                        <option value="{{ et.id }}" data-name="{{ et.name }}" data-subject="{{ et.subject }}" data-html="{{ et.htmlContent|escapejs }}">{{ et.name }}</option>
+                                        <option value="{{ et.id }}" data-name="{{ et.name }}" data-subject="{{ et.subject }}" data-html="{{ et.htmlContent|escapejs }}" data-purpose="{{ et.purpose }}">{{ et.name }}{% if et.purpose %} – {{ et.get_purpose_display }}{% endif %}</option>
                                     {% endfor %}
                                 </select>
                             </div>
                             
                             <div class="form-group">
-                                <label class="form-label" for="email-name">Vorlagenname (z.B. Absage)</label>
+                                <label class="form-label" for="email-name">Vorlagenname</label>
                                 <input type="text" name="name" id="email-name" class="form-input" required placeholder="z. B. Eingangsbestätigung">
+                                <p style="font-size:12px; color:var(--text-muted); margin:6px 0 0;">Frei waehlbar – der Name steuert nichts mehr. Wofuer die Vorlage benutzt wird, entscheidet der Zweck darunter.</p>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="email-purpose">Zweck</label>
+                                <select name="purpose" id="email-purpose" class="filter-select">
+                                    {% for code, label in template_purposes %}
+                                    <option value="{{ code }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                                <p style="font-size:12px; color:var(--text-muted); margin:6px 0 0;">Je Zweck gilt genau eine Vorlage. Frueher wurde sie ueber den Namen gesucht – wer umbenannte, bekam still einen Ersatztext.</p>
                             </div>
                             
                             <div class="form-group">

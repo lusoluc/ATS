@@ -5,6 +5,34 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (E-Mail-Vorlagen wurden über ihren Namen gesucht)
+
+Die Automatik fand ihre Vorlage bisher per Namenssuche:
+`EmailTemplate.objects.filter(name__icontains='absage')`. Wer die Vorlage
+„Ablehnung" nannte oder „Absage" in „Rückmeldung nach Sichtung" umbenannte,
+bekam **keine** Fehlermeldung — der Versand fiel still auf einen fest
+einprogrammierten Text zurück. Den hatte niemand im Haus je gesehen oder
+freigegeben, Bewerbende lasen ihn trotzdem. Dasselbe auf jeder Installation,
+die per Datenimport statt per Seed startet: dort existiert gar keine Vorlage,
+und auch das fiel nicht auf, weil der Ersatztext ja griff.
+
+- Jede Vorlage trägt jetzt einen **Zweck** (Eingangsbestätigung, Einladung zum
+  Gespräch, Absage, oder freier Baustein). Der Name ist wieder das, was er sein
+  sollte: Beschriftung, keine Steuerung.
+- Fehlt für einen Zweck eine Vorlage, sagen Vorlagenseite und Einstellungs-Hub
+  das offen — mitsamt der Folge („Bewerbende lesen Wortlaut, den niemand bei
+  Ihnen freigegeben hat"), statt den Ersatztext als Normalfall auszugeben.
+- Je Zweck gilt genau eine Vorlage. Beim Speichern wird der Zweck den anderen
+  entzogen, sonst hinge die Auswahl wieder an einer Sortierung.
+- Migration `0007` ordnet bestehende Vorlagen einmalig zu. Geraten wird nur
+  dort, mit knappen eindeutigen Stichworten und nur für die jeweils erste
+  Treffer-Vorlage — ein Fehlgriff wäre schlimmer als eine offene Lücke, weil er
+  unbemerkt an Bewerbende ginge. Nicht Zuordenbares bleibt leer und wird
+  nachgefragt.
+- Neuer Wächter `GuardrailNoTemplateNameGuessingTestCase`: `name__icontains`
+  auf `EmailTemplate` ist projektweit gesperrt, damit die Abkürzung nicht
+  zurückkehrt.
+
 ### Behoben (namenlose Icon-Knöpfe, vorgelesene Deko-Symbole)
 
 Nachträgliche Barrierefreiheits-Abnahme der Bildschirme, die zuletzt entstanden

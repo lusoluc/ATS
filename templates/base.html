@@ -243,8 +243,14 @@
            Strecke erschien als nackter Text. */
         .btn-apply-now {
             width: 100%;
-            /* dunkleres Teal: weiße Schrift erreicht AA-Kontrast */
-            background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
+            /* Beide Enden des Verlaufs müssen tragen, nicht nur der Anfang.
+               Hier stand vorher `#0f766e → #0d9488` mit dem Vermerk „erreicht
+               AA-Kontrast" — abgedunkelt worden war aber nur der erste Stopp.
+               Am hellen Ende blieben 3,74:1 bei 16 px fett (fett zählt erst ab
+               18,66 px als große Schrift, gefordert sind also 4,5:1). Rund die
+               halbe Fläche des wichtigsten Knopfes der Bewerberstrecke fiel
+               durch. Jetzt 5,47:1 bis 4,82:1. */
+            background: linear-gradient(135deg, #0f766e 0%, #0d8074 100%);
             color: #fff;
             border: none;
             padding: 16px 28px;
@@ -264,7 +270,11 @@
         .btn-apply-now:hover {
             transform: translateY(-3px);
             box-shadow: 0 8px 25px rgba(20, 184, 166, 0.45);
-            background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+            /* Beim Überfahren DUNKLER statt heller. Vorher ging der Knopf auf
+               `#0d9488 → #14b8a6` — 3,74:1 bis 2,49:1, also schlechter als im
+               Ruhezustand. Rückmeldung geben Anheben und Schatten; die Farbe
+               muss dafür nicht ins Unlesbare wandern. Jetzt 6,36:1 bis 5,47:1. */
+            background: linear-gradient(135deg, #0c6b64 0%, #0f766e 100%);
         }
 
         .btn-search {
@@ -553,7 +563,10 @@
             width: 56px;
             height: 56px;
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent) 0%, #0d9488 100%);
+            /* Ausgerechnet der Knopf für die Barrierefreiheits-Hilfen lag bei
+               2,49:1 an seinem hellen Ende (`var(--accent)` = #14b8a6). Für
+               das Symbol darin fordert WCAG 1.4.11 mindestens 3:1. */
+            background: linear-gradient(135deg, #0f766e 0%, #0d8074 100%);
             border: 2px solid rgba(255,255,255,0.2);
             color: #fff;
             font-size: 24px;

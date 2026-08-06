@@ -58,6 +58,12 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'securats.urls'
 
+# Setzt waehrend des Testlaufs einen schnellen Passwort-Hasher. Begruendung
+# und Messung stehen in ats/test_runner.py. Bewusst ein Runner statt eines
+# `if 'test' in sys.argv` hier: Diese Einstellung kann so nicht in den
+# Betrieb geraten, weil dort nichts den Runner laedt.
+TEST_RUNNER = 'ats.test_runner.SecurATSTestRunner'
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',

@@ -8,7 +8,11 @@ ergänze oder verändere."*
 
 ## TL;DR – so bleibt alles abgesichert
 
-1. **Bei jeder Änderung lokal:** `python manage.py test` (748 Testmethoden in 40 Dateien; Stand 03.08.2026).
+1. **Bei jeder Änderung lokal:** `python manage.py test` — 974 Testmethoden, rund
+   eine Minute (Stand 06.08.2026). Bis zum Laufzeit-Paket waren es 23 Minuten;
+   die Zeit ging fast vollständig für Passwort-Hashes beim Anlegen von
+   Testbenutzern drauf (siehe `ats/test_runner.py`). Eine Suite, die eine halbe
+   Stunde braucht, wird vor dem Commit übersprungen — und schützt dann niemanden.
 2. **Automatisch bei jedem Push / Pull Request:** GitHub Actions (`.github/workflows/ci.yml`)
    läuft die volle Suite auf **PostgreSQL** plus einen schnellen Wächter-Vorlauf.
 3. **Beim Release-Tag `vX.Y.Z`:** `.github/workflows/release.yml` prüft Version/
@@ -20,7 +24,7 @@ gegen dasselbe Netz geprüft.
 ## Zwei Arten von Tests
 
 ### 1. Normale Tests (prüfen konkretes Verhalten)
-748 Tests über Funktionen, Views, Workflows, DSGVO-Anonymisierung,
+Tests über Funktionen, Views, Workflows, DSGVO-Anonymisierung,
 Verschlüsselung, Audit-Kette usw. Sie fangen Regressionen in *bestehendem*
 Verhalten. Details der Abdeckungs-Arbeit: `TEST_COVERAGE.md`.
 
@@ -50,6 +54,8 @@ unbemerkt wiederholen. Sie stehen in `ats/tests/test_guardrails.py`.
 | `GuardrailNoDeadModelTestCase` | Modell, das ausser im Django-Admin niemand anfasst. Registrierung ist keine Nutzung – dieser Fehlschluss hat sieben leere Prisma-Tabellen jahrelang durchgewunken, darunter das tote `User`-Modell, das den Urheber jeder Freigabe unbefuellbar machte | W1 |
 | `GuardrailAdminPageInHubTestCase` | Admin-Seite, die nicht ueber die Einstellungs-Zentrale erreichbar ist. Aktionen/Exporte stehen mit Begruendung auf einer Ausnahmeliste, die selbst auf tote Eintraege geprueft wird | AA |
 | `GuardrailIconButtonNameTestCase` | Knopf, der nur aus einem Symbol besteht, ohne `aria-label` - fuer Screenreader ein namenloser Knopf. Ein `title` genuegt nicht. Punkt 3 der Definition of Done stand seit Langem da; der Waechter dazu fehlte, und zehn Knoepfe waren namenlos | AE |
+| `GuardrailNoTemplateNameGuessingTestCase` | `name__icontains` auf `EmailTemplate` — Vorlagen über ihren Namen zu suchen hiess: Umbenennen kippt den Versand still auf einen Text zurück, den niemand freigegeben hat. Der Zweck steuert, der Name beschriftet | AF |
+| `GuardrailNoWeakHasherInSettingsTestCase` (in `test_laufzeit.py`) | schwacher Passwort-Hasher in `securats/*.py`. Die Abkürzung `if 'test' in sys.argv` würde die Passwortsicherheit der Produktion an eine Zeichenkette in der Kommandozeile hängen; der Test-Hasher gehört in `ats/test_runner.py`, den der Betrieb nie lädt | AH |
 
 **Wenn ein Wächter fehlschlägt:** Das ist ein *Feature*, kein Ärgernis. Nicht die
 Whitelist blind erweitern – erst prüfen, ob der neue Code wirklich so sein soll:

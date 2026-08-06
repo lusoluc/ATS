@@ -82,6 +82,37 @@
     background: #ffffff;
   }
 
+  /* Formularfelder. Diese Liste hatte sie ausgelassen – Karten, Titel, Tabs
+     und Footer wurden umgestellt, die Eingabefelder nicht. Sie behielten die
+     dunklen Werte aus base.html (`rgba(11,13,25,0.5)` mit weisser Schrift):
+     auf hellem Grund ein grauer Kasten mit weisser Schrift, rund 3,6:1 statt
+     der geforderten 4,5:1. Betroffen war das Bewerbungsformular – also der
+     eine Bildschirm, an dem Bewerbende ihre Daten eintippen. */
+  .form-input, .form-textarea, .input, .textarea,
+  select.form-input, select.input, .filter-select,
+  input[type="file"]:not(.file-upload-input) {
+    background: var(--surface-color) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-main) !important;
+  }
+  .form-input::placeholder, .form-textarea::placeholder,
+  .input::placeholder, .textarea::placeholder {
+    color: var(--text-muted) !important;
+  }
+  .form-input:focus, .form-textarea:focus,
+  .input:focus, .textarea:focus {
+    background: var(--surface-color) !important;
+    border-color: var(--primary) !important;
+  }
+  /* Die Dropzone des Lebenslauf-Uploads liegt ueber einem hellen Panel. */
+  .file-upload-wrapper {
+    background: var(--surface-hover) !important;
+    border-color: var(--border-color) !important;
+  }
+  .file-upload-text, .file-upload-info {
+    color: var(--text-main) !important;
+  }
+
   /* Title Contrast Overrides */
   .section-title {
     color: var(--text-main) !important;

@@ -758,6 +758,44 @@
         .field > label { color: var(--text-muted); font-size: 13px; }
         .input, .textarea, select.input { width: 100%; padding: 11px 12px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); color: var(--text-main); font-size: 14px; font-family: inherit; box-sizing: border-box; }
         .input:focus, .textarea:focus, select.input:focus { outline: none; border-color: var(--primary); }
+
+        /* Datei-Auswahl. Der native Knopf erbt NICHTS von seinem Feld – ohne
+           diese Regel steht ein weisser Systemknopf mit schwarzer Schrift
+           mitten im dunklen Panel, direkt neben Feldern im Design-System.
+           Betraf jedes sichtbare Datei-Feld im Projekt – auch die Formulare,
+           die Bewerbende ausfuellen.
+           (Keine Seitennamen in diesem Kommentar: Er steht im ausgelieferten
+           HTML, und die Rollen-Waechter pruefen genau darauf, dass fremde
+           Menuepunkte nicht im Markup auftauchen.)
+
+           Der KASTEN bleibt Sache der vorhandenen Klassen (`.input`,
+           `.form-input`). Ein erster Entwurf setzte ihn hier hart auf dunkel
+           mit `var(--text-main)` – und riss dort ein Kontrastloch auf, wo die
+           Seite eine helle Palette fuehrt.
+
+           `color: inherit` und Farben aus `currentColor` statt fester Tokens:
+           Der Knopf nimmt die Schriftfarbe seines Feldes und passt damit auf
+           hellen wie dunklen Feldern, ohne dass diese Regel wissen muss,
+           welche Palette gerade gilt.
+           Ausgenommen `.file-upload-input`: der Lebenslauf-Upload liegt
+           absichtlich unsichtbar hinter seiner eigenen Dropzone. */
+        input[type="file"]:not(.file-upload-input) { cursor: pointer; }
+        input[type="file"]:not(.file-upload-input):focus-visible {
+            outline: 2px solid var(--primary); outline-offset: 2px;
+        }
+        input[type="file"]:not(.file-upload-input)::file-selector-button {
+            margin-right: var(--space-3); padding: 7px 16px;
+            background: color-mix(in srgb, currentColor 12%, transparent);
+            color: inherit;
+            border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+            border-radius: var(--border-radius-sm);
+            font-size: 14px; font-weight: 600; font-family: inherit;
+            cursor: pointer; transition: var(--transition-smooth);
+        }
+        input[type="file"]:not(.file-upload-input)::file-selector-button:hover {
+            background: rgba(var(--primary-rgb), 0.28);
+            border-color: var(--primary-light);
+        }
         .form-row { display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; }
         .form-row .input { flex: 1; min-width: 160px; }
 
@@ -795,6 +833,9 @@
             .btn, .btn-primary, .btn-ghost, .btn-cta, .btn-secondary-cta {
                 min-height: 44px; }
             .btn-icon { min-width: 44px; min-height: 44px; }
+            input[type="file"]:not(.file-upload-input) { font-size: 16px !important; }
+            input[type="file"]:not(.file-upload-input)::file-selector-button {
+                min-height: 44px; font-size: 16px; }
             input[type=range].fb-slider { height: 32px; }
             .td-actions { white-space: normal; }
             .td-notes { max-width: none; }

@@ -57,6 +57,18 @@ logger = logging.getLogger(__name__)
 __all__ = ["dashboard", "update_status", "add_note", "get_matching_workflow", "execute_workflow_actions", "_send_rejection_notice", "download_cv", "reorder_board", "bulk_update_status", "application_messages", "draft_reply", "application_summary", "applicant_data_export", "inbox_view", "open_question_clusters", "batch_reply", "job_series_message", "save_reply_snippet", "reclassify_message", "application_vote", "talent_pool_view", "job_pool_matches", "application_timeline", "job_timeline", "tasks_view"]
 
 
+def _mail_problem():
+    """Letzter fehlgeschlagener Versand - oder None, wenn alles lief.
+
+    Der Mailweg kann tagelang kaputt sein, ohne dass es jemandem auffaellt:
+    Die Aufrufer schlucken Fehler, und die naechtlichen Jobs haben kein
+    Publikum. Deshalb steht ein Fehlschlag dort, wo taeglich jemand hinsieht.
+    """
+    from ..mail_config import last_result
+    result = last_result()
+    return None if not result or result['ok'] else result
+
+
 @ensure_csrf_cookie
 @any_staff_required
 def dashboard(request):
@@ -158,6 +170,11 @@ def dashboard(request):
 
     context = {
         'is_hr_admin': is_hr_admin,
+        # Hintergrund-Versand (Erinnerungen, Job-Alerts, naechtliche Jobs) hat
+        # niemanden, dem er einen Fehler zeigen koennte. Damit ein kaputter
+        # Mailweg nicht wochenlang unbemerkt bleibt, steht der letzte
+        # Fehlschlag auf dem Board - fuer die, die ihn beheben koennen.
+        'mail_problem': _mail_problem() if is_hr_admin else None,
         'columns': columns,
         'interview_kinds': get_interview_kinds(),
         'active_jobs': active_jobs,
@@ -406,7 +423,7 @@ def update_status(request, app_id):
 
                         # If this step matches the new status, execute the actions!
                         if step_state == new_status:
-                            execute_workflow_actions(app, step_actions)
+                            execute_workflow_actions(app, step_actions, request)
                 except Exception:
                     logger.exception("Workflow-Automation für Application %s fehlgeschlagen", app.id)
 
@@ -497,7 +514,11 @@ def get_matching_workflow(app):
     return workflows[0] if workflows else None
 
 
-def execute_workflow_actions(app, actions):
+def execute_workflow_actions(app, actions, request=None):
+    # `request` ist optional, damit die vorhandenen Aufrufe (und Tests)
+    # unveraendert bleiben. Wird es uebergeben, landet ein
+    # fehlgeschlagener Versand als Meldung auf dem Bildschirm dessen,
+    # der die Statusaenderung ausgeloest hat - statt nur im Log.
     """Fuehrt Workflow-Aktionen aus – EHRLICH: Das Audit-Log behauptet nur,
     was wirklich passiert ist. Historie: Die Prisma-Portierung simulierte hier
     Versand ("status: SENT" ohne Mail, Mock-Meet-Links) – das war ein
@@ -532,17 +553,19 @@ def execute_workflow_actions(app, actions):
                     job_title=app.jobPosting.title, company=company)
                 _Msg.objects.create(application=app, direction='OUTBOUND',
                                     content=body)
-                try:
-                    from django.core.mail import send_mail
-                    send_mail(subject, body, None, [app.applicant.email],
-                              fail_silently=True)
-                except Exception:
-                    logger.exception('Workflow-Mail fehlgeschlagen')
+                from ..mail_send import send_notice
+                delivered = send_notice(subject, body, [app.applicant.email],
+                                        request=request,
+                                        context=f'Automatik „{tpl.name}"')
                 AuditLog.objects.create(
                     action="AUTOMATION_EMAIL", applicationId=str(app.id),
+                    # Der Status stand hier fest auf "SENT" - unabhaengig davon,
+                    # ob die Mail rausging. Ein Protokoll, das den Erfolg
+                    # behauptet statt ihn festzustellen, ist kein Nachweis.
                     metadataJson=json.dumps({"template": tpl.name,
                                              "subject": subject,
-                                             "status": "SENT"}))
+                                             "status": "SENT" if delivered
+                                             else "FAILED"}))
             else:
                 AuditLog.objects.create(
                     action="AUTOMATION_EMAIL", applicationId=str(app.id),
@@ -566,7 +589,6 @@ def execute_workflow_actions(app, actions):
             # Vorher fiel genau dieser Fall in den Ueberspringen-Zweig – das
             # eigene Beispiel im UI ("recipient": "gremium@...") tat nichts.
             from django.contrib.auth.models import Group
-            from django.core.mail import send_mail
             recipient = (action.get('recipient') or '').strip()
             role = (action.get('role') or '').strip()
             targets = []
@@ -587,12 +609,15 @@ def execute_workflow_actions(app, actions):
                         f"{app.jobPosting.title} hat den Status "
                         f"{app.status} erreicht.\n"
                         "Zum Board: /recruiter/dashboard/")
-                send_mail(subject, body, None, targets, fail_silently=True)
+                from ..mail_send import send_notice
+                notified = send_notice(subject, body, targets, request=request,
+                                       context='Interne Benachrichtigung')
                 AuditLog.objects.create(
                     action="AUTOMATION_NOTIFY_INTERNAL",
                     applicationId=str(app.id),
                     metadataJson=json.dumps({"recipients": len(targets),
-                                             "role": role or None}))
+                                             "role": role or None,
+                                             "delivered": notified}))
             else:
                 AuditLog.objects.create(
                     action="WORKFLOW_ACTION_SKIPPED",
@@ -746,13 +771,14 @@ def _send_rejection_notice(request, app):
                  f'passende neue Stellen hin (jederzeit widerrufbar):\n{portal_url}'
                  '\n\nFreundliche Grüße')
     _Msg.objects.create(application=app, direction='OUTBOUND', content=body)
-    try:
-        from django.core.mail import send_mail
-        send_mail(subject, body + pool_line, None, [applicant.email],
-                  fail_silently=True)
-    except Exception:
-        logger.exception('Absage-Mail fehlgeschlagen')
-    write_audit('REJECTION_NOTICE_SENT', application_id=str(app.id))
+    # Kommt die Absage nicht an, muss das auf dem Bildschirm stehen - nicht nur
+    # im Log. Eine Absage, die niemanden erreicht, ist die unangenehmste Sorte
+    # verlorener Nachricht: Die bewerbende Person wartet weiter.
+    from ..mail_send import send_notice
+    delivered = send_notice(subject, body + pool_line, [applicant.email],
+                            request=request, context='Absage')
+    write_audit('REJECTION_NOTICE_SENT', application_id=str(app.id),
+                delivered=delivered)
 
 
 # --- B1: Sicherer CV-Download (auth + Rolle + Audit-Log) --------------------
@@ -1034,7 +1060,7 @@ def job_series_message(request, job_id):
         if not template or not chosen:
             messages.warning(request, "Keine Vorlage oder keine Auswahl.")
             return redirect('ats:job_series_message', job_id=job.id)
-        sent = 0
+        sent = failed = 0
         for app in active:
             if str(app.id) not in chosen:
                 continue
@@ -1042,16 +1068,29 @@ def job_series_message(request, job_id):
                                job_title=job.title, status=app.status)
             Message.objects.create(application=app, direction='OUTBOUND',
                                    content=text)
+            delivered = False
             if app.applicant.email:
-                from django.core.mail import send_mail
-                send_mail(f"Neuigkeit zu Ihrer Bewerbung – {job.title}",
-                          text, None, [app.applicant.email],
-                          fail_silently=True)
+                from ..mail_send import send_notice
+                # Ohne request: In der Schleife waeren es sonst N Meldungen.
+                # Gemeldet wird einmal, aggregiert - aber ehrlich.
+                delivered = send_notice(
+                    f"Neuigkeit zu Ihrer Bewerbung – {job.title}",
+                    text, [app.applicant.email], context='Serien-Nachricht')
             write_audit('SERIES_MESSAGE_SENT', user=request.user,
-                        application_id=app.id)
+                        application_id=app.id, delivered=delivered)
             sent += 1
-        if sent:
+            if not delivered:
+                failed += 1
+        # Vorher zaehlte hier nur "sent" - unabhaengig davon, ob etwas ankam.
+        # Die Meldung "an N Personen gesendet" war damit eine Behauptung.
+        if sent and not failed:
             messages.success(request, f"Nachricht an {sent} Person(en) gesendet.")
+        elif failed:
+            messages.error(
+                request,
+                f"{sent - failed} von {sent} Nachricht(en) zugestellt – "
+                f"{failed} nicht. Grund und Zeitpunkt stehen unter "
+                "Einstellungen → E-Mail-Versand.")
         return redirect('ats:job_series_message', job_id=job.id)
 
     recipients = [{

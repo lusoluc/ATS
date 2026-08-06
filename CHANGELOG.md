@@ -5,6 +5,29 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (fehlgeschlagener Versand ging als Erfolg durch)
+
+`fail_silently=True` an 31 Stellen war einmal richtig gedacht — ein Absturz im
+nächtlichen Job wäre schlimmer als eine verlorene Mail. Nur meldete das Kanban
+danach „Absage verschickt", während der Mailserver sie abgelehnt hatte.
+
+- **Wartet ein Mensch** (Absagen, Einladen, Senden): Der Fehler steht sofort auf
+  dem Bildschirm, im Klartext des Mailservers.
+- **Wartet niemand** (Cron, Job-Alerts): kein Absturz, aber der Fehlschlag landet
+  im Zustand und erscheint als Warnung auf dem Board — nur für HR-Admins, denn
+  wer den Mailserver nicht einrichten kann, dem hilft die Meldung nicht.
+- Zwei Unehrlichkeiten in den **Daten** mit behoben: Der Automatik-Versand schrieb
+  im Audit unbesehen `"status": "SENT"`; die Serien-Nachricht meldete „an N
+  Personen gesendet", wobei N nur die Schleifendurchläufe zählte.
+- Ein Mailserver wird nur verlangt, wenn wirklich per SMTP verschickt wird. Wer
+  das Backend bewusst umstellt (Konsole für einen Trockenlauf, Datei für eine
+  Abnahme), hat einen gültigen Weg — ihn mit „kein Mailserver hinterlegt" zu
+  blockieren wäre eine Bevormundung mit falscher Begründung.
+- Platzhalter in `.env.example` und Test-Zugangsdaten sind jetzt unmissverständlich
+  künstlich (`smtp.example.invalid`, `NICHT-ECHT-nur-Test`): Ein Geheimnis-Scanner,
+  der grundlos anschlägt, wird irgendwann weggeklickt — und dann geht der echte
+  Fund mit unter.
+
 ### Behoben (E-Mail-Versand war überhaupt nicht konfigurierbar)
 
 Es gab **keine einzige Mail-Einstellung**. Django fiel auf seinen Standard

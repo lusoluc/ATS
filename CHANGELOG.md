@@ -5,6 +5,38 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (Mediathek endete bei den jüngsten 200 Dateien)
+
+Die Medien-Verwaltung lud `MediaAsset.objects.order_by('-createdAt')[:200]` und
+sagte darüber nichts. Wer ein Bild aus dem Vorjahr in eine Inhaltsseite einbinden
+wollte, fand es nicht — und hatte keinen Anlass zu vermuten, dass es trotzdem
+noch da ist. Die naheliegende Reaktion ist, dieselbe Datei erneut hochzuladen:
+zweites Mal auf der Platte, neuer Name, neuer Alt-Text, und die 200er-Grenze
+rückt für alle anderen ein Stück näher. Dieselbe Fehlerklasse wie im Audit-Log
+(`logs[:500]`), nur mit einem Bestand, in dem selten gelöscht wird.
+
+- **Blätterung statt Kappung**: 50 Zeilen je Seite, mit Bereich und Gesamtzahl
+  („51–100 von 312"). Auch die älteste Datei ist erreichbar.
+- **Suche über Anzeigename und Dateinamen.** Blättern allein genügt nicht: bei
+  300 Dateien liegt die gesuchte auf Seite 4, und dorthin blättert niemand.
+  Beide Felder, weil sie auseinanderlaufen, sobald jemand den Anzeigenamen
+  pflegt — die Datei heißt danach weiter `IMG_2831.jpg`.
+- Eine Suche ohne Treffer nennt den Bestand („im Bestand liegen 312 Dateien").
+  Ohne diesen Zusatz sehen „nichts gefunden" und „hier ist nichts" gleich aus.
+- Nach dem Löschen bleiben Seite und Suche stehen. Bisher landete man nach jedem
+  Aufräumen wieder ganz oben — bei einer Liste ohne Seiten fiel das nicht auf.
+  Die Zieladresse wird aus `reverse` und zwei bekannten Parametern gebaut, nie
+  aus einer mitgeschickten URL.
+- **Sortierung mit eindeutiger Zweitstelle** (`-createdAt`, `-id`). Bei gleichem
+  Zeitstempel garantiert LIMIT/OFFSET keine Reihenfolge: dieselbe Datei stünde
+  auf zwei Seiten, eine andere auf keiner. Gleichstände sind hier kein Randfall,
+  sondern der Normalfall — die Uhr tickt grob genug für Massen-Uploads. Genau
+  die stille Lücke, gegen die dieses Paket antritt, nur schwerer zu bemerken.
+- Tests in `ats/tests/test_mediathek.py` nach dem Muster des Audit-Logs: jeder
+  Eintrag erreichbar, absurde Seitenzahl ohne Absturz, Suche über beide Felder.
+  SQLite gibt Gleichstände stabil zurück, PostgreSQL nicht — der Test prüft
+  deshalb die Sortierung selbst und nicht nur einen glücklichen Durchlauf.
+
 ### Geändert (Testlauf: von ~23 Minuten auf wenige)
 
 Gemessen statt vermutet: 970 Tests brauchten 1.374 Sekunden — im Schnitt

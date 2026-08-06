@@ -8,9 +8,13 @@ funktionieren.
 import datetime
 import json
 import logging
+from urllib.parse import urlencode
 
+from django.core.paginator import Paginator
 from django.db import transaction
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 
@@ -108,8 +112,25 @@ def delete_page(request, page_id):
     return redirect('ats:pages_manage')
 
 
+#: Zeilen je Seite in der Mediathek. Steht hier und nicht mehrfach im Code,
+#: damit Liste und Bereichsangabe („1–50 von 312") nie unterschiedlich rechnen.
+MEDIA_PAGE_SIZE = 50
+
+
 @hr_admin_required
 def media_manage(request):
+    """Mediathek – blaetterbar statt still gekappt.
+
+    Vorher endete die Liste bei `MediaAsset.objects...[:200]`, ohne dass die
+    Seite das erwaehnte. Wer ein Bild aus dem letzten Jahr in eine
+    Inhaltsseite einbinden wollte, fand es nicht und hatte keinen Grund
+    anzunehmen, dass es noch existiert – also wurde es ein zweites Mal
+    hochgeladen. Dieselbe Fehlerklasse wie frueher im Audit-Log (`logs[:500]`).
+
+    Die Suche greift auf Anzeigename UND Dateinamen: beim Hochladen ist beides
+    gleich, spaeter nicht mehr – wer den Anzeigenamen auf „Teamfoto Station 3"
+    aendert, sucht die Datei trotzdem manchmal als „IMG_2831.jpg".
+    """
     if request.method == 'POST' and request.FILES.get('file'):
         f = request.FILES['file']
         # WP8/WCAG 1.1.1: Alt-Text ist Pflicht – auch bei direkten POSTs
@@ -125,8 +146,29 @@ def media_manage(request):
         )
         write_audit('MEDIA_UPLOADED', user=request.user, name=f.name)
         return redirect('ats:media_manage')
-    assets = MediaAsset.objects.order_by('-createdAt')[:200]
-    return render(request, 'media_manage.html', {'assets': assets})
+
+    suche = (request.GET.get('suche') or '').strip()[:255]
+    # Zweitsortierung nach `id` ist Pflicht, nicht Kosmetik: die Windows-Uhr
+    # tickt grob, gleiche `createdAt` sind hier der Normalfall, und eine
+    # Sortierung mit Gleichstaenden liefert dieselbe Datei auf zwei Seiten
+    # und eine andere auf keiner – wieder eine stille Luecke.
+    assets = MediaAsset.objects.order_by('-createdAt', '-id')
+    if suche:
+        assets = assets.filter(Q(name__icontains=suche) | Q(file__icontains=suche))
+    paginator = Paginator(assets, MEDIA_PAGE_SIZE)
+    page = paginator.get_page(request.GET.get('seite'))
+    # Nur wenn eine Suche ins Leere lief: „nichts gefunden" und „die Mediathek
+    # ist leer" sehen sonst gleich aus. Sonst gaebe es die Zaehl-Abfrage bei
+    # jedem Seitenaufruf umsonst.
+    bestand = MediaAsset.objects.count() if suche and not paginator.count else None
+    return render(request, 'media_manage.html', {
+        'assets': page.object_list,
+        'page': page,
+        'gesamt': paginator.count,
+        'bestand': bestand,
+        'suche': suche,
+        'querystring': urlencode({'suche': suche} if suche else {}),
+    })
 
 
 @hr_admin_required
@@ -137,7 +179,17 @@ def delete_media(request, asset_id):
     except Exception:
         logger.exception("Datei-Löschung fehlgeschlagen für %s", asset_id)
     a.delete()
-    return redirect('ats:media_manage')
+    # Zurueck auf die Seite, von der geloescht wurde. Ohne das landet man nach
+    # jedem Aufraeumen wieder oben auf Seite 1 und muss sich durch Suche und
+    # Blaetterung erneut dorthin klicken. Die Ziel-Adresse wird aus `reverse`
+    # plus zwei bekannten Parametern gebaut, nie aus einer mitgeschickten URL.
+    ansicht = {}
+    for key in ('suche', 'seite'):
+        wert = (request.POST.get(key) or '').strip()[:255]
+        if wert:
+            ansicht[key] = wert
+    ziel = reverse('ats:media_manage')
+    return redirect(f"{ziel}?{urlencode(ansicht)}" if ansicht else ziel)
 
 
 @any_staff_required

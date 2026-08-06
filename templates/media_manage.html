@@ -4,15 +4,52 @@
 <div class="page-wrap">
   <h1 class="page-title"><i class="fa-solid fa-photo-film"></i> Medien-Verwaltung</h1>
   <p class="page-lead">Bilder und Dateien für Stellenanzeigen und Inhaltsseiten.</p>
+
+  {% comment %} Vorher endete die Liste bei den jüngsten 200 Dateien, ohne
+     dass die Seite das erwähnte. Ältere Medien waren damit unerreichbar –
+     und wurden ein zweites Mal hochgeladen. {% endcomment %}
+
   <div class="card">
     <form method="post" enctype="multipart/form-data" class="form-row" style="margin-bottom: var(--space-4);">
       {% csrf_token %}
-      <input type="file" name="file" required style="color:var(--text-main);">
-      <input name="name" class="input" placeholder="Anzeigename (optional)">
+      <input type="file" name="file" required style="color:var(--text-main);" aria-label="Datei auswählen">
+      <input name="name" class="input" placeholder="Anzeigename (optional)" aria-label="Anzeigename (optional)">
       <!-- WP8/WCAG 1.1.1: Alt-Text ist Pflicht (HTML + serverseitig erzwungen) -->
-      <input name="altText" class="input" required placeholder="Alt-Text: Was ist auf dem Bild zu sehen? *">
+      <input name="altText" class="input" required placeholder="Alt-Text: Was ist auf dem Bild zu sehen? *"
+             aria-label="Alt-Text: Was ist auf dem Bild zu sehen?">
       <button type="submit" class="btn btn-primary">Hochladen</button>
     </form>
+
+    <form method="get" action="{% url 'ats:media_manage' %}"
+          style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; margin-bottom:var(--space-4);">
+      <div style="flex:1 1 260px;">
+        <label class="form-label" for="medien-suche">Datei suchen</label>
+        <input type="search" id="medien-suche" name="suche" class="input" value="{{ suche }}"
+               autocomplete="off" spellcheck="false" placeholder="Name oder Dateiname, z. B. teamfoto">
+      </div>
+      <button type="submit" class="btn btn-primary">
+        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Suchen
+      </button>
+      {% if suche %}
+      <a class="btn btn-ghost" href="{% url 'ats:media_manage' %}">Suche zurücksetzen</a>
+      {% endif %}
+    </form>
+
+    <div style="display:flex; gap:12px; align-items:baseline; flex-wrap:wrap; margin-bottom:var(--space-3);">
+      <p role="status" style="margin:0; font-weight:600;">
+        {% if gesamt %}
+          {{ page.start_index }}–{{ page.end_index }} von {{ gesamt }} {% if gesamt == 1 %}Datei{% else %}Dateien{% endif %}{% if suche %} für „{{ suche }}"{% endif %}
+        {% elif suche %}
+          Keine Treffer für „{{ suche }}" — im Bestand liegen {{ bestand }} {% if bestand == 1 %}Datei{% else %}Dateien{% endif %}
+        {% else %}
+          Noch keine Medien
+        {% endif %}
+      </p>
+      {% if page.paginator.num_pages > 1 %}
+      <span style="font-size:12px; color:var(--text-muted);">Seite {{ page.number }} von {{ page.paginator.num_pages }}</span>
+      {% endif %}
+    </div>
+
     <div class="table-scroll">
     <table class="data-table">
       <thead><tr><th>Name</th><th>Typ</th><th>Datum</th><th></th></tr></thead>
@@ -22,12 +59,30 @@
           <td><a href="{{ a.file.url }}" target="_blank">{{ a.name }}</a></td>
           <td style="color:var(--text-muted);">{{ a.contentType|default:"–" }}</td>
           <td>{{ a.createdAt|date:"d.m.Y H:i" }}</td>
-          <td style="text-align:right;"><form method="post" action="{% url 'ats:delete_media' a.id %}" onsubmit="return confirm('Datei löschen?');">{% csrf_token %}<button type="submit" class="btn-icon danger" aria-label="Datei löschen: {{ a.name }}"><i class="fa-solid fa-trash" aria-hidden="true"></i></button></form></td>
+          <td style="text-align:right;"><form method="post" action="{% url 'ats:delete_media' a.id %}" onsubmit="return confirm('Datei löschen?');">{% csrf_token %}<input type="hidden" name="suche" value="{{ suche }}"><input type="hidden" name="seite" value="{{ page.number }}"><button type="submit" class="btn-icon danger" aria-label="Datei löschen: {{ a.name }}"><i class="fa-solid fa-trash" aria-hidden="true"></i></button></form></td>
         </tr>
-      {% empty %}<tr><td colspan="4" class="empty-state">Noch keine Medien.</td></tr>{% endfor %}
+      {% empty %}<tr><td colspan="4" class="empty-state">{% if suche %}Keine Datei passt zu dieser Suche.{% else %}Noch keine Medien.{% endif %}</td></tr>{% endfor %}
       </tbody>
     </table>
     </div>
+
+    {% if page.paginator.num_pages > 1 %}
+    <nav aria-label="Seiten der Mediathek" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:var(--space-4);">
+      {% if page.has_previous %}
+      <a class="btn btn-ghost" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}seite={{ page.previous_page_number }}">
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Neuere Dateien
+      </a>
+      {% endif %}
+      {% if page.has_next %}
+      <a class="btn btn-ghost" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}seite={{ page.next_page_number }}">
+        Ältere Dateien <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+      </a>
+      <a class="btn btn-ghost" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}seite={{ page.paginator.num_pages }}">
+        Älteste Dateien
+      </a>
+      {% endif %}
+    </nav>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

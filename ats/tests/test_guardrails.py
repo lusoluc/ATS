@@ -907,3 +907,96 @@ class GuardrailNoDeadModelTestCase(TestCase):
             dead, [],
             "Modell existiert, wird aber von keiner Zeile Anwendungscode "
             "benutzt (Admin-Registrierung zaehlt nicht): " + ", ".join(dead))
+
+
+class GuardrailAdminPageInHubTestCase(TestCase):
+    """Waechter: Jede Admin-SEITE ist ueber die Einstellungs-Zentrale erreichbar.
+
+    Die Konfigurations-Seiten sind ueber Jahre einzeln entstanden und landeten
+    verstreut in der Seitenleiste. Wer SecurATS neu aufsetzt, musste raten, was
+    einzurichten ist - und beim naechsten Zubau waere die neue Seite wieder nur
+    dort gelandet, wo der Autor gerade hinsah.
+
+    Geprueft wird nur, was eine Seite RENDERT. Aktionen (Speichern, Loeschen,
+    Archivieren), Exporte und JSON-Endpunkte gehoeren nicht in eine Uebersicht;
+    sie stehen in der Allowlist mit Begruendung.
+    """
+
+    #: Admin-Views, die bewusst nicht im Hub stehen - je Zeile ein Grund.
+    NOT_IN_HUB = {
+        # Aktionen und Speicher-Endpunkte (kein eigener Bildschirm)
+        "save_page", "save_workflow_state", "save_app_workflow",
+        "save_email_template", "save_system_setting", "save_ai_settings",
+        "save_auto_reply_settings", "save_learned_scoring_settings",
+        "apply_template_tone", "ingest_best_performers",
+        "archive_category", "archive_location", "archive_pay_band",
+        "archive_screening_question", "delete_job_template", "delete_media",
+        "delete_page",
+        # Exporte und JSON-Antworten
+        "roi_export", "audit_export", "import_template_csv",
+        "applicant_data_export", "best_performer_profiles",
+        "get_ai_execution_logs", "validate_ai_prompt",
+        "validate_ai_prompt_status",
+        # Auswertung, keine Einrichtung
+        "stats_page",
+        # Die Zentrale selbst
+        "settings_hub",
+    }
+
+    def _hub_links(self):
+        import os
+        import re
+        base = os.path.dirname(os.path.dirname(__file__))
+        src = open(os.path.join(base, "views", "admin_pages.py"),
+                   encoding="utf-8").read()
+        block = src[src.index("def settings_hub"):src.index("def mail_settings_page")]
+        return set(re.findall(r"'ats:(\w+)'", block))
+
+    def _admin_views(self):
+        import ast
+        import os
+        base = os.path.join(os.path.dirname(os.path.dirname(__file__)), "views")
+        names = set()
+        for fname in os.listdir(base):
+            if not fname.endswith(".py") or fname == "__init__.py":
+                continue
+            tree = ast.parse(open(os.path.join(base, fname),
+                                  encoding="utf-8").read())
+            for node in tree.body:
+                if not isinstance(node, ast.FunctionDef):
+                    continue
+                decs = {d.id if isinstance(d, ast.Name) else getattr(d, "attr", "")
+                        for d in node.decorator_list}
+                if "hr_admin_required" in decs:
+                    names.add(node.name)
+        return names
+
+    def test_every_admin_page_is_reachable_from_the_hub(self):
+        import os
+        import re
+        base = os.path.dirname(os.path.dirname(__file__))
+        urls_src = open(os.path.join(base, "urls.py"), encoding="utf-8").read()
+        name_by_view = {m.group(1): m.group(2) for m in
+                        re.finditer(r"views\.(\w+),\s*name='([^']+)'", urls_src)}
+        linked = self._hub_links()
+
+        missing = sorted(
+            f"{view} (ats:{name_by_view[view]})"
+            for view in self._admin_views()
+            if view not in self.NOT_IN_HUB
+            and view in name_by_view
+            and name_by_view[view] not in linked)
+        self.assertEqual(
+            missing, [],
+            "Admin-Seite nicht in der Einstellungs-Zentrale verlinkt. "
+            "Entweder dort eintragen ODER - wenn es eine Aktion/ein Export "
+            "ohne eigenen Bildschirm ist - mit Begruendung in NOT_IN_HUB "
+            "aufnehmen: " + ", ".join(missing))
+
+    def test_allowlist_stays_honest(self):
+        """Entfernte oder umbenannte Views duerfen nicht als tote Ausnahmen
+        zurueckbleiben - sonst deckt die Liste irgendwann etwas zu."""
+        stale = sorted(self.NOT_IN_HUB - self._admin_views())
+        self.assertEqual(stale, [],
+                         "NOT_IN_HUB nennt Views, die es nicht mehr gibt: "
+                         + ", ".join(stale))

@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% block title %}E-Mail-Versand · SecurATS{% endblock %}
+{% block content %}
+<div class="page-wrap">
+  <p style="margin:0 0 var(--space-2);"><a href="{% url 'ats:settings_hub' %}" style="color:var(--accent-light);"><i class="fa-solid fa-arrow-left"></i> Einstellungen</a></p>
+  <h1 class="page-title"><i class="fa-solid fa-paper-plane"></i> E-Mail-Versand</h1>
+  <p class="page-lead">Über diesen Weg gehen Eingangsbestätigungen, Einladungen, Absagen und die Zugangslinks zum Bewerberportal.</p>
+
+  {% comment %} Ehrlicher Zustand statt stiller Annahme: Ohne hinterlegten
+     Mailserver lief Django in seinen Standard localhost:25 – und weil die
+     Aufrufer Fehler schlucken, verschwand jede Nachricht spurlos. {% endcomment %}
+  <div class="card">
+    <h2 style="font-size:16px; margin:0 0 var(--space-3);">Stand</h2>
+    <ul class="list-reset">
+      <li class="list-row"><span>Versandweg</span>
+        {% if status.configured %}<span class="badge badge-accent">{{ status.host }}:{{ status.port }}</span>
+        {% else %}<span class="badge badge-danger">nicht eingerichtet – es wird nichts zugestellt</span>{% endif %}
+      </li>
+      {% if status.configured %}
+      <li class="list-row"><span>Absenderadresse</span><span class="badge">{{ status.from_address }}</span></li>
+      <li class="list-row"><span>Verbindung</span><span class="badge">{{ status.security_label }}</span></li>
+      <li class="list-row"><span>Passwort</span>
+        {% if status.has_password %}<span class="badge badge-accent">hinterlegt</span>
+        {% else %}<span class="badge">keines (Server ohne Anmeldung)</span>{% endif %}
+      </li>
+      {% endif %}
+      {% if status.last %}
+      <li class="list-row"><span>Letzter Versand</span>
+        {% if status.last.ok %}<span class="badge badge-accent">{{ status.last.when }} · {{ status.last.detail }}</span>
+        {% else %}<span class="badge badge-danger">{{ status.last.when }} · {{ status.last.detail }}</span>{% endif %}
+      </li>
+      {% endif %}
+    </ul>
+    {% if status.from_env %}
+    <p style="font-size:12px; color:var(--text-muted); margin:var(--space-3) 0 0;">
+      Vorgegeben durch Umgebungsvariablen: {{ status.from_env|join:", " }}. Diese Felder
+      sind unten gesperrt — ein Wert im Formular würde ohnehin nicht greifen.
+    </p>
+    {% endif %}
+  </div>
+
+  <div class="card" style="margin-top: var(--space-4);">
+    <h2 style="font-size:16px; margin:0 0 var(--space-1);">Mailserver</h2>
+    <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--space-3);">
+      Die Zugangsdaten Ihres Hauses. Das Passwort wird verschlüsselt gespeichert und
+      nie wieder angezeigt — nur, ob eines hinterlegt ist.
+    </p>
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label" for="mail-host">Server (Host) *</label>
+        <input id="mail-host" name="host" class="input" value="{{ status.host }}"
+               placeholder="mail.traeger.de" autocomplete="off"
+               {% if 'host' in status.from_env %}disabled{% endif %}>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="mail-port">Port</label>
+        <input id="mail-port" name="port" class="input" value="{{ status.port }}"
+               inputmode="numeric" style="max-width:160px;"
+               {% if 'port' in status.from_env %}disabled{% endif %}>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="mail-security">Verbindung</label>
+        <select id="mail-security" name="security" class="input" style="max-width:380px;"
+                {% if 'security' in status.from_env %}disabled{% endif %}>
+          {% for value, label in security_choices.items %}
+          <option value="{{ value }}" {% if value == status.security %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="mail-user">Benutzername</label>
+        <input id="mail-user" name="user" class="input" value="{{ status.user }}"
+               autocomplete="off" {% if 'user' in status.from_env %}disabled{% endif %}>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="mail-password">Passwort</label>
+        <input id="mail-password" name="password" type="password" class="input"
+               autocomplete="new-password"
+               placeholder="{% if status.has_password %}hinterlegt – leer lassen, um es zu behalten{% else %}nur nötig, wenn der Server eine Anmeldung verlangt{% endif %}"
+               {% if 'password' in status.from_env %}disabled{% endif %}>
+        {% if status.has_password and 'password' not in status.from_env %}
+        <label style="display:flex; align-items:center; gap:8px; margin-top:8px; font-size:12px; color:var(--text-muted);">
+          <input type="checkbox" name="clear_password" value="1" style="width:24px; height:24px;">
+          Hinterlegtes Passwort löschen
+        </label>
+        {% endif %}
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="mail-from">Absenderadresse *</label>
+        <input id="mail-from" name="from_address" type="email" class="input"
+               value="{{ status.from_address }}" placeholder="bewerbung@traeger.de"
+               autocomplete="off" {% if 'from_address' in status.from_env %}disabled{% endif %}>
+        <p style="font-size:12px; color:var(--text-muted); margin:6px 0 0;">
+          Diese Adresse sehen Bewerbende — sie sollte Antworten auch empfangen können.
+        </p>
+      </div>
+      <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Speichern</button>
+    </form>
+  </div>
+
+  {% comment %} Ein Testversand ist der einzige Beweis, der zählt: Die
+     Konfiguration kann vollständig aussehen und trotzdem am Server scheitern.
+     Hier ohne fail_silently – der Fehler des Mailservers wird angezeigt. {% endcomment %}
+  {% if status.configured %}
+  <div class="card" style="margin-top: var(--space-4);">
+    <h2 style="font-size:16px; margin:0 0 var(--space-1);">Testversand</h2>
+    <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--space-3);">
+      Schickt eine echte Nachricht. Schlägt es fehl, steht hier die Meldung des
+      Mailservers im Klartext — nicht „irgendwas ging schief".
+    </p>
+    <form method="post" style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="test">
+      <div style="flex:1; min-width:240px;">
+        <label class="form-label" for="mail-test">Empfänger</label>
+        <input id="mail-test" name="recipient" type="email" class="input"
+               placeholder="ihre.adresse@traeger.de" required>
+      </div>
+      <button type="submit" class="btn btn-ghost"><i class="fa-solid fa-vial"></i> Testnachricht senden</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

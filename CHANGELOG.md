@@ -5,6 +5,48 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (E-Mail-Versand war überhaupt nicht konfigurierbar)
+
+Es gab **keine einzige Mail-Einstellung**. Django fiel auf seinen Standard
+`localhost:25` zurück, und weil an 31 Stellen `fail_silently=True` steht (ein
+Absturz im Hintergrund-Job wäre schlimmer), verschwanden Absagen, Einladungen und
+die Zugangslinks zum Bewerberportal spurlos. Die Oberfläche meldete „verschickt",
+zugestellt wurde nichts.
+
+- Neue Seite **Einstellungen → E-Mail-Versand**: Mailserver des Trägers,
+  Verbindungsart, Absenderadresse. Das Passwort liegt verschlüsselt (dieselbe
+  Fernet-Schicht wie die Bewerber-PII) und wird nie zurück ins Formular
+  geschrieben; ein leeres Feld heißt „unverändert", nicht „löschen".
+- **Umgebungsvariablen haben Vorrang** und sind im Formular gesperrt, statt
+  stillschweigend wirkungslos zu sein.
+- **Testversand** zeigt die Klartext-Meldung des Mailservers — nicht „irgendwas
+  ging schief". Der letzte Versand samt Ergebnis steht im Zustand.
+- Ohne hinterlegten Server wird das protokolliert und angezeigt, statt in einen
+  toten Standard zu laufen.
+
+### Ergänzt (Einstellungs-Zentrale)
+
+Die Konfigurations-Seiten sind über Jahre einzeln entstanden und lagen verstreut
+in der Seitenleiste, zwischen Tagesgeschäft. Wer SecurATS neu aufsetzt, musste
+raten, was einzurichten ist.
+
+Neue Seite **Einstellungen** mit 25 Bereichen in fünf Gruppen — je Eintrag der
+**Zustand**, nicht nur ein Link, und offene Punkte zuoberst. Ein Wächter
+(`GuardrailAdminPageInHubTestCase`) verlangt, dass jede Admin-Seite dort verlinkt
+ist; Aktionen und Exporte stehen mit Begründung auf einer Ausnahmeliste, die
+selbst auf tote Einträge geprüft wird.
+
+**Zwei Rechte-Funde dabei:**
+
+- **Kanäle & Kosten** stand jeder internen Rolle offen (`any_staff_required`),
+  obwohl nur im Admin-Block verlinkt und die Kosten-Auswertung der Leitung
+  vorbehalten ist. Sichtbarkeit und Schutz passen jetzt zusammen.
+- Umgekehrt war die **Vertretungs-Seite** — ausdrücklich Selbstbedienung für jede
+  Rolle, ein Vorstand legt seine Urlaubsvertretung selbst an — nur im Admin-Block
+  verlinkt. Ohne Admin-Rechte kam niemand an die eigene Vertretung. Sie steht
+  jetzt unter „Termine & Menschen"; ein Test hält fest, dass sie **nicht** auf
+  HR-Admin verengt werden darf.
+
 ### Ergänzt (Umkreissuche funktioniert ohne Handarbeit)
 
 Standort-Koordinaten ließen sich zwar eintragen, aber niemand kennt sie auswendig.

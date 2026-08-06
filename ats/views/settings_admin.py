@@ -31,7 +31,7 @@ from ..models import (
     SystemSetting,
     WorkflowState,
 )
-from ..permissions import any_staff_required, hr_admin_required
+from ..permissions import hr_admin_required
 from .common import campaign_expired
 
 logger = logging.getLogger(__name__)
@@ -724,7 +724,12 @@ def import_template_csv(request):
     return response
 
 
-@any_staff_required
+# Kanalkosten sind Leitungs-Information (sie speisen "Kosten je Einstellung",
+# das die Analytik nur der Leitung zeigt). Die Seite hing bisher auf
+# any_staff_required und war damit fuer jede interne Rolle zu oeffnen - nur
+# verlinkt war sie im Admin-Block der Seitenleiste. Sichtbarkeit und Schutz
+# passen jetzt zusammen.
+@hr_admin_required
 def source_channels_view(request):
     """Kanaele & Kampagnen: Jobmesse-Frage beantworten mit Zahlen.
 

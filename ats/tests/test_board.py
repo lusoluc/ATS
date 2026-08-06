@@ -280,7 +280,9 @@ class HiredStatusTestCase(TestCase):
 
     def test_kanban_column_and_metrics_surfaces(self):
         self._world()
-        self.client.force_login(make_user("hsrec2", role="Recruiter"))
+        # Der Test prueft auch die Kanal-Seite, die inzwischen HR-Admin
+        # verlangt (Kampagnenkosten sind Leitungs-Information).
+        self.client.force_login(make_user("hsrec2", role="HR-Admin"))
         self._set_status("HIRED")
         dash = self.client.get(reverse('ats:dashboard'))
         self.assertContains(dash, "Eingestellt")               # neue Spalte

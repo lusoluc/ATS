@@ -355,6 +355,13 @@
             <i class="fa-solid fa-file-shield"></i> Datenschutzhinweis
         </a>
 
+        {% comment %} Sammelseite fuer alles Einzurichtende. Die einzelnen
+           Konfigurations-Seiten sind ueber die Jahre verstreut in dieser Leiste
+           gelandet – wer neu aufsetzt, musste raten, was noch fehlt. {% endcomment %}
+        <a class="sidebar-link" href="{% url 'ats:settings_hub' %}">
+            <i class="fa-solid fa-sliders"></i> Einstellungen
+        </a>
+
         <a class="sidebar-link" href="{% url 'ats:learned_scoring' %}">
             <i class="fa-solid fa-graduation-cap"></i> Lernendes Scoring
         </a>
@@ -365,13 +372,17 @@
         <a class="sidebar-link" href="{% url 'ats:tasks' %}"><i class="fa-solid fa-list-check"></i> Aufgaben{% if open_task_count %} <span class="badge" style="font-size:10px;">{{ open_task_count }}</span>{% endif %}</a>
         <a class="sidebar-link" href="{% url 'ats:talent_pool' %}"><i class="fa-solid fa-users"></i> Talent-Pool</a>
         <a class="sidebar-link" href="{% url 'ats:approvals' %}"><i class="fa-solid fa-stamp"></i> Freigaben</a>
+        {% comment %} Vertretung ist ausdrücklich Selbstbedienung für JEDE interne
+           Rolle – ein Vorstand legt seine Urlaubsvertretung selbst an. Der Link
+           stand trotzdem nur im Admin-Block: Wer keine Admin-Rechte hat, kam an
+           die eigene Vertretung nicht heran. {% endcomment %}
+        <a class="sidebar-link" href="{% url 'ats:delegations' %}"><i class="fa-solid fa-user-shield"></i> Meine Vertretung</a>
 
         {% if is_hr_admin %}
         <div style="margin:12px 8px 4px; font-size:11px; letter-spacing:1px; color:#64748b; text-transform:uppercase;">Steuern &amp; Entscheiden</div>
         <a class="sidebar-link" href="{% url 'ats:governance' %}"><i class="fa-solid fa-landmark"></i> Governance</a>
         <a class="sidebar-link" href="{% url 'ats:staffing_requests' %}"><i class="fa-solid fa-people-arrows"></i> Personalbedarf</a>
         <a class="sidebar-link" href="{% url 'ats:panel_defaults' %}"><i class="fa-solid fa-users-rectangle"></i> Gremien</a>
-        <a class="sidebar-link" href="{% url 'ats:delegations' %}"><i class="fa-solid fa-user-shield"></i> Delegationen</a>
         <a class="sidebar-link" href="{% url 'ats:analytics' %}"><i class="fa-solid fa-chart-column"></i> Analytics</a>
         <a class="sidebar-link" href="{% url 'ats:source_channels' %}"><i class="fa-solid fa-signs-post"></i> Kanäle & Kampagnen</a>
         <a class="sidebar-link" href="{% url 'ats:landing_pages' %}"><i class="fa-solid fa-flag"></i> Landingpages</a>

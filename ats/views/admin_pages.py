@@ -38,7 +38,7 @@ from ..models import (
 )
 from ..permissions import hr_admin_required, scope_applications, scope_jobs
 
-__all__ = ["stats_page", "process_page", "templates_page", "cms_page", "ki_page", "hris_page", "save_auto_reply_settings", "retention_page", "privacy_notice_page", "learned_scoring_view", "save_learned_scoring_settings"]
+__all__ = ["stats_page", "process_page", "templates_page", "cms_page", "ki_page", "hris_page", "save_auto_reply_settings", "retention_page", "privacy_notice_page", "settings_hub", "mail_settings_page", "learned_scoring_view", "save_learned_scoring_settings"]
 
 
 def gemma_status() -> str:
@@ -266,6 +266,252 @@ def retention_page(request):
         'days': configured_retention_days(),
         'min_days': MIN_DAYS, 'max_days': MAX_DAYS,
         'preview': dry_run_preview(),
+    })
+
+
+@hr_admin_required
+def settings_hub(request):
+    """Eine Startseite für alles, was eingerichtet wird.
+
+    Die Konfigurations-Seiten sind über die Jahre einzeln entstanden und hingen
+    verstreut in der Seitenleiste - zwischen Tagesgeschäft wie Board und
+    Postfach. Wer SecurATS neu aufsetzt, musste raten, was alles einzurichten
+    ist, und sah nirgends, was noch fehlt.
+
+    Diese Seite sammelt die Bereiche und zeigt je Eintrag den ZUSTAND, nicht
+    nur einen Link: Was nicht eingerichtet ist, sagt das hier - statt dass es
+    im Betrieb still ausfällt.
+    """
+    from ..dsgvo import privacy_notice_status
+    from ..geo import lookup_plz
+    from ..mail_config import mail_status
+    from ..models import EmailTemplate, Location, PayBand, SourceChannel
+
+    mail = mail_status()
+    notice = privacy_notice_status()
+    locations = list(Location.objects.filter(archived=False))
+    missing_coords = sum(1 for loc in locations
+                         if loc.lat is None and lookup_plz(loc.postalCode))
+
+    def state(ok, good, bad, warn=False):
+        return {'ok': bool(ok), 'label': good if ok else bad,
+                'warn': bool(warn)}
+
+    groups = [
+        {
+            'title': 'Zustellung & Kommunikation',
+            'items': [
+                {'name': 'E-Mail-Versand', 'url': 'ats:mail_settings',
+                 'icon': 'fa-paper-plane',
+                 'hint': 'Mailserver des Trägers, Absenderadresse, Testversand',
+                 'state': state(mail['configured'], f"über {mail['host']}",
+                                'nicht eingerichtet – es wird nichts zugestellt')},
+                {'name': 'E-Mail-Vorlagen', 'url': 'ats:templates_page',
+                 'icon': 'fa-envelope-open-text',
+                 'hint': 'Texte für Eingangsbestätigung, Einladung, Absage',
+                 'state': state(EmailTemplate.objects.exists(),
+                                f"{EmailTemplate.objects.count()} Vorlagen",
+                                'keine Vorlagen')},
+                {'name': 'Textbausteine', 'url': 'ats:snippets',
+                 'icon': 'fa-quote-right',
+                 'hint': 'Antwort-Bausteine für das Sammel-Postfach',
+                 'state': None},
+            ],
+        },
+        {
+            'title': 'Datenschutz & Aufbewahrung',
+            'items': [
+                {'name': 'Datenschutzhinweis', 'url': 'ats:privacy_notice',
+                 'icon': 'fa-file-shield',
+                 'hint': 'Fassungen pflegen (Art. 7 Abs. 1 DSGVO)',
+                 'state': state(not notice['missing'],
+                                f"Fassung {notice['version']}",
+                                'keine Fassung gepflegt')},
+                {'name': 'Datenaufbewahrung', 'url': 'ats:retention',
+                 'icon': 'fa-clock-rotate-left',
+                 'hint': 'Löschfrist und Trockenlauf-Vorschau',
+                 'state': None},
+                # Vertretungen stehen bewusst NICHT hier: Sie sind
+                # Selbstbedienung fuer jede interne Rolle (ein Vorstand legt
+                # seine Vertretung selbst an), keine Administration.
+                {'name': 'Audit-Log', 'url': 'ats:audit_log',
+                 'icon': 'fa-clipboard-list',
+                 'hint': 'Revisionssichere Zugriffs-Protokolle samt CSV-Export',
+                 'state': None},
+            ],
+        },
+        {
+            'title': 'Stammdaten',
+            'items': [
+                {'name': 'Standorte', 'url': 'ats:locations',
+                 'icon': 'fa-location-dot',
+                 'hint': 'Adressen und Koordinaten für die Umkreissuche',
+                 'state': state(not missing_coords, f"{len(locations)} Standorte",
+                                f"{missing_coords} ohne Koordinaten – "
+                                "Umkreissuche wirkt dort nicht", warn=True)},
+                {'name': 'Entgeltbänder', 'url': 'ats:pay_bands',
+                 'icon': 'fa-euro-sign',
+                 'hint': 'Pflicht vor Veröffentlichung (EU-RL 2023/970)',
+                 'state': state(PayBand.objects.filter(archived=False).exists(),
+                                f"{PayBand.objects.filter(archived=False).count()} Bänder",
+                                'keine Bänder – Stellen lassen sich nicht veröffentlichen')},
+                {'name': 'Ansprechpersonen', 'url': 'ats:contacts',
+                 'icon': 'fa-address-card',
+                 'hint': 'Kontakte für Stellenanzeigen', 'state': None},
+                {'name': 'Kategorien', 'url': 'ats:categories',
+                 'icon': 'fa-tags', 'hint': 'Berufsfelder', 'state': None},
+                {'name': 'Kanäle & Kosten', 'url': 'ats:source_channels',
+                 'icon': 'fa-bullhorn',
+                 'hint': 'Bewerbungsquellen und ihre Kosten',
+                 'state': state(SourceChannel.objects.exists(),
+                                f"{SourceChannel.objects.count()} Kanäle",
+                                'keine Kanäle')},
+                {'name': 'Screening-Fragen', 'url': 'ats:screening_questions',
+                 'icon': 'fa-clipboard-question',
+                 'hint': 'Wiederverwendbare Fragen für Stellen', 'state': None},
+                {'name': 'Stellen-Vorlagen', 'url': 'ats:job_templates',
+                 'icon': 'fa-copy',
+                 'hint': 'Versionierte Textvorlagen für Ausschreibungen',
+                 'state': None},
+            ],
+        },
+        {
+            'title': 'Verfahren & Automatik',
+            'items': [
+                {'name': 'KI-Zentrale', 'url': 'ats:ki_page',
+                 'icon': 'fa-robot',
+                 'hint': 'Lokale KI, AGG-Check, Auto-Antwort',
+                 'state': state(gemma_status() == 'ONLINE', 'lokale KI erreichbar',
+                                'lokale KI nicht erreichbar', warn=True)},
+                {'name': 'Lernendes Scoring', 'url': 'ats:learned_scoring',
+                 'icon': 'fa-graduation-cap',
+                 'hint': 'Messstrecke und Freischaltung (Opt-in)', 'state': None},
+                {'name': 'Prozess-Phasen', 'url': 'ats:process_page',
+                 'icon': 'fa-diagram-project',
+                 'hint': 'Status-Phasen und Pipelines', 'state': None},
+                {'name': 'Gremien-Vorgaben', 'url': 'ats:panel_defaults',
+                 'icon': 'fa-users-rectangle',
+                 'hint': 'Sichtungs-Gremium je Ebene', 'state': None},
+                {'name': 'Gesprächsformate', 'url': 'ats:interview_formats',
+                 'icon': 'fa-comments',
+                 'hint': 'Von der schriftlichen Aufgabe bis zum Assessment',
+                 'state': None},
+            ],
+        },
+        {
+            'title': 'Auftritt & Schnittstellen',
+            'items': [
+                {'name': 'Branding', 'url': 'ats:branding',
+                 'icon': 'fa-palette',
+                 'hint': 'Farben, Logo, Hero-Bild der Karriereseiten',
+                 'state': None},
+                {'name': 'Seiten & Navigation', 'url': 'ats:pages_manage',
+                 'icon': 'fa-file-lines',
+                 'hint': 'Inhaltsseiten des Karriereportals anlegen und in die '
+                         'Navigation nehmen', 'state': None},
+                {'name': 'Seiten-Baukasten', 'url': 'ats:cms_page',
+                 'icon': 'fa-cubes',
+                 'hint': 'Blöcke einer Seite zusammenstellen (Hero, Text, '
+                         'Stellen, Zitat …)', 'state': None},
+                {'name': 'Landingpages', 'url': 'ats:landing_pages',
+                 'icon': 'fa-flag',
+                 'hint': 'Kampagnen-Seiten mit QR-Code und Ablaufdatum',
+                 'state': None},
+                {'name': 'Mediathek', 'url': 'ats:media_manage',
+                 'icon': 'fa-photo-film',
+                 'hint': 'Bilder samt Alt-Texten', 'state': None},
+                {'name': 'HRIS / SAP', 'url': 'ats:hris_page',
+                 'icon': 'fa-cloud-arrow-up',
+                 'hint': 'Feldzuordnung für die Übergabe eingestellter Personen',
+                 'state': None},
+                {'name': 'SAP-Feldtabelle', 'url': 'ats:sap_sf_mapper',
+                 'icon': 'fa-table-columns',
+                 'hint': 'Zuordnung SecurATS-Feld → SuccessFactors-Feld',
+                 'state': None},
+                {'name': 'Datenimport', 'url': 'ats:data_import',
+                 'icon': 'fa-file-import',
+                 'hint': 'Bestandsdaten aus einem Vorsystem', 'state': None},
+            ],
+        },
+    ]
+    open_points = [i for g in groups for i in g['items']
+                   if i['state'] and not i['state']['ok']]
+    return render(request, 'admin_pages/settings_hub.html', {
+        'groups': groups, 'open_points': open_points,
+    })
+
+
+@hr_admin_required
+def mail_settings_page(request):
+    """Mailserver des Trägers einrichten - und nachweisen, dass er geht.
+
+    Das Passwort wird verschlüsselt abgelegt (dieselbe Fernet-Schicht wie die
+    Bewerber-PII) und nie zurück ins Formular geschrieben; angezeigt wird nur,
+    OB eines hinterlegt ist. Werte aus Umgebungsvariablen sind gesperrt statt
+    stillschweigend wirkungslos - sonst tippt jemand einen Wert ein, der nie
+    greift.
+    """
+    from ..audit import write_audit
+    from ..mail_config import (
+        FROM_KEY,
+        HOST_KEY,
+        PORT_KEY,
+        SECURITY_CHOICES,
+        SECURITY_KEY,
+        USER_KEY,
+        mail_status,
+        send_test_mail,
+        store_password,
+    )
+
+    if request.method == 'POST':
+        if request.POST.get('action') == 'test':
+            recipient = (request.POST.get('recipient') or '').strip()
+            if not recipient:
+                messages.warning(request, "Bitte eine Empfängeradresse angeben.")
+                return redirect('ats:mail_settings')
+            ok, detail = send_test_mail(recipient)
+            write_audit('MAIL_TEST_SENT', user=request.user, ok=ok,
+                        detail=detail[:200])
+            (messages.success if ok else messages.error)(request, detail)
+            return redirect('ats:mail_settings')
+
+        status = mail_status()
+        locked = set(status['from_env'])
+
+        def save(field, key, raw, maxlen=255):
+            if field in locked:
+                return
+            value = (raw or '').strip()[:maxlen]
+            if value:
+                SystemSetting.objects.update_or_create(
+                    key=key, defaults={'value': value})
+            else:
+                SystemSetting.objects.filter(key=key).delete()
+
+        save('host', HOST_KEY, request.POST.get('host'))
+        save('user', USER_KEY, request.POST.get('user'))
+        save('from_address', FROM_KEY, request.POST.get('from_address'))
+        port_raw = (request.POST.get('port') or '').strip()
+        save('port', PORT_KEY, port_raw if port_raw.isdigit() else '')
+        security = (request.POST.get('security') or '').strip()
+        save('security', SECURITY_KEY,
+             security if security in SECURITY_CHOICES else '')
+        # Leeres Passwortfeld heisst „unveraendert lassen" - sonst loeschte
+        # jedes Speichern das Passwort, weil es nie im Formular steht.
+        if 'password' not in locked and request.POST.get('password'):
+            store_password(request.POST['password'])
+        if request.POST.get('clear_password') and 'password' not in locked:
+            store_password('')
+
+        write_audit('MAIL_SETTINGS_CHANGED', user=request.user,
+                    host=(request.POST.get('host') or '')[:120])
+        messages.success(request, "Einstellungen für den Mailversand gespeichert.")
+        return redirect('ats:mail_settings')
+
+    return render(request, 'admin_pages/mail_settings.html', {
+        'status': mail_status(),
+        'security_choices': SECURITY_CHOICES,
     })
 
 

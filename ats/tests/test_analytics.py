@@ -293,7 +293,9 @@ class SourceChannelTestCase(TestCase):
     def test_channel_page_creates_and_reports(self):
         from ..models import Applicant, Application, SourceChannel
         self._world()
-        self.client.force_login(make_user("chanrec", role="Recruiter"))
+        # Kanaele & Kosten sind seit dem Einstellungs-Paket Leitungssache
+        # (die Kosten speisen "Kosten je Einstellung"): HR-Admin statt Recruiter.
+        self.client.force_login(make_user("chanrec", role="HR-Admin"))
         self.client.post(reverse('ats:source_channels'),
                          data={"name": "Jobmesse Hamburg 09/2026",
                                "note": "Stand B4, 1.200 € Standkosten"})
@@ -410,7 +412,9 @@ class ChannelCostTestCase(TestCase):
         Application.objects.create(applicant=ap, jobPosting=job,
                                    status="HIRED", source="MESSE_CC",
                                    hiredAt=timezone.now())
-        self.client.force_login(make_user("ccrec", role="Recruiter"))
+        # Kanaele & Kosten sind seit dem Einstellungs-Paket Leitungssache
+        # (die Kosten speisen "Kosten je Einstellung"): HR-Admin statt Recruiter.
+        self.client.force_login(make_user("ccrec", role="HR-Admin"))
         # Kosten mit deutschem Format setzen; nur costAmount aendert sich
         self.client.post(reverse('ats:source_channels'), data={
             "form": "cost", "ch_id": str(ch.id), "cost": "1.200,00"})

@@ -280,3 +280,17 @@ FEED_ACCESS_TOKEN = os.environ.get('FEED_ACCESS_TOKEN', '')
 
 # P0.4: Demo-Instanz (Banner + Freigabe fuer seed_demo --reset)
 DEMO_MODE = os.environ.get('DEMO_MODE', '') == '1'
+
+# --- E-Mail-Versand ---------------------------------------------------------
+# Bis hierher gab es GAR KEINE Mail-Einstellungen: Django fiel auf seinen
+# Standard localhost:25 zurueck, und weil die Aufrufer `fail_silently=True`
+# setzen (ein Absturz im Hintergrund-Job waere schlimmer), verschwanden
+# Absagen, Einladungen und Magic-Links spurlos.
+#
+# Der Versandweg wird jetzt zur Sendezeit aus `ats.mail_config` geholt:
+# Umgebungsvariablen (EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_USER,
+# EMAIL_HOST_PASSWORD, EMAIL_SECURITY, DEFAULT_FROM_EMAIL) haben Vorrang, sonst
+# gelten die Werte, die HR-Admins unter Einstellungen -> E-Mail pflegen.
+# Ist nichts hinterlegt, sagt die Anwendung das offen, statt still zu scheitern.
+EMAIL_BACKEND = os.environ.get(
+    'EMAIL_BACKEND', 'ats.mail_backend.ConfiguredSmtpBackend')

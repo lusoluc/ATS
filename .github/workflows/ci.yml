@@ -21,11 +21,19 @@ jobs:
   lint:
     name: Ruff (Linter)
     runs-on: ubuntu-latest
+    # Ohne Deckel haengt ein Job, den GitHub keinem Runner zuteilt, bis zum
+    # 6-Stunden-Limit. Am 06.08.2026 blieben mehrere Laeufe 10-15 Minuten in
+    # der Warteschlange stecken und meldeten am Ende "not acquired by Runner
+    # of type hosted" – ein Deckel macht daraus einen schnellen, klaren Abbruch.
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
+          # Fehlte hier als einzigem Job – jeder Lauf installierte die
+          # Werkzeuge neu.
+          cache: pip
       - run: pip install -r requirements-dev.txt
       - name: Ruff Lint
         run: ruff check .
@@ -33,12 +41,13 @@ jobs:
   typecheck:
     name: mypy (Typpruefung)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     env:
       DJANGO_SECRET_KEY: "ci-only-secret-key"
       PII_ENCRYPTION_KEY: "ci-only-pii-key"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -51,6 +60,7 @@ jobs:
   test:
     name: Tests, Migrationen & Sicherheits-Wächter
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     # Produktionsnahes DB-Backend (PostgreSQL), damit die
     # Verschlüsselungs-/at-rest-Tests unter realistischen Bedingungen laufen.
@@ -71,7 +81,10 @@ jobs:
     env:
       # Feste, nur für CI genutzte Schlüssel (keine echten Secrets).
       DEBUG: "False"
-      DJANGO_SECRET_KEY: "ci-only-secret-key-not-used-in-production"
+      # Mindestens 50 Zeichen und genug Varianz: Sonst meldet der
+      # Deploy-Check W009 – eine Warnung ueber den CI-Schluessel, die echte
+      # Befunde verdeckt hätte.
+      DJANGO_SECRET_KEY: "ci-only-key-4Jq7Rz1PmXw9Bs2Ky6Vt0Nc3Hd8Lf5Gr-not-used-in-production"
       PII_ENCRYPTION_KEY: "ci-only-pii-key-deterministic-for-tests"
       POSTGRES_HOST: "127.0.0.1"
       POSTGRES_PORT: "5432"
@@ -80,11 +93,14 @@ jobs:
       POSTGRES_PASSWORD: "securats"
       # ALLOWED_HOSTS für den System-Check unter DEBUG=False
       DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,testserver"
+      # Wie eine sauber eingerichtete Produktion hinter TLS-Proxy (INSTALL.md).
+      SECURE_SSL_REDIRECT: "True"
+      SECURE_HSTS_PRELOAD: "True"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -95,7 +111,12 @@ jobs:
           pip install -r requirements.txt
 
       - name: Django System-Check (Deploy-Modus)
-        run: python manage.py check --deploy --fail-level WARNING || python manage.py check
+        # Vorher stand hier `... --fail-level WARNING || python manage.py check`.
+        # Der Schritt hiess "Deploy-Modus" und KONNTE nicht fehlschlagen: Jede
+        # Sicherheitswarnung fiel auf den harmlosen Normal-Check zurueck. Die
+        # Umgebung oben setzt jetzt das, was INSTALL.md fuer Produktion
+        # verlangt – damit ist die Pruefung eine Aussage statt einer Geste.
+        run: python manage.py check --deploy --fail-level WARNING
 
       - name: Fehlende Migrationen erkennen
         # Schlägt fehl, wenn ein Modell geändert wurde, aber die Migration fehlt.
@@ -113,24 +134,27 @@ jobs:
   guardrails:
     name: Sicherheits-Wächter isoliert (schneller Vorlauf)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     env:
       DJANGO_SECRET_KEY: "ci-only-secret-key"
       PII_ENCRYPTION_KEY: "ci-only-pii-key"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      # Nur die Wächter – geben in <30s ein klares Ja/Nein zu den
-      # abgesicherten FehlerKLASSEN (fehlender Auth-Decorator, @csrf_exempt,
-      # rohes SQL, prozess-lokaler Lockout-Cache).
+      # Frueher standen hier VIER handverlesene Klassen, waehrend das Projekt
+      # inzwischen ueber zwanzig Waechter hat – der Job versprach ein "klares
+      # Ja/Nein zu den abgesicherten FehlerKLASSEN" und deckte keine
+      # Viertel davon ab. Jetzt laufen alle, auch die beiden, die ausserhalb
+      # von test_guardrails.py wohnen.
       - name: Wächter-Tests
         run: |
           python manage.py test \
-            ats.tests.GuardrailAuthDecoratorTestCase \
-            ats.tests.GuardrailNoCsrfExemptTestCase \
-            ats.tests.GuardrailNoRawSqlTestCase \
-            ats.tests.GuardrailProductionCacheTestCase \
-            --verbosity=2
+            ats.tests.test_guardrails \
+            ats.tests.test_pay_transparency.GuardrailPayTransparencyTestCase \
+            ats.tests.test_laufzeit.GuardrailNoWeakHasherInSettingsTestCase \
+            ats.tests.test_helles_branding.GuardrailDarkOnlyControlsTestCase \
+            --verbosity=1

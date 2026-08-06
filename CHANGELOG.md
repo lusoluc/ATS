@@ -5,6 +5,35 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Geändert (CI: abgekündigte Actions, ein Check ohne Wirkung, ein halber Wächter-Vorlauf)
+
+Ausgelöst durch einen Tag, an dem CI mehrfach rot war, ohne dass am Code etwas
+fehlte — GitHub teilte den Jobs keinen Runner zu. Beim Nachsehen fanden sich
+drei Dinge, die schon länger schieflagen:
+
+- **`actions/checkout@v4` und `actions/setup-python@v5` liefen auf
+  abgekündigtem Node 20** (aktuell ist v7). Alle Workflows sind nachgezogen,
+  auch die Docker-Actions im Release-Lauf.
+- **Der Schritt „Django System-Check (Deploy-Modus)" konnte nicht
+  fehlschlagen.** Er endete auf `|| python manage.py check` — jede
+  Sicherheitswarnung fiel auf den harmlosen Normal-Check zurück. Jetzt läuft
+  er streng, und die CI-Umgebung setzt das, was `INSTALL.md` für Produktion
+  verlangt. Damit ist die Prüfung eine Aussage statt einer Geste.
+- **Der „Sicherheits-Wächter isoliert"-Job prüfte vier handverlesene Klassen**,
+  während das Projekt über zwanzig Wächter hat. Er versprach „ein klares
+  Ja/Nein zu den abgesicherten FehlerKLASSEN" und deckte keine Viertel davon
+  ab. Jetzt laufen alle 50 Wächter-Tests, in knapp zehn Sekunden.
+
+Dazu zwei Kleinigkeiten mit Wirkung: Der Ruff-Job war als einziger ohne
+pip-Cache, und alle Jobs haben jetzt ein Zeitlimit — ein Job, dem GitHub
+keinen Runner zuteilt, hing sonst bis zum Sechs-Stunden-Limit.
+
+Neu in den Einstellungen: `SECURE_SSL_REDIRECT` und `SECURE_HSTS_PRELOAD`,
+beide aus Vorsicht **aus**. Django darf nur dann selbst auf HTTPS umleiten,
+wenn ein vorgelagerter Proxy die TLS-Terminierung meldet — sonst
+Endlosschleife; und HSTS-Preload ist eine Einbahnstraße, die dem Träger
+gehört, nicht der Voreinstellung. `INSTALL.md` erklärt beide.
+
 ### Behoben (helle Träger-Palette ließ die Eingabefelder aus)
 
 Aufgefallen an einem grauen Kasten in der Medien-Verwaltung, dahinter lag

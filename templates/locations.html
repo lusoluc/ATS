@@ -19,10 +19,25 @@
       <input name="lng" id="loc-lng" class="input" placeholder="Länge (z. B. 9.9937)" style="max-width:150px;" inputmode="decimal">
       <button type="submit" class="btn btn-primary">Hinzufügen</button>
     </form>
+    {% comment %} Die Koordinaten kommen aus einer mitgelieferten PLZ-Tabelle
+       (GeoNames, CC BY 4.0) – kein Aufruf nach draußen, kein Adressabgleich
+       bei einem fremden Dienst. {% endcomment %}
     <p style="font-size:12px; color:var(--text-muted); margin:0 0 var(--space-4);">
-      Breite und Länge sind freiwillig. Ohne sie funktioniert der Job-Alert nur
-      für exakt denselben Standort, nicht für „im Umkreis von X km".
+      Breite und Länge dürfen leer bleiben: Sie werden aus der Postleitzahl ergänzt
+      ({{ plz_count }} deutsche Postleitzahlen liegen bei – ohne Abfrage bei einem
+      externen Dienst). Wer die Koordinaten genauer kennt, trägt sie ein; dann gelten
+      die eingetragenen. Ganz ohne beides trifft der Job-Alert nur exakt denselben
+      Standort, nicht „im Umkreis von X km".
     </p>
+    {% if fillable %}
+    <form method="post" style="margin:0 0 var(--space-4);">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="fill_coordinates">
+      <button type="submit" class="btn btn-ghost">
+        <i class="fa-solid fa-location-crosshairs"></i> Fehlende Koordinaten aus der Postleitzahl ergänzen
+      </button>
+    </form>
+    {% endif %}
     <div class="table-scroll">
     <table class="data-table">
       <thead><tr><th>Name</th><th>Adresse</th><th>PLZ / Stadt</th><th>Umkreissuche</th><th></th></tr></thead>

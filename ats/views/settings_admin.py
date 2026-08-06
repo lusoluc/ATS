@@ -476,24 +476,59 @@ def _coordinate(raw, limit=180.0):
 # --- B14: Standorte ---------------------------------------------------------
 @hr_admin_required
 def locations_view(request):
+    from ..geo import lookup_plz, table_size
     if request.method == "POST":
+        # Bestandsstandorte nachtraeglich versorgen: Wer SecurATS mit
+        # bestehenden Standorten uebernimmt, hat nirgends Koordinaten - und
+        # merkt am Job-Alert nicht, dass der Umkreis nicht wirkt.
+        if request.POST.get("action") == "fill_coordinates":
+            filled = 0
+            for loc in Location.objects.filter(archived=False,
+                                               lat__isnull=True):
+                point = lookup_plz(loc.postalCode)
+                if point:
+                    loc.lat, loc.lng = point
+                    loc.save(update_fields=["lat", "lng"])
+                    filled += 1
+            if filled:
+                messages.success(
+                    request, f"{filled} Standort(e) aus der Postleitzahl ergänzt.")
+            else:
+                messages.warning(
+                    request, "Nichts zu ergänzen – es fehlt überall die "
+                             "Postleitzahl oder sie ist unbekannt.")
+            return redirect("ats:locations")
+
         name = (request.POST.get("name") or "").strip()
         if name:
+            postal = (request.POST.get("postalCode") or "").strip() or None
+            # Koordinaten waren nur ueber die Demo-Daten zu bekommen. Ohne
+            # sie faellt die Umkreissuche des Job-Alerts still auf
+            # Standort-Gleichheit zurueck (job_alerts.py) - der Nutzer
+            # stellt 50 km ein und bekommt trotzdem nur einen Ort.
+            lat = _coordinate(request.POST.get("lat"), 90.0)
+            lng = _coordinate(request.POST.get("lng"), 180.0)
+            # Von Hand eingetragene Werte haben Vorrang: Wer sie kennt, kennt
+            # sie genauer als der Mittelpunkt einer Postleitzahl.
+            if lat is None or lng is None:
+                point = lookup_plz(postal)
+                if point:
+                    lat, lng = point
             Location.objects.create(
                 name=name,
                 address=(request.POST.get("address") or "").strip() or None,
                 city=(request.POST.get("city") or "").strip() or None,
-                postalCode=(request.POST.get("postalCode") or "").strip() or None,
-                # Koordinaten waren nur ueber die Demo-Daten zu bekommen. Ohne
-                # sie faellt die Umkreissuche des Job-Alerts still auf
-                # Standort-Gleichheit zurueck (job_alerts.py) - der Nutzer
-                # stellt 50 km ein und bekommt trotzdem nur einen Ort.
-                lat=_coordinate(request.POST.get("lat"), 90.0),
-                lng=_coordinate(request.POST.get("lng"), 180.0),
+                postalCode=postal, lat=lat, lng=lng,
             )
         return redirect("ats:locations")
-    locations = Location.objects.filter(archived=False).order_by("name")
-    return render(request, "locations.html", {"locations": locations})
+    locations = list(Location.objects.filter(archived=False).order_by("name"))
+    return render(request, "locations.html", {
+        "locations": locations,
+        "plz_count": table_size(),
+        # Nur anbieten, wenn es wirklich etwas zu tun gibt.
+        "fillable": any(loc.lat is None and lookup_plz(loc.postalCode)
+                        for loc in locations),
+    })
 
 
 @hr_admin_required

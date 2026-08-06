@@ -182,7 +182,10 @@ def learned_scoring_view(request):
     from ..insights import resolve_learning_scope
     from ..models import JobFamily, JobPosting
     from ..scoring_eval import backtest, drift_report, is_scoring_enabled
-    families = list(JobFamily.objects.all()[:40])
+    # Ohne Deckel: Jobfamilien sind Stammdaten (Dutzende, nicht Tausende).
+    # Ein Deckel bei 40 haette bedeutet, dass die Messstrecke fuer manche
+    # Familien einfach nichts anzeigt - ohne das zu sagen.
+    families = list(JobFamily.objects.all())
     rows = []
     for fam in families:
         job = JobPosting.objects.filter(jobFamily=fam).first()

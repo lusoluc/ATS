@@ -878,7 +878,10 @@ def candidate_portal(request, token):
         # danach hat das Team meist schon Raum/Anreise organisiert.
         'can_self_service': (a.id in booked and booked[a.id].scheduledAt
                              >= timezone.now() + datetime.timedelta(hours=24)),
-        'messages': list(a.messages.order_by('createdAt')[:20]),
+        # Vollstaendig: Es ist der eigene Schriftwechsel der bewerbenden
+        # Person. Die aeltesten 20 stillschweigend abzuschneiden hiesse,
+        # ihr die Anfaenge ihrer eigenen Unterhaltung vorzuenthalten.
+        'messages': list(a.messages.order_by('createdAt')),
         'rebook_slots': (list(InterviewSlot.objects.filter(
             jobPosting=a.jobPosting, isBooked=False,
             startTime__gte=timezone.now()).order_by('startTime')[:8])

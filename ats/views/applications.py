@@ -109,7 +109,9 @@ def dashboard(request):
     # Extra data for interactive modals
     active_jobs = scope_jobs(request.user, JobPosting.objects.all().select_related('location', 'facility', 'department', 'workflowState', 'contactPerson', 'jobTemplate').order_by('-createdAt'))
     from ..models import TextSnippet
-    text_snippets = TextSnippet.objects.select_related('jobFamily').order_by('category')[:50]
+    # Ohne Deckel: Wer einen Baustein anlegt und ihn im Modal nicht findet,
+    # sucht den Fehler bei sich. Bausteine sind Stammdaten.
+    text_snippets = TextSnippet.objects.select_related('jobFamily').order_by('category')
     # Einlade-Vorlage (UC-SB-10): HTML der zentralen Vorlage -> Klartext fuers Modal
     import re as _re
 
@@ -1353,7 +1355,11 @@ def application_summary(request, app_id):
     result['documents'] = [
         {'id': str(d.id), 'name': d.name,
          'url': reverse('ats:download_document', args=[d.id])}
-        for d in app.documents.order_by('createdAt')[:20]
+        # Ohne Deckel: Der Absatz darueber sagt, dass diese Nachweise
+        # vorher niemand zu sehen bekam - eine stille Grenze bei 20 waere
+        # dieselbe Luecke, nur spaeter. Es sind die Unterlagen EINER
+        # Bewerbung; sie wachsen nicht ins Unermessliche.
+        for d in app.documents.order_by('createdAt')
     ]
 
     # L3: gelernte Einordnung NUR wenn freigeschaltet + Kontext belastbar +

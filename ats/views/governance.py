@@ -584,6 +584,11 @@ AUDIT_PAGE_SIZE = 100
 #: Wie lange ein Personen-Filter als derselbe Vorgang gilt (Minuten).
 PERSON_FILTER_DEDUP_MINUTES = 15
 
+#: Wie viele der eigenen ENTSCHIEDENEN Personalbedarfe die Seite zeigt.
+#: Offene Antraege sind durch die Arbeit begrenzt; entschiedene wachsen ueber
+#: Jahre. Der Deckel bleibt, aber die Seite nennt ihn.
+DECIDED_HISTORY_LIMIT = 50
+
 
 class AuditSelectionError(ValueError):
     """Unbrauchbare Filterangabe – Text ist fuer die Anzeige gedacht."""
@@ -1084,8 +1089,10 @@ def staffing_requests_view(request):
                         request_id=str(req.id), job_id=str(job.id))
         return redirect('ats:staffing_requests')
 
+    # Eigene Meldungen vollstaendig: Wer seine eigene Meldung von vor einem
+    # halben Jahr sucht und sie nicht findet, meldet sie ein zweites Mal.
     my_requests = StaffingRequest.objects.filter(
-        requestedBy=request.user).select_related('facility').order_by('-createdAt')[:20]
+        requestedBy=request.user).select_related('facility').order_by('-createdAt')
     inbox = []
     if is_decider:
         facilities_scope = Facility.objects.all()
@@ -1094,7 +1101,7 @@ def staffing_requests_view(request):
             facilities_scope = facilities_scope.filter(id__in=fac_ids) if fac_ids else facilities_scope
         inbox = (StaffingRequest.objects.filter(facility__in=facilities_scope)
                  .select_related('facility', 'requestedBy', 'jobFamily')
-                 .order_by('status', '-createdAt')[:50])
+                 .order_by('status', '-createdAt'))
 
     # Ketten-Genehmiger (Bereichsleitung, Vorstand, ...) und ihre aktiven
     # Vertretungen sehen die Antraege, deren faellige Stufe sie entscheiden
@@ -1106,18 +1113,22 @@ def staffing_requests_view(request):
     for r in (StaffingRequest.objects.filter(status='IN_APPROVAL')
               .exclude(id__in=inbox_ids)
               .select_related('facility', 'requestedBy', 'jobFamily')
-              .order_by('-createdAt')[:50]):
+              .order_by('-createdAt')):
         from ..approvals import due_requisition_steps as _due
         if any(_mds(request.user, st)[0] for st in _due(r)):
             chain_inbox.append(r)
     # ... plus Antraege, die ich selbst (mit-)entschieden habe: ein
     # Genehmiger muss seine eigenen Entscheidungen nachvollziehen koennen.
     seen = inbox_ids | {r.id for r in chain_inbox}
-    decided_by_me = list(
-        StaffingRequest.objects.filter(steps__decidedBy=request.user)
-        .exclude(id__in=seen).distinct()
-        .select_related('facility', 'requestedBy', 'jobFamily')
-        .order_by('-createdAt')[:50])
+    # Offene Antraege sind durch die Arbeit begrenzt und werden vollstaendig
+    # gezeigt. Die eigenen ENTSCHIEDENEN wachsen dagegen ueber Jahre - hier
+    # bleibt ein Deckel, aber er wird genannt statt verschwiegen.
+    entschieden_qs = (StaffingRequest.objects.filter(steps__decidedBy=request.user)
+                      .exclude(id__in=seen).distinct()
+                      .select_related('facility', 'requestedBy', 'jobFamily')
+                      .order_by('-createdAt'))
+    entschieden_gesamt = entschieden_qs.count()
+    decided_by_me = list(entschieden_qs[:DECIDED_HISTORY_LIMIT])
     inbox = list(inbox) + chain_inbox + decided_by_me
 
     from ..approvals import may_decide_requisition_step as may_dec
@@ -1181,6 +1192,11 @@ def staffing_requests_view(request):
         'form_rule': form_rule, 'form_questions': form_questions,
         'rule_rows': rule_rows, 'question_types': _QT,
         'my_requests': my_requests, 'inbox': inbox, 'is_decider': is_decider,
+        # Genannt statt verschwiegen: Wenn die eigene Entscheidungs-Historie
+        # laenger ist als der Deckel, sagt die Seite das.
+        'entschieden_gesamt': entschieden_gesamt,
+        'entschieden_gezeigt': len(decided_by_me),
+        'entschieden_gekappt': entschieden_gesamt > len(decided_by_me),
         'facilities': Facility.objects.order_by('name'),
         'job_families': JobFamily.objects.order_by('name'),
         'locations': Location.objects.filter(archived=False).order_by('name'),

@@ -5,6 +5,33 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (weitere Listen schnitten still ab)
+
+Nachdem dieselbe Fehlerklasse an einem Tag zweimal auftrat — `logs[:500]` im
+Audit-Log, `assets[:200]` in der Mediathek — ein Durchgang durch alle
+Listen-Abfragen. Bewusste Top-N-Listen („die zehn häufigsten Kanäle", „die
+nächsten acht Termine") bleiben, wie sie sind. Vier Stellen waren dagegen
+stille Grenzen:
+
+- **Die Nachweise einer Bewerbung im Steckbrief** endeten bei 20 — ausgerechnet
+  dort, wo der Kommentar daneben erklärt, dass diese Dateien vorher gar
+  niemand zu Gesicht bekam.
+- **Der eigene Schriftwechsel im Bewerberportal** endete bei 20. Es sind die
+  eigenen Nachrichten der bewerbenden Person; die ältesten wegzulassen hiesse,
+  ihr den Anfang ihrer Unterhaltung vorzuenthalten.
+- **Jobfamilien in der Messstrecke** (40) und **Textbausteine im
+  Antwort-Modal** (50) — beides Stammdaten. Wer einen Baustein anlegt und ihn
+  nicht wiederfindet, sucht den Fehler bei sich.
+- **Eigene Personalbedarfs-Meldungen** endeten bei 20; wer seine Meldung von
+  vor einem halben Jahr nicht findet, meldet sie ein zweites Mal.
+
+Wo ein Deckel bleibt, weil die Menge über Jahre wächst — die eigenen
+**entschiedenen** Personalbedarfe —, nennt die Seite ihn jetzt samt Gesamtzahl
+und verweist auf das Audit-Log. Offene Anträge stehen vollständig da.
+
+Geprüft und in Ordnung befunden statt angenommen: Der Auskunfts-Rechenkern für
+Art. 15 DSGVO (`ats/dsgvo.py`) kappt nichts.
+
 ### Behoben (Farbverläufe trugen nur an einem Ende)
 
 Systematischer Durchgang durch alle öffentlichen Seiten im hellen

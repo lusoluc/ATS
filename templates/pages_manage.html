@@ -2,47 +2,119 @@
 {% block title %}Seiten · SecurATS{% endblock %}
 {% block content %}
 <div class="page-wrap">
-  <h1 class="page-title"><i class="fa-solid fa-file-lines"></i> Seiten-Manager</h1>
-  <p class="page-lead">Inhalts-Seiten anlegen und bearbeiten. (Visueller Drag-&-Drop-Builder folgt.)</p>
+  <p style="margin:0 0 var(--space-2);"><a href="{% url 'ats:settings_hub' %}" style="color:var(--accent-light);"><i class="fa-solid fa-arrow-left"></i> Einstellungen</a></p>
+  <h1 class="page-title"><i class="fa-solid fa-file-lines"></i> Seiten &amp; Navigation</h1>
+  <p class="page-lead">Inhalts-Seiten des Karriereportals anlegen, in die Navigation nehmen und veröffentlichen. Der Baukasten je Seite (Hero, Text, Stellen, Zitat …) sitzt in der Liste unten.</p>
+
+  {% comment %} Bis hierher gab es ZWEI Seiten-Editoren: dieser hier mit Löschen
+     und dem Weg zum Baukasten, ein zweiter („CMS Seiten-Editor") mit den vier
+     Feldern, die hier fehlten. Wer eine Seite anlegte und veröffentlichte,
+     brauchte beide. Jetzt einer – mit allem. {% endcomment %}
   <div class="card" style="margin-bottom: var(--space-4);">
-    <form method="post" style="display:flex;flex-direction:column;gap: var(--space-2);">
+    <h2 style="font-size:16px; margin:0 0 var(--space-3);" id="form-heading">Seite anlegen oder bearbeiten</h2>
+    <form method="post" action="{% url 'ats:save_page' %}" style="display:flex;flex-direction:column;gap: var(--space-3);">
       {% csrf_token %}
       <input type="hidden" name="page_id" id="page_id">
-      <input name="title" id="f_title" class="input" placeholder="Titel" required>
-      <input name="slug" id="f_slug" class="input" placeholder="slug (optional – wird sonst erzeugt)">
-      <textarea name="content" id="f_content" class="textarea" placeholder="Inhalt" rows="6"></textarea>
-      <label style="color:var(--text-muted);display:flex;gap:8px;align-items:center;"><input type="checkbox" name="navEnabled" id="f_nav" checked> In Navigation anzeigen</label>
-      <button type="submit" class="btn btn-primary" style="align-self:flex-start;">Speichern</button>
+      <div class="form-group">
+        <label class="form-label" for="f_title">Titel *</label>
+        <input name="title" id="f_title" class="input" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="f_slug">Adresse (Slug) *</label>
+        <input name="slug" id="f_slug" class="input" required
+               placeholder="z. B. ueber-uns – ergibt /pages/ueber-uns/">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="f_content">Inhalt</label>
+        <textarea name="content" id="f_content" class="input" rows="8"
+                  placeholder="Fließtext. Für gestaltete Seiten den Baukasten in der Liste unten nutzen."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="f_meta">Beschreibung für Suchmaschinen</label>
+        <input name="meta_desc" id="f_meta" class="input" maxlength="300"
+               placeholder="Ein bis zwei Sätze, die in Suchergebnissen erscheinen.">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="f_status">Sichtbarkeit</label>
+        <select name="status" id="f_status" class="input" style="max-width:280px;">
+          <option value="published">veröffentlicht</option>
+          <option value="draft">Entwurf (nicht öffentlich)</option>
+          <option value="archived">archiviert</option>
+        </select>
+      </div>
+      <fieldset style="border:1px solid var(--border-color); border-radius:var(--border-radius-sm); padding: var(--space-3);">
+        <legend style="padding:0 6px; font-size:13px; color:var(--text-muted);">Navigation</legend>
+        <label style="display:flex; gap:10px; align-items:center; margin-bottom: var(--space-3);">
+          <input type="checkbox" name="nav_enabled" id="f_nav" checked style="width:24px; height:24px;">
+          In der Hauptnavigation anzeigen
+        </label>
+        <div class="form-group">
+          <label class="form-label" for="f_nav_label">Beschriftung im Menü</label>
+          <input name="nav_label" id="f_nav_label" class="input" maxlength="150"
+                 placeholder="Leer lassen = Titel verwenden">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label" for="f_nav_order">Position</label>
+          <input name="nav_order" id="f_nav_order" class="input" value="0"
+                 inputmode="numeric" style="max-width:120px;">
+        </div>
+      </fieldset>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button type="submit" class="btn btn-primary">Speichern</button>
+        <button type="button" class="btn btn-ghost" onclick="resetPageForm()">Neue Seite</button>
+      </div>
     </form>
   </div>
+
   <div class="card">
+    <h2 style="font-size:16px; margin:0 0 var(--space-3);">Vorhandene Seiten</h2>
     <div class="table-scroll">
     <table class="data-table">
-      <thead><tr><th>Titel</th><th>Slug</th><th>Nav</th><th></th></tr></thead>
+      <thead><tr><th>Titel</th><th>Adresse</th><th>Navigation</th><th>Sichtbarkeit</th><th></th></tr></thead>
       <tbody>
       {% for p in pages %}
         <tr>
-          <td><a href="/pages/{{ p.slug }}/">{{ p.title }}</a></td>
-          <td style="color:var(--text-muted);">{{ p.slug }}</td>
-          <td>{% if p.navEnabled %}✓{% else %}–{% endif %}</td>
-          <td style="text-align:right;">
-            <a href="{% url 'ats:blocks_editor' kind='page' obj_id=p.id %}" class="btn-icon" title="Baukasten"><i class="fa-solid fa-cubes"></i></a>
-            <button type="button" onclick="editPage('{{ p.id }}','{{ p.title|escapejs }}','{{ p.slug|escapejs }}',this)" class="btn-icon" title="Bearbeiten"><i class="fa-solid fa-pen"></i></button>
-            <form method="post" action="{% url 'ats:delete_page' p.id %}" style="display:inline;" onsubmit="return confirm('Seite löschen?');">{% csrf_token %}<button type="submit" class="btn-icon danger"><i class="fa-solid fa-trash"></i></button></form>
+          <td><a href="{% url 'ats:page_detail' p.slug %}">{{ p.title }}</a></td>
+          <td style="color:var(--text-muted);">/pages/{{ p.slug }}/</td>
+          <td>{% if p.navEnabled %}Ja · Pos. {{ p.navOrder }}{% else %}–{% endif %}</td>
+          <td>{% if p.status == 'published' %}<span class="badge badge-accent">veröffentlicht</span>{% else %}<span class="badge">{{ p.status }}</span>{% endif %}</td>
+          <td style="text-align:right; white-space:nowrap;">
+            <a href="{% url 'ats:blocks_editor' kind='page' obj_id=p.id %}" class="btn-icon" title="Baukasten: Blöcke dieser Seite"><i class="fa-solid fa-cubes"></i></a>
+            <button type="button" class="btn-icon" title="Bearbeiten"
+                    onclick="editPage('{{ p.id }}','{{ p.title|escapejs }}','{{ p.slug|escapejs }}',`{{ p.content|escapejs }}`,'{{ p.navLabel|default:""|escapejs }}','{{ p.navOrder }}',{% if p.navEnabled %}true{% else %}false{% endif %},'{{ p.metaDesc|default:""|escapejs }}','{{ p.status }}')">
+              <i class="fa-solid fa-pen"></i>
+            </button>
+            <form method="post" action="{% url 'ats:delete_page' p.id %}" style="display:inline;" onsubmit="return confirm('Seite „{{ p.title|escapejs }}“ löschen?');">{% csrf_token %}<button type="submit" class="btn-icon danger" title="Löschen"><i class="fa-solid fa-trash"></i></button></form>
           </td>
         </tr>
-      {% empty %}<tr><td colspan="4" class="empty-state">Noch keine Seiten.</td></tr>{% endfor %}
+      {% empty %}<tr><td colspan="5" class="empty-state">Noch keine Seiten.</td></tr>{% endfor %}
       </tbody>
     </table>
     </div>
   </div>
 </div>
 <script>
-function editPage(id,title,slug,btn){
-  document.getElementById('page_id').value=id;
-  document.getElementById('f_title').value=title;
-  document.getElementById('f_slug').value=slug;
-  window.scrollTo({top:0,behavior:'smooth'});
+function editPage(id, title, slug, content, navLabel, navOrder, navEnabled, metaDesc, status) {
+  document.getElementById('page_id').value = id;
+  document.getElementById('f_title').value = title;
+  document.getElementById('f_slug').value = slug;
+  document.getElementById('f_content').value = content;
+  document.getElementById('f_nav_label').value = navLabel;
+  document.getElementById('f_nav_order').value = navOrder;
+  document.getElementById('f_nav').checked = navEnabled;
+  document.getElementById('f_meta').value = metaDesc;
+  document.getElementById('f_status').value = status;
+  document.getElementById('form-heading').textContent = 'Seite bearbeiten: ' + title;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.getElementById('f_title').focus();
+}
+
+function resetPageForm() {
+  const form = document.getElementById('page_id').form;
+  form.reset();
+  document.getElementById('page_id').value = '';
+  document.getElementById('form-heading').textContent = 'Seite anlegen oder bearbeiten';
+  document.getElementById('f_title').focus();
 }
 </script>
 {% endblock %}

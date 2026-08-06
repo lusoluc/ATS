@@ -513,7 +513,9 @@ class SidebarRoleFilteringTestCase(TestCase):
         ('ats:stats_page', "Ausgleichsabgabe"),
         ('ats:process_page', "Recruiting Prozess Flow"),
         ('ats:templates_page', "Globale Variablen"),
-        ('ats:cms_page', "CMS Seitenübersicht"),
+        # Der zweite Seiten-Editor ist entfallen - es gibt jetzt EINEN
+        # (ats:pages_manage), der auch loeschen kann und zum Baukasten fuehrt.
+        ('ats:pages_manage', "Seiten &amp; Navigation"),
         ('ats:ki_page', "KI-Steuerungszentrum"),
         ('ats:hris_page', "Feldzuordnung"),
     ]

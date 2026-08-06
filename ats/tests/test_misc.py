@@ -132,9 +132,12 @@ class BacklogP3TestCase(TestCase):
 
     def test_page_create_and_public_render(self):
         self.client.force_login(User.objects.get(username="hradmin6"))
-        resp = self.client.post(reverse('ats:pages_manage'),
+        # Gespeichert wird seit der Editor-Zusammenlegung ueber save_page - der
+        # Endpunkt kennt auch Navigations-Beschriftung, Position, SEO-Text und
+        # Sichtbarkeit. Die Seitenverwaltung selbst nimmt keine POSTs mehr an.
+        resp = self.client.post(reverse('ats:save_page'),
                                 data={"title": "Über uns", "slug": "ueber-uns",
-                                      "content": "Wir sind SecurATS.", "navEnabled": "on"})
+                                      "content": "Wir sind SecurATS.", "nav_enabled": "on"})
         self.assertEqual(resp.status_code, 302)
         from ..models import Page
         self.assertTrue(Page.objects.filter(slug="ueber-uns").exists())

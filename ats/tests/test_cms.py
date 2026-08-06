@@ -619,3 +619,59 @@ class TextSnippetsTestCase(TestCase):
         self.client.post(reverse('ats:snippets'),
                          {"category": "INTRO", "content": "Schmuggel"})
         self.assertFalse(TextSnippet.objects.filter(content="Schmuggel").exists())
+
+
+class OnePageEditorTestCase(TestCase):
+    """Es gab ZWEI Seiten-Editoren nebeneinander.
+
+    Der eine konnte löschen und führte zum Baukasten, kannte aber nur vier
+    Felder. Der andere hatte Navigations-Beschriftung, Position, SEO-Text und
+    Sichtbarkeit — dafür weder Löschen noch Baukasten. Wer eine Seite anlegte
+    UND veröffentlichte, brauchte beide Bildschirme.
+    """
+
+    def setUp(self):
+        self.admin = make_user("seiten-admin", role="HR-Admin")
+        self.client.force_login(self.admin)
+        self.url = reverse('ats:pages_manage')
+
+    def test_the_second_editor_is_gone(self):
+        from django.urls import NoReverseMatch
+        with self.assertRaises(NoReverseMatch):
+            reverse('ats:cms_page')
+
+    def test_one_form_writes_every_field(self):
+        from ..models import Page
+        self.client.post(reverse('ats:save_page'), {
+            'title': 'Über uns', 'slug': 'ueber-uns',
+            'content': 'Wir sind ein Träger.', 'status': 'draft',
+            'nav_enabled': 'on', 'nav_label': 'Wir', 'nav_order': '3',
+            'meta_desc': 'Kurzbeschreibung für Suchmaschinen.'})
+        page = Page.objects.get(slug='ueber-uns')
+        self.assertEqual(page.status, 'draft')
+        self.assertEqual(page.navLabel, 'Wir')
+        self.assertEqual(page.navOrder, 3)
+        self.assertEqual(page.metaDesc, 'Kurzbeschreibung für Suchmaschinen.')
+        self.assertTrue(page.navEnabled)
+
+    def test_saving_returns_to_the_one_editor(self):
+        resp = self.client.post(reverse('ats:save_page'), {
+            'title': 'Kontakt', 'slug': 'kontakt', 'content': 'x'})
+        self.assertEqual(resp.headers.get('Location'), self.url)
+
+    def test_the_page_offers_delete_and_the_block_builder(self):
+        from ..models import Page
+        page = Page.objects.create(title='Team', slug='team')
+        resp = self.client.get(self.url)
+        self.assertContains(resp, reverse('ats:delete_page', args=[page.id]))
+        self.assertContains(resp, reverse('ats:blocks_editor',
+                                          kwargs={'kind': 'page',
+                                                  'obj_id': page.id}))
+
+    def test_every_field_is_offered_in_the_form(self):
+        resp = self.client.get(self.url)
+        for field in ('name="title"', 'name="slug"', 'name="content"',
+                      'name="status"', 'name="nav_enabled"',
+                      'name="nav_label"', 'name="nav_order"',
+                      'name="meta_desc"'):
+            self.assertContains(resp, field)

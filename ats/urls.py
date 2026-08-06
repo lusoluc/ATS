@@ -47,7 +47,6 @@ urlpatterns = [
     path('recruiter/kpis/', views.stats_page, name='stats_page'),
     path('recruiter/prozess-flow/', views.process_page, name='process_page'),
     path('recruiter/email-vorlagen/', views.templates_page, name='templates_page'),
-    path('recruiter/cms/', views.cms_page, name='cms_page'),
     path('recruiter/ki-zentrale/', views.ki_page, name='ki_page'),
     path('recruiter/ki-zentrale/auto-antwort/', views.save_auto_reply_settings, name='save_auto_reply_settings'),
     path('recruiter/lernendes-scoring/', views.learned_scoring_view, name='learned_scoring'),  # L3

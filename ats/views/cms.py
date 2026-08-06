@@ -80,27 +80,24 @@ def save_page(request):
                 metadataJson=json.dumps({"pageId": str(page.id), "slug": page.slug})
             )
 
-        return redirect('ats:cms_page')
-    return redirect('ats:cms_page')
+        return redirect('ats:pages_manage')
+    return redirect('ats:pages_manage')
 
 
 @hr_admin_required
 def pages_manage(request):
-    if request.method == 'POST':
-        page_id = request.POST.get('page_id')
-        title = (request.POST.get('title') or '').strip()
-        content = request.POST.get('content') or ''
-        slug = (request.POST.get('slug') or slugify(title)).strip()
-        nav = bool(request.POST.get('navEnabled'))
-        if title and slug:
-            if page_id:
-                p = get_object_or_404(Page, id=page_id)
-                p.title, p.content, p.slug, p.navEnabled = title, content, slug, nav
-                p.save()
-            else:
-                Page.objects.get_or_create(slug=slug, defaults={
-                    'title': title, 'content': content, 'navEnabled': nav})
-        return redirect('ats:pages_manage')
+    """Die EINE Seiten-Verwaltung: anlegen, bearbeiten, loeschen, Baukasten.
+
+    Frueher gab es zwei Editoren nebeneinander. Dieser hier konnte loeschen und
+    fuehrte zum Baukasten, kannte aber nur vier Felder; der andere ("CMS
+    Seiten-Editor") hatte Navigations-Beschriftung, Position, SEO-Text und
+    Sichtbarkeit, dafuer weder Loeschen noch Baukasten. Wer eine Seite anlegte
+    UND veroeffentlichte, brauchte beide Bildschirme.
+
+    Gespeichert wird ueber `save_page` - der Endpunkt kannte die vollstaendigen
+    Felder schon und schreibt einen Audit-Eintrag. Die frueher hier eingebaute
+    zweite, aermere Speicher-Logik ist damit entfallen.
+    """
     pages = Page.objects.order_by('navOrder', 'title')
     return render(request, 'pages_manage.html', {'pages': pages})
 
@@ -262,7 +259,6 @@ def branding_view(request):
 @any_staff_required
 def landing_pages_manage(request):
     """Landingpages verwalten: anlegen/bearbeiten, Link+QR, Kennzahlen."""
-    from django.utils.text import slugify
 
     from ..models import LandingPage
     if request.method == 'POST' and request.POST.get('form') == 'expiry':

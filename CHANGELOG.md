@@ -5,6 +5,31 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (ausstehende Gremiums-Stimmen konnten unsichtbar bleiben)
+
+Die Freigaben-Seite holte die **200 ältesten** offenen Bewerbungen der ganzen
+Organisation und prüfte **erst danach**, wer in welchem Sichtungs-Gremium
+sitzt. In einem Haus mit mehr als 200 offenen Bewerbungen konnten diese 200
+sämtlich aus fremden Einrichtungen stammen — dann blieb die Liste der eigenen
+ausstehenden Stimmen leer.
+
+Die Folge ist kein Schönheitsfehler: Eine ausbleibende Gremiums-Stimme
+blockiert die Einladung. Der Ablauf stünde still, und niemand hätte den Grund
+gesehen — weder die Person mit der offenen Stimme noch die Recruiterin, die
+auf die Freigabe wartet.
+
+- Gekappt wird jetzt das **Ergebnis**, nicht die Eingabe: Die Seite geht die
+  offenen Bewerbungen durch, bis sie 50 gefunden hat, in denen die eigene
+  Stimme aussteht.
+- Bewusst **kein** BOLA-Scoping davor: Gremiums-Mitgliedschaft entsteht auch
+  aus Vorgaben höherer Ebenen und folgt nicht dem Einrichtungs-Zugriffsbereich.
+  Wer hier scopte, versteckte Pflichten statt Daten — die Mitgliedschaft selbst
+  ist die Zugriffsprüfung.
+
+Neuer Wächter `GuardrailNoCapBeforeFilterTestCase` gegen diese Form. Beide —
+der Regressionstest und der Wächter — wurden gegen den alten Stand geprüft und
+schlagen dort fehl; ein Test, der auch ohne den Fix grün ist, beweist nichts.
+
 ### Behoben (neun Jobs im Zeitplan — und keiner, der sie startet)
 
 `OPERATIONS.md` schlug für neun Kommandos einen Cron-Eintrag vor. Der

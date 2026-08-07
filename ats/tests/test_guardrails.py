@@ -1192,3 +1192,75 @@ class GuardrailNoSilentSwallowTestCase(TestCase):
             offenders, [],
             "Fehler wird verschluckt, ohne Log und ohne Begruendung — wenn "
             "das hier schiefgeht, erfaehrt es niemand: " + ", ".join(offenders))
+
+
+class GuardrailNoCapBeforeFilterTestCase(TestCase):
+    """Erst kappen, dann filtern — das Ergebnis kann leer sein, obwohl es Treffer gibt.
+
+    Gefunden auf der Freigaben-Seite: Sie holte die 200 ÄLTESTEN offenen
+    Bewerbungen der ganzen Organisation und prüfte ERST DANACH, wer in welchem
+    Gremium sitzt. In einem Haus mit mehr als 200 offenen Bewerbungen konnten
+    die 200 ältesten sämtlich aus fremden Einrichtungen stammen — dann blieb
+    die Liste der eigenen ausstehenden Stimmen leer. Eine ausbleibende
+    Gremiums-Stimme blockiert die Einladung; den Grund hätte niemand gesehen.
+
+    Das ist etwas anderes als eine sichtbare Obergrenze: Gekappt gehört das
+    ERGEBNIS, nicht die Eingabe.
+
+    Der Waechter packt Subscript-Huellen aus. Ein erster Anlauf tat das nicht
+    und uebersah genau den Fall, der ihn ausgeloest hat — die gefilterte
+    Comprehension war ihrerseits in `[:50]` gewickelt.
+    """
+
+    def test_no_queryset_is_capped_before_it_is_filtered(self):
+        import ast
+        import os
+
+        def auspacken(node):
+            while isinstance(node, ast.Subscript):
+                node = node.value
+            return node
+
+        def grenze(node):
+            while isinstance(node, ast.Subscript):
+                if (isinstance(node.slice, ast.Slice)
+                        and isinstance(node.slice.upper, ast.Constant)
+                        and isinstance(node.slice.upper.value, int)):
+                    return node.slice.upper.value
+                node = node.value
+            return None
+
+        base = os.path.dirname(os.path.dirname(__file__))
+        offenders = []
+        for root, _dirs, files in os.walk(base):
+            parts = root.split(os.sep)
+            if "tests" in parts or "migrations" in parts:
+                continue
+            for fname in files:
+                if not fname.endswith(".py"):
+                    continue
+                path = os.path.join(root, fname)
+                with open(path, encoding="utf-8") as fh:
+                    tree = ast.parse(fh.read())
+                gekappt = {}
+                for node in ast.walk(tree):
+                    if not (isinstance(node, ast.Assign)
+                            and isinstance(node.targets[0], ast.Name)):
+                        continue
+                    ziel = node.targets[0].id
+                    n = grenze(node.value)
+                    if n is not None:
+                        gekappt[ziel] = n
+                    kern = auspacken(node.value)
+                    if isinstance(kern, (ast.ListComp, ast.GeneratorExp)):
+                        for gen in kern.generators:
+                            quelle = getattr(gen.iter, "id", None)
+                            if quelle in gekappt and gen.ifs:
+                                offenders.append(
+                                    f"{os.path.relpath(path, base)}:{node.lineno} "
+                                    f"({quelle}[:{gekappt[quelle]}])")
+        self.assertEqual(
+            offenders, [],
+            "Erst gekappt, dann gefiltert — das Ergebnis kann leer sein, "
+            "obwohl passende Datensaetze existieren. Bitte das ERGEBNIS "
+            "begrenzen: " + ", ".join(offenders))

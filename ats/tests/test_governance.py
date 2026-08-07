@@ -2231,3 +2231,67 @@ class ApprovalGatePayBandTestCase(TestCase):
                          data={"step_id": str(step.id), "action": "approve"})
         job.refresh_from_db()
         self.assertEqual(job.workflowState.name, "published")
+
+
+class PanelVotesSurviveManyOpenApplicationsTestCase(TestCase):
+    """Gekappt wird das Ergebnis, nicht die Eingabe.
+
+    Vorher holte die Freigaben-Seite die 200 ÄLTESTEN offenen Bewerbungen der
+    ganzen Organisation und prüfte ERST DANACH, wer in welchem Gremium sitzt.
+    In einem Haus mit mehr als 200 offenen Bewerbungen konnten die 200
+    ältesten sämtlich aus fremden Einrichtungen stammen — dann blieb die
+    Liste leer, obwohl die eigene Stimme ausstand. Eine ausbleibende
+    Gremiums-Stimme blockiert die Einladung; niemand hätte den Grund gesehen.
+    """
+
+    def test_my_pending_vote_shows_up_behind_200_foreign_applications(self):
+        import uuid as _u
+
+        from ..models import (
+            Applicant,
+            Application,
+            Facility,
+            JobFamily,
+            JobPosting,
+            Location,
+            Organization,
+            WorkflowState,
+        )
+        org = Organization.objects.create(name="O")
+        loc = Location.objects.create(name="HH")
+        fac = Facility.objects.create(name="F", organization=org)
+        fam = JobFamily.objects.create(name="JF-" + str(_u.uuid4())[:6])
+        wf = WorkflowState.objects.create(name="published")
+        mitglied = make_user("gremium-mitglied", role="Hiring-Manager")
+
+        # 210 aeltere Bewerbungen auf einer Stelle OHNE dieses Gremium.
+        fremd = JobPosting.objects.create(
+            title="Fremde Stelle", organization=org, facility=fac,
+            location=loc, jobFamily=fam, workflowState=wf,
+            panelUserIdsJson=[])
+        bewerbende = Applicant.objects.bulk_create([
+            Applicant(firstName=f"A{i}", lastName="X",
+                      email=f"a{i}@example.invalid") for i in range(210)])
+        alt = timezone.now() - datetime.timedelta(days=30)
+        Application.objects.bulk_create([
+            Application(applicant=b, jobPosting=fremd, status="IN_REVIEW",
+                        createdAt=alt) for b in bewerbende])
+
+        # Eine NEUERE Bewerbung auf einer Stelle MIT diesem Gremium.
+        meine_stelle = JobPosting.objects.create(
+            title="Pflegedienstleitung", organization=org, facility=fac,
+            location=loc, jobFamily=fam, workflowState=wf,
+            panelUserIdsJson=[str(mitglied.id)])
+        wer = Applicant.objects.create(firstName="Vera", lastName="M",
+                                       email="vera-gremium@example.invalid")
+        meine = Application.objects.create(applicant=wer,
+                                           jobPosting=meine_stelle,
+                                           status="IN_REVIEW")
+
+        self.client.force_login(mitglied)
+        resp = self.client.get(reverse('ats:approvals'))
+        gezeigt = [r['app'].id for r in resp.context['panel_rows']]
+        self.assertIn(meine.id, gezeigt,
+                      "Die eigene ausstehende Stimme war hinter 210 fremden "
+                      "Bewerbungen verschwunden – genau die Kappung vor dem "
+                      "Filtern.")

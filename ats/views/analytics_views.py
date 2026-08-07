@@ -99,8 +99,13 @@ def analytics_view(request):
     landing_rows = []
     for lp in _LP.objects.order_by('-createdAt')[:50]:
         src = lp.slug.upper()
-        lp_apps = Application.objects.filter(source=src,
-                                             createdAt__gte=lp.createdAt)
+        # Aus dem GESCOPTEN Bestand ableiten. Vorher stand hier
+        # `Application.objects` - auf einer Seite, die im Kommentar
+        # "BOLA-gescopt" heisst und deren Funnel-Zahlen es auch sind. Eine
+        # Standortleitung las also ihre eigenen Bewerbungszahlen neben
+        # Kampagnen-Quoten der ganzen Organisation, ohne den Unterschied zu
+        # sehen.
+        lp_apps = apps.filter(source=src, createdAt__gte=lp.createdAt)
         t = lp_apps.count()
         inv = lp_apps.filter(status__in=['INVITED', 'HIRED']).count()
         landing_rows.append({
@@ -113,8 +118,10 @@ def analytics_view(request):
         })
 
     # Einstellungen gesamt: das Ereignis, an dem sich alles misst
-    hired_all = Application.objects.filter(status='HIRED',
-                                           hiredAt__isnull=False)
+    # Ebenfalls aus dem gescopten Bestand: "Einstellungen gesamt" hiess
+    # vorher "in der ganzen Organisation" - auf einer Seite, die sonst den
+    # eigenen Bereich zeigt.
+    hired_all = apps.filter(status='HIRED', hiredAt__isnull=False)
     hire_days = [(a.hiredAt - a.createdAt).days for a in hired_all]
     hiring_summary = {
         'count': hired_all.count(),

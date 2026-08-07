@@ -96,6 +96,9 @@ def _pending_steps_for(user):
     return waiting
 
 
+#: Wie viele ausstehende Gremiums-Stimmen die Freigaben-Seite zeigt.
+PANEL_ROWS = 50
+
 @any_staff_required
 def approvals_inbox(request):
     """Freigabe-Postfach „Wartet auf mich" mit Frist, Kommentar & Rückfrage."""
@@ -217,12 +220,30 @@ def approvals_inbox(request):
                                   'jobPosting__facility', 'jobPosting__location',
                                   'jobPosting__jobFamily',
                                   'jobPosting__organization')
-                  .order_by('createdAt')[:200])
+                  .order_by('createdAt'))
     from ..panel import sits_on_panel
     from ..permissions import active_delegations_to
     _delegs = active_delegations_to(request.user)
-    panel_apps = [a for a in candidates
-                  if sits_on_panel(request.user, a.jobPosting, _delegs)][:50]
+    # Gekappt wird das ERGEBNIS, nicht die Eingabe.
+    #
+    # Vorher stand hier `[:200]` an der Abfrage und `[:50]` hinter dem Filter:
+    # Es wurden die 200 aeltesten offenen Bewerbungen der ganzen Organisation
+    # geholt und ERST DANACH geprueft, wer in welchem Gremium sitzt. In einem
+    # Haus mit mehr als 200 offenen Bewerbungen konnten die 200 aeltesten
+    # saemtlich aus fremden Einrichtungen stammen - dann blieb die Liste leer,
+    # obwohl die eigene Stimme ausstand. Eine ausbleibende Gremiums-Stimme
+    # blockiert die Einladung; niemand haette den Grund gesehen.
+    #
+    # Kein BOLA-Scoping davor: Die Gremiums-Mitgliedschaft entsteht auch aus
+    # Vorgaben hoeherer Ebenen und folgt nicht dem Einrichtungs-Zugriffsbereich.
+    # Wer hier scopte, versteckte Pflichten statt Daten. Die Mitgliedschaft
+    # SELBST ist die Zugriffspruefung.
+    panel_apps = []
+    for a in candidates.iterator(chunk_size=200):
+        if sits_on_panel(request.user, a.jobPosting, _delegs):
+            panel_apps.append(a)
+            if len(panel_apps) >= PANEL_ROWS:
+                break
     # Einmal-Aktion: die abgegebene Stimme wird am Button sichtbar; nur das
     # AENDERN auf die Gegenstimme bleibt moeglich (dokumentiertes Feature).
     my_votes = dict(ApplicationVote.objects.filter(

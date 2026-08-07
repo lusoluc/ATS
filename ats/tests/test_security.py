@@ -664,3 +664,49 @@ class GlobalSearchTestCase(TestCase):
         self.client.force_login(make_user("gs-admin4", role="HR-Admin"))
         r = self._search("a")
         self.assertContains(r, "0 Treffer")
+
+
+class LockoutCacheFailureTestCase(TestCase):
+    """Was passiert, wenn der Cache ausfaellt, der die Sperre traegt?
+
+    Vorher zwei entgegengesetzte Fehlverhalten am selben Zaehler: Das LESEN
+    war ungeschuetzt (Cache-Ausfall = 500, niemand konnte sich mehr anmelden),
+    das SCHREIBEN fing jeden Fehler ab und schwieg (Sperre lautlos
+    abgeschaltet). Jetzt einheitlich: durchlassen, aber laut - und ueber
+    `/healthz/` sichtbar.
+    """
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+
+    def test_login_stays_usable_when_the_cache_is_down(self):
+        """Wer bei kaputtem Cache jeden Versuch abweist, sperrt das Haus aus."""
+        from unittest import mock
+        url = reverse('ats:login')
+        with mock.patch('ats.views.auth_views.cache') as kaputt:
+            kaputt.get.side_effect = OSError('cache down')
+            kaputt.set.side_effect = OSError('cache down')
+            kaputt.delete.side_effect = OSError('cache down')
+            with self.assertLogs('ats.views.auth_views', level='ERROR') as protokoll:
+                resp = self.client.post(url, {'username': 'x', 'password': 'y'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(any('wirkungslos' in z for z in protokoll.output),
+                        "Der Ausfall muss im Protokoll stehen: "
+                        + str(protokoll.output))
+
+    def test_healthz_reports_a_broken_cache(self):
+        """Der Cache traegt die Sperre - also gehoert er in die Gesundheitsprobe."""
+        import json
+        from unittest import mock
+        resp = self.client.get(reverse('ats:healthz'))
+        self.assertIn('cache', json.loads(resp.content)['checks'])
+
+        with mock.patch('django.core.cache.cache.set',
+                        side_effect=OSError('cache down')):
+            resp = self.client.get(reverse('ats:healthz'))
+        daten = json.loads(resp.content)
+        self.assertIn('error', daten['checks']['cache'])
+        self.assertEqual(daten['status'], 'degraded',
+                         "Ein kaputter Cache darf den Dienst nicht als 'ok' "
+                         "ausweisen - die Login-Sperre haengt daran.")

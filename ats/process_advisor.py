@@ -14,6 +14,9 @@ Prinzipien:
   nichts ohne Speichern.
 """
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 # (Stichworte im Titel/der Familie, Fragenliste)
 RULES = [
@@ -140,7 +143,10 @@ def ai_extra_questions(title: str, family: str, existing_ids: set):
         if ok:
             return _validate_ai_questions((data.get("response") or "").strip(), existing_ids)
     except Exception:
-        pass
+        # Leere Liste bleibt richtig - ohne KI gibt es eben keine Vorschlaege.
+        # Aber der Grund gehoert ins Protokoll: Sonst sucht jemand tagelang,
+        # warum im Fragen-Baukasten nie ein Vorschlag erscheint.
+        logger.exception("Frage-Vorschlaege der KI nicht abrufbar")
     return []
 
 

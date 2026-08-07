@@ -73,10 +73,13 @@ def schedule_interview(request):
                     Message.objects.create(application=app, direction='OUTBOUND',
                                            content=message_text + hint)
                     try:
-                        from django.core.mail import send_mail
-                        send_mail(f"Einladung zum Gespräch – {app.jobPosting.title}",
-                                  message_text + hint, None,
-                                  [app.applicant.email], fail_silently=True)
+                        from ..mail_send import send_notice
+                        send_notice(
+                            f"Einladung zum Gespräch – {app.jobPosting.title}",
+                            message_text + hint,
+                            None,
+                            [app.applicant.email],
+                            request=request, context='Gespraechseinladung')
                     except Exception:
                         logger.exception('Einladungs-Mail (Terminwahl) fehlgeschlagen')
                 write_audit('INVITE_SENT', user=request.user,
@@ -121,17 +124,19 @@ def schedule_interview(request):
                 from ..models import interview_kind_label as _kl
                 when_s = timezone.localtime(scheduled_time).strftime('%d.%m.%Y %H:%M')
                 try:
-                    from django.core.mail import send_mail
+                    from ..mail_send import send_notice
                     for member in team:
                         if member.email:
-                            send_mail(
+                            send_notice(
                                 f"Interview-Team: {_kl(location_type)} am {when_s} Uhr",
-                                (f"Du bist Teil des Interview-Teams:\n"
+                                f"Du bist Teil des Interview-Teams:\n"
                                  f"{app.applicant.firstName} {app.applicant.lastName} – "
                                  f"{app.jobPosting.title}\n{_kl(location_type)} am {when_s} Uhr."
                                  + (f"\nOrt/Link: {meeting_link}" if meeting_link else "")
-                                 + "\n\nTeam-Kalender: /recruiter/interviews/"),
-                                None, [member.email], fail_silently=True)
+                                 + "\n\nTeam-Kalender: /recruiter/interviews/",
+                                None,
+                                [member.email],
+                                request=request, context='Interview-Team')
                 except Exception:
                     logger.exception('Team-Benachrichtigung fehlgeschlagen')
 
@@ -146,13 +151,15 @@ def schedule_interview(request):
                 Message.objects.create(application=app, direction='OUTBOUND',
                                        content=message_text)
                 try:
-                    from django.core.mail import send_mail
-                    send_mail(
+                    from ..mail_send import send_notice
+                    send_notice(
                         f"Einladung zum Gespräch – {app.jobPosting.title}",
                         message_text +
                         f"\n\nTermin: {timezone.localtime(scheduled_time).strftime('%d.%m.%Y %H:%M')} Uhr"
                         + (f"\nOrt/Link: {meeting_link}" if meeting_link else ""),
-                        None, [app.applicant.email], fail_silently=True)
+                        None,
+                        [app.applicant.email],
+                        request=request, context='Gespraechseinladung')
                 except Exception:
                     logger.exception("Einladungs-Mail konnte nicht gesendet werden")
                 write_audit("INVITE_SENT", user=request.user,
@@ -449,16 +456,18 @@ def interview_outcome(request, interview_id):
     if outcome == 'COMPLETED' and old != 'COMPLETED':
         pending = pending_feedback_participants(iv, completed_round)
         if pending:
-            from django.core.mail import send_mail
+            from ..mail_send import send_notice
             name = f"{app.applicant.firstName} {app.applicant.lastName}"
             for person in pending:
-                send_mail(
+                send_notice(
                     f"Bitte um Feedback: {name} – {app.jobPosting.title}",
-                    (f"Sie haben {name} interviewt. Bitte hinterlassen Sie "
+                    f"Sie haben {name} interviewt. Bitte hinterlassen Sie "
                      "Ihre Einschätzung, damit die weitere Entscheidung auf "
                      "dokumentiertem Feedback steht.\n"
-                     "Feedback erfassen: /recruiter/interviews/"),
-                    None, [person.email], fail_silently=True)
+                     "Feedback erfassen: /recruiter/interviews/",
+                    None,
+                    [person.email],
+                    context='Feedback-Erinnerung')
             write_audit('FEEDBACK_REQUESTED', user=request.user,
                         application_id=str(app.id), round=completed_round,
                         recipients=len(pending))

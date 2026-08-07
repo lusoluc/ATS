@@ -365,7 +365,14 @@ def _inclusion_aggregate():
             other_inv += 1 if status in _INVITED else 0
     return {
         'disclosed': disclosed_n,
-        'sbv_notified': AuditLog.objects.filter(action='SBV_NOTIFIED').count(),
+        # Nur zugestellte Unterrichtungen zaehlen. Ein Vermerk ueber eine
+        # Mail, die nie ankam, ist als Nachweis nach § 164/§ 178 Abs. 2
+        # SGB IX wertlos - und als Kennzahl irrefuehrend. Alteintraege ohne
+        # das Feld gelten weiter als zugestellt: Damals wurde der Vermerk nur
+        # im Erfolgsfall ueberhaupt erreicht, wenn auch nicht geprueft.
+        'sbv_notified': (AuditLog.objects.filter(action='SBV_NOTIFIED')
+                         .exclude(metadataJson__contains='"delivered": false')
+                         .count()),
         'rates_visible': disclosed_n >= 5 and other_n >= 5,
         'disclosed_rate': round(100 * disclosed_inv / disclosed_n)
         if disclosed_n else None,
@@ -955,15 +962,18 @@ def staffing_requests_view(request):
             # Antragsteller informieren, sobald etwas Finales passiert
             if (req.status in ('ACCEPTED', 'DECLINED', 'RETURNED')
                     and req.requestedBy and req.requestedBy.email):
-                from django.core.mail import send_mail
+                from ..mail_send import send_notice
                 label = {'ACCEPTED': 'genehmigt', 'DECLINED': 'abgelehnt',
                          'RETURNED': 'zur Nachbesserung zurückgegeben'}[req.status]
-                send_mail(f'Stellenfreigabe {label}: {req.title}',
-                          (f'Ihr Personalbedarf "{req.title}" wurde {label}.'
+                send_notice(
+                    f'Stellenfreigabe {label}: {req.title}',
+                    f'Ihr Personalbedarf "{req.title}" wurde {label}.'
                            + (f'\nKommentar: {step.comment}' if step.comment
                               else '')
-                           + '\nDetails: /recruiter/bedarf/'),
-                          None, [req.requestedBy.email], fail_silently=True)
+                           + '\nDetails: /recruiter/bedarf/',
+                    None,
+                    [req.requestedBy.email],
+                    request=request, context='Freigabe-Entscheidung')
         return redirect('ats:staffing_requests')
 
     if request.method == 'POST' and request.POST.get('form') == 'resubmit':
@@ -1015,13 +1025,16 @@ def staffing_requests_view(request):
             # Melder:in informieren – der Fachbereich soll nicht nachfragen muessen
             if req.requestedBy and req.requestedBy.email:
                 try:
-                    from django.core.mail import send_mail
+                    from ..mail_send import send_notice
                     label = 'angenommen' if decision == 'ACCEPTED' else 'abgelehnt'
-                    send_mail(f'Ihre Bedarfsmeldung wurde {label}: {req.title}',
-                              (f'Status: {label}.\n'
+                    send_notice(
+                        f'Ihre Bedarfsmeldung wurde {label}: {req.title}',
+                        f'Status: {label}.\n'
                                + (f'Anmerkung: {req.decisionNote}\n' if req.decisionNote else '')
-                               + 'Details: /recruiter/bedarf/'),
-                              None, [req.requestedBy.email], fail_silently=True)
+                               + 'Details: /recruiter/bedarf/',
+                        None,
+                        [req.requestedBy.email],
+                        request=request, context='Bedarfs-Entscheidung')
                 except Exception:
                     logger.exception('Bedarfs-Entscheidungs-Mail fehlgeschlagen')
         return redirect('ats:staffing_requests')

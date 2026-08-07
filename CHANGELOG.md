@@ -5,6 +5,35 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (dreizehn Mail-Aufrufe gingen am Fehler-Vermerk vorbei)
+
+`ats/mail_send.py` wurde gebaut, damit ein fehlgeschlagener Versand sichtbar
+wird — im Zustand, in der Board-Warnung, notfalls als Meldung auf dem
+Bildschirm. Der Modul-Docstring nannte selbst „31 Stellen mit
+`fail_silently=True`". **Dreizehn davon riefen `send_mail` weiterhin direkt
+auf** und umgingen die Schicht vollständig: Gesprächseinladungen,
+Terminbestätigungen, Umbuchungen, Rückfragen an die Kontaktperson,
+Freigabe- und Bedarfs-Entscheidungen, die Job-Alert-Bestätigung — und die
+Unterrichtung der Schwerbehindertenvertretung.
+
+Alle dreizehn laufen jetzt über `send_notice`. Zwei davon hatten
+`send_mail as _send` importiert; ein erstes Inventar per Textsuche hat sie
+übersehen, die AST-Auswertung nicht.
+
+**Schwerer wiegt der Vermerk daneben.** Bei der SBV-Unterrichtung lief
+`write_audit('SBV_NOTIFIED', …)` bedingungslos hinter dem Versand — auch wenn
+die Mail still gescheitert war oder die Gruppe „SBV" gar keine Adresse
+hinterlegt hatte. Im Protokoll stand damit ein Nachweis über eine Pflicht nach
+§ 164/§ 178 Abs. 2 SGB IX, den niemand hätte einlösen können.
+
+- Der Eintrag trägt jetzt `delivered`, und die Kennzahl auf der
+  Inklusions-Seite zählt nur noch zugestellte Unterrichtungen.
+- Drei Tests halten das fest: gescheiterter Versand, erfolgreicher Versand,
+  und der Fall ohne jede hinterlegte Adresse.
+- Neuer Wächter `GuardrailNoDirectMailTestCase` sperrt direkten Mail-Versand
+  außerhalb von `ats/mail_*.py`. Er arbeitet über den Syntaxbaum, nicht über
+  Textsuche — sonst hätte er dieselben zwei Alias-Stellen übersehen wie ich.
+
 ### Behoben (der eigene CI-Umbau hat den Testlauf lahmgelegt)
 
 Der Deploy-Check sollte gegen eine produktionsnahe Umgebung laufen — dafür

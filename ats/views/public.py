@@ -389,18 +389,27 @@ def bewerben(request, job_id):
                     from django.contrib.auth.models import Group as _Group
                     _sbv, _ = _Group.objects.get_or_create(name='SBV')
                     _mails = [u.email for u in _sbv.user_set.all() if u.email]
+                    zugestellt = False
                     if _mails:
-                        from django.core.mail import send_mail as _send
-                        _send(
+                        from ..mail_send import send_notice
+                        zugestellt = send_notice(
                             f"SBV-Beteiligung: neue Bewerbung – {job.title}",
-                            ("Zu der Stelle ist eine Bewerbung mit freiwilliger "
+                            "Zu der Stelle ist eine Bewerbung mit freiwilliger "
                              "Angabe einer Schwerbehinderung/Gleichstellung "
                              "eingegangen. Bitte beziehen Sie sich nach "
                              "§ 164/§ 178 Abs. 2 SGB IX ein: "
-                             f"/recruiter/dashboard/#card-{application.id}"),
-                            None, _mails, fail_silently=True)
+                             f"/recruiter/dashboard/#card-{application.id}",
+                            None,
+                            _mails,
+                            context='SBV-Beteiligung')
+                    # Der Vermerk sagt jetzt, ob die Unterrichtung WIRKLICH
+                    # rausging. Vorher stand "SBV_NOTIFIED" auch dann im
+                    # Protokoll, wenn die Mail still gescheitert war oder die
+                    # Gruppe gar keine Adresse hinterlegt hat - ein Nachweis
+                    # ueber eine Pflicht nach § 164/§ 178 Abs. 2 SGB IX, den
+                    # niemand haette einloesen koennen.
                     write_audit('SBV_NOTIFIED', application_id=application.id,
-                                recipients=len(_mails))
+                                recipients=len(_mails), delivered=bool(zugestellt))
                 except Exception:
                     logger.exception('SBV-Unterrichtung fehlgeschlagen')
 
@@ -545,8 +554,13 @@ def candidate_portal(request, token):
             emails.add(slot_rel.createdBy.email)
         if emails:
             try:
-                from django.core.mail import send_mail
-                send_mail(subject, body, None, sorted(emails), fail_silently=True)
+                from ..mail_send import send_notice
+                send_notice(
+                    subject,
+                    body,
+                    None,
+                    sorted(emails),
+                    context='Termin-Aenderung an das Team')
             except Exception:
                 logger.exception('Team-Info zu Terminaenderung fehlgeschlagen')
 
@@ -626,20 +640,23 @@ def candidate_portal(request, token):
                     from django.contrib.auth.models import Group as _Group
                     _sbv, _ = _Group.objects.get_or_create(name='SBV')
                     _mails = [u.email for u in _sbv.user_set.all() if u.email]
+                    zugestellt = False
                     if _mails:
-                        from django.core.mail import send_mail as _send
-                        _send(
+                        from ..mail_send import send_notice
+                        zugestellt = send_notice(
                             "SBV-Beteiligung: nachträgliche Angabe – "
                             f"{first_active.jobPosting.title}",
-                            ("Zu einer laufenden Bewerbung wurde nachträglich "
+                            "Zu einer laufenden Bewerbung wurde nachträglich "
                              "eine Schwerbehinderung/Gleichstellung angegeben. "
                              "Bitte beziehen Sie sich nach § 164/§ 178 Abs. 2 "
                              "SGB IX ein: /recruiter/dashboard/#card-"
-                             f"{first_active.id}"),
-                            None, _mails, fail_silently=True)
+                             f"{first_active.id}",
+                            None,
+                            _mails,
+                            context='SBV-Beteiligung')
                     write_audit('SBV_NOTIFIED',
                                 application_id=str(first_active.id),
-                                recipients=len(_mails))
+                                recipients=len(_mails), delivered=bool(zugestellt))
                 except Exception:
                     logger.exception('SBV-Unterrichtung fehlgeschlagen')
         return redirect('ats:candidate_portal', token=token)
@@ -691,16 +708,18 @@ def candidate_portal(request, token):
             cp = app.jobPosting.contactPerson
             if cp and cp.email:
                 try:
-                    from django.core.mail import send_mail
+                    from ..mail_send import send_notice
                     auto_note = ('\n\n(Eine automatische Status-Antwort wurde '
                                  'bereits gesendet – bitte bei Bedarf ergänzen.)'
                                  if auto_replied else '')
-                    send_mail(
+                    send_notice(
                         f'Rückfrage zur Bewerbung – {app.jobPosting.title}',
-                        (f'{app.applicant.firstName} {app.applicant.lastName} fragt:\n\n'
+                        f'{app.applicant.firstName} {app.applicant.lastName} fragt:\n\n'
                          f'{content}\n\nAntworten: /recruiter/applications/{app.id}/messages/'
-                         f'{auto_note}'),
-                        None, [cp.email], fail_silently=True)
+                         f'{auto_note}',
+                        None,
+                        [cp.email],
+                        context='Rueckfrage an die Kontaktperson')
                 except Exception:
                     logger.exception('Rueckfrage-Mail fehlgeschlagen')
         if booking_error is None:
@@ -767,12 +786,15 @@ def candidate_portal(request, token):
                     Message.objects.create(application=app, direction='OUTBOUND',
                                            content=f'Ihr Termin wurde umgebucht: {when} Uhr.')
                     try:
-                        from django.core.mail import send_mail
-                        send_mail(f'Neuer Termin bestätigt – {app.jobPosting.title}',
-                                  f'Guten Tag {applicant.firstName},\n\nIhr neuer '
+                        from ..mail_send import send_notice
+                        send_notice(
+                            f'Neuer Termin bestätigt – {app.jobPosting.title}',
+                            f'Guten Tag {applicant.firstName},\n\nIhr neuer '
                                   f'Gesprächstermin ist bestätigt: {when} Uhr.\n\n'
-                                  'Freundliche Grüße', None, [applicant.email],
-                                  fail_silently=True)
+                                  'Freundliche Grüße',
+                            None,
+                            [applicant.email],
+                            context='Termin-Umbuchung')
                     except Exception:
                         logger.exception('Umbuchungs-Mail fehlgeschlagen')
                     write_audit('CANDIDATE_APPOINTMENT_REBOOKED', application_id=app.id,
@@ -829,11 +851,14 @@ def candidate_portal(request, token):
                                            content=f'Ihr Gesprächstermin ist bestätigt: {when} Uhr. '
                                                    'Details erhalten Sie vorab per E-Mail.')
                     try:
-                        from django.core.mail import send_mail
-                        send_mail(f'Terminbestätigung – {app.jobPosting.title}',
-                                  f'Guten Tag {applicant.firstName},\n\nIhr Gesprächstermin ist '
-                                  f'bestätigt: {when} Uhr.\n\nFreundliche Grüße', None,
-                                  [applicant.email], fail_silently=True)
+                        from ..mail_send import send_notice
+                        send_notice(
+                            f'Terminbestätigung – {app.jobPosting.title}',
+                            f'Guten Tag {applicant.firstName},\n\nIhr Gesprächstermin ist '
+                                  f'bestätigt: {when} Uhr.\n\nFreundliche Grüße',
+                            None,
+                            [applicant.email],
+                            context='Terminbestaetigung')
                     except Exception:
                         logger.exception('Terminbestätigungs-Mail fehlgeschlagen')
                     write_audit('CANDIDATE_SLOT_BOOKED', application_id=app.id,
@@ -1094,18 +1119,20 @@ def job_alert_subscribe(request):
             # Double-Opt-in: Bestätigungslink per Mail (Console-Backend in Dev;
             # fail_silently, damit fehlende Mail-Infrastruktur den Flow nicht bricht)
             try:
-                from django.core.mail import send_mail
+                from ..mail_send import send_notice
                 confirm_url = request.build_absolute_uri(
                     f"/job-alert/confirm/{sub.confirmationToken}/")
                 manage_url = request.build_absolute_uri(
                     f"/job-alert/manage/{sub.managementToken}/")
-                send_mail(
+                send_notice(
                     "Ihr Job-Alert: Bitte bestätigen",
-                    ("Bitte bestätigen Sie Ihren Job-Alert:\n" + confirm_url +
+                    "Bitte bestätigen Sie Ihren Job-Alert:\n" + confirm_url +
                      "\n\nEinstellungen ändern oder abmelden:\n" + manage_url +
                      "\n\nIhr Abo verfällt automatisch 12 Monate nach der letzten "
-                     "Bestätigung (DSGVO-Datensparsamkeit)."),
-                    None, [email], fail_silently=True)
+                     "Bestätigung (DSGVO-Datensparsamkeit).",
+                    None,
+                    [email],
+                    context='Job-Alert-Bestaetigung')
             except Exception:
                 logger.exception("Job-Alert-Bestätigungsmail konnte nicht gesendet werden")
         submitted = error is None

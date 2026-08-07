@@ -216,3 +216,69 @@ class BackgroundCommandsUseTheLayerTestCase(TestCase):
             "Direkter send_mail-Aufruf an der Versand-Schicht vorbei - ein "
             "Fehlschlag bliebe dort ohne Kontext und ohne Vermerk: "
             + ", ".join(offenders))
+
+
+class SbvNoticeIsHonestTestCase(TestCase):
+    """Der Vermerk „SBV unterrichtet" muss halten, was er behauptet.
+
+    Vorher lief `write_audit('SBV_NOTIFIED', ...)` bedingungslos hinter dem
+    Versand — auch wenn die Mail still gescheitert war oder die SBV-Gruppe gar
+    keine Adresse hinterlegt hatte. Damit stand im Protokoll ein Nachweis über
+    eine Pflicht nach § 164/§ 178 Abs. 2 SGB IX, den niemand hätte einlösen
+    können.
+    """
+
+    def setUp(self):
+        self.world = make_world()
+        self.job = make_job(self.world, title="Pflegefachkraft")
+
+    def _apply_with_disclosure(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        cv = SimpleUploadedFile("cv.pdf", b"%PDF-1.4 test",
+                                content_type="application/pdf")
+        return self.client.post(reverse('ats:bewerben', args=[self.job.id]), {
+            "first_name": "Erika", "last_name": "Muster",
+            "email": "sbv-probe@example.invalid",
+            "cover_letter": "Ich bewerbe mich.",
+            "consent_privacy": "on", "cv_file": cv,
+            "disability_disclosure": "on"})
+
+    def _entry(self):
+        return (AuditLog.objects.filter(action='SBV_NOTIFIED')
+                .order_by('-createdAt').first())
+
+    def test_a_failed_notice_is_recorded_as_not_delivered(self):
+        from django.contrib.auth.models import Group, User
+        sbv = Group.objects.get_or_create(name='SBV')[0]
+        make_user('sbv-mitglied').groups.add(sbv)
+        User.objects.filter(username='sbv-mitglied').update(
+            email='sbv@example.invalid')
+
+        with mock.patch('ats.mail_send.send_mail',
+                        side_effect=OSError('Connection refused')):
+            self._apply_with_disclosure()
+
+        eintrag = self._entry()
+        self.assertIsNotNone(eintrag, "Kein Vermerk angelegt")
+        self.assertIn('"delivered": false', eintrag.metadataJson)
+
+    def test_a_delivered_notice_says_so(self):
+        from django.contrib.auth.models import Group, User
+        sbv = Group.objects.get_or_create(name='SBV')[0]
+        make_user('sbv-mitglied2').groups.add(sbv)
+        User.objects.filter(username='sbv-mitglied2').update(
+            email='sbv2@example.invalid')
+
+        self._apply_with_disclosure()
+        eintrag = self._entry()
+        self.assertIsNotNone(eintrag)
+        self.assertIn('"delivered": true', eintrag.metadataJson)
+
+    def test_without_any_sbv_address_nothing_is_claimed(self):
+        """Eine Gruppe ohne hinterlegte Adresse hat niemanden erreicht."""
+        from django.contrib.auth.models import Group
+        Group.objects.get_or_create(name='SBV')
+        self._apply_with_disclosure()
+        eintrag = self._entry()
+        self.assertIsNotNone(eintrag)
+        self.assertIn('"delivered": false', eintrag.metadataJson)

@@ -1,4 +1,5 @@
 """Bewerbungs-Domaene: Bewerbende, Bewerbungen, Gespraeche, Feedback, Nachrichten, Talentpool und Quellen."""
+import logging
 import uuid
 
 from django.db import models
@@ -233,7 +234,16 @@ def get_interview_kinds():
             if kinds:
                 return kinds
     except (ValueError, TypeError):
-        pass
+        # Der Rueckfall auf die Code-Liste ist richtig - ohne ihn haette das
+        # Haus gar keine Terminformate mehr. Aber er darf nicht schweigen:
+        # Die selbst gepflegten Formate waeren dann verschwunden, und niemand
+        # wuesste warum. Geschrieben wird der Wert immer maschinell
+        # (`json.dumps` in interview_formats_manage), kaputt kann er also nur
+        # durch einen Eingriff an der Datenbank vorbei werden - genau der
+        # Fall, in dem ein Protokolleintrag zaehlt.
+        logging.getLogger(__name__).exception(
+            "INTERVIEW_KINDS_JSON ist unlesbar - es gelten die "
+            "Standard-Terminformate")
     return list(INTERVIEW_KINDS)
 
 

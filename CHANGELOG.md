@@ -5,6 +5,37 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (verschluckte Fehler — vor allem einer, der den Login-Schutz betraf)
+
+Acht Stellen fingen eine Ausnahme ab und taten nichts damit. Die teuerste sitzt
+in der **Brute-Force-Sperre**: Der Zähler fing Cache-Fehler ab und schwieg.
+Fällt der Cache aus, zählt niemand mehr Fehlversuche mit — der Login steht
+ungebremst offen, ohne dass es irgendwo auffiele. Ein Schutz, der lautlos
+verschwindet, ist gefährlicher als gar keiner, weil man sich auf ihn verlässt.
+
+Dazu kam ein zweites, entgegengesetztes Verhalten am selben Zähler: Das *Lesen*
+war ungeschützt. Ein Cache-Ausfall legte damit den Login komplett lahm (500),
+während derselbe Ausfall die Sperre lautlos abschaltete.
+
+- Beide Richtungen laufen jetzt gleich: **durchlassen, aber laut**. Wer bei
+  kaputtem Cache jeden Anmeldeversuch abweist, sperrt das ganze Haus aus.
+- **`/healthz/` prüft den Cache jetzt aktiv** (schreiben, lesen, aufräumen).
+  Er trug die Login-Sperre, wurde aber als einziger Baustein nicht überwacht.
+  Ein Ausfall meldet `degraded`, kein 503 — der Dienst bleibt benutzbar, nur
+  ungebremst.
+- Analytics-Berichte ließen bei einem Fehler ganze Abschnitte **verschwinden**.
+  Jetzt steht dort „nicht berechenbar" — wer den Abschnitt nicht kennt, hielte
+  den Bericht sonst für vollständig.
+- KI-Frage-Vorschläge, Modell-Auswahl und die Terminformat-Liste protokollieren
+  ihren Rückfall, statt ihn zu verschweigen.
+
+Neuer Wächter `GuardrailNoSilentSwallowTestCase`. Er verlangt nicht, dass jeder
+Fehler protokolliert wird — manchmal ist ein Fehlschlag der Normalfall, etwa
+wenn ein Sprachmodell kein gültiges JSON liefert. Er verlangt, dass jemand
+**hingesehen** hat: ein Log-Aufruf oder ein Kommentar, der die Entscheidung
+begründet. Er fand prompt eine achte Stelle, die meine eigene Textsuche
+übersehen hatte (`ats/models/` lag nicht im Suchpfad).
+
 ### Behoben (dreizehn Mail-Aufrufe gingen am Fehler-Vermerk vorbei)
 
 `ats/mail_send.py` wurde gebaut, damit ein fehlgeschlagener Versand sichtbar

@@ -1219,14 +1219,31 @@ def healthz(request):
         checks['ai'] = 'ok'
     except Exception:
         checks['ai'] = 'unreachable'
+    # Cache: Traeger der Login-Sperre. Faellt er aus, zaehlt niemand mehr
+    # Fehlversuche mit - der Brute-Force-Schutz ist dann wirkungslos, ohne
+    # dass es irgendwo auffiele. Deshalb aktiv pruefen (schreiben, lesen,
+    # aufraeumen) statt nur auf eine Konfiguration zu vertrauen.
+    try:
+        from django.core.cache import cache as _cache
+        _cache.set('healthz_probe', 'ok', 10)
+        checks['cache'] = 'ok' if _cache.get('healthz_probe') == 'ok' else \
+                          'error: Wert kam nicht zurueck'
+        _cache.delete('healthz_probe')
+    except Exception as e:
+        checks['cache'] = f'error: {str(e)[:120]}'
+
     # Queue
     depth = queue_depth()
     checks['queue'] = depth
     failed = depth.get('FAILED', 0)
 
+    # Cache-Ausfall macht den Dienst NICHT unbrauchbar (Anmelden geht weiter,
+    # nur ungebremst) - deshalb 'degraded' und kein 503, das den Dienst aus
+    # dem Lastverteiler nehmen wuerde. Aber sichtbar muss es sein.
     core_ok = checks['db'] == 'ok' and checks['media'] == 'ok'
-    status = 'ok' if core_ok and checks['ai'] == 'ok' and not failed else \
-             ('degraded' if core_ok else 'down')
+    alles_gut = (core_ok and checks['ai'] == 'ok'
+                 and checks['cache'] == 'ok' and not failed)
+    status = 'ok' if alles_gut else ('degraded' if core_ok else 'down')
     from securats.version import __version__
     return JsonResponse({'status': status, 'version': __version__, 'checks': checks},
                         status=200 if core_ok else 503)

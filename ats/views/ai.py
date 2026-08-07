@@ -156,7 +156,9 @@ def get_ai_model():
         if setting and setting.value.strip():
             return setting.value.strip()
     except Exception:
-        pass
+        # Der Standardwert ist ein sinnvoller Rueckfall - aber wenn die
+        # Datenbank hier streikt, ist das keine Nebensaechlichkeit.
+        logger.exception("AI_MODEL nicht lesbar - benutze Standardmodell")
     return "gemma:2b"
 
 
@@ -358,6 +360,12 @@ def try_parse_json_reply(reply):
             try:
                 return json.loads(match.group(1)), True
             except Exception:
+                # KEIN verschluckter Fehler, sondern Ablaufsteuerung: Ein
+                # Sprachmodell liefert nun einmal manchmal kein gueltiges
+                # JSON. Der Rueckgabewert `(None, False)` IST die Meldung -
+                # der Aufrufer wertet sie aus und faellt auf seinen
+                # regelbasierten Weg zurueck. Hier zu protokollieren wuerde
+                # das Log mit Normalfaellen fluten.
                 pass
     return None, False
 

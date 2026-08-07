@@ -3,10 +3,13 @@
 Alle Funktionen erhalten bereits BOLA-gescopte Querysets (scope_applications)
 und rechnen ausschließlich aggregiert – keine personenbezogenen Auswertungen.
 """
+import logging
 from datetime import timedelta
 
 from django.db.models import Count
 from django.utils import timezone
+
+logger = logging.getLogger(__name__)
 
 # --- Predictive: Time-to-Fill-Prognose ---------------------------------------
 
@@ -204,7 +207,11 @@ def build_data_summary(apps_qs):
             f"Slot-Auslastung={ap['utilization'] if ap['utilization'] is not None else '–'}%, "
             f"Buchungen abends/Wochenende={ap['after_hours_share'] if ap['after_hours_share'] is not None else '–'}%")
     except Exception:
-        pass
+        # Frueher `pass`: Der Abschnitt verschwand einfach aus dem Bericht.
+        # Wer ihn nicht kennt, haelt den Bericht fuer vollstaendig - und
+        # entscheidet auf einer Grundlage, der stillschweigend etwas fehlt.
+        logger.exception("Termin-Kennzahlen konnten nicht berechnet werden")
+        lines.append("Termine (90 Tage): nicht berechenbar – siehe Protokoll.")
     try:
         import datetime as _dt
 
@@ -218,7 +225,8 @@ def build_data_summary(apps_qs):
         lines.append(f"Talent-Pool: aktive Einwilligungen={active}, "
                      f"Stellen-Hinweise (90 Tage)={hints_90}")
     except Exception:
-        pass
+        logger.exception("Talent-Pool-Kennzahlen konnten nicht berechnet werden")
+        lines.append("Talent-Pool: nicht berechenbar – siehe Protokoll.")
     return "\n".join(lines)
 
 

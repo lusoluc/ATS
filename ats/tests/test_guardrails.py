@@ -1139,3 +1139,56 @@ class GuardrailNoDirectMailTestCase(TestCase):
             "Direkter Mail-Versand am Fehler-Vermerk vorbei — ein "
             "Fehlschlag bliebe hier unsichtbar. Bitte `send_notice` aus "
             "ats/mail_send.py benutzen: " + ", ".join(offenders))
+
+
+class GuardrailNoSilentSwallowTestCase(TestCase):
+    """`except ...: pass` ohne ein Wort darueber, warum.
+
+    Gefunden am 07.08.2026 an sieben Stellen. Die teuerste: Der Zaehler der
+    Brute-Force-Sperre fing Cache-Fehler ab und schwieg — faellt der Cache
+    aus, zaehlt niemand mehr mit, und der Login steht ungebremst offen, ohne
+    dass es irgendwo auffaellt. Ein Schutz, der lautlos verschwindet, ist
+    gefaehrlicher als gar keiner, weil man sich auf ihn verlaesst.
+
+    Der Waechter verlangt nicht, dass jeder Fehler protokolliert wird — es
+    gibt Faelle, in denen ein Fehlschlag der Normalfall ist (ein Sprachmodell
+    liefert kein gueltiges JSON). Er verlangt, dass jemand HINGESEHEN hat:
+    entweder ein Log-Aufruf im `except`-Block oder ein Kommentar, der die
+    Entscheidung begruendet.
+    """
+
+    def test_swallowed_exceptions_are_logged_or_justified(self):
+        import ast
+        import os
+
+        base = os.path.dirname(os.path.dirname(__file__))
+        offenders = []
+        for root, _dirs, files in os.walk(base):
+            parts = root.split(os.sep)
+            if "tests" in parts or "migrations" in parts:
+                continue
+            for fname in files:
+                if not fname.endswith(".py"):
+                    continue
+                path = os.path.join(root, fname)
+                with open(path, encoding="utf-8") as fh:
+                    quelle = fh.read()
+                zeilen = quelle.splitlines()
+                for node in ast.walk(ast.parse(quelle)):
+                    if not isinstance(node, ast.ExceptHandler):
+                        continue
+                    # Nur der reine Schlucker: ausschliesslich `pass`.
+                    if not (len(node.body) == 1
+                            and isinstance(node.body[0], ast.Pass)):
+                        continue
+                    # Ein Kommentar zwischen `except` und `pass` gilt als
+                    # bewusste Entscheidung.
+                    bereich = zeilen[node.lineno - 1:node.body[0].lineno]
+                    if any("#" in z for z in bereich):
+                        continue
+                    offenders.append(
+                        f"{os.path.relpath(path, base)}:{node.lineno}")
+        self.assertEqual(
+            offenders, [],
+            "Fehler wird verschluckt, ohne Log und ohne Begruendung — wenn "
+            "das hier schiefgeht, erfaehrt es niemand: " + ", ".join(offenders))

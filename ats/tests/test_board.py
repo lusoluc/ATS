@@ -230,8 +230,8 @@ class TodayFocusAndContactTestCase(TestCase):
         self.ap.refresh_from_db()
         self.assertEqual(self.ap.phone, "0151 999")            # Telefon direkt
         self.assertEqual(self.ap.email, "lena@x.de")           # E-Mail UNveraendert
-        self.assertTrue(Message.objects.filter(direction="INBOUND",
-                                               content__icontains="lena.neu@x.de").exists())
+        self.assertTrue(any("lena.neu@x.de".lower() in (n.content or '').lower()
+                            for n in Message.objects.filter(direction="INBOUND")))
         self.assertTrue(AuditLog.objects.filter(action="CANDIDATE_DATA_UPDATED").exists())
         self.assertTrue(AuditLog.objects.filter(
             action="CANDIDATE_EMAIL_CHANGE_REQUESTED").exists())

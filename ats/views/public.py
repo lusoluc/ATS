@@ -8,7 +8,6 @@ funktionieren.
 import datetime
 import json
 import logging
-import uuid
 
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
@@ -36,6 +35,7 @@ from ..models import (
     Message,
     Page,
     SystemSetting,
+    email_blind_index,
 )
 from ..models.applications import disability_value_disclosed
 from ..questions import ko_grounds as _ko_grounds
@@ -143,6 +143,27 @@ def job_detail(request, job_id):
     job_filled = hired_count >= (job.headcount or 1)
     context['job_filled'] = job_filled
     return render(request, 'job_detail.html', context)
+
+
+def _namenlos(dateiname: str) -> str:
+    """Ablagename ohne den Originalnamen - nur Zufalls-ID und Endung.
+
+    Bisher hiess die Datei `<uuid>_Lebenslauf_Maria_Schmidt.pdf`. Damit stand
+    der Name der Person im Klartext im Dateisystem UND in der Spalte
+    `cvStorageId` - waehrend `firstName`/`lastName` derselben Person
+    verschluesselt lagen. Ein Verzeichnis-Listing des Medien-Ordners war damit
+    eine Namensliste aller Bewerbenden.
+
+    Der Anzeigename bleibt erhalten (`ApplicationDocument.name`, verschluesselt),
+    damit im ATS weiterhin "Zeugnis.pdf" steht.
+    """
+    import uuid as _uuid
+    from pathlib import PurePath
+    endung = PurePath(dateiname or '').suffix.lower()[:10]
+    if not endung.replace('.', '').isalnum():
+        endung = ''
+    return f"{_uuid.uuid4()}{endung}"
+
 
 
 def bewerben(request, job_id):
@@ -270,8 +291,8 @@ def bewerben(request, job_id):
         cv_storage_path = None
         if cv_file:
             # Save file locally under media/cvs/ with custom secure name
-            safe_name = f"{uuid.uuid4()}_{cv_file.name}"
-            cv_storage_path = default_storage.save(f"cvs/{safe_name}", ContentFile(cv_file.read()))
+            cv_storage_path = default_storage.save(
+                f"cvs/{_namenlos(cv_file.name)}", ContentFile(cv_file.read()))
 
         with transaction.atomic():
             # 5. Look up or create Applicant
@@ -347,8 +368,9 @@ def bewerben(request, job_id):
 
             # WP1: beliebig viele zusätzliche Nachweise (Zeugnisse, Zertifikate, Approbation)
             for doc in request.FILES.getlist('documents'):
-                safe = f"{uuid.uuid4()}_{doc.name}"
-                path = default_storage.save(f"application_docs/{safe}", ContentFile(doc.read()))
+                path = default_storage.save(
+                    f"application_docs/{_namenlos(doc.name)}",
+                    ContentFile(doc.read()))
                 ApplicationDocument.objects.create(
                     application=application,
                     name=doc.name[:255],
@@ -363,9 +385,9 @@ def bewerben(request, job_id):
                 qf = request.FILES.get(f"question_{q['id']}")
                 if not qf:
                     continue
-                safe = f"{uuid.uuid4()}_{qf.name}"
-                path = default_storage.save(f"application_docs/{safe}",
-                                            ContentFile(qf.read()))
+                path = default_storage.save(
+                    f"application_docs/{_namenlos(qf.name)}",
+                    ContentFile(qf.read()))
                 ApplicationDocument.objects.create(
                     application=application,
                     name=f"{q['question'][:180]} – {qf.name}"[:255],
@@ -599,9 +621,13 @@ def candidate_portal(request, token):
                         .values_list('jobPosting__jobFamily_id', flat=True).distinct())
             locs = list(applications.exclude(jobPosting__location=None)
                         .values_list('jobPosting__location_id', flat=True).distinct())
+            # Ueber den Blind-Index nachschlagen, Adresse nur als Vorgabe:
+            # `email=` als Suchschluessel faende nach der Verschluesselung
+            # nichts mehr und legte bei jedem Klick einen neuen Eintrag an.
             TalentPoolSubscription.objects.update_or_create(
-                email=applicant.email,
-                defaults={'criteria': json.dumps({
+                emailHash=email_blind_index(applicant.email),
+                defaults={'email': applicant.email,
+                          'criteria': json.dumps({
                               'job_families': [str(i) for i in fams],
                               'locations': [str(i) for i in locs]}),
                           'consentId': f'portal-{token[:12]}',
@@ -609,7 +635,8 @@ def candidate_portal(request, token):
             write_audit('TALENT_POOL_JOINED',
                         application_id=str(applications.first().id) if applications else None)
         elif request.POST.get('action') == 'leave':
-            TalentPoolSubscription.objects.filter(email=applicant.email).delete()
+            TalentPoolSubscription.objects.filter(
+                emailHash=email_blind_index(applicant.email)).delete()
             write_audit('TALENT_POOL_LEFT',
                         application_id=str(applications.first().id) if applications else None)
         return redirect('ats:candidate_portal', token=token)
@@ -920,7 +947,8 @@ def candidate_portal(request, token):
         'applicant_email': applicant.email,
         'pool_member': __import__('ats.models', fromlist=['TalentPoolSubscription'])
             .TalentPoolSubscription.objects.filter(
-                email=applicant.email, expiresAt__gte=timezone.now()).first(),
+                emailHash=email_blind_index(applicant.email),
+                expiresAt__gte=timezone.now()).first(),
         'has_rejected': applications.filter(status='REJECTED').exists(),
         # § 164: Zustand der freiwilligen Angabe (verschluesselt -> in Python)
         'disability_disclosed': any(

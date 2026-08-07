@@ -285,8 +285,8 @@ class InterviewReminderTestCase(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn("Erinnerung", mail.outbox[0].subject)
         self.assertIn("https://meet.example.de/x", mail.outbox[0].body)
-        self.assertTrue(Message.objects.filter(application=app,
-                                               content__icontains="Erinnerung").exists())
+        self.assertTrue(any("Erinnerung".lower() in (n.content or '').lower()
+                            for n in Message.objects.filter(application=app)))
         self.assertTrue(AuditLog.objects.filter(action="INTERVIEW_REMINDER_SENT").exists())
         iv.refresh_from_db()
         self.assertIsNotNone(iv.reminderSentAt)
@@ -529,8 +529,8 @@ class AppointmentSelfServiceTestCase(TestCase):
         self.assertFalse(self.old_slot.isBooked)
         self.app.refresh_from_db()
         self.assertEqual(self.app.status, "INVITED")          # Bewerbung lebt weiter
-        self.assertTrue(Message.objects.filter(direction="INBOUND",
-                                               content__icontains="Schichtplan").exists())
+        self.assertTrue(any("Schichtplan".lower() in (n.content or '').lower()
+                            for n in Message.objects.filter(direction="INBOUND")))
         self.assertTrue(AuditLog.objects.filter(
             action="CANDIDATE_APPOINTMENT_CANCELLED").exists())
         team = [m for m in mail.outbox if "owner@klinik.example" in m.to]
@@ -556,8 +556,8 @@ class AppointmentSelfServiceTestCase(TestCase):
                              data={"change_request_interview_id": str(self.iv.id),
                                    "reason": "Bus fällt aus – geht 30 Min später?"})
         self.assertEqual(r.status_code, 302)
-        self.assertTrue(Message.objects.filter(direction="INBOUND",
-                                               content__icontains="Bus fällt aus").exists())
+        self.assertTrue(any("Bus fällt aus".lower() in (n.content or '').lower()
+                            for n in Message.objects.filter(direction="INBOUND")))
 
     def test_foreign_interview_untouchable(self):
         from ..models import Applicant, ApplicantToken, Application, Interview

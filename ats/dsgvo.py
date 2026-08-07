@@ -96,7 +96,11 @@ def _talent_pool(applicant: Applicant) -> dict[str, Any] | None:
     abrufbar. Ein Nachweis, den niemand nachschlagen kann, ist keiner
     (Art. 7 Abs. 1).
     """
-    sub = TalentPoolSubscription.objects.filter(email=applicant.email).first()
+    # Ueber den Blind-Index: Die Adresse liegt jetzt verschluesselt, ein
+    # Gleichheits-Lookup auf die Spalte faende nichts mehr.
+    from .models import email_blind_index
+    sub = TalentPoolSubscription.objects.filter(
+        emailHash=email_blind_index(applicant.email)).first()
     if sub is None:
         return None
     try:

@@ -149,6 +149,72 @@ class TalentPoolAtRestTestCase(TestCase):
 
 
 class GuardrailPersonalFieldsEncryptedTestCase(TestCase):
+    """Personenbezogene Felder in ALLEN Modellen — nicht in einer Liste.
+
+    Die erste Fassung dieses Wächters prüfte sechs namentlich genannte Modelle.
+    Er kodierte damit die Fälle, die ich gefunden hatte, nicht die Fehlerklasse
+    — und übersah prompt `JobAlertSubscription.email`: dieselbe Art Angabe
+    derselben Art Person wie im Talent-Pool, nur ein Modell weiter.
+
+    Jetzt läuft er über jedes Modell der Anwendung und erkennt Felder am Namen
+    (E-Mail, Telefon, Vor-/Nachname, Anschrift). Jedes davon muss verschlüsselt
+    sein — oder hier mit Begründung stehen.
+    """
+
+    #: Muster fuer Feldnamen, die auf eine Person zeigen.
+    MUSTER = r"(email|phone|mobil|telefon|firstname|lastname|address|anschrift)"
+
+    #: Feld -> warum es NICHT verschluesselt gehoert.
+    UNBEDENKLICH = {
+        'Applicant.emailHash': 'Blind-Index, kein lesbarer Inhalt',
+        'TalentPoolSubscription.emailHash': 'Blind-Index',
+        'JobAlertSubscription.emailHash': 'Blind-Index',
+        'Location.address': 'Anschrift einer EINRICHTUNG, kein Personendatum - '
+                            'steht auf jeder Stellenanzeige',
+        # Die Kontaktperson wird auf der Stellenanzeige VEROEFFENTLICHT
+        # (Name, E-Mail, Telefon stehen dort im Klartext im HTML). Sie hinter
+        # eine Verschluesselung zu legen schuetzt nichts, was nicht ohnehin
+        # oeffentlich ist - kostet aber die alphabetische Sortierung der
+        # Kontaktliste, weil dann Ciphertext sortiert wuerde.
+        'ContactPerson.firstName': 'auf der Stellenanzeige veroeffentlicht',
+        'ContactPerson.lastName': 'auf der Stellenanzeige veroeffentlicht; '
+                                  'order_by wuerde sonst Ciphertext sortieren',
+        'ContactPerson.email': 'auf der Stellenanzeige veroeffentlicht',
+        'ContactPerson.phone': 'auf der Stellenanzeige veroeffentlicht',
+    }
+
+    def test_every_personal_field_is_encrypted_or_justified(self):
+        import re
+
+        from django.apps import apps as django_apps
+        from django.db import models as djm
+
+        from ..models.base import EncryptedCharField, EncryptedTextField
+
+        muster = re.compile(self.MUSTER, re.I)
+        offen = []
+        for modell in django_apps.get_app_config('ats').get_models():
+            for feld in modell._meta.get_fields():
+                if not isinstance(feld, djm.Field) or feld.is_relation:
+                    continue
+                if isinstance(feld, (EncryptedCharField, EncryptedTextField)):
+                    continue
+                if not isinstance(feld, (djm.CharField, djm.TextField,
+                                         djm.EmailField)):
+                    continue
+                if not muster.search(feld.name):
+                    continue
+                schluessel = f"{modell.__name__}.{feld.name}"
+                if schluessel not in self.UNBEDENKLICH:
+                    offen.append(schluessel)
+        self.assertEqual(
+            offen, [],
+            "Personenbezogenes Feld, weder verschluesselt noch begruendet. "
+            "Bitte EncryptedCharField/-TextField verwenden oder mit "
+            "Begruendung in UNBEDENKLICH eintragen: " + ", ".join(offen))
+
+
+class GuardrailApplicationDomainTextFieldsTestCase(TestCase):
     """Neue Textfelder an personenbezogenen Modellen brauchen eine Entscheidung.
 
     Der Anlass: Name, Anschrift und E-Mail lagen verschlüsselt, die Sätze über
@@ -209,3 +275,31 @@ class GuardrailPersonalFieldsEncryptedTestCase(TestCase):
             "Textfeld an einem personenbezogenen Modell, weder verschluesselt "
             "noch begruendet. Bitte EncryptedCharField/-TextField verwenden "
             "oder mit Begruendung in UNBEDENKLICH eintragen: " + ", ".join(offen))
+
+
+class JobAlertAtRestTestCase(TestCase):
+    """Die Adresse einer interessierten Person - nirgends veröffentlicht."""
+
+    def setUp(self):
+        from ..models import JobAlertSubscription
+        self.adresse = "alert-person@example.invalid"
+        JobAlertSubscription.objects.create(
+            email=self.adresse, status="ACTIVE",
+            confirmationToken="c-1", managementToken="m-1")
+
+    def test_the_address_is_encrypted(self):
+        roh = _roh('ats_jobalertsubscription', 'email')
+        self.assertTrue(roh)
+        self.assertNotIn("alert-person", roh)
+
+    def test_one_subscription_per_address_still_holds(self):
+        """Die Eindeutigkeit haengt jetzt am Blind-Index, nicht an der Spalte."""
+        from ..models import JobAlertSubscription
+        sub, angelegt = JobAlertSubscription.objects.get_or_create_by_email(
+            self.adresse.upper(),
+            defaults={'status': 'PENDING', 'confirmationToken': 'c-2',
+                      'managementToken': 'm-2'})
+        self.assertFalse(angelegt, "Gross-/Kleinschreibung legte ein zweites "
+                                   "Abo an - das Double-Opt-in waere damit "
+                                   "umgangen.")
+        self.assertEqual(JobAlertSubscription.objects.count(), 1)

@@ -143,7 +143,7 @@ class JobAlertScopeTestCase(TestCase):
         from ..models import JobAlertSubscription
         self._world()
         self.client.post(reverse('ats:job_alert'), data={"email": "flow@x.de", "global": "1"})
-        sub = JobAlertSubscription.objects.get(email="flow@x.de")
+        sub = JobAlertSubscription.objects.get_by_email("flow@x.de")
         self.assertEqual(sub.status, "PENDING")   # Double-Opt-in: erst bestätigen
         r = self.client.get(reverse('ats:job_alert_confirm', args=[sub.confirmationToken]))
         sub.refresh_from_db()

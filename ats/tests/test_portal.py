@@ -191,8 +191,8 @@ class PortalMessagesTestCase(TestCase):
                              data={"reply_app_id": str(self.app.id),
                                    "content": "Kann ich meine Tochter zum Infotag mitbringen?"})
         self.assertEqual(r.status_code, 302)
-        self.assertTrue(Message.objects.filter(direction="INBOUND",
-                                               content__icontains="Tochter").exists())
+        self.assertTrue(any("Tochter".lower() in (n.content or '').lower()
+                            for n in Message.objects.filter(direction="INBOUND")))
         self.assertTrue(AuditLog.objects.filter(action="CANDIDATE_MESSAGE_SENT").exists())
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn("p.wolf@klinik.example", mail.outbox[0].to)

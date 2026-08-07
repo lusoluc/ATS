@@ -3,12 +3,14 @@
 # die Rollen-Gruppen aus der frueheren Daten-Migration 0002_role_groups —
 # Berechtigungen (permissions.py) und make_user in den Tests setzen sie voraus.
 
-import ats.models
+import uuid
+
 import django.db.models.deletion
 import django.utils.timezone
-import uuid
 from django.conf import settings
 from django.db import migrations, models
+
+import ats.models
 
 ROLE_GROUPS = ["HR-Admin", "Recruiter", "Hiring-Manager", "Viewer"]
 

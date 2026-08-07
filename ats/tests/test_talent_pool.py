@@ -52,7 +52,7 @@ class TalentPoolLifecycleTestCase(TestCase):
         self._world()
         self.assertEqual(self._join().status_code, 302)
         import json as _json
-        sub = TalentPoolSubscription.objects.get(email="timo@x.de")
+        sub = TalentPoolSubscription.objects.get_by_email("timo@x.de")
         crit = _json.loads(sub.criteria)
         self.assertIn(str(self.fam.id), crit["job_families"])   # aus eigener Bewerbung
         self.assertIn(str(self.loc.id), crit["locations"])
@@ -82,7 +82,7 @@ class TalentPoolLifecycleTestCase(TestCase):
         self.assertContains(page, "Station 3")                  # Match sichtbar
         self.assertContains(page, "Auf Stelle hinweisen")
         from ..models import TalentPoolSubscription
-        sub = TalentPoolSubscription.objects.get(email="timo@x.de")
+        sub = TalentPoolSubscription.objects.get_by_email("timo@x.de")
         r = self.client.post(reverse('ats:talent_pool'),
                              data={"contact_sub_id": str(sub.id),
                                    "job_id": str(new_job.id)})
@@ -105,7 +105,7 @@ class TalentPoolLifecycleTestCase(TestCase):
         from ..models import JobPosting, TalentPoolSubscription
         self._world()
         self._join()
-        TalentPoolSubscription.objects.filter(email="timo@x.de").update(
+        TalentPoolSubscription.objects.filter_by_email("timo@x.de").update(
             expiresAt=timezone.now() - datetime.timedelta(days=1))
         JobPosting.objects.create(title="Pflegefachkraft Station 3",
                                   organization=self.org, facility=self.fac,

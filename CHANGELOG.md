@@ -5,6 +5,47 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (verschlüsselt war die Person, nicht das, was über sie geschrieben stand)
+
+Name, Anschrift und E-Mail der bewerbenden Person lagen längst Fernet-
+verschlüsselt. Die Sätze **über** sie nicht:
+
+- **interne Notizen** — oft die heikelsten Sätze im ganzen System,
+- der **gesamte Schriftwechsel** (`Message.content`),
+- die drei Freitextfelder des **Interview-Feedbacks** (Stärken, Bedenken,
+  Kommentar),
+- **KI-Begründung** und **Rücktrittsgrund**,
+- die **Talent-Pool-Adresse** — dieselbe Angabe derselben Person wie
+  `Applicant.email`, nur ohne Schutz,
+- der **Dateiname des Lebenslaufs**: Uploads hießen `<uuid>_<Originalname>`,
+  und der lautet typischerweise `Lebenslauf_Maria_Schmidt.pdf`. Ein
+  Verzeichnis-Listing des Medienordners war damit eine Namensliste.
+
+Das war kein Versäumnis an einer Stelle, sondern acht Felder, die über Jahre
+einzeln dazukamen, ohne dass jemand die Frage stellte.
+
+- Alle acht sind jetzt verschlüsselt (Migrationen `0009`/`0010`, Bestandsdaten
+  werden nachgezogen; die Datenmigration ist idempotent).
+- Die Talent-Pool-Adresse bekommt denselben **Blind-Index** wie
+  `Applicant.email` — sonst wäre sie zwar geschützt, aber unauffindbar. Neu:
+  `TalentPoolSubscription.objects.get_by_email()`; ein `filter(email=...)`
+  liefert auf einer Fernet-Spalte still **null** Treffer statt eines Fehlers.
+  Genau diese Falle ist beim Umstellen an acht Stellen zugeschnappt, zwei davon
+  im Produkt (Portal-Beitritt und Mitgliedschafts-Anzeige).
+- Neue Uploads landen **namenlos** in der Ablage (`<uuid><endung>`), der
+  Anzeigename bleibt — verschlüsselt — erhalten. Der Altbestand trägt seine
+  alten Namen weiter; das Umbenennen ist eine eigene Aufgabe.
+
+**Bewusste Folge:** Auf verschlüsselten Feldern gibt es keine Volltextsuche
+mehr. Im Produkt suchte nichts danach; in sechs Tests schon — die prüfen jetzt
+in Python. Einer davon war ein `assertFalse` und wäre sonst **scheinbar grün**
+gewesen, ohne noch irgendetwas zu belegen.
+
+Neuer Wächter `GuardrailPersonalFieldsEncryptedTestCase`: An personenbezogenen
+Modellen muss jedes Textfeld verschlüsselt sein oder mit Begründung auf einer
+Liste stehen. Dazu Tests, die über rohes SQL prüfen, was **wirklich in der
+Datenbank steht** — wer ein Backup verliert, darf die Sätze nicht lesen können.
+
 ### Behoben (ausstehende Gremiums-Stimmen konnten unsichtbar bleiben)
 
 Die Freigaben-Seite holte die **200 ältesten** offenen Bewerbungen der ganzen

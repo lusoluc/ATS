@@ -462,8 +462,11 @@ class HardeningTestCase(TestCase):
         # Auch der E-Mail-Aenderungs-Kanal ist gebremst
         self.client.post(url, data={"form": "contact", "phone": "",
                                     "new_email": "neu@x.de"})
-        self.assertFalse(Message.objects.filter(
-            content__icontains="neu@x.de").exists())
+        # In Python pruefen, nicht per `content__icontains`: Auf der
+        # verschluesselten Spalte liefert die Suche IMMER null Treffer - der
+        # Test waere dann scheinbar gruen, ohne noch irgendetwas zu belegen.
+        self.assertFalse(any("neu@x.de" in (n.content or '')
+                             for n in Message.objects.all()))
 
 class ApplicantFormSecurityTestCase(TestCase):
     """Oeffentliche Bewerberformulare: Upload-Whitelist, XSS-Escaping, Waechter."""

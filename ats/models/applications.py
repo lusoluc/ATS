@@ -88,18 +88,25 @@ class Application(models.Model):
     screeningAnswersJson = models.JSONField(default=dict)
 
     aiScore = models.CharField(max_length=10, blank=True, null=True)  # A, B, C, D
-    aiRationale = models.TextField(blank=True, null=True)
+    # KI-Begruendung zu EINER Person - beschreibt sie, gehoert also zu ihren
+    # Daten. Filter/Suche laufen hier nirgends (geprueft), Fernet ist also
+    # unproblematisch.
+    aiRationale = EncryptedTextField(blank=True, null=True)
 
     status = models.CharField(max_length=50, default="NEW")
     interviewRound = models.PositiveSmallIntegerField(default=0)  # abgeschlossen  # NEW, IN_REVIEW, MISSING_DOCS, INVITED, REJECTED, WITHDRAWN
     hiredAt = models.DateTimeField(blank=True, null=True)  # Einstellungs-Ereignis (Time-to-Fill)
     source = models.CharField(max_length=50, default="DIRECT")  # DIRECT, STEPSTONE, BA, GOOGLE, REFERRAL, …
     boardOrder = models.IntegerField(default=0)  # B10: Position innerhalb der Kanban-Spalte
-    withdrawReason = models.TextField(blank=True, null=True)
+    # Der Rueckzugsgrund sind die Worte der bewerbenden Person.
+    withdrawReason = EncryptedTextField(blank=True, null=True)
 
     privacyNoticeVersion = models.ForeignKey(PrivacyNoticeVersion, on_delete=models.SET_NULL, blank=True, null=True, related_name='applications')
     consentTalentPool = models.BooleanField(default=False)
-    internalNotes = models.TextField(default="", blank=True)
+    # Interne Notizen sind Einschaetzungen ueber einen Menschen - oft die
+    # heikelsten Saetze im ganzen System. Sie lagen im Klartext, waehrend
+    # Name und Anschrift derselben Person verschluesselt waren.
+    internalNotes = EncryptedTextField(default="", blank=True)
     # § 164 SGB IX / § 178 Abs. 2: FREIWILLIGE Angabe einer Schwerbehinderung/
     # Gleichstellung. Art.-9-DSGVO-Datum -> verschluesselt at-rest, nur durch
     # ausdrueckliches Ankreuzen gesetzt ('JA', sonst leer). Loest die
@@ -333,7 +340,9 @@ class Message(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     application = models.ForeignKey(Application, on_delete=models.CASCADE, related_name='messages')
     direction = models.CharField(max_length=20)  # INBOUND, OUTBOUND
-    content = models.TextField()
+    # Der Schriftwechsel selbst. Gefiltert wird nur nach `direction` und
+    # `readStatus` (geprueft), nie nach Inhalt - Fernet stoert hier nicht.
+    content = EncryptedTextField()
     readStatus = models.BooleanField(default=False)
     createdAt = models.DateTimeField(default=timezone.now)
     updatedAt = models.DateTimeField(auto_now=True)
@@ -341,9 +350,33 @@ class Message(models.Model):
     def __str__(self):
         return f"Message {self.direction} - {self.createdAt}"
 
+class TalentPoolManager(models.Manager):
+    """Lookups ueber den Blind-Index statt ueber die verschluesselte Spalte.
+
+    Ohne diesen Weg landet jeder Aufrufer bei `filter(email=...)` - und das
+    liefert nach der Verschluesselung stillschweigend NULL Treffer statt eines
+    Fehlers. Genau diese Falle ist beim Umstellen in acht Tests zugeschnappt.
+    """
+
+    def get_by_email(self, email):
+        return self.get(emailHash=email_blind_index(email))
+
+    def filter_by_email(self, email):
+        return self.filter(emailHash=email_blind_index(email))
+
+
 class TalentPoolSubscription(models.Model):
+    """Einwilligung, spaeter auf passende Stellen hingewiesen zu werden.
+
+    Die Adresse lag im Klartext, waehrend dieselbe Adresse als
+    `Applicant.email` verschluesselt ist - dieselbe Person, dieselbe Angabe,
+    zwei Schutzniveaus. Jetzt wie beim Applicant: Fernet plus deterministischer
+    Blind-Index, damit Eindeutigkeit und Lookups erhalten bleiben.
+    """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    email = models.EmailField(unique=True)
+    email = EncryptedCharField(max_length=254)
+    emailHash = models.CharField(max_length=64, unique=True, null=True,
+                                 editable=False)
     # criteria: JSON {"job_families": [...], "locations": [...]} – abgeleitet aus
     # den bisherigen Bewerbungen beim Opt-in im Portal (Datensparsamkeit: kein
     # Freitext-Skill-Profil, nur was ohnehin im Haus ist).
@@ -352,6 +385,17 @@ class TalentPoolSubscription(models.Model):
     expiresAt = models.DateTimeField()
     createdAt = models.DateTimeField(default=timezone.now)
     updatedAt = models.DateTimeField(auto_now=True)
+
+    objects = TalentPoolManager()
+
+    def save(self, *args, **kwargs):
+        if self.email:
+            self.email = self.email.strip().lower()
+            self.emailHash = email_blind_index(self.email)
+        if kwargs.get("update_fields") and "email" in kwargs["update_fields"]:
+            kwargs["update_fields"] = list(
+                set(kwargs["update_fields"]) | {"emailHash"})
+        super().save(*args, **kwargs)
 
     @property
     def is_active(self):
@@ -446,9 +490,10 @@ class InterviewFeedback(models.Model):
     # Leitfaden-Abdeckung (Voice-Studien-Learning): welche Themen des
     # Stellen-Leitfadens wurden in DIESEM Gespraech behandelt?
     guideCoverageJson = models.JSONField(default=list)
-    strengths = models.TextField(blank=True, default="")
-    concerns = models.TextField(blank=True, default="")   # Bedenken
-    comment = models.TextField(blank=True, default="")
+    # Drei Freitextfelder mit Urteilen ueber einen Menschen.
+    strengths = EncryptedTextField(blank=True, default="")
+    concerns = EncryptedTextField(blank=True, default="")   # Bedenken
+    comment = EncryptedTextField(blank=True, default="")
     createdAt = models.DateTimeField(default=timezone.now)
     updatedAt = models.DateTimeField(auto_now=True)
 
@@ -595,7 +640,9 @@ class ApplicationDocument(models.Model):
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     application = models.ForeignKey(Application, on_delete=models.CASCADE, related_name="documents")
-    name = models.CharField(max_length=255)
+    # Der Anzeigename ist haeufig der Originaldateiname - und der heisst oft
+    # "Lebenslauf_Maria_Schmidt.pdf". Er beschreibt also die Person.
+    name = EncryptedCharField(max_length=255)
     file = models.FileField(upload_to="application_docs/")
     docType = models.CharField(max_length=50, default="OTHER")  # CV, CERTIFICATE, APPROBATION, OTHER
     createdAt = models.DateTimeField(default=timezone.now)

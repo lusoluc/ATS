@@ -5,6 +5,37 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (Altbestand der Uploads trug weiter den Namen — und der Download verlor ihn)
+
+Nachtrag zum Verschlüsselungs-Paket. Zwei Enden desselben Fadens:
+
+**Der Bestand.** Neue Uploads landen namenlos in der Ablage, die vorhandenen
+Dateien hießen weiterhin `<zufall>_Lebenslauf_Maria_Schmidt.pdf`. Ein
+Verzeichnis-Listing des Medienordners blieb damit eine Namensliste — obwohl
+dieselben Namen in der Datenbank verschlüsselt liegen. Neu:
+`manage.py anonymize_upload_names` (mit `--dry-run`), wiederholbar.
+
+- Kopieren statt Umbenennen im Dateisystem, gelöscht wird erst, wenn die Kopie
+  nachweislich liegt: Ein abgebrochener Lauf darf keine Datei verlieren, und
+  Fremd-Speicher (S3, MinIO) kennen kein `rename`.
+- Datensätze, deren Datei in der Ablage **fehlt**, bleiben unangetastet und
+  werden gemeldet. Wäre der Speicher nur vorübergehend nicht erreichbar, würde
+  ein neuer Pfad die Zuordnung endgültig zerstören.
+- Beim Umbenennen wird der Anzeigename aus dem alten Pfad gerettet und
+  verschlüsselt im Datensatz abgelegt.
+
+**Der Download.** `download_cv` leitete den Dateinamen aus dem Ablagepfad ab —
+„alles nach dem ersten Unterstrich". Mit der namenlosen Ablage gibt es keinen
+Unterstrich mehr, der Browser bekam also `a1b2c3-....pdf` als Dateinamen. Das
+war eine Nebenwirkung des Verschlüsselungs-Pakets, die dort niemandem auffiel.
+Neu: `Application.cvFileName` (verschlüsselt) trägt den Anzeigenamen; die alte
+Ableitung bleibt als Rückfall, bis das Umbenennungs-Kommando gelaufen ist.
+
+Nebenbei korrigiert: `exclude(feld__in=["", None])` schließt NULL-Zeilen
+**nicht** aus — in SQL ist `NOT IN (…, NULL)` für NULL selbst wieder NULL. Die
+erste Fassung des Kommandos zählte deshalb 84 Bewerbungen ohne Lebenslauf als
+„bereits namenlos".
+
 ### Behoben (verschlüsselt war die Person, nicht das, was über sie geschrieben stand)
 
 Name, Anschrift und E-Mail der bewerbenden Person lagen längst Fernet-

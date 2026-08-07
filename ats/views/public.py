@@ -348,6 +348,7 @@ def bewerben(request, job_id):
                 jobPosting=job,
                 privacyNoticeVersion=active_privacy_notice(),
                 cvStorageId=cv_storage_path,
+                cvFileName=(cv_file.name or '')[:255] if cv_file else '',
                 coverLetterTxt=cover_letter,
                 screeningAnswersJson=answers_dict,
                 aiScore=ai_score,

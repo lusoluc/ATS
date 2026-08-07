@@ -5,6 +5,32 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (halbe Seite Bereichszahlen, halbe Seite Gesamtzahlen)
+
+Die Auswertungs-Seite trägt im Code den Vermerk „BOLA-gescopt", und ihre
+Funnel-Zahlen waren es auch. Zwei Blöcke nicht: die Kampagnen- und
+Landingpage-Quoten und **Einstellungen gesamt**. Eine Standortleitung las
+damit ihre eigenen Bewerbungszahlen direkt neben Kennzahlen der ganzen
+Organisation — ohne dass die Seite den Unterschied markiert hätte.
+
+Gemessen im Test: Eine Recruiterin mit Zugriff nur auf Hamburg sah **3 statt 1**
+Kampagnen-Bewerbungen und **2 statt 1** Einstellungen.
+
+Das ist schlimmer als eine durchgehende Entscheidung in die eine oder andere
+Richtung: Wer eine Quote liest, muss wissen, worauf sie sich bezieht. Dass es
+ein Versehen war und kein Entwurf, zeigt der Block unmittelbar daneben — dort
+ist das Scoping ausdrücklich kommentiert.
+
+- Beide Blöcke leiten jetzt aus dem bereits gescopten Bestand ab.
+- Geprüft und in Ordnung befunden statt angenommen: Die Quellen-Kanäle und die
+  Landingpage-Verwaltung sind ebenfalls ungescopt, aber ausschließlich für
+  HR-Admins erreichbar — und die haben ohnehin Vollzugriff.
+
+Neuer Wächter `GuardrailAnalyticsIsScopedTestCase`: In diesem Modul muss jeder
+Zugriff auf `Application.objects` Argument von `scope_applications` sein. Wie
+zuletzt wurden Test und Wächter gegen den alten Stand geprüft und schlagen
+dort fehl.
+
 ### Behoben (Altbestand der Uploads trug weiter den Namen — und der Download verlor ihn)
 
 Nachtrag zum Verschlüsselungs-Paket. Zwei Enden desselben Fadens:

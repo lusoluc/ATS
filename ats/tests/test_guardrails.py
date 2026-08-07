@@ -1077,3 +1077,65 @@ class GuardrailNoTemplateNameGuessingTestCase(TestCase):
             "Vorlage wird ueber den Namen gesucht statt ueber den Zweck - "
             "eine Umbenennung wuerde wieder still den Ersatztext ausloesen: "
             + ", ".join(offenders))
+
+
+class GuardrailNoDirectMailTestCase(TestCase):
+    """Mail geht ueber `send_notice`, nicht ueber `send_mail`.
+
+    `ats/mail_send.py` wurde gebaut, damit ein fehlgeschlagener Versand
+    sichtbar wird: im Zustand, in der Board-Warnung, notfalls als Meldung auf
+    dem Bildschirm. Der Modul-Docstring nannte 31 Stellen mit
+    `fail_silently=True` — dreizehn davon riefen `send_mail` weiterhin direkt
+    auf und umgingen die Schicht komplett. Darunter die Unterrichtung der
+    Schwerbehindertenvertretung nach § 164/§ 178 Abs. 2 SGB IX.
+
+    Der Waechter arbeitet ueber den Syntaxbaum, nicht ueber Textsuche: Zwei
+    der dreizehn Stellen importierten `send_mail as _send`. Eine Textsuche
+    nach `send_mail(` haette sie uebersehen — genau das ist beim ersten
+    Inventar auch passiert.
+    """
+
+    #: Nur hier darf Djangos Versand direkt benutzt werden.
+    ERLAUBTE_DATEIEN = {"mail_send.py", "mail_backend.py", "mail_config.py"}
+
+    MAILNAMEN = {"send_mail", "send_mass_mail", "EmailMessage",
+                 "EmailMultiAlternatives"}
+
+    def test_application_code_goes_through_send_notice(self):
+        import ast
+        import os
+
+        base = os.path.dirname(os.path.dirname(__file__))
+        offenders = []
+        for root, _dirs, files in os.walk(base):
+            parts = root.split(os.sep)
+            if "tests" in parts or "migrations" in parts:
+                continue
+            for fname in files:
+                if not fname.endswith(".py") or fname in self.ERLAUBTE_DATEIEN:
+                    continue
+                path = os.path.join(root, fname)
+                with open(path, encoding="utf-8") as fh:
+                    tree = ast.parse(fh.read())
+                alias = {}
+                for node in ast.walk(tree):
+                    if isinstance(node, ast.ImportFrom) and node.module \
+                            and "mail" in node.module:
+                        for spec in node.names:
+                            if spec.name in self.MAILNAMEN:
+                                alias[spec.asname or spec.name] = spec.name
+                for node in ast.walk(tree):
+                    if not isinstance(node, ast.Call):
+                        continue
+                    name = getattr(node.func, "id", None)
+                    if name and (name in alias or name in self.MAILNAMEN):
+                        echt = alias.get(name, name)
+                        wie = f" (als {name})" if name != echt else ""
+                        offenders.append(
+                            f"{os.path.relpath(path, base)}:{node.lineno} "
+                            f"{echt}{wie}")
+        self.assertEqual(
+            offenders, [],
+            "Direkter Mail-Versand am Fehler-Vermerk vorbei — ein "
+            "Fehlschlag bliebe hier unsichtbar. Bitte `send_notice` aus "
+            "ats/mail_send.py benutzen: " + ", ".join(offenders))

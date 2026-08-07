@@ -5,6 +5,40 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (Wächter, die eine Liste prüften statt einer Regel)
+
+Ein Durchgang durch die eigenen Sicherungen — mit derselben Frage, die sonst
+dem Produktcode gilt: Prüft der Wächter die Regel, oder nur die Fälle, die
+jemand einmal aufgeschrieben hat?
+
+**Erwartungslisten.** Der Autocomplete-Wächter (WCAG 1.3.5) sah in genau zwei
+Templates nach — und behauptete im Docstring, neue Bewerber-Formulare fielen
+„automatisch" darunter. Das stimmte nicht. Der Label-Wächter führte eine
+zweite, ähnliche Liste mit sechs Einträgen.
+
+Beide leiten die öffentlichen Templates jetzt aus der `PUBLIC_ALLOWLIST` des
+Auth-Wächters ab — der einzigen Liste dieser Art, die selbst auf tote Einträge
+geprüft wird — und folgen `extends`/`include`, weil ein Feld auch in einem
+Baustein stecken kann. Statt 2 bzw. 6 werden jetzt 18 Templates geprüft.
+
+Und der breitere Blick fand sofort etwas: Im **Kandidatenportal** trug das
+Telefonfeld kein `autocomplete="tel"` — die eigene Nummer der bewerbenden
+Person, also genau der Fall, den WCAG 1.3.5 meint. Dasselbe beim Feld für die
+neue E-Mail-Adresse. Beide ergänzt.
+
+Damit die Ableitung nicht still leerläuft (ein Wächter über null Dateien wäre
+grün und wertlos), prüft sie sich selbst: Das Bewerbungsformular **muss**
+enthalten sein.
+
+**Ausnahmelisten.** Von acht führten nur zwei eine Prüfung auf tote Einträge.
+Eine Ausnahme, die ins Leere zeigt, ist eine offene Tür ohne Haus: Sie fällt
+niemandem auf, und legt jemand später etwas Gleichnamiges an, lässt der
+Wächter es wortlos durch. Alle sechs haben die Prüfung jetzt — auch die
+derzeit leere, sonst fiele der erste Eintrag sofort aus jeder Kontrolle.
+
+Neuer Wächter `GuardrailExceptionListsAreCheckedTestCase` über die Wächter:
+Wer eine Ausnahmeliste führt, muss sie prüfen.
+
 ### Behoben (mein eigener Wächter prüfte eine Liste statt der Fehlerklasse)
 
 Das Verschlüsselungs-Paket nahm sechs Modelle mit — und der Wächter dazu prüfte

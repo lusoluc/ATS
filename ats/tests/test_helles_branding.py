@@ -100,3 +100,12 @@ class GuardrailDarkOnlyControlsTestCase(TestCase):
             "Diese Regeln verdrahten eine dunkle Palette fest und fehlen in den "
             "LIGHT-Regeln von branding_css.html – auf einer hell gebrandeten "
             f"Seite jeweils ein Kontrastloch: {offen}")
+
+    def test_the_exception_list_has_no_dead_entries(self):
+        """Eine Ausnahme fuer eine Regel, die es nicht mehr gibt, koennte
+        spaeter eine gleichnamige neue durchlassen."""
+        from pathlib import Path
+        css = (Path(settings.BASE_DIR) / "templates" / "base.html").read_text(
+            encoding="utf-8")
+        tot = sorted(k for k in self.ERLAUBT if k not in css)
+        self.assertEqual(tot, [], f"Ausnahme ohne zugehoerige Regel: {tot}")

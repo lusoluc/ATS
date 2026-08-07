@@ -291,9 +291,9 @@
           {% csrf_token %}
           <input type="hidden" name="form" value="contact">
           <label style="font-size:12px; color:#94a3b8;" for="cp-phone">Telefonnummer</label>
-          <input id="cp-phone" type="text" name="phone" value="{{ applicant_phone }}" placeholder="z. B. 0151 2345678" style="width:100%; background:#0b1220; border:1px solid #334155; border-radius:8px; color:#e2e8f0; padding:8px 10px; margin:4px 0 10px;">
+          <input id="cp-phone" type="text" name="phone" autocomplete="tel" value="{{ applicant_phone }}" placeholder="z. B. 0151 2345678" style="width:100%; background:#0b1220; border:1px solid #334155; border-radius:8px; color:#e2e8f0; padding:8px 10px; margin:4px 0 10px;">
           <label style="font-size:12px; color:#94a3b8;" for="cp-email">Neue E-Mail-Adresse (aktuell: {{ applicant_email }})</label>
-          <input id="cp-email" type="email" name="new_email" placeholder="Nur ausfüllen, wenn sich Ihre E-Mail ändert" style="width:100%; background:#0b1220; border:1px solid #334155; border-radius:8px; color:#e2e8f0; padding:8px 10px; margin:4px 0 4px;">
+          <input id="cp-email" type="email" name="new_email" autocomplete="email" placeholder="Nur ausfüllen, wenn sich Ihre E-Mail ändert" style="width:100%; background:#0b1220; border:1px solid #334155; border-radius:8px; color:#e2e8f0; padding:8px 10px; margin:4px 0 4px;">
           <p class="muted" style="font-size:11px; margin:0 0 10px;">Die E-Mail-Adresse ist Ihr Zugangsschlüssel – eine Änderung prüfen wir persönlich und melden uns bei Ihnen.</p>
           <button type="submit" style="border-color:#334155; color:#e2e8f0;">Speichern</button>
         </form>

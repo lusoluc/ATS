@@ -213,6 +213,17 @@ class GuardrailPersonalFieldsEncryptedTestCase(TestCase):
             "Bitte EncryptedCharField/-TextField verwenden oder mit "
             "Begruendung in UNBEDENKLICH eintragen: " + ", ".join(offen))
 
+    def test_the_exception_list_has_no_dead_entries(self):
+        """Eine Begruendung fuer ein Feld, das es nicht mehr gibt, ist eine
+        stehen gebliebene Erlaubnis: Legt jemand spaeter ein gleichnamiges
+        Feld an, laesst der Waechter es wortlos durch."""
+        from django.apps import apps as django_apps
+        vorhanden = {f"{m.__name__}.{f.name}"
+                     for m in django_apps.get_app_config('ats').get_models()
+                     for f in m._meta.get_fields() if hasattr(f, 'name')}
+        tot = sorted(set(self.UNBEDENKLICH) - vorhanden)
+        self.assertEqual(tot, [], f"Begruendung ohne zugehoeriges Feld: {tot}")
+
 
 class GuardrailApplicationDomainTextFieldsTestCase(TestCase):
     """Neue Textfelder an personenbezogenen Modellen brauchen eine Entscheidung.
@@ -275,6 +286,19 @@ class GuardrailApplicationDomainTextFieldsTestCase(TestCase):
             "Textfeld an einem personenbezogenen Modell, weder verschluesselt "
             "noch begruendet. Bitte EncryptedCharField/-TextField verwenden "
             "oder mit Begruendung in UNBEDENKLICH eintragen: " + ", ".join(offen))
+
+    def test_neither_list_has_dead_entries(self):
+        from django.apps import apps as django_apps
+        modelle = {m.__name__ for m
+                   in django_apps.get_app_config('ats').get_models()}
+        tote_modelle = sorted(set(self.MODELLE) - modelle)
+        self.assertEqual(tote_modelle, [],
+                         f"Modell in der Liste existiert nicht mehr: {tote_modelle}")
+        vorhanden = {f"{m.__name__}.{f.name}"
+                     for m in django_apps.get_app_config('ats').get_models()
+                     for f in m._meta.get_fields() if hasattr(f, 'name')}
+        tot = sorted(set(self.UNBEDENKLICH) - vorhanden)
+        self.assertEqual(tot, [], f"Begruendung ohne zugehoeriges Feld: {tot}")
 
 
 class JobAlertAtRestTestCase(TestCase):

@@ -228,6 +228,65 @@ class AiGuardrailsCoverageTestCase(TestCase):
         self.assertTrue(wrapped.endswith("<<<ENDE>>>"))
         self.assertEqual(wrapped.count("<<<BEWERBER_INHALT>>>"), 1)
 
+def oeffentliche_templates(public_views):
+    """Templates, die von den OEFFENTLICHEN Views gerendert werden.
+
+    Warum abgeleitet statt aufgezaehlt: Zwei Waechter fuehrten je eine eigene
+    Liste oeffentlicher Templates - und der eine behauptete in seinem
+    Docstring, neue Bewerber-Formulare fielen "automatisch" unter die
+    Pruefung. Das stimmte nicht: Geprueft wurden genau die zwei genannten
+    Dateien. Eine neue oeffentliche Seite mit einem Namensfeld waere
+    ungeprueft geblieben.
+
+    Grundlage ist jetzt die `PUBLIC_ALLOWLIST` des Auth-Waechters - die
+    einzige Liste dieser Art, die selbst auf tote Eintraege geprueft wird.
+    Von dort aus: welche Templates rendern diese Views, und was binden die
+    ihrerseits ein (`extends`/`include`).
+    """
+    import ast
+    import os
+    import re
+
+    views_dir = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "views")
+    gefunden = set()
+    for fname in os.listdir(views_dir):
+        if not fname.endswith(".py"):
+            continue
+        with open(os.path.join(views_dir, fname), encoding="utf-8") as fh:
+            baum = ast.parse(fh.read())
+        for knoten in ast.walk(baum):
+            if not isinstance(knoten, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            if knoten.name not in public_views:
+                continue
+            for kind in ast.walk(knoten):
+                if isinstance(kind, ast.Constant) and isinstance(kind.value, str)                         and kind.value.endswith(".html"):
+                    gefunden.add(kind.value)
+
+    # Eingebundene Bausteine mitnehmen: Ein Formularfeld kann in einem
+    # Include stecken, das die oeffentliche Seite nur einzieht.
+    basis = os.path.join(os.path.dirname(os.path.dirname(
+        os.path.dirname(__file__))), "templates")
+    offen, gesehen = list(gefunden), set()
+    while offen:
+        rel = offen.pop()
+        if rel in gesehen:
+            continue
+        gesehen.add(rel)
+        pfad = os.path.join(basis, *rel.split("/"))
+        if not os.path.exists(pfad):
+            continue
+        with open(pfad, encoding="utf-8") as fh:
+            quelle = fh.read()
+        for treffer in re.finditer(
+                r"""{%\s*(?:extends|include)\s+["']([^"']+\.html)["']""",
+                quelle):
+            offen.append(treffer.group(1))
+    return {r for r in gesehen
+            if os.path.exists(os.path.join(basis, *r.split("/")))}
+
+
 class GuardrailAuthDecoratorTestCase(TestCase):
     """Jede HTTP-View braucht einen eigenen Auth-Decorator – es gibt KEINE
     globale Login-Middleware (siehe SECURITY_AUDIT.md, Fund 2). Neue Views
@@ -303,6 +362,24 @@ class GuardrailAuthDecoratorTestCase(TestCase):
         self.assertEqual(stale, [],
                          f"Veraltete Allowlist-Einträge (View gibt es nicht "
                          f"mehr): {stale}")
+
+def _public_templates():
+    """Die abgeleitete Menge - mit Selbstpruefung.
+
+    Eine abgeleitete Menge, die still leer wird, macht den Waechter wertlos,
+    ohne dass er rot wird. Deshalb hier die Mindestbedingung: Das
+    Bewerbungsformular MUSS enthalten sein.
+    """
+    vorlagen = oeffentliche_templates(
+        GuardrailAuthDecoratorTestCase.PUBLIC_ALLOWLIST)
+    # Die Anmeldeseite rendert Djangos LoginView-Ableitung, sie taucht daher
+    # nicht als Funktion in der Allowlist auf - ist aber oeffentlich.
+    vorlagen.add("registration/login.html")
+    assert "bewerben.html" in vorlagen, (
+        "Die Ableitung der oeffentlichen Templates liefert das "
+        "Bewerbungsformular nicht mehr - der Waechter waere wirkungslos.")
+    return vorlagen
+
 
 class GuardrailNoCsrfExemptTestCase(TestCase):
     """@csrf_exempt darf nirgends im Code auftauchen (Audit-Prinzip). Wenn
@@ -584,16 +661,16 @@ class GuardrailAutocompleteTestCase(TestCase):
         "email": "email",
         "phone": "tel",
     }
-    PUBLIC_TEMPLATES = ["bewerben.html", "job_alert.html"]
-
     def test_pii_inputs_declare_autocomplete(self):
         import os
         import re
         base = os.path.join(os.path.dirname(os.path.dirname(
             os.path.dirname(__file__))), "templates")
+        vorlagen = _public_templates()
         offenders = []
-        for fname in self.PUBLIC_TEMPLATES:
-            src = open(os.path.join(base, fname), encoding="utf-8").read()
+        for fname in sorted(vorlagen):
+            src = open(os.path.join(base, *fname.split("/")),
+                       encoding="utf-8").read()
             for name, expected in self.EXPECTED.items():
                 for m in re.finditer(
                         rf'<input[^>]*name="{name}"[^>]*>', src):
@@ -640,18 +717,13 @@ class GuardrailFormLabelTestCase(TestCase):
     Felder ein BFSG-Risiko. Neue Felder in diesen Templates fallen
     automatisch unter die Pruefung."""
 
-    PUBLIC_TEMPLATES = [
-        "bewerben.html", "job_alert.html", "candidate_portal.html",
-        "job_list.html", "job_detail.html", "registration/login.html",
-    ]
-
     def test_visible_fields_are_labelled(self):
         import os
         import re
         base = os.path.join(os.path.dirname(os.path.dirname(
             os.path.dirname(__file__))), "templates")
         offenders = []
-        for rel in self.PUBLIC_TEMPLATES:
+        for rel in sorted(_public_templates()):
             src = open(os.path.join(base, *rel.split("/")),
                        encoding="utf-8").read()
             for m in re.finditer(r"<(input|textarea|select)\b[^>]*>",
@@ -860,6 +932,20 @@ class GuardrailNoOrphanRouteTestCase(TestCase):
                          "Route ohne jeden Einstieg - gebaut, aber "
                          "unerreichbar: " + ", ".join(orphans))
 
+
+    def test_the_machine_only_list_has_no_dead_entries(self):
+        """Eine Ausnahme fuer eine Route, die es nicht mehr gibt, verdeckt
+        spaeter womoeglich eine gleichnamige neue - und die waere dann
+        ungeprueft ohne Einstieg."""
+        import os
+        import re
+        base = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        urls_src = open(os.path.join(base, "ats", "urls.py"),
+                        encoding="utf-8").read()
+        namen = set(re.findall(r"name=['\"]([^'\"]+)['\"]", urls_src))
+        tot = sorted(self.MACHINE_ONLY - namen)
+        self.assertEqual(tot, [],
+                         f"Ausnahme fuer nicht mehr vorhandene Route: {tot}")
 
 class GuardrailNoDeadModelTestCase(TestCase):
     """Waechter: Kein Modell, das ausser im Admin niemand anfasst.
@@ -1140,6 +1226,17 @@ class GuardrailNoDirectMailTestCase(TestCase):
             "Fehlschlag bliebe hier unsichtbar. Bitte `send_notice` aus "
             "ats/mail_send.py benutzen: " + ", ".join(offenders))
 
+    def test_the_exception_list_has_no_dead_entries(self):
+        """Eine Ausnahme fuer eine Datei, die es nicht mehr gibt, ist eine
+        offene Tuer ohne Haus: Sie faellt niemandem auf und koennte spaeter
+        versehentlich wieder etwas durchlassen."""
+        import os
+        base = os.path.dirname(os.path.dirname(__file__))
+        vorhanden = {f for _r, _d, fs in os.walk(base) for f in fs}
+        tot = sorted(self.ERLAUBTE_DATEIEN - vorhanden)
+        self.assertEqual(tot, [],
+                         f"Ausnahme fuer nicht mehr vorhandene Datei: {tot}")
+
 
 class GuardrailNoSilentSwallowTestCase(TestCase):
     """`except ...: pass` ohne ein Wort darueber, warum.
@@ -1264,3 +1361,59 @@ class GuardrailNoCapBeforeFilterTestCase(TestCase):
             "Erst gekappt, dann gefiltert — das Ergebnis kann leer sein, "
             "obwohl passende Datensaetze existieren. Bitte das ERGEBNIS "
             "begrenzen: " + ", ".join(offenders))
+
+
+class GuardrailExceptionListsAreCheckedTestCase(TestCase):
+    """Ein Wächter über die Wächter: Jede Ausnahmeliste muss geprüft werden.
+
+    Von acht Ausnahmelisten prüften nur zwei, ob ihre Einträge überhaupt noch
+    etwas treffen. Eine tote Ausnahme ist eine offene Tür ohne Haus: Sie fällt
+    niemandem auf, und legt jemand später etwas Gleichnamiges an, lässt der
+    Wächter es wortlos durch. Ein Wächter, der still schwächer wird, ist
+    schlimmer als keiner — weil man sich auf ihn verlässt.
+
+    Daneben stand ein zweites Problem: Zwei Wächter prüften eine
+    ERWARTUNGSliste (welche Templates sie ansehen) statt einer Regel. Einer
+    behauptete im Docstring sogar, neue Bewerber-Formulare fielen
+    „automatisch" darunter — geprüft wurden genau zwei Dateien. Solche Listen
+    gehören abgeleitet, nicht aufgezählt; deshalb kennt dieser Wächter nur
+    noch AUSNAHMEN.
+    """
+
+    #: Attributnamen, die eine Ausnahme von der Regel beschreiben.
+    AUSNAHME_NAMEN = {"PUBLIC_ALLOWLIST", "MACHINE_ONLY", "NOT_IN_HUB",
+                      "ERLAUBT", "ERLAUBTE_DATEIEN", "UNBEDENKLICH"}
+
+    def test_every_exception_list_has_a_staleness_check(self):
+        import ast
+        import os
+        import re
+
+        verzeichnis = os.path.dirname(__file__)
+        offen = []
+        for fname in sorted(os.listdir(verzeichnis)):
+            if not fname.startswith("test_") or not fname.endswith(".py"):
+                continue
+            with open(os.path.join(verzeichnis, fname), encoding="utf-8") as fh:
+                quelle = fh.read()
+            baum = ast.parse(quelle)
+            for knoten in baum.body:
+                if not (isinstance(knoten, ast.ClassDef)
+                        and knoten.name.startswith("Guardrail")):
+                    continue
+                hat_liste = any(
+                    isinstance(k, (ast.Assign, ast.AnnAssign))
+                    and getattr(
+                        k.targets[0] if isinstance(k, ast.Assign) else k.target,
+                        "id", None) in self.AUSNAHME_NAMEN
+                    for k in knoten.body)
+                if not hat_liste:
+                    continue
+                text = ast.get_source_segment(quelle, knoten) or ""
+                if not re.search(r"(stale|dead|tote[nr]?\b|tot\b)", text, re.I):
+                    offen.append(f"{fname}:{knoten.name}")
+        self.assertEqual(
+            offen, [],
+            "Waechter mit Ausnahmeliste, aber ohne Pruefung auf tote "
+            "Eintraege. Eine Ausnahme, die ins Leere zeigt, schwaecht den "
+            "Waechter still: " + ", ".join(offen))

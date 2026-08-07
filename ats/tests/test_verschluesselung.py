@@ -171,10 +171,10 @@ class GuardrailPersonalFieldsEncryptedTestCase(TestCase):
         'Application.status': 'Zustand der Bewerbung, kein Personenmerkmal',
         'Application.source': 'Herkunftskanal (DIRECT, STEPSTONE, ...)',
         'Application.aiScore': 'A/B/C/D - Einordnung, kein Freitext',
-        'Application.cvStorageId': 'Ablagepfad; seit dem Verschluesselungs-Paket '
-                                   'nur noch Zufalls-ID plus Endung. ALTBESTAND '
-                                   'traegt weiterhin den Originalnamen - eigene '
-                                   'Aufgabe (Umbenennen der vorhandenen Dateien).',
+        'Application.cvStorageId': 'Ablagepfad, nur Zufalls-ID plus Endung. '
+                                   'Der Anzeigename steht verschluesselt in '
+                                   'cvFileName; Altbestand raeumt '
+                                   '`manage.py anonymize_upload_names` auf.',
         'Message.direction': 'INBOUND/OUTBOUND',
         'InterviewFeedback.recommendation': 'Empfehlungs-Code, kein Freitext',
         'ApplicationDocument.docType': 'CV/CERTIFICATE/... - Kategorie',

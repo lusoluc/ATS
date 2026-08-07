@@ -818,8 +818,13 @@ def download_cv(request, app_id):
     if not app.cvStorageId or not default_storage.exists(app.cvStorageId):
         raise Http404("Kein Lebenslauf hinterlegt.")
 
-    download_name = _os.path.basename(app.cvStorageId)
-    if "_" in download_name:  # UUID-Prefix aus dem Speichernamen entfernen
+    # Der Anzeigename kommt aus dem Datensatz, nicht aus dem Pfad. Seit die
+    # Ablage namenlos ist, steht im Pfad nur noch `<uuid><endung>` - die alte
+    # Ableitung "alles nach dem ersten _" lieferte dann `a1b2c3....pdf` als
+    # Dateinamen im Download. Fuer Altbestand bleibt die Ableitung als
+    # Rueckfall, bis das Umbenennungs-Kommando gelaufen ist.
+    download_name = app.cvFileName or _os.path.basename(app.cvStorageId)
+    if not app.cvFileName and "_" in download_name:
         download_name = download_name.split("_", 1)[1]
 
     ext = _os.path.splitext(download_name)[1].lower()

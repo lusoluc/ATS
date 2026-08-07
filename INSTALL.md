@@ -70,6 +70,19 @@ Migrationen laufen automatisch beim Start. Version prüfen: `curl -s localhost:3
 Auf eine **feste Version pinnen** statt `latest`: in `.env` z. B. `SECURATS_VERSION=1.0.0`
 setzen (empfohlen für Produktion; Update dann = Version hochsetzen + obiger Befehl).
 
+**Einmalig nach dem Update auf diese Fassung:** hochgeladene Dateien
+anonymisieren. Bis dahin abgelegte Lebenslaeufe hiessen
+`<zufall>_Lebenslauf_Maria_Schmidt.pdf` — der Name der Person stand damit im
+Dateisystem, obwohl er in der Datenbank verschlüsselt liegt.
+
+```bash
+docker compose exec web python manage.py anonymize_upload_names --dry-run
+docker compose exec web python manage.py anonymize_upload_names
+```
+
+Der Lauf ist wiederholbar; der Anzeigename bleibt erhalten (verschlüsselt im
+Datensatz), Downloads heißen also weiterhin `Lebenslauf.pdf`.
+
 **Vor jedem Update:** Backup (Abschnitt 4). **Rollback:** `SECURATS_VERSION` auf die
 vorherige Version zurücksetzen, `docker compose up -d`, ggf. DB-Backup einspielen
 (Migrationen sind vorwärtsgerichtet – Rollback braucht das Backup).

@@ -84,6 +84,11 @@ class Application(models.Model):
     jobPosting = models.ForeignKey(JobPosting, on_delete=models.CASCADE, related_name='applications')
 
     cvStorageId = models.CharField(max_length=255, blank=True, null=True)
+    # Anzeigename des Lebenslaufs. Seit die Ablage namenlos ist (`<uuid><endung>`),
+    # laesst sich der urspruengliche Name nicht mehr aus dem Pfad ableiten - und
+    # ohne ihn heisst der Download `a1b2c3....pdf`. Verschluesselt, weil der
+    # Name der Person darin steht ("Lebenslauf_Maria_Schmidt.pdf").
+    cvFileName = EncryptedCharField(max_length=255, blank=True, default="")
     coverLetterTxt = EncryptedTextField(blank=True, null=True)
     screeningAnswersJson = models.JSONField(default=dict)
 

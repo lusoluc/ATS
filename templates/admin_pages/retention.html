@@ -4,9 +4,42 @@
 <h1 class="page-title"><i class="fa-solid fa-clock-rotate-left"></i> Datenaufbewahrung</h1>
 <p class="page-lead">
   Abgesagte und zurückgezogene Bewerbungen ohne Talent-Pool-Einwilligung werden
-  nach Ablauf der Frist automatisch anonymisiert (DSGVO-Datenminimierung).
+  nach Ablauf der Frist anonymisiert (DSGVO-Datenminimierung).
   Hier stellen Sie die Frist ein und sehen vorab, was der nächste Lauf tun würde.
 </p>
+
+{% comment %} Hier stand „automatisch anonymisiert" — ohne dass die Seite je
+   nachgesehen hätte, ob das jemand ausführt. Der ausgelieferte Compose-Stapel
+   enthielt bis zum Zeitplan-Paket keinen. {% endcomment %}
+{% if nie_gelaufen %}
+<div class="glass-card" role="alert" style="border-color:var(--danger); margin-bottom:24px;">
+  <h3 style="font-size:16px; margin:0 0 8px;">
+    <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+    Es wurde noch nie anonymisiert
+  </h3>
+  <p style="margin:0 0 8px;">
+    Die eingestellte Frist wirkt nur, wenn der Lauf auch stattfindet. Bisher
+    ist kein einziger vermerkt — die unten aufgeführten Bewerbungen sind also
+    weiterhin vollständig gespeichert.
+  </p>
+  <p style="margin:0; font-size:13px; color:var(--text-muted);">
+    Im Docker-Betrieb erledigt das der Dienst <code>scheduler</code>; er läuft
+    ohne Zutun mit. Ohne Docker: <code>python manage.py data_retention</code>
+    täglich einplanen (siehe OPERATIONS.md).
+  </p>
+</div>
+{% else %}
+<div class="glass-card" style="margin-bottom:24px;">
+  <p role="status" style="margin:0;">
+    {% if lauf.ok %}
+    <span class="badge badge-accent">Zuletzt anonymisiert</span>
+    {% else %}
+    <span class="badge badge-danger">Letzter Lauf fehlgeschlagen</span>
+    {% endif %}
+    {{ lauf.when_dt|date:"d.m.Y H:i" }}{% if lauf.detail %} · {{ lauf.detail }}{% endif %}
+  </p>
+</div>
+{% endif %}
 
 <div class="glass-card" style="margin-bottom:24px;">
   <h3 style="font-size:16px; color:#fff; margin:0 0 10px;"><i class="fa-solid fa-sliders" style="color:var(--accent);"></i> Löschfrist</h3>

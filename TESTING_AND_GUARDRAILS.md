@@ -57,6 +57,7 @@ unbemerkt wiederholen. Sie stehen in `ats/tests/test_guardrails.py`.
 | `GuardrailAdminPageInHubTestCase` | Admin-Seite, die nicht ueber die Einstellungs-Zentrale erreichbar ist. Aktionen/Exporte stehen mit Begruendung auf einer Ausnahmeliste, die selbst auf tote Eintraege geprueft wird | AA |
 | `GuardrailIconButtonNameTestCase` | Knopf, der nur aus einem Symbol besteht, ohne `aria-label` - fuer Screenreader ein namenloser Knopf. Ein `title` genuegt nicht. Punkt 3 der Definition of Done stand seit Langem da; der Waechter dazu fehlte, und zehn Knoepfe waren namenlos | AE |
 | `GuardrailNoTemplateNameGuessingTestCase` | `name__icontains` auf `EmailTemplate` — Vorlagen über ihren Namen zu suchen hiess: Umbenennen kippt den Versand still auf einen Text zurück, den niemand freigegeben hat. Der Zweck steuert, der Name beschriftet | AF |
+| `GuardrailExceptionListsAreCheckedTestCase` | Ausnahmeliste ohne Prüfung auf tote Einträge. Von acht Listen prüften nur zwei, ob ihre Einträge überhaupt noch etwas treffen — eine tote Ausnahme ist eine offene Tür ohne Haus | AV |
 | `GuardrailNoWeakHasherInSettingsTestCase` (in `test_laufzeit.py`) | schwacher Passwort-Hasher in `securats/*.py`. Die Abkürzung `if 'test' in sys.argv` würde die Passwortsicherheit der Produktion an eine Zeichenkette in der Kommandozeile hängen; der Test-Hasher gehört in `ats/test_runner.py`, den der Betrieb nie lädt | AH |
 
 **Wenn ein Wächter fehlschlägt:** Das ist ein *Feature*, kein Ärgernis. Nicht die

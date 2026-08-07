@@ -126,3 +126,16 @@ class GuardrailGradientContrastTestCase(SimpleTestCase):
 
         self.assertFalse(verstoesse, "Verlaufs-Stopps ohne ausreichenden Kontrast "
                                      "zur Schrift darauf:\n  " + "\n  ".join(verstoesse))
+
+    def test_the_exception_list_has_no_dead_entries(self):
+        """Auch eine leere Liste braucht die Pruefung.
+
+        Sonst faellt der erste Eintrag, den jemand ergaenzt, sofort aus jeder
+        Kontrolle - und bleibt stehen, lange nachdem die Regel verschwunden
+        ist, auf die er sich bezog.
+        """
+        wurzel = Path(settings.BASE_DIR) / "templates"
+        alle = "\n".join(p.read_text(encoding="utf-8")
+                         for p in wurzel.rglob("*.html"))
+        tot = sorted(k for k in self.ERLAUBT if k not in alle)
+        self.assertEqual(tot, [], f"Ausnahme ohne zugehoerige Regel: {tot}")

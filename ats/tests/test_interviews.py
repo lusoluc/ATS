@@ -60,7 +60,7 @@ class InterviewMessageAlertTestCase(TestCase):
         c = Client()  # anonymous / public
         resp = c.post(reverse('ats:job_alert'), data={"email": "alert@ex.org", "global": "on"})
         self.assertEqual(resp.status_code, 200)
-        self.assertTrue(JobAlertSubscription.objects.filter(email="alert@ex.org").exists())
+        self.assertTrue(JobAlertSubscription.objects.filter_by_email("alert@ex.org").exists())
 
 class CalendarSlotsTestCase(TestCase):
     """Team-Kalender + Timeslots + Portal-Selbstbuchung (Kollaborations-Paket)."""

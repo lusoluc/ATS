@@ -1127,8 +1127,11 @@ def job_alert_subscribe(request):
                 'radiusKm': radius,
             }
             # Genau EIN Abo je E-Mail: bestehendes Abo wird AKTUALISIERT statt dupliziert.
-            sub, created = JobAlertSubscription.objects.get_or_create(
-                email=email,
+            # Ueber den Blind-Index: `email=` als Suchschluessel faende nach
+            # der Verschluesselung nichts mehr und legte bei jeder Anmeldung
+            # ein neues Abo an - statt das bestehende zu aktualisieren.
+            sub, created = JobAlertSubscription.objects.get_or_create_by_email(
+                email,
                 defaults={
                     'status': 'PENDING',
                     'confirmationToken': _secrets.token_urlsafe(24),

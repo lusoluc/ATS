@@ -5,6 +5,33 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (mein eigener Wächter prüfte eine Liste statt der Fehlerklasse)
+
+Das Verschlüsselungs-Paket nahm sechs Modelle mit — und der Wächter dazu prüfte
+genau diese sechs namentlich. Er kodierte damit die Fälle, die gefunden worden
+waren, nicht die Regel dahinter. Prompt übersehen:
+**`JobAlertSubscription.email`**, die private Adresse einer Person, die sich für
+Stellen interessiert. Dieselbe Art Angabe wie im Talent-Pool, nur ein Modell
+weiter.
+
+- Die Adresse ist jetzt verschlüsselt, mit demselben Blind-Index wie
+  `Applicant` und `TalentPoolSubscription`. Die Zusage „genau ein Abo je
+  E-Mail" hängt damit am Index statt an der Spalte — inklusive Test, dass
+  Groß-/Kleinschreibung kein zweites Abo anlegt (sonst wäre das Double-Opt-in
+  umgangen).
+- **Der Wächter läuft jetzt über jedes Modell** und erkennt Felder am Namen
+  (E-Mail, Telefon, Vor-/Nachname, Anschrift). Gegen den alten Stand geprüft:
+  Er meldet die übersehene Stelle.
+
+Geprüft und bewusst **nicht** verschlüsselt, mit Begründung im Wächter:
+
+- `ContactPerson` (Name, E-Mail, Telefon) — steht auf jeder Stellenanzeige im
+  Klartext, wird also absichtlich veröffentlicht. Eine Verschlüsselung schützte
+  nichts, was nicht ohnehin öffentlich ist, kostete aber die alphabetische
+  Sortierung der Kontaktliste: `order_by('lastName')` würde Ciphertext
+  sortieren — lautlos falsch, ohne Fehlermeldung.
+- `Location.address` — Anschrift einer Einrichtung, kein Personendatum.
+
 ### Behoben (halbe Seite Bereichszahlen, halbe Seite Gesamtzahlen)
 
 Die Auswertungs-Seite trägt im Code den Vermerk „BOLA-gescopt", und ihre

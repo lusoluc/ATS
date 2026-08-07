@@ -30,7 +30,21 @@ python manage.py bootstrap_auth # Rollen-Gruppen + Admin (SECURATS_ADMIN_USER/PA
 python manage.py ai_doctor      # KI-Anbindung diagnostizieren (Erreichbarkeit/Modell/Latenz)
 ```
 
-## 3. Wiederkehrende Jobs (Cron-Vorschlag)
+## 3. Wiederkehrende Jobs
+
+**Im Docker-Betrieb ist nichts einzurichten.** Der Compose-Stapel enthält den
+Dienst `scheduler`; er läuft ohne Profil mit und führt die fälligen Jobs aus.
+Prüfen: `docker compose ps scheduler`, Zeitplan ansehen:
+`docker compose exec web python manage.py scheduler --list`.
+
+Bis zum Zeitplan-Paket stand hier nur der Cron-Vorschlag unten — und der
+ausgelieferte Compose-Stapel enthielt keinen Zeitplan. Wer der
+Installationsanleitung folgte, bekam **keinen** dieser Jobs, auch nicht die
+Anonymisierung nach Fristablauf, die die Oberfläche als „automatisch" zusagt
+(Art. 5 Abs. 1 lit. e DSGVO). Was zuletzt wirklich lief, steht unter
+*Einstellungen → Wiederkehrende Jobs*.
+
+### Ohne Docker: Cron-Einträge
 
 ```cron
 # DSGVO-Retention: abgelehnte Bewerbungen > Frist anonymisieren (erst --dry-run testen)

@@ -1,0 +1,72 @@
+{% extends 'admin_pages/_layout.html' %}
+{% block title %}Wiederkehrende Jobs · SecurATS{% endblock %}
+{% block admin_body %}
+<h1 class="page-title"><i class="fa-solid fa-repeat" aria-hidden="true"></i> Wiederkehrende Jobs</h1>
+<p class="page-lead">
+  Fristen anwenden, abgelaufene Einwilligungen löschen, Erinnerungen und
+  Job-Alerts versenden, die Audit-Kette prüfen. Hier steht, was zuletzt
+  wirklich gelaufen ist — nicht, was laufen sollte.
+</p>
+
+{% comment %} Anlass: OPERATIONS.md schlug für diese Kommandos einen
+   Cron-Eintrag vor, der ausgelieferte Compose-Stapel enthielt aber keinen
+   Zeitplan. Wer der Installationsanleitung folgte, bekam sie nie. {% endcomment %}
+
+{% if offen %}
+<div class="glass-card" role="alert" style="border-color:var(--danger); margin-bottom:24px;">
+  <h3 style="font-size:16px; margin:0 0 8px;">
+    <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+    {{ offen|length }} {% if offen|length == 1 %}Job ist überfällig{% else %}Jobs sind überfällig{% endif %}
+  </h3>
+  <p style="margin:0 0 8px;">
+    Läuft im Docker-Betrieb der Dienst <code>scheduler</code>? Er ist Teil des
+    Stapels und startet ohne Zutun mit:
+    <code>docker compose ps scheduler</code>. Ohne Docker richten Sie die
+    Kommandos als Cron-Einträge ein (siehe OPERATIONS.md).
+  </p>
+</div>
+{% else %}
+<p role="status" style="margin:0 0 24px;">
+  <span class="badge badge-accent">Alle Jobs aktuell</span>
+</p>
+{% endif %}
+
+<div class="glass-card">
+  <div class="table-scroll">
+  <table class="data-table">
+    <thead><tr><th>Job</th><th>Zuletzt gelaufen</th><th>Ergebnis</th></tr></thead>
+    <tbody>
+      {% for z in zeilen %}
+      <tr>
+        <td>
+          {{ z.label }}
+          {% if z.pflicht %}<span class="badge badge-danger" style="margin-left:6px;">Pflicht</span>{% endif %}
+          <div style="font-size:12px; color:var(--text-muted); font-family:monospace;">{{ z.name }}</div>
+          {% if z.warum and z.ueberfaellig %}
+          <div style="font-size:13px; margin-top:6px;">{{ z.warum }}</div>
+          {% endif %}
+        </td>
+        <td>
+          {% if z.nie_gelaufen %}
+            <span class="badge badge-danger">noch nie</span>
+          {% else %}
+            {{ z.when|date:"d.m.Y H:i" }}
+            <div style="font-size:12px; color:var(--text-muted);">
+              {% if z.tage_her == 0 %}heute{% elif z.tage_her == 1 %}gestern{% else %}vor {{ z.tage_her }} Tagen{% endif %}
+            </div>
+          {% endif %}
+        </td>
+        <td>
+          {% if z.nie_gelaufen %}–
+          {% elif z.ok %}<span class="badge badge-accent">in Ordnung</span>
+          {% else %}<span class="badge badge-danger">fehlgeschlagen</span>
+            {% if z.detail %}<div style="font-size:12px; color:var(--text-muted);">{{ z.detail }}</div>{% endif %}
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}

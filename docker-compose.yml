@@ -97,6 +97,45 @@ services:
       - DEMO_MODE=${DEMO_MODE:-0}
     networks: [securats-network]
 
+  scheduler:
+    # Wiederkehrende Jobs: Aufbewahrungsfristen, abgelaufene Einwilligungen,
+    # Job-Alerts, Termin- und Freigabe-Erinnerungen, Audit-Pruefung,
+    # Wochenbericht.
+    #
+    # WARUM DIESER DIENST EXISTIERT: OPERATIONS.md schlug dafuer einen
+    # Cron-Eintrag vor, dieser Compose-Stapel enthielt aber keinen Zeitplan.
+    # Wer der Installationsanleitung folgte, bekam die Jobs nie - auch nicht
+    # die Anonymisierung nach Fristablauf, die die Oberflaeche als
+    # "automatisch" zusagt (Art. 5 Abs. 1 lit. e DSGVO).
+    #
+    # KEIN Profil: Der Dienst laeuft immer mit. Ein Zeitplan, den man erst
+    # einschalten muss, ist derselbe Fehler noch einmal.
+    image: ghcr.io/lusoluc/ats:${SECURATS_VERSION:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: securats-scheduler
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+      web:
+        condition: service_healthy  # verhindert parallele Migrationen beim Start
+    command: ["python", "manage.py", "scheduler", "--interval", "300"]
+    volumes:
+      - media:/app/media
+    environment:
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - PII_ENCRYPTION_KEY=${PII_ENCRYPTION_KEY}
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=${POSTGRES_DB:-securats}
+      - POSTGRES_USER=${POSTGRES_USER:-securats}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS:-localhost}
+      - DEBUG=False
+      - DEMO_MODE=${DEMO_MODE:-0}
+    networks: [securats-network]
+
 volumes:
   pgdata:
   media:

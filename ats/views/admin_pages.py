@@ -37,7 +37,7 @@ from ..models import (
 )
 from ..permissions import hr_admin_required, scope_applications, scope_jobs
 
-__all__ = ["stats_page", "process_page", "templates_page", "ki_page", "hris_page", "save_auto_reply_settings", "retention_page", "privacy_notice_page", "settings_hub", "mail_settings_page", "learned_scoring_view", "save_learned_scoring_settings"]
+__all__ = ["stats_page", "process_page", "templates_page", "ki_page", "hris_page", "save_auto_reply_settings", "retention_page", "privacy_notice_page", "settings_hub", "scheduled_jobs_page", "mail_settings_page", "learned_scoring_view", "save_learned_scoring_settings"]
 
 
 def gemma_status() -> str:
@@ -266,10 +266,16 @@ def retention_page(request):
                     old_days=old, new_days=days)
         messages.success(request, f"Löschfrist auf {days} Tage gesetzt.")
         return redirect('ats:retention')
+    # Die Seite sagte „wird automatisch anonymisiert" - ohne je nachzusehen,
+    # ob das jemand ausfuehrt. Jetzt steht der letzte Lauf daneben.
+    from ..jobs import last_run
+    lauf = last_run('data_retention')
     return render(request, 'admin_pages/retention.html', {
         'days': configured_retention_days(),
         'min_days': MIN_DAYS, 'max_days': MAX_DAYS,
         'preview': dry_run_preview(),
+        'lauf': lauf,
+        'nie_gelaufen': lauf is None,
     })
 
 
@@ -295,13 +301,17 @@ def settings_hub(request):
     nur einen Link: Was nicht eingerichtet ist, sagt das hier - statt dass es
     im Betrieb still ausfällt.
     """
+    from django.utils import timezone
+
     from ..dsgvo import privacy_notice_status
     from ..geo import lookup_plz
+    from ..jobs import last_run, open_problems
     from ..mail_config import mail_status
     from ..models import Location, PayBand, SourceChannel
-
     mail = mail_status()
     notice = privacy_notice_status()
+    retention_lauf = last_run('data_retention')
+    offene_jobs = open_problems()
     locations = list(Location.objects.filter(archived=False))
     missing_coords = sum(1 for loc in locations
                          if loc.lat is None and lookup_plz(loc.postalCode))
@@ -347,7 +357,19 @@ def settings_hub(request):
                 {'name': 'Datenaufbewahrung', 'url': 'ats:retention',
                  'icon': 'fa-clock-rotate-left',
                  'hint': 'Löschfrist und Trockenlauf-Vorschau',
-                 'state': None},
+                 # Kein Haken mehr fuer eine eingestellte Frist: Entscheidend
+                 # ist, ob jemals anonymisiert wurde. Eine Frist ohne Lauf ist
+                 # eine Zusage ohne Deckung.
+                 'state': state(retention_lauf is not None,
+                                'zuletzt gelaufen: ' + (
+                                    timezone.localtime(retention_lauf['when_dt'])
+                                    .strftime('%d.%m.%Y') if retention_lauf else ''),
+                                'noch nie gelaufen – es wird nichts anonymisiert')},
+                {'name': 'Wiederkehrende Jobs', 'url': 'ats:scheduled_jobs',
+                 'icon': 'fa-repeat',
+                 'hint': 'Fristen, Erinnerungen, Job-Alerts, Audit-Prüfung',
+                 'state': state(not offene_jobs, 'alle aktuell',
+                                f"{len(offene_jobs)} überfällig")},
                 # Vertretungen stehen bewusst NICHT hier: Sie sind
                 # Selbstbedienung fuer jede interne Rolle (ein Vorstand legt
                 # seine Vertretung selbst an), keine Administration.
@@ -617,4 +639,24 @@ def hris_page(request):
             {'id': 'sf_job_req_id', 'label': 'Job Requisition ID', 'type': 'String'},
             {'id': 'sf_score_rating', 'label': 'AI Screening Rating', 'type': 'String'},
         ],
+    })
+
+
+@hr_admin_required
+def scheduled_jobs_page(request):
+    """Wiederkehrende Jobs: was laufen soll, und was tatsaechlich lief.
+
+    Der Anlass: `OPERATIONS.md` schlug einen Cron-Eintrag fuer neun Kommandos
+    vor, der ausgelieferte `docker-compose.yml` enthielt aber keinen Zeitplan.
+    Wer der Installationsanleitung folgte, bekam die Jobs nie - auch nicht die
+    Anonymisierung nach Fristablauf, die die Oberflaeche als "automatisch"
+    zusagte. Diese Seite macht den Unterschied zwischen Absicht und Wirklichkeit
+    sichtbar, statt ihn in einer Betriebsdoku zu lassen.
+    """
+    from ..jobs import job_overview
+    zeilen = job_overview()
+    return render(request, 'admin_pages/scheduled_jobs.html', {
+        'zeilen': zeilen,
+        'offen': [z for z in zeilen if z['ueberfaellig']],
+        'nie': [z for z in zeilen if z['nie_gelaufen']],
     })

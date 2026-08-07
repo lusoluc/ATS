@@ -34,6 +34,15 @@ Wer sie einschaltet, sollte wissen warum:
 Mit beiden auf `True` besteht die Installation Djangos Deploy-Check ohne
 Warnung; genau so prüft es auch die CI.
 
+### Was mitläuft
+
+`docker compose up -d` startet Datenbank, Anwendung und den Dienst
+`scheduler`. Letzterer erledigt die wiederkehrenden Aufgaben: Fristen
+anwenden, abgelaufene Einwilligungen löschen, Erinnerungen und Job-Alerts
+versenden, die Audit-Kette prüfen. Ob sie tatsächlich laufen, sehen Sie unter
+*Einstellungen → Wiederkehrende Jobs* — ein Job, der nie lief, steht dort als
+solcher.
+
 Dann:
 
 ```bash

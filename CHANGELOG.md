@@ -5,6 +5,40 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (neun Jobs im Zeitplan — und keiner, der sie startet)
+
+`OPERATIONS.md` schlug für neun Kommandos einen Cron-Eintrag vor. Der
+ausgelieferte `docker-compose.yml` enthielt **keinen Zeitplan**: Wer der
+Installationsanleitung folgt und `docker compose up -d` fährt, bekam
+Datenbank, Anwendung, KI und KI-Worker — und keinen einzigen dieser Jobs.
+
+Betroffen war unter anderem `data_retention`. Die Seite „Datenaufbewahrung"
+sagte HR-Admins derweil zu, Bewerbungen würden „nach Ablauf der Frist
+**automatisch** anonymisiert (DSGVO-Datenminimierung)". Ein Satz, den die
+Auslieferung nicht einlöste — bei einer Pflicht aus Art. 5 Abs. 1 lit. e
+DSGVO, für die die Leitung geradesteht. Dasselbe gilt für
+`purge_talent_pool`: abgelaufene Einwilligungen wurden nie gelöscht.
+
+- **Neuer Dienst `scheduler` im Compose-Stapel.** Ohne Profil, er läuft immer
+  mit — ein Zeitplan, den man erst einschalten muss, wäre derselbe Fehler noch
+  einmal. Bewusst kein Celery/Redis-Beat: ein Dienst im selben Image, den ein
+  Träger ohne eigenes Betriebsteam lesen und reparieren kann.
+- **Jeder Lauf hinterlässt einen Vermerk** (`ats/jobs.py`). Damit kann die
+  Oberfläche sagen, was zuletzt lief — und Schweigen ist keine Option mehr.
+- **Neue Seite *Einstellungen → Wiederkehrende Jobs***: je Job letzter Lauf,
+  Ergebnis und, bei überfälligen Pflicht-Jobs, die Folge im Klartext.
+- Die Seite „Datenaufbewahrung" behauptet nicht mehr „automatisch", sondern
+  zeigt den letzten Lauf — oder warnt, dass noch nie anonymisiert wurde.
+- Ein fehlgeschlagener Job bricht den Zeitplan nicht ab: Sonst hätte ein
+  kaputter Wochenbericht die Aufbewahrungsfristen mit lahmgelegt.
+- `INSTALL.md` und `OPERATIONS.md` sagen jetzt, dass der Docker-Weg das
+  mitbringt; die Cron-Liste gilt für Installationen ohne Docker.
+
+Wächter `GuardrailScheduleIsRealTestCase`: Jeder Zeitplan-Eintrag muss als
+Kommando existieren, und der Compose-Stapel muss den Dienst enthalten — ohne
+Profil. Damit hängt die Zusage der Oberfläche an einem Test, nicht an einem
+Absatz in der Betriebsdoku.
+
 ### Behoben (verschluckte Fehler — vor allem einer, der den Login-Schutz betraf)
 
 Acht Stellen fingen eine Ausnahme ab und taten nichts damit. Die teuerste sitzt

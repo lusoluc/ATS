@@ -79,6 +79,17 @@ Queue-Abarbeitung ohne Dauer-Worker (Alternative zu `--loop`):
 */2 * * * * cd /app && python manage.py ai_worker --once
 ```
 
+Verhalten der KI-Queue bei Störungen (seit Paket BA):
+- **Fehlversuche warten** (Backoff 2 bzw. 10 Minuten) statt alle Versuche in
+  Sekunden zu verbrennen — ein kurzer Ollama-Ausfall tötet die Queue nicht.
+- **Verwaiste Tasks** (Worker-Abbruch, älter als 30 Minuten RUNNING) werden
+  beim nächsten Lauf wieder aufgenommen.
+- **Endgültig gescheiterte Aufgaben** stehen auf der Seite *Wiederkehrende
+  Jobs* und lassen sich dort mit einem Klick neu einreihen; die betroffene
+  Bewerbung trägt dann einen ehrlichen Vermerk statt „läuft im Hintergrund".
+- **Aufräumen:** `data_retention` (täglich im Zeitplan) löscht erledigte
+  Tasks nach 30, gescheiterte nach 90 Tagen.
+
 ## 4. Monitoring
 
 - `GET /healthz/` – Gesamtstatus: DB, Media, KI-Erreichbarkeit, Queue-Tiefe

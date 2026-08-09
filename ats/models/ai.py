@@ -61,9 +61,21 @@ class AiTask(models.Model):
     error = models.TextField(blank=True, null=True)
     attempts = models.IntegerField(default=0)
     maxAttempts = models.IntegerField(default=3)
+    # Fruehester Zeitpunkt fuer den naechsten Versuch. Ohne dieses Feld wurde
+    # ein fehlgeschlagener Task sofort wieder PENDING - und als aeltester
+    # sofort wieder geclaimt: alle Versuche in Sekunden verbrannt, ein
+    # 5-Minuten-KI-Ausfall machte die ganze Queue endgueltig FAILED.
+    nextAttemptAt = models.DateTimeField(blank=True, null=True)
     createdAt = models.DateTimeField(default=timezone.now)
     startedAt = models.DateTimeField(blank=True, null=True)
     finishedAt = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        indexes = [
+            # claim_next fragt alle paar Sekunden nach dem aeltesten PENDING.
+            models.Index(fields=['status', 'createdAt'],
+                         name='ats_aitask_claim_idx'),
+        ]
 
     def __str__(self):
         return f"{self.taskType} [{self.status}]"

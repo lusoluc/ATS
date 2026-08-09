@@ -331,7 +331,11 @@ def bewerben(request, job_id):
             ai_async = SystemSetting.objects.filter(key='AI_ASYNC', value='1').exists()
             if ai_scoring_on and not ko_failed:
                 if ai_async:
-                    ai_rationale = 'KI-Analyse läuft im Hintergrund …'
+                    # Dieselbe Konstante, die der Worker bei endgueltigem
+                    # Fehlschlag wieder ersetzt - ein abweichendes Literal
+                    # hier liesse die Zusage ewig stehen.
+                    from ..queue import PLACEHOLDER_RATIONALE
+                    ai_rationale = PLACEHOLDER_RATIONALE
                 else:
                     ai_score, ai_rationale = evaluate_with_local_gemma(cover_letter, job.requirementsJson)
 

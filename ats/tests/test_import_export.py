@@ -68,15 +68,36 @@ class OperationsWP7TestCase(TestCase):
         self.assertEqual(AiTask.objects.filter(status="DONE").count(), 1)
 
     def test_queue_retries_then_fails(self):
+        """Drei Fehlversuche -> FAILED. Aber NICHT in Sekunden: Zwischen den
+        Versuchen liegt Backoff (die alte Fassung dieses Tests kodierte das
+        Sofort-Wiederholen als Soll - genau der Fehler, der bei einem kurzen
+        KI-Ausfall die ganze Queue endgueltig toetete)."""
         from ..models import AiTask
         from ..queue import enqueue, run_pending
         enqueue("SCORE_APPLICATION", {"application_id": "00000000-0000-0000-0000-000000000000"})
         for _ in range(3):
             run_pending()
+            # Backoff von Hand ueberspringen - im Betrieb vergehen hier Minuten.
+            AiTask.objects.update(nextAttemptAt=None)
         task = AiTask.objects.get()
         self.assertEqual(task.status, "FAILED")
         self.assertEqual(task.attempts, 3)
         self.assertTrue(task.error)
+
+    def test_a_failed_attempt_waits_before_retrying(self):
+        """Ein Fehlschlag verbrennt NICHT sofort den naechsten Versuch."""
+        from ..models import AiTask
+        from ..queue import enqueue, run_pending
+        enqueue("SCORE_APPLICATION", {"application_id": "00000000-0000-0000-0000-000000000000"})
+        run_pending()
+        task = AiTask.objects.get()
+        self.assertEqual(task.status, "PENDING")           # kommt wieder
+        self.assertEqual(task.attempts, 1)
+        self.assertIsNotNone(task.nextAttemptAt)           # aber nicht sofort
+        # Ein sofortiger zweiter Lauf darf ihn NICHT nehmen:
+        self.assertEqual(run_pending(), 0)
+        task.refresh_from_db()
+        self.assertEqual(task.attempts, 1)
 
     def test_unknown_task_type_fails_gracefully(self):
         from ..queue import enqueue, run_pending

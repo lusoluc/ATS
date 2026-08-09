@@ -5,6 +5,46 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (KI-Queue übersteht Ausfälle — und ist sichtbar)
+
+Dieselbe Frage wie an die Zustell-Jobs, diesmal an die KI-Warteschlange
+(asynchrone Vorbewertung eingehender Bewerbungen): Was passiert, wenn etwas
+schiefgeht? Vorher vier Wege, auf denen Arbeit still verloren ging:
+
+- **Ein Fehlschlag verbrannte alle Versuche in Sekunden**: Der Task kam
+  sofort wieder nach vorn und scheiterte sofort erneut — ein
+  5-Minuten-Ausfall der lokalen KI machte die gesamte Warteschlange
+  **endgültig** kaputt. Jetzt wartet der nächste Versuch (Backoff 2/10
+  Minuten), bis die Störung realistisch vorbei sein kann. Der alte Test
+  kodierte das Sofort-Wiederholen als Soll und wurde auf die neue Wahrheit
+  umgeschrieben.
+- **Ein Worker-Absturz verlor den Task für immer**: Zwischen Übernahme und
+  Ergebnis gestorben (Neustart, Deploy, OOM) blieb er ewig „in Arbeit",
+  kein Lauf nahm ihn wieder auf. Jetzt holt jeder Lauf verwaiste Tasks
+  zurück; ohne Restversuche enden sie ehrlich als fehlgeschlagen.
+- **„KI-Analyse läuft im Hintergrund …" log für immer**: Der Platzhalter
+  blieb auch stehen, wenn die Analyse endgültig gescheitert war — oder nie
+  ein Worker lief. Jetzt ersetzt ihn bei endgültigem Fehlschlag ein
+  ehrlicher Vermerk („bitte regulär von Hand sichten"); eine von Hand
+  eingetragene Begründung wird nie überschrieben. Formular und Worker
+  teilen sich die Konstante, ein Test erzwingt das.
+- **Fehlgeschlagen war eine unsichtbare Endstation**: Kein Bildschirm
+  zeigte die Queue, neu anstoßen ging nur per Datenbank-Shell. Jetzt zeigt
+  die Seite *Wiederkehrende Jobs* den Queue-Zustand (samt Alarm, wenn die
+  älteste wartende Aufgabe länger liegt, als ein laufender Worker erklären
+  könnte — dann läuft schlicht keiner) und bietet „Fehlgeschlagene erneut
+  einreihen" mit Audit-Eintrag. Auf Installationen ohne KI erscheint der
+  Block nicht.
+
+Dazu: `AI_ASYNC` (Vorbewertung im Hintergrund statt während des
+Bewerbungs-Requests) war nur per Shell schaltbar — das L6-Versprechen „die
+Bewerbungsseite wartet nie auf die KI" war im Produkt nicht aktivierbar.
+Der Schalter steht jetzt neben der Vorbewertung auf der KI-Seite, mit
+Hinweis auf den nötigen Worker. Und `data_retention` räumt die
+Task-Historie auf (erledigt: 30 Tage, gescheitert: 90).
+
+Gegenprobe: Die neue Testdatei läuft gegen den alten Queue-Code rot.
+
 ### Behoben (Nachschärfung: Selbst-Audit der elf Pakete AN–AY)
 
 Ein Durchgang durch alle elf Pakete mit einer Frage: Wo wurde eine Abkürzung

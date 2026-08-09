@@ -37,7 +37,7 @@ from ..models import (
 )
 from ..permissions import hr_admin_required, scope_applications, scope_jobs
 
-__all__ = ["stats_page", "process_page", "templates_page", "ki_page", "hris_page", "save_auto_reply_settings", "retention_page", "privacy_notice_page", "settings_hub", "scheduled_jobs_page", "mail_settings_page", "learned_scoring_view", "save_learned_scoring_settings"]
+__all__ = ["stats_page", "process_page", "templates_page", "ki_page", "hris_page", "save_auto_reply_settings", "retention_page", "privacy_notice_page", "settings_hub", "scheduled_jobs_page", "requeue_failed_ai_tasks", "mail_settings_page", "learned_scoring_view", "save_learned_scoring_settings"]
 
 
 def gemma_status() -> str:
@@ -654,9 +654,42 @@ def scheduled_jobs_page(request):
     sichtbar, statt ihn in einer Betriebsdoku zu lassen.
     """
     from ..jobs import job_overview
+    from ..models import SystemSetting
+    from ..queue import queue_overview
     zeilen = job_overview()
+    queue = queue_overview()
+    # Context-Aware: Auf Installationen ohne KI-Queue (kein AI_ASYNC, nie ein
+    # Task) waere der Block nur Rauschen. Sobald es Tasks gibt oder der
+    # Schalter an ist, gehoert der Zustand hierher - die Queue ist
+    # Hintergrund-Arbeit wie die Jobs darueber.
+    queue_relevant = (
+        any([queue['pending'], queue['running'], queue['failed'], queue['done']])
+        or SystemSetting.objects.filter(key='AI_ASYNC', value='1').exists())
     return render(request, 'admin_pages/scheduled_jobs.html', {
         'zeilen': zeilen,
         'offen': [z for z in zeilen if z['ueberfaellig']],
         'nie': [z for z in zeilen if z['nie_gelaufen']],
+        'queue': queue if queue_relevant else None,
     })
+
+
+@hr_admin_required
+def requeue_failed_ai_tasks(request):
+    """FAILED-Tasks neu einreihen — der Heilungsweg nach behobener Ursache.
+
+    Vorher gab es KEINEN: Ein endgueltig gescheiterter Task blieb FAILED,
+    auch wenn die KI laengst wieder lief; neu anstossen ging nur per
+    DB-Shell.
+    """
+    from ..audit import write_audit
+    from ..queue import requeue_failed
+    if request.method == 'POST':
+        anzahl = requeue_failed()
+        if anzahl:
+            write_audit('AI_QUEUE_REQUEUED', user=request.user, count=anzahl)
+            messages.success(request,
+                             f'{anzahl} fehlgeschlagene KI-Aufgabe(n) neu '
+                             f'eingereiht - der Worker nimmt sie wieder auf.')
+        else:
+            messages.info(request, 'Keine fehlgeschlagenen KI-Aufgaben.')
+    return redirect('ats:scheduled_jobs')

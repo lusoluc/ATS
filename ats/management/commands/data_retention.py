@@ -35,6 +35,18 @@ class Command(BaseCommand):
             days = configured_retention_days()
         dry_run = options['dry_run']
 
+        # KI-Queue-Historie mit aufraeumen (Datensparsamkeit): erledigte
+        # Tasks sind reine Historie, fehlgeschlagene bleiben laenger, damit
+        # die Jobs-Seite den Fehler zeigen kann. VOR dem Early-Return unten,
+        # sonst raeumt eine Installation ohne alte Bewerbungen nie auf.
+        from ats.queue import trim_finished
+        if not dry_run:  # Trockenlauf aendert nichts - auch hier nicht.
+            done, failed = trim_finished()
+            if done or failed:
+                self.stdout.write(
+                    f"KI-Queue aufgeräumt: {done} erledigte, {failed} "
+                    f"fehlgeschlagene Aufgabe(n) entfernt.")
+
         cutoff_date = timezone.now() - datetime.timedelta(days=days)
         self.stdout.write(self.style.WARNING(f"Staging anonymization for applications before: {cutoff_date}"))
 

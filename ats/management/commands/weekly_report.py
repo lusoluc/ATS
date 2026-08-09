@@ -1,8 +1,17 @@
 """GF/CFO-Wochenreport (WP6/UC-CV-12) – geplanter KPI-Report als Markdown.
 
-Betrieb: per Cron wöchentlich ausführen, z.B.
-  0 7 * * 1  cd /app && python manage.py weekly_report --out /reports/kpi.md
-Versand (E-Mail) folgt mit der Betriebs-Infrastruktur in WP7.
+Ohne `--out` wird der Bericht an alle HR-Admins mit hinterlegter Adresse
+VERSANDT. Vorher ging er nach stdout — im Zeitplan-Dienst also ins
+Docker-Log, das niemand liest: Der Job stand grün im Vermerk, und die Leitung
+bekam nie einen Bericht. (Der Docstring vertröstete auf "Versand folgt mit
+WP7" — die Versand-Schicht existierte längst.)
+
+Kann nicht zugestellt werden (kein Mailserver, keine Adressen), endet das
+Kommando mit einem Fehler statt mit einem grünen Haken: Ein Bericht, der
+niemanden erreicht, ist kein Erfolg.
+
+Mit `--out DATEI` wird stattdessen in die Datei geschrieben (für Ablage oder
+eigene Verteilwege).
 """
 from datetime import timedelta
 
@@ -69,5 +78,25 @@ class Command(BaseCommand):
             with open(options["out"], "w", encoding="utf-8") as fh:
                 fh.write(report)
             self.stdout.write(self.style.SUCCESS(f"Report geschrieben: {options['out']}"))
-        else:
-            self.stdout.write(report)
+            return
+
+        from django.contrib.auth.models import Group
+        from django.core.management.base import CommandError
+
+        from ats.mail_send import send_notice
+        admins = Group.objects.filter(name="HR-Admin").first()
+        adressen = ([u.email for u in admins.user_set.all() if u.email]
+                    if admins else [])
+        if not adressen:
+            raise CommandError(
+                "Kein Versand moeglich: Kein HR-Admin hat eine E-Mail-Adresse "
+                "hinterlegt. Der Bericht erreicht so niemanden.")
+        zugestellt = send_notice(
+            f"SecurATS Wochenreport – {now.strftime('%d.%m.%Y')}",
+            report, None, adressen, context="Wochenreport")
+        if not zugestellt:
+            raise CommandError(
+                "Wochenreport nicht zugestellt - Grund steht im Protokoll "
+                "und unter Einstellungen -> E-Mail-Versand.")
+        self.stdout.write(self.style.SUCCESS(
+            f"Wochenreport an {len(adressen)} Empfaenger versandt."))

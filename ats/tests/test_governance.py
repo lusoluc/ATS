@@ -141,14 +141,24 @@ class GovernanceWP6TestCase(TestCase):
         self.assertNotContains(resp, "v@x.de")        # keine E-Mails
 
     def test_weekly_report_runs(self):
+        # Der Bericht geht jetzt per Mail an die Leitung statt nach stdout —
+        # im Zeitplan-Dienst las stdout niemand. Geprueft wird derselbe
+        # Inhalt, nur am Ort, an dem er ankommt.
         from io import StringIO
 
+        from django.core import mail
         from django.core.management import call_command
+        from django.test import override_settings
+
+        from .test_jobs_wirksam import _admin_mit_adresse
         self._job()
-        out = StringIO()
-        call_command("weekly_report", stdout=out)
-        text = out.getvalue()
-        self.assertIn("Wochenreport", text)
+        _admin_mit_adresse("wr-gov-admin", "gov-leitung@example.invalid")
+        with override_settings(
+                EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend"):
+            call_command("weekly_report", stdout=StringIO())
+        self.assertEqual(len(mail.outbox), 1)
+        text = mail.outbox[0].body
+        self.assertIn("Wochenreport", mail.outbox[0].subject)
         self.assertIn("Besetzungs-Prognose", text)
 
 class ApprovalGateTestCase(TestCase):

@@ -5,6 +5,33 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (Jobs, die liefen — aber nichts bewirkten)
+
+Zwei Funde derselben Klasse im Zeitplan, beide vom neuen Scheduler erst
+sichtbar gemacht:
+
+**`verify_audit` hakte einen Integritätsbruch grün ab.** Das Kommando meldete
+den Bruch der Audit-Hash-Kette nur als roten Text und endete mit Exit-Code 0.
+Cron und der Zeitplan-Dienst reagieren auf Exit-Codes, nicht auf Textfarben —
+der Lauf stand als „in Ordnung" im Vermerk, ausgerechnet beim Job, der
+Manipulation erkennen soll. Jetzt: Ein Bruch ist ein `CommandError`
+(Exit 1), der Scheduler vermerkt „fehlgeschlagen" mit dem Befund, und alle
+HR-Admins mit hinterlegter Adresse werden benachrichtigt. Der Versand ist
+Beigabe: Scheitert die Alarm-Mail, bleibt der Fehler trotzdem die Meldung.
+
+**Der Wochenbericht erreichte niemanden.** Ohne `--out` ging er nach stdout —
+im Zeitplan-Dienst also ins Docker-Log, das niemand liest. Der Job stand grün
+im Vermerk, die Leitung bekam nie einen Bericht. Der Docstring vertröstete
+seit WP6 auf „Versand folgt mit der Betriebs-Infrastruktur in WP7" — die
+Versand-Schicht existierte längst. Jetzt: Ohne `--out` geht der Bericht per
+Mail an alle HR-Admins. Kann nicht zugestellt werden (kein Mailserver, keine
+Adressen), endet das Kommando mit Fehler statt mit grünem Haken — ein
+Bericht ohne Empfänger ist kein Erfolg. `--out` schreibt weiterhin eine
+Datei, dann ohne Versand.
+
+Ein bestehender Test kodierte das alte Verhalten (Bericht ins Leere =
+Erfolg); er prüft denselben Inhalt jetzt am Ort, an dem er ankommt.
+
 ### Geändert (Wächter beweisen bei jedem Lauf, dass sie etwas sehen)
 
 Die Doku sagte: „Die Wächter sind selbst getestet: In der Entwicklung wurde

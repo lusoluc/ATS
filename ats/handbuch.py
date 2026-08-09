@@ -116,13 +116,23 @@ def template_hash(namen: tuple[str, ...]) -> str:
 
     Fehlt eine Vorlage, fliesst das als Marke ein - dann faellt auch eine
     UMBENANNTE Vorlage auf, statt still durchzurutschen.
+
+    ZEILENENDEN werden vorher vereinheitlicht. Ohne das haengt der Hash am
+    Betriebssystem: Git checkt auf Windows mit CRLF aus, auf dem Linux-Runner
+    mit LF - derselbe Inhalt, andere Bytes. Der Waechter meldete daraufhin in
+    der CI ALLE Bilder als veraltet, waehrend lokal keins auffiel. Ein
+    Waechter, der je nach Rechner etwas anderes sagt, ist wertlos.
     """
     h = hashlib.sha256()
     wurzel = _repo() / "templates"
     for name in sorted(namen):
         datei = wurzel / name
         h.update(name.encode())
-        h.update(datei.read_bytes() if datei.exists() else b"<fehlt>")
+        if datei.exists():
+            inhalt = datei.read_bytes().replace(b"\r\n", b"\n")
+        else:
+            inhalt = b"<fehlt>"
+        h.update(inhalt)
     return h.hexdigest()[:16]
 
 

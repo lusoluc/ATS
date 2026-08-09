@@ -4,8 +4,8 @@
 
 - Matcht neue veröffentlichte Stellen gegen aktive Abos (Scope: global /
   Stichwort / Einrichtung / km-Umkreis) und versendet je Treffer eine Mail
-  (fail_silently; jeder Treffer wird als JobAlertLog ALERT_SENT protokolliert,
-  damit der Lauf auch ohne Mail-Infrastruktur nachvollziehbar ist).
+  über `send_notice`. ALERT_SENT wird NUR bei Zustellung protokolliert;
+  Fehlschläge werden gezählt und beim nächsten Lauf wiederholt.
 - Löscht verfallene Abos (12 Monate ohne Bestätigung) und INAKTIVE Abmeldungen –
   Datensparsamkeit statt Vorratshaltung. Jede Löschung landet im Audit-Log.
 """

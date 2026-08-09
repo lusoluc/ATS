@@ -232,7 +232,7 @@ def screening_question_impact(job: JobPosting,
         expected = q.get("expectedAnswer")
         answered = pass_n = pass_inv = fail_n = fail_inv = 0
         for aid, status, answers in rows:
-            ans_map = answers if isinstance(answers, dict) else {}
+            ans_map: dict[str, str] = answers if isinstance(answers, dict) else {}
             if text not in ans_map:
                 continue
             answered += 1

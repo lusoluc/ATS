@@ -145,7 +145,8 @@ def schedule_interview(request):
             app.save()
 
             # Einladen = Termin + Kommunikation in EINEM Schritt:
-            # Nachricht an Bewerber:in (Portal-Postfach) + E-Mail (fail_silently)
+            # Nachricht an Bewerber:in (Portal-Postfach) + E-Mail via
+            # send_notice (meldet Fehlschlaege statt sie zu schlucken)
             message_text = (request.POST.get('message_text') or '').strip()[:4000]
             if message_text:
                 Message.objects.create(application=app, direction='OUTBOUND',

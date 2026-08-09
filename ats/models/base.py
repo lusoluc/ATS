@@ -1,6 +1,7 @@
 """Basis-Bausteine der Modellschicht: Fernet-Verschluesselung at-rest und E-Mail-Blind-Index."""
 import base64
 import hashlib
+from typing import TYPE_CHECKING, Any
 
 from cryptography.fernet import Fernet
 from django.conf import settings
@@ -85,3 +86,69 @@ class EncryptedTextField(models.TextField):
             return cipher.decrypt(value.encode()).decode()
         except Exception:
             return value
+
+
+# Fuer mypy waere ein EncryptedJSONField sonst ein `str`-Feld (TextField-Erbe)
+# - tatsaechlich kommt beim Lesen das dict/die Liste zurueck. Die Typ-Parameter
+# kennt nur django-stubs; zur Laufzeit ist `TextField` nicht subscriptable,
+# daher der TYPE_CHECKING-Zweig.
+if TYPE_CHECKING:
+    _EncryptedJSONBase = models.TextField[Any, Any]
+else:
+    _EncryptedJSONBase = models.TextField
+
+
+class EncryptedJSONField(_EncryptedJSONBase):
+    """JSON-Inhalt, Fernet-verschluesselt at-rest.
+
+    WARUM: `Application.screeningAnswersJson` traegt die Antworten der
+    bewerbenden Person auf Screening-Fragen - bei Freitext-Fragen sind das
+    ihre eigenen Worte, dieselbe Kategorie wie das (verschluesselte)
+    Anschreiben. Als gewoehnliches JSONField lag es im Klartext, waehrend
+    `coverLetterTxt` daneben verschluesselt war.
+
+    Gespeichert wird als TEXT-Spalte (verschluesseltes JSON), gelesen kommt
+    das dict/die Liste zurueck - auch ueber values()/values_list(), weil
+    Django dafuer `from_db_value` anwendet. DB-seitige JSON-Lookups
+    (`feld__key`) funktionieren damit NICHT; vor der Umstellung wurde
+    geprueft, dass keiner existiert.
+
+    Altbestand: Ein noch unverschluesselter JSON-String (oder ein Wert, der
+    nach einem Schluesselwechsel nicht entschluesselbar ist) wird als
+    Klartext-JSON gelesen - dieselbe Nachsicht wie bei den anderen
+    Encrypted-Feldern, damit Datenmigrationen idempotent bleiben.
+    """
+
+    def get_prep_value(self, value):
+        if value is None:
+            return value
+        import json as _json
+        raw = _json.dumps(value, ensure_ascii=False)
+        cipher = get_fernet_cipher()
+        return cipher.encrypt(raw.encode()).decode()
+
+    def from_db_value(self, value, expression, connection):
+        import json as _json
+        if value is None:
+            return value
+        cipher = get_fernet_cipher()
+        try:
+            raw = cipher.decrypt(value.encode()).decode()
+        except Exception:
+            raw = value  # Klartext-Altbestand oder fremder Schluessel
+        try:
+            return _json.loads(raw)
+        except (ValueError, TypeError):
+            # Unlesbarer Rest: leeres dict statt Absturz - derselbe
+            # Grundsatz wie ueberall: der Betrieb bricht nicht, aber der
+            # Zustand ist nicht erfunden (kein Raten am Inhalt).
+            return {}
+
+    def to_python(self, value):
+        import json as _json
+        if value is None or isinstance(value, (dict, list)):
+            return value
+        try:
+            return _json.loads(value)
+        except (ValueError, TypeError):
+            return {}

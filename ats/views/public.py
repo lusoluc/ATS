@@ -1148,8 +1148,9 @@ def job_alert_subscribe(request):
                 subscription=sub,
                 action='SUBSCRIBED' if created else 'PREFERENCES_UPDATED',
             )
-            # Double-Opt-in: Bestätigungslink per Mail (Console-Backend in Dev;
-            # fail_silently, damit fehlende Mail-Infrastruktur den Flow nicht bricht)
+            # Double-Opt-in: Bestätigungslink per Mail via send_notice.
+            # Ein Versandfehler bricht die Anmeldung nicht ab, wird aber im
+            # Zustand vermerkt statt geschluckt.
             try:
                 from ..mail_send import send_notice
                 confirm_url = request.build_absolute_uri(

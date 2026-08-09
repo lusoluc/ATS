@@ -67,7 +67,10 @@ Anonymisierung nach Fristablauf, die die Oberfläche als „automatisch" zusagt
 # ist kein Erfolg.
 0 7 * * 1   cd /app && python manage.py weekly_report
 
-# KI-Golden-Set nach Prompt-/Modelländerungen (manuell oder wöchentlich)
+# KI-Golden-Set: BEWUSST nicht im scheduler-Dienst - er braucht eine
+# erreichbare lokale KI, und ohne KI-Profil stuende der Job jede Woche
+# rot. Nach Prompt-/Modellaenderungen von Hand starten; wer das
+# KI-Profil produktiv betreibt, kann ihn als Host-Cron ergaenzen:
 0 3 * * 0   cd /app && python manage.py ai_eval
 ```
 

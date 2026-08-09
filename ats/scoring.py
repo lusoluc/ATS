@@ -58,7 +58,7 @@ def _features_for_app(app: Application) -> dict[str, float]:
     """Merkmalsvektor NUR aus den eigenen Feldern der Bewerbung + der Stelle
     (kein N+1: keine Zusatzabfragen). Werte in [0, 1]."""
     job = app.jobPosting
-    answers = app.screeningAnswersJson if isinstance(
+    answers: dict[str, str] = app.screeningAnswersJson if isinstance(
         app.screeningAnswersJson, dict) else {}
     ko = [q for q in (job.screeningQuestionsJson or [])
           if q.get("isMandatory") and q.get("expectedAnswer")]

@@ -43,6 +43,7 @@ from ..models import (
 from ..permissions import (
     any_staff_required,
     can_access_application,
+    denies_viewer_writes,
     hr_admin_required,
     recruiter_required,
     scope_applications,
@@ -852,6 +853,7 @@ def download_cv(request, app_id):
 
 # --- WP4/B10: Kanban-Reihenfolge einer Spalte persistieren -------------------
 @any_staff_required
+@denies_viewer_writes
 def reorder_board(request):
     """Speichert die Kartenreihenfolge einer Kanban-Spalte (nach Drag&Drop)."""
     if request.method != 'POST':
@@ -1607,6 +1609,7 @@ def talent_pool_view(request):
                                                 "pool_stats": pool_stats})
 
 @any_staff_required
+@denies_viewer_writes
 def tasks_view(request):
     """Aufgaben aus der Prozess-Automatik: offene Aufgaben im eigenen
     Zugriffsbereich, gefiltert nach den eigenen Rollen (rollenlose Aufgaben

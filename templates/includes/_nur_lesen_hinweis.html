@@ -1,0 +1,16 @@
+{% comment %}
+Erscheint nur für die Rolle „Viewer". Ohne diesen Hinweis wirkt eine Seite,
+auf der plötzlich alle Knöpfe fehlen, schlicht kaputt — die Person sucht dann
+nach einem Fehler statt zu wissen, dass sie bewusst nur Einsicht hat.
+{% endcomment %}
+{% if not darf_aendern %}
+<div class="card" role="note" style="margin-bottom: var(--space-4); border-left:4px solid var(--primary);">
+  <p style="margin:0; font-size:14px;">
+    <i class="fa-solid fa-eye" aria-hidden="true"></i>
+    <strong>Nur Einsicht.</strong>
+    Sie sind mit der Rolle <em>Viewer</em> angemeldet und sehen hier alles,
+    was Ihr Bereich umfasst — ändern können Sie nichts. Wenn Sie hier mitarbeiten
+    sollen, bittet Ihre HR-Administration um die passende Rolle.
+  </p>
+</div>
+{% endif %}

@@ -77,6 +77,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'ats.branding.branding_context_processor',
                 'ats.context_processors.demo_flags',  # P0.4
+                'ats.context_processors.rollen_flags',  # darf_aendern (Viewer)
             ],
         },
     },

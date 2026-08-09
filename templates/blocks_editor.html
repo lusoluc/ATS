@@ -5,11 +5,14 @@
   <h1 class="page-title"><i class="fa-solid fa-cubes"></i> Seiten-Baukasten: {{ obj.name|default:obj.title }}</h1>
   <p class="page-lead">Block wählen → Felder ausfüllen → sortieren. Kein HTML nötig; Träger-Branding und Design gelten automatisch. <a href="{{ public_url }}" target="_blank">Seite ansehen ↗</a></p>
 
+  {% include 'includes/_nur_lesen_hinweis.html' %}
+
   <div style="display:grid; grid-template-columns: minmax(340px, 1fr) minmax(340px, 1fr); gap: var(--space-4); align-items:start;">
     <div>
+      {% if darf_aendern %}
       <div class="card" style="margin-bottom: var(--space-3);">
         <h2 style="font-size:14px; margin:0 0 var(--space-2);">Block hinzufügen</h2>
-        <form method="post" class="form-row">
+                <form method="post" class="form-row">
           {% csrf_token %}
           <input type="hidden" name="action" value="add">
           <select name="block_type" class="input">
@@ -18,17 +21,25 @@
           <button type="submit" class="btn btn-primary">Hinzufügen</button>
         </form>
       </div>
+      {% endif %}
 
       {% for b in editor_blocks %}
       <div class="card" style="margin-bottom: var(--space-3);">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-2);">
           <strong style="font-size:14px;">{{ forloop.counter }}. {{ b.label }}</strong>
           <span style="display:flex; gap:4px;">
+            {% if darf_aendern %}
             <form method="post" style="display:inline;">{% csrf_token %}<input type="hidden" name="action" value="up"><input type="hidden" name="idx" value="{{ b.i }}"><button type="submit" class="btn-icon" title="nach oben" aria-label="Block {{ forloop.counter }} nach oben"><i class="fa-solid fa-arrow-up"></i></button></form>
+            {% endif %}
+            {% if darf_aendern %}
             <form method="post" style="display:inline;">{% csrf_token %}<input type="hidden" name="action" value="down"><input type="hidden" name="idx" value="{{ b.i }}"><button type="submit" class="btn-icon" title="nach unten" aria-label="Block {{ forloop.counter }} nach unten"><i class="fa-solid fa-arrow-down"></i></button></form>
+            {% endif %}
+            {% if darf_aendern %}
             <form method="post" style="display:inline;" onsubmit="return confirm('Block wirklich löschen?');">{% csrf_token %}<input type="hidden" name="action" value="delete"><input type="hidden" name="idx" value="{{ b.i }}"><button type="submit" class="btn-icon danger" title="löschen" aria-label="Block {{ forloop.counter }} löschen"><i class="fa-solid fa-trash"></i></button></form>
+            {% endif %}
           </span>
         </div>
+        {% if darf_aendern %}
         <form method="post">
           {% csrf_token %}
           <input type="hidden" name="action" value="save">
@@ -50,6 +61,7 @@
           {% endfor %}
           <button type="submit" class="btn btn-ghost" style="padding:7px 14px;">Block speichern</button>
         </form>
+        {% endif %}
       </div>
       {% empty %}
       <div class="card"><p class="empty-state">Noch keine Blöcke – oben den ersten hinzufügen.</p></div>

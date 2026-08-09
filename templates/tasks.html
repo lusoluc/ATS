@@ -10,6 +10,8 @@
     Zugriffsbereich.
   </p>
 
+  {% include 'includes/_nur_lesen_hinweis.html' %}
+
   <div class="card" style="margin-bottom: var(--space-4);">
     <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap: var(--space-3);">
       <div>
@@ -54,6 +56,7 @@
           {% else %}<span style="color:var(--text-muted);">–</span>{% endif %}
         </td>
         <td style="text-align:right;">
+          {% if darf_aendern %}
           <form method="post" style="display:inline;">
             {% csrf_token %}
             <input type="hidden" name="task_id" value="{{ t.id }}">
@@ -61,6 +64,7 @@
               <i class="fa-solid fa-check"></i> Erledigt
             </button>
           </form>
+          {% endif %}
         </td>
       </tr>
       {% endfor %}
@@ -89,12 +93,14 @@
         <td>{% if t.doneBy %}{{ t.doneBy.get_full_name|default:t.doneBy.username }}{% else %}–{% endif %}</td>
         <td>{{ t.doneAt|date:"d.m.Y H:i" }}</td>
         <td style="text-align:right;">
+          {% if darf_aendern %}
           <form method="post" style="display:inline;">
             {% csrf_token %}
             <input type="hidden" name="task_id" value="{{ t.id }}">
             <input type="hidden" name="op" value="reopen">
             <button type="submit" class="btn" style="padding:4px 10px; font-size:11px;">Wieder öffnen</button>
           </form>
+          {% endif %}
         </td>
       </tr>
       {% endfor %}

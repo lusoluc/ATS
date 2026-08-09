@@ -34,6 +34,7 @@ from ..models import (
 from ..permissions import (
     HR_ADMIN,
     any_staff_required,
+    denies_viewer_writes,
     has_full_access,
     hr_admin_required,
     recruiter_required,
@@ -800,6 +801,7 @@ def audit_export(request):
 
 
 @any_staff_required
+@denies_viewer_writes
 def staffing_requests_view(request):
     """UC-MD-01: Personalbedarf melden + bearbeiten.
 

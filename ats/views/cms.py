@@ -31,7 +31,11 @@ from ..models import (
     Organization,
     Page,
 )
-from ..permissions import any_staff_required, hr_admin_required
+from ..permissions import (
+    any_staff_required,
+    denies_viewer_writes,
+    hr_admin_required,
+)
 from .common import campaign_expired
 
 logger = logging.getLogger(__name__)
@@ -193,6 +197,7 @@ def delete_media(request, asset_id):
 
 
 @any_staff_required
+@denies_viewer_writes
 def blocks_editor(request, kind, obj_id):
     """CMS-Baukasten: Bloecke hinzufuegen, ausfuellen, sortieren – ohne HTML.
 
@@ -309,6 +314,7 @@ def branding_view(request):
 
 
 @any_staff_required
+@denies_viewer_writes
 def landing_pages_manage(request):
     """Landingpages verwalten: anlegen/bearbeiten, Link+QR, Kennzahlen."""
 

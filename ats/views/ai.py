@@ -788,8 +788,13 @@ def save_ai_settings(request):
         # an vier Stellen wirkt (EU AI Act: Aktivierung ist eine bewusste
         # Entscheidung - dann muss sie auch im Produkt treffbar sein).
         scoring_on = '1' if request.POST.get('AI_SCORING_ENABLED') else '0'
+        # AI_ASYNC wirkte seit L6, war aber nur per Shell setzbar - das
+        # Queue-Versprechen (Bewerbungsseite wartet nie auf die KI) war im
+        # Produkt nicht aktivierbar.
+        async_on = '1' if request.POST.get('AI_ASYNC') else '0'
         settings_dict = {
             'AI_SCORING_ENABLED': scoring_on,
+            'AI_ASYNC': async_on,
             'AI_TONE': tone,
             'AI_AGG_PROMPT': agg_prompt,
             'AI_EASY_LANGUAGE_PROMPT': easy_prompt,

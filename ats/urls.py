@@ -83,6 +83,8 @@ urlpatterns = [
     path('recruiter/documents/<uuid:doc_id>/', views.download_document, name='download_document'),  # WP1
     path('recruiter/einstellungen/jobs/', views.scheduled_jobs_page,
          name='scheduled_jobs'),
+    path('recruiter/einstellungen/jobs/ki-queue/requeue/',
+         views.requeue_failed_ai_tasks, name='requeue_failed_ai_tasks'),
     path('recruiter/audit/', views.audit_log_view, name='audit_log'),
     path('recruiter/approvals/', views.approvals_inbox, name='approvals'),  # WP6
     path('recruiter/governance/', views.governance_view, name='governance'),  # WP6                              # B2

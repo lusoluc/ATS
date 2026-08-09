@@ -1024,6 +1024,7 @@ class GuardrailAdminPageInHubTestCase(TestCase):
         "save_page", "save_workflow_state", "save_app_workflow",
         "save_email_template", "save_system_setting", "save_ai_settings",
         "save_auto_reply_settings", "save_learned_scoring_settings",
+        "requeue_failed_ai_tasks",   # POST-Knopf auf der Jobs-Seite
         "apply_template_tone", "ingest_best_performers",
         "archive_category", "archive_location", "archive_pay_band",
         "archive_screening_question", "delete_job_template", "delete_media",

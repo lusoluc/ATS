@@ -48,6 +48,7 @@ module = [
     "ats.suggestions",
     "ats.permissions",
     "ats.profile_summary",
+    "ats.queue",
     "ats.reply_drafts",
     "ats.retention",
     "ats.scoring",

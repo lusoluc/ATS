@@ -140,6 +140,24 @@
                                         </span>
                                     </label>
                                 </div>
+                                {% comment %} AI_ASYNC war nur per Shell setzbar — der L6-Bau
+                                   (Queue, damit die Bewerbungsseite nie auf LLM-Latenz wartet)
+                                   war damit im Produkt nicht aktivierbar. {% endcomment %}
+                                <div class="form-group" style="display: flex; align-items: flex-start; gap: 10px; margin: 0 0 10px;">
+                                    <input type="checkbox" name="AI_ASYNC" id="ai-async-check" value="1"
+                                           style="width: 24px; height: 24px; cursor: pointer; flex-shrink: 0;"
+                                           {% if ai_settings.AI_ASYNC == '1' %}checked{% endif %}>
+                                    <label for="ai-async-check" style="font-weight: 600; color: #fff; cursor: pointer; margin-bottom: 0;">
+                                        Vorbewertung im Hintergrund berechnen
+                                        <span style="display:block; font-weight:400; font-size:12px; color: var(--text-muted); margin-top:2px;">
+                                            Empfohlen bei aktivierter Vorbewertung: Die Bewerbungsseite wartet
+                                            nicht auf die KI; die Einordnung wird nachgereicht. Braucht den
+                                            KI-Worker aus dem Docker-Profil <code>ki</code> — ob er die
+                                            Warteschlange abarbeitet, zeigt die Seite
+                                            <a href="{% url 'ats:scheduled_jobs' %}" style="color: var(--accent-light);">Wiederkehrende Jobs</a>.
+                                        </span>
+                                    </label>
+                                </div>
                                 <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 0;">
                                     Das <strong>lernende</strong> Scoring (aus den eigenen Entscheidungen) ist etwas anderes und
                                     wird auf der Seite <a href="{% url 'ats:learned_scoring' %}" style="color: var(--accent-light);">Lernendes Scoring</a>

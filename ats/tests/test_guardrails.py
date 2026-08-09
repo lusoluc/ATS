@@ -1,10 +1,68 @@
-"""SecurATS-Tests: guardrails (aufgeteilt aus der frueheren Monolith-tests.py)."""
+"""SecurATS-Tests: guardrails (aufgeteilt aus der frueheren Monolith-tests.py).
+
+SELBSTNACHWEIS DER WAECHTER: Ein scannender Waechter, dessen Pfad ins Leere
+zeigt oder dessen Muster nichts mehr trifft, ist gruen und wertlos - ohne dass
+es irgendjemandem auffaellt. Deshalb laufen alle Datei-Scans hier ueber
+`projekt_dateien()` / `projekt_templates()`: Diese Helfer beweisen bei jedem
+Aufruf, dass sie eine plausible Menge gesehen haben, und schlagen laut fehl,
+wenn nicht. Der einmalige Handnachweis aus der Doku ("wurde in der Entwicklung
+bewiesen") ist damit durch eine Pruefung ersetzt, die bei jedem Lauf greift.
+"""
 
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from ..models import SystemSetting
 from .utils import make_user
+
+#: Untergrenzen fuer "der Scan hat etwas gesehen". Bewusst weit unter dem
+#: Ist-Stand (rund 60 Python-Module, rund 70 Templates), damit normales
+#: Aufraeumen nicht anschlaegt - aber ein ins Leere zeigender Pfad sofort.
+MINDESTENS_PY = 25
+MINDESTENS_TEMPLATES = 30
+
+
+def projekt_dateien(unterordner: str = "") -> list[str]:
+    """Alle Python-Dateien des Anwendungscodes - mit Selbstnachweis.
+
+    `unterordner` schraenkt auf z. B. "views" ein; die Mindestmenge gilt nur
+    fuer den vollen Baum, Teilbaeume muessen schlicht nicht leer sein.
+    """
+    import os
+
+    base = os.path.dirname(os.path.dirname(__file__))
+    wurzel = os.path.join(base, unterordner) if unterordner else base
+    gefunden = []
+    for root, _dirs, files in os.walk(wurzel):
+        parts = root.split(os.sep)
+        if "tests" in parts or "migrations" in parts or "__pycache__" in parts:
+            continue
+        for fname in files:
+            if fname.endswith(".py"):
+                gefunden.append(os.path.join(root, fname))
+    mindestens = MINDESTENS_PY if not unterordner else 1
+    assert len(gefunden) >= mindestens, (
+        f"Datei-Scan unter {wurzel!r} fand nur {len(gefunden)} Python-Dateien "
+        f"(erwartet >= {mindestens}). Der Waechter, der hierauf baut, waere "
+        f"gruen und wertlos - vermutlich zeigt der Pfad ins Leere.")
+    return gefunden
+
+
+def projekt_templates() -> list[str]:
+    """Alle Templates des Projekts - mit Selbstnachweis."""
+    import os
+
+    base = os.path.join(os.path.dirname(os.path.dirname(
+        os.path.dirname(__file__))), "templates")
+    gefunden = []
+    for root, _dirs, files in os.walk(base):
+        for fname in files:
+            if fname.endswith(".html"):
+                gefunden.append(os.path.join(root, fname))
+    assert len(gefunden) >= MINDESTENS_TEMPLATES, (
+        f"Template-Scan fand nur {len(gefunden)} Dateien "
+        f"(erwartet >= {MINDESTENS_TEMPLATES}) - Pfad prueffen.")
+    return gefunden
 
 
 class HealthzAiTestCase(TestCase):
@@ -247,13 +305,9 @@ def oeffentliche_templates(public_views):
     import os
     import re
 
-    views_dir = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)), "views")
     gefunden = set()
-    for fname in os.listdir(views_dir):
-        if not fname.endswith(".py"):
-            continue
-        with open(os.path.join(views_dir, fname), encoding="utf-8") as fh:
+    for pfad in projekt_dateien("views"):
+        with open(pfad, encoding="utf-8") as fh:
             baum = ast.parse(fh.read())
         for knoten in ast.walk(baum):
             if not isinstance(knoten, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -317,12 +371,11 @@ class GuardrailAuthDecoratorTestCase(TestCase):
     def _iter_views(self):
         import ast
         import os
-        base = os.path.join(os.path.dirname(os.path.dirname(__file__)), "views")
-        for fname in os.listdir(base):
-            if not fname.endswith(".py") or fname == "__init__.py":
+        for pfad in projekt_dateien("views"):
+            fname = os.path.basename(pfad)
+            if fname == "__init__.py":
                 continue
-            tree = ast.parse(open(os.path.join(base, fname),
-                                  encoding="utf-8").read())
+            tree = ast.parse(open(pfad, encoding="utf-8").read())
             for node in tree.body:
                 if not isinstance(node, ast.FunctionDef):
                     continue
@@ -388,12 +441,10 @@ class GuardrailNoCsrfExemptTestCase(TestCase):
 
     def test_no_csrf_exempt_decorator_in_views(self):
         import os
-        base = os.path.join(os.path.dirname(os.path.dirname(__file__)), "views")
         hits = []
-        for fname in os.listdir(base):
-            if not fname.endswith(".py"):
-                continue
-            src = open(os.path.join(base, fname), encoding="utf-8").read()
+        for pfad in projekt_dateien("views"):
+            fname = os.path.basename(pfad)
+            src = open(pfad, encoding="utf-8").read()
             if "@csrf_exempt" in src:
                 hits.append(fname)
         self.assertEqual(hits, [],
@@ -407,13 +458,11 @@ class GuardrailNoRawSqlTestCase(TestCase):
     def test_no_raw_sql_constructs_in_views(self):
         import os
         import re
-        base = os.path.join(os.path.dirname(os.path.dirname(__file__)), "views")
         pattern = re.compile(r"\.raw\(|\.extra\(|RawSQL|connection\.cursor\(")
         hits = []
-        for fname in os.listdir(base):
-            if not fname.endswith(".py"):
-                continue
-            src = open(os.path.join(base, fname), encoding="utf-8").read()
+        for pfad in projekt_dateien("views"):
+            fname = os.path.basename(pfad)
+            src = open(pfad, encoding="utf-8").read()
             for m in pattern.finditer(src):
                 line = src[:m.start()].count("\n") + 1
                 hits.append(f"{fname}:{line}:{m.group(0)}")
@@ -542,11 +591,7 @@ class GuardrailTemplateCommentTestCase(TestCase):
         # (unzulaessigen) mehrzeiligen Inline-Kommentars.
         opener = re.compile(r"\{#(?![^\n]*#\})")
         offender = []
-        for root, _dirs, files in os.walk(base):
-            for name in files:
-                if not name.endswith(".html"):
-                    continue
-                path = os.path.join(root, name)
+        for path in projekt_templates():
                 with open(path, encoding="utf-8") as fh:
                     for lineno, line in enumerate(fh, 1):
                         if opener.search(line):
@@ -575,11 +620,7 @@ class GuardrailTableScrollTestCase(TestCase):
         base = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
             __file__))), "templates")
         offender = []
-        for root, _dirs, files in os.walk(base):
-            for name in files:
-                if not name.endswith(".html"):
-                    continue
-                path = os.path.join(root, name)
+        for path in projekt_templates():
                 with open(path, encoding="utf-8") as fh:
                     lines = fh.readlines()
                 for i, line in enumerate(lines):
@@ -611,11 +652,7 @@ class GuardrailTableScrollTestCase(TestCase):
         base = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
             __file__))), "templates")
         offender = []
-        for root, _dirs, files in os.walk(base):
-            for name in files:
-                if not name.endswith(".html"):
-                    continue
-                path = os.path.join(root, name)
+        for path in projekt_templates():
                 with open(path, encoding="utf-8") as fh:
                     lines = fh.readlines()
                 open_wrap = 0
@@ -693,11 +730,7 @@ class GuardrailImgAltTestCase(TestCase):
         base = os.path.join(os.path.dirname(os.path.dirname(
             os.path.dirname(__file__))), "templates")
         offenders = []
-        for root, _dirs, files in os.walk(base):
-            for fname in files:
-                if not fname.endswith(".html"):
-                    continue
-                path = os.path.join(root, fname)
+        for path in projekt_templates():
                 src = open(path, encoding="utf-8").read()
                 rel = os.path.relpath(path, base)
                 for m in re.finditer(r"<img\b[^>]*>", src, re.DOTALL):
@@ -760,11 +793,7 @@ class GuardrailStandaloneTemplateTestCase(TestCase):
         base = os.path.join(os.path.dirname(os.path.dirname(
             os.path.dirname(__file__))), "templates")
         offenders = []
-        for root, _dirs, files in os.walk(base):
-            for fname in files:
-                if not fname.endswith(".html"):
-                    continue
-                path = os.path.join(root, fname)
+        for path in projekt_templates():
                 src = open(path, encoding="utf-8").read()
                 if "<!DOCTYPE" not in src and "<!doctype" not in src:
                     continue   # Partial/erbt base.html -> Fundament kommt von dort
@@ -850,13 +879,8 @@ class GuardrailNoDeadSettingsTestCase(TestCase):
 
         # Kompletten Python-Code EINMAL einlesen (ohne Tests)
         code = []
-        for root, _dirs, files in os.walk(os.path.join(base, "ats")):
-            if "tests" in root or "migrations" in root:
-                continue
-            for fname in files:
-                if fname.endswith(".py"):
-                    code.append(open(os.path.join(root, fname),
-                                     encoding="utf-8").read())
+        for pfad in projekt_dateien():
+            code.append(open(pfad, encoding="utf-8").read())
         blob = "\n".join(code)
 
         dead = []
@@ -906,18 +930,11 @@ class GuardrailNoOrphanRouteTestCase(TestCase):
         self.assertGreater(len(routes), 50, "URL-Parser hat nichts gefunden")
 
         chunks = []
-        for root, _dirs, files in os.walk(os.path.join(base, "templates")):
-            for fname in files:
-                if fname.endswith(".html"):
-                    chunks.append(open(os.path.join(root, fname),
-                                       encoding="utf-8").read())
-        for root, _dirs, files in os.walk(os.path.join(base, "ats")):
-            if "tests" in root or "migrations" in root:
-                continue
-            for fname in files:
-                if fname.endswith(".py") and fname != "urls.py":
-                    chunks.append(open(os.path.join(root, fname),
-                                       encoding="utf-8").read())
+        for pfad in projekt_templates():
+            chunks.append(open(pfad, encoding="utf-8").read())
+        for pfad in projekt_dateien():
+            if os.path.basename(pfad) != "urls.py":
+                chunks.append(open(pfad, encoding="utf-8").read())
         blob = "\n".join(chunks)
 
         orphans = []
@@ -966,26 +983,19 @@ class GuardrailNoDeadModelTestCase(TestCase):
     def test_every_model_is_used_by_application_code(self):
         import os
         import re
-        base = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        models_dir = os.path.join(base, "ats", "models")
-
         names: set[str] = set()
-        for fname in os.listdir(models_dir):
-            if not fname.endswith(".py"):
-                continue
-            src = open(os.path.join(models_dir, fname), encoding="utf-8").read()
+        for pfad in projekt_dateien("models"):
+            src = open(pfad, encoding="utf-8").read()
             names |= set(re.findall(r"^class (\w+)\(models\.Model\)", src, re.M))
         self.assertGreater(len(names), 30, "Modell-Parser hat nichts gefunden")
 
         chunks = []
-        for root, _dirs, files in os.walk(os.path.join(base, "ats")):
-            parts = root.split(os.sep)
-            if "models" in parts or "migrations" in parts or "tests" in parts:
+        for pfad in projekt_dateien():
+            parts = pfad.split(os.sep)
+            if "models" in parts:
                 continue
-            for fname in files:
-                if fname.endswith(".py") and fname != "admin.py":
-                    chunks.append(open(os.path.join(root, fname),
-                                       encoding="utf-8").read())
+            if os.path.basename(pfad) != "admin.py":
+                chunks.append(open(pfad, encoding="utf-8").read())
         blob = "\n".join(chunks)
 
         dead = sorted(n for n in names if not re.search(rf"\b{n}\b", blob))
@@ -1041,13 +1051,12 @@ class GuardrailAdminPageInHubTestCase(TestCase):
     def _admin_views(self):
         import ast
         import os
-        base = os.path.join(os.path.dirname(os.path.dirname(__file__)), "views")
         names = set()
-        for fname in os.listdir(base):
-            if not fname.endswith(".py") or fname == "__init__.py":
+        for pfad in projekt_dateien("views"):
+            fname = os.path.basename(pfad)
+            if fname == "__init__.py":
                 continue
-            tree = ast.parse(open(os.path.join(base, fname),
-                                  encoding="utf-8").read())
+            tree = ast.parse(open(pfad, encoding="utf-8").read())
             for node in tree.body:
                 if not isinstance(node, ast.FunctionDef):
                     continue
@@ -1109,11 +1118,7 @@ class GuardrailIconButtonNameTestCase(TestCase):
         tag = re.compile(r"<(a|button)\b[^>]*class=\"btn-icon[^\"]*\"[^>]*>",
                          re.S)
         offenders = []
-        for root, _dirs, files in os.walk(base):
-            for fname in files:
-                if not fname.endswith(".html"):
-                    continue
-                path = os.path.join(root, fname)
+        for path in projekt_templates():
                 src = open(path, encoding="utf-8").read()
                 for match in tag.finditer(src):
                     if "aria-label" not in match.group(0):
@@ -1142,22 +1147,18 @@ class GuardrailNoTemplateNameGuessingTestCase(TestCase):
         base = os.path.dirname(os.path.dirname(__file__))
         pattern = re.compile(r"EmailTemplate\.objects[^\n]*name__icontains")
         offenders = []
-        for root, _dirs, files in os.walk(base):
-            parts = root.split(os.sep)
-            if "tests" in parts or "migrations" in parts:
+        for path in projekt_dateien():
+            fname = os.path.basename(path)
+            # templates_registry.py ist das Modul, das die Namenssuche
+            # ERSETZT - es beschreibt sie in seiner Doku. Es hier zu
+            # melden waere ein Eigentor.
+            if not fname.endswith(".py") or fname == "templates_registry.py":
                 continue
-            for fname in files:
-                # templates_registry.py ist das Modul, das die Namenssuche
-                # ERSETZT - es beschreibt sie in seiner Doku. Es hier zu
-                # melden waere ein Eigentor.
-                if not fname.endswith(".py") or fname == "templates_registry.py":
-                    continue
-                path = os.path.join(root, fname)
-                for num, line in enumerate(
-                        open(path, encoding="utf-8"), start=1):
-                    if pattern.search(line):
-                        offenders.append(
-                            f"{os.path.relpath(path, base)}:{num}")
+            for num, line in enumerate(
+                    open(path, encoding="utf-8"), start=1):
+                if pattern.search(line):
+                    offenders.append(
+                        f"{os.path.relpath(path, base)}:{num}")
         self.assertEqual(
             offenders, [],
             "Vorlage wird ueber den Namen gesucht statt ueber den Zweck - "
@@ -1193,33 +1194,29 @@ class GuardrailNoDirectMailTestCase(TestCase):
 
         base = os.path.dirname(os.path.dirname(__file__))
         offenders = []
-        for root, _dirs, files in os.walk(base):
-            parts = root.split(os.sep)
-            if "tests" in parts or "migrations" in parts:
+        for path in projekt_dateien():
+            fname = os.path.basename(path)
+            if not fname.endswith(".py") or fname in self.ERLAUBTE_DATEIEN:
                 continue
-            for fname in files:
-                if not fname.endswith(".py") or fname in self.ERLAUBTE_DATEIEN:
+            with open(path, encoding="utf-8") as fh:
+                tree = ast.parse(fh.read())
+            alias = {}
+            for node in ast.walk(tree):
+                if isinstance(node, ast.ImportFrom) and node.module \
+                        and "mail" in node.module:
+                    for spec in node.names:
+                        if spec.name in self.MAILNAMEN:
+                            alias[spec.asname or spec.name] = spec.name
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
                     continue
-                path = os.path.join(root, fname)
-                with open(path, encoding="utf-8") as fh:
-                    tree = ast.parse(fh.read())
-                alias = {}
-                for node in ast.walk(tree):
-                    if isinstance(node, ast.ImportFrom) and node.module \
-                            and "mail" in node.module:
-                        for spec in node.names:
-                            if spec.name in self.MAILNAMEN:
-                                alias[spec.asname or spec.name] = spec.name
-                for node in ast.walk(tree):
-                    if not isinstance(node, ast.Call):
-                        continue
-                    name = getattr(node.func, "id", None)
-                    if name and (name in alias or name in self.MAILNAMEN):
-                        echt = alias.get(name, name)
-                        wie = f" (als {name})" if name != echt else ""
-                        offenders.append(
-                            f"{os.path.relpath(path, base)}:{node.lineno} "
-                            f"{echt}{wie}")
+                name = getattr(node.func, "id", None)
+                if name and (name in alias or name in self.MAILNAMEN):
+                    echt = alias.get(name, name)
+                    wie = f" (als {name})" if name != echt else ""
+                    offenders.append(
+                        f"{os.path.relpath(path, base)}:{node.lineno} "
+                        f"{echt}{wie}")
         self.assertEqual(
             offenders, [],
             "Direkter Mail-Versand am Fehler-Vermerk vorbei — ein "
@@ -1231,11 +1228,43 @@ class GuardrailNoDirectMailTestCase(TestCase):
         offene Tuer ohne Haus: Sie faellt niemandem auf und koennte spaeter
         versehentlich wieder etwas durchlassen."""
         import os
-        base = os.path.dirname(os.path.dirname(__file__))
-        vorhanden = {f for _r, _d, fs in os.walk(base) for f in fs}
+        vorhanden = {os.path.basename(p) for p in projekt_dateien()}
         tot = sorted(self.ERLAUBTE_DATEIEN - vorhanden)
         self.assertEqual(tot, [],
                          f"Ausnahme fuer nicht mehr vorhandene Datei: {tot}")
+
+
+def finde_stille_schlucker(base):
+    """`except ...: pass` ohne Log und ohne Begruendung - als Modulfunktion.
+
+    Warum ausgelagert: Ein Waechter, dessen Muster nicht mehr passt oder der
+    ins falsche Verzeichnis sieht, findet nichts mehr - und ist damit gruen
+    und wertlos, ohne dass es auffaellt. Als Funktion laesst er sich gegen
+    einen ABSICHTLICH kaputten Baum laufen und muss dort anschlagen.
+    """
+    import ast
+    import os
+
+    offenders = []
+    for path in projekt_dateien():
+        with open(path, encoding="utf-8") as fh:
+            quelle = fh.read()
+        zeilen = quelle.splitlines()
+        for node in ast.walk(ast.parse(quelle)):
+            if not isinstance(node, ast.ExceptHandler):
+                continue
+            # Nur der reine Schlucker: ausschliesslich `pass`.
+            if not (len(node.body) == 1
+                    and isinstance(node.body[0], ast.Pass)):
+                continue
+            # Ein Kommentar zwischen `except` und `pass` gilt als
+            # bewusste Entscheidung.
+            bereich = zeilen[node.lineno - 1:node.body[0].lineno]
+            if any("#" in z for z in bereich):
+                continue
+            offenders.append(
+                f"{os.path.relpath(path, base)}:{node.lineno}")
+    return offenders
 
 
 class GuardrailNoSilentSwallowTestCase(TestCase):
@@ -1255,36 +1284,9 @@ class GuardrailNoSilentSwallowTestCase(TestCase):
     """
 
     def test_swallowed_exceptions_are_logged_or_justified(self):
-        import ast
         import os
-
         base = os.path.dirname(os.path.dirname(__file__))
-        offenders = []
-        for root, _dirs, files in os.walk(base):
-            parts = root.split(os.sep)
-            if "tests" in parts or "migrations" in parts:
-                continue
-            for fname in files:
-                if not fname.endswith(".py"):
-                    continue
-                path = os.path.join(root, fname)
-                with open(path, encoding="utf-8") as fh:
-                    quelle = fh.read()
-                zeilen = quelle.splitlines()
-                for node in ast.walk(ast.parse(quelle)):
-                    if not isinstance(node, ast.ExceptHandler):
-                        continue
-                    # Nur der reine Schlucker: ausschliesslich `pass`.
-                    if not (len(node.body) == 1
-                            and isinstance(node.body[0], ast.Pass)):
-                        continue
-                    # Ein Kommentar zwischen `except` und `pass` gilt als
-                    # bewusste Entscheidung.
-                    bereich = zeilen[node.lineno - 1:node.body[0].lineno]
-                    if any("#" in z for z in bereich):
-                        continue
-                    offenders.append(
-                        f"{os.path.relpath(path, base)}:{node.lineno}")
+        offenders = finde_stille_schlucker(base)
         self.assertEqual(
             offenders, [],
             "Fehler wird verschluckt, ohne Log und ohne Begruendung — wenn "
@@ -1329,33 +1331,29 @@ class GuardrailNoCapBeforeFilterTestCase(TestCase):
 
         base = os.path.dirname(os.path.dirname(__file__))
         offenders = []
-        for root, _dirs, files in os.walk(base):
-            parts = root.split(os.sep)
-            if "tests" in parts or "migrations" in parts:
+        for path in projekt_dateien():
+            fname = os.path.basename(path)
+            if not fname.endswith(".py"):
                 continue
-            for fname in files:
-                if not fname.endswith(".py"):
+            with open(path, encoding="utf-8") as fh:
+                tree = ast.parse(fh.read())
+            gekappt = {}
+            for node in ast.walk(tree):
+                if not (isinstance(node, ast.Assign)
+                        and isinstance(node.targets[0], ast.Name)):
                     continue
-                path = os.path.join(root, fname)
-                with open(path, encoding="utf-8") as fh:
-                    tree = ast.parse(fh.read())
-                gekappt = {}
-                for node in ast.walk(tree):
-                    if not (isinstance(node, ast.Assign)
-                            and isinstance(node.targets[0], ast.Name)):
-                        continue
-                    ziel = node.targets[0].id
-                    n = grenze(node.value)
-                    if n is not None:
-                        gekappt[ziel] = n
-                    kern = auspacken(node.value)
-                    if isinstance(kern, (ast.ListComp, ast.GeneratorExp)):
-                        for gen in kern.generators:
-                            quelle = getattr(gen.iter, "id", None)
-                            if quelle in gekappt and gen.ifs:
-                                offenders.append(
-                                    f"{os.path.relpath(path, base)}:{node.lineno} "
-                                    f"({quelle}[:{gekappt[quelle]}])")
+                ziel = node.targets[0].id
+                n = grenze(node.value)
+                if n is not None:
+                    gekappt[ziel] = n
+                kern = auspacken(node.value)
+                if isinstance(kern, (ast.ListComp, ast.GeneratorExp)):
+                    for gen in kern.generators:
+                        quelle = getattr(gen.iter, "id", None)
+                        if quelle in gekappt and gen.ifs:
+                            offenders.append(
+                                f"{os.path.relpath(path, base)}:{node.lineno} "
+                                f"({quelle}[:{gekappt[quelle]}])")
         self.assertEqual(
             offenders, [],
             "Erst gekappt, dann gefiltert — das Ergebnis kann leer sein, "
@@ -1391,9 +1389,13 @@ class GuardrailExceptionListsAreCheckedTestCase(TestCase):
 
         verzeichnis = os.path.dirname(__file__)
         offen = []
-        for fname in sorted(os.listdir(verzeichnis)):
-            if not fname.startswith("test_") or not fname.endswith(".py"):
-                continue
+        testdateien = sorted(f for f in os.listdir(verzeichnis)
+                             if f.startswith("test_") and f.endswith(".py"))
+        # Selbstnachweis wie bei projekt_dateien(): Ein Meta-Waechter, der
+        # keine Testdateien sieht, waere gruen und wertlos.
+        assert len(testdateien) >= 20, (
+            f"Nur {len(testdateien)} Testdateien gefunden - Pfad pruefen.")
+        for fname in testdateien:
             with open(os.path.join(verzeichnis, fname), encoding="utf-8") as fh:
                 quelle = fh.read()
             baum = ast.parse(quelle)
@@ -1417,3 +1419,49 @@ class GuardrailExceptionListsAreCheckedTestCase(TestCase):
             "Waechter mit Ausnahmeliste, aber ohne Pruefung auf tote "
             "Eintraege. Eine Ausnahme, die ins Leere zeigt, schwaecht den "
             "Waechter still: " + ", ".join(offen))
+
+
+class GuardrailScansProveThemselvesTestCase(TestCase):
+    """Die Scan-Helfer muessen anschlagen, wenn sie ins Leere sehen.
+
+    Der einmalige Handnachweis aus der Doku ("wurde in der Entwicklung
+    bewiesen") ist kein Schutz: Er lief genau einmal. Diese Tests führen den
+    Nachweis bei jedem Lauf — einmal positiv (der echte Baum liefert eine
+    plausible Menge) und einmal negativ (ein absichtlich leerer Baum löst
+    den Alarm aus).
+    """
+
+    def test_the_real_tree_yields_a_plausible_amount(self):
+        self.assertGreaterEqual(len(projekt_dateien()), MINDESTENS_PY)
+        self.assertGreaterEqual(len(projekt_templates()), MINDESTENS_TEMPLATES)
+
+    def test_an_empty_tree_raises_instead_of_returning_nothing(self):
+        """Der Kern: leer heisst LAUT, nie stumm."""
+        import tempfile
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as leer:
+            with mock.patch("os.path.dirname", return_value=leer):
+                with self.assertRaises(AssertionError):
+                    projekt_dateien()
+
+    def test_the_swallow_finder_still_bites(self):
+        """Funktionsprobe gegen einen kuenstlich kaputten Baum: Die
+        Modulfunktion muss einen nackten Schlucker melden."""
+        import os
+        import tempfile
+        with tempfile.TemporaryDirectory() as wurzel:
+            # genug Dateien, damit der Selbstnachweis des Helfers nicht
+            # anschlaegt - eine davon traegt den Fehler
+            for i in range(MINDESTENS_PY):
+                with open(os.path.join(wurzel, f"m{i}.py"), "w",
+                          encoding="utf-8") as fh:
+                    fh.write("x = 1\n")
+            with open(os.path.join(wurzel, "kaputt.py"), "w",
+                      encoding="utf-8") as fh:
+                fh.write("try:\n    x = 1\nexcept Exception:\n    pass\n")
+            from unittest import mock
+            with mock.patch("os.path.dirname", return_value=wurzel):
+                funde = finde_stille_schlucker(wurzel)
+        self.assertTrue(any("kaputt.py" in f for f in funde),
+                        "Die Funktionsprobe fand den absichtlichen Schlucker "
+                        "nicht - der Waechter waere wirkungslos.")

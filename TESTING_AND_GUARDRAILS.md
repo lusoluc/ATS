@@ -67,8 +67,13 @@ Whitelist blind erweitern – erst prüfen, ob der neue Code wirklich so sein so
   soll (wie die Stellenbörse), den Namen zur `PUBLIC_ALLOWLIST` hinzufügen.
 - CSRF-/SQL-Wächter rot → fast immer ein echter Fehler.
 
-Die Wächter sind **selbst getestet**: In der Entwicklung wurde bewiesen, dass der
-Auth-Wächter eine absichtlich ungeschützte View sofort meldet.
+Die Wächter beweisen sich **bei jedem Lauf** selbst: Alle Datei-Scans laufen
+über zentrale Helfer (`projekt_dateien()` / `projekt_templates()`), die
+anschlagen, wenn sie ins Leere sehen — ein Scan über null Dateien wäre grün
+und wertlos. `GuardrailScansProveThemselvesTestCase` führt zusätzlich die
+Funktionsprobe: Ein absichtlich leerer Baum löst den Alarm aus, ein
+absichtlich kaputter Baum wird gefunden. (Früher stand hier ein einmaliger
+Handnachweis aus der Entwicklung — der lief genau einmal.)
 
 ## Was in den drei Audit-/Test-Runden abgesichert wurde
 

@@ -121,6 +121,11 @@ class GuardrailScheduleIsRealTestCase(TestCase):
         befehle = {p.stem for p in
                    (Path(settings.BASE_DIR) / "ats" / "management" / "commands")
                    .glob("*.py")}
+        # Selbstnachweis: Es gibt ueber ein Dutzend Kommandos. Sieht der Scan
+        # fast keine, zeigt der Pfad ins Leere - und die Pruefung darunter
+        # waere gruen und wertlos.
+        self.assertGreaterEqual(len(befehle), 10,
+                                f"Nur {len(befehle)} Kommandos gefunden")
         fehlend = [s.name for s in JOBS if s.name not in befehle]
         self.assertEqual(fehlend, [],
                          f"Zeitplan-Eintrag ohne Kommando: {fehlend}")

@@ -18,7 +18,6 @@ lieber eine Lücke als ein Fehlalarm, den man sich abgewöhnt.
 import re
 from pathlib import Path
 
-from django.conf import settings
 from django.test import SimpleTestCase
 
 FARBWORT = {"white": (255, 255, 255), "black": (0, 0, 0)}
@@ -88,10 +87,13 @@ class GuardrailGradientContrastTestCase(SimpleTestCase):
     ERLAUBT: dict[str, str] = {}
 
     def test_every_gradient_stop_carries_its_text(self):
-        wurzel = Path(settings.BASE_DIR) / "templates"
+        # Ueber den Helfer mit Selbstnachweis: Ein Scan, der ins Leere zeigt,
+        # waere gruen und wertlos.
+        from .test_guardrails import projekt_templates
         verstoesse = []
 
-        for pfad in sorted(wurzel.rglob("*.html")):
+        for roh in sorted(projekt_templates()):
+            pfad = Path(roh)
             css = pfad.read_text(encoding="utf-8")
             for block in re.finditer(r"([.#a-zA-Z][^{}]{0,120}?)\{([^{}]*)\}", css):
                 selektor, koerper = block.group(1).strip(), block.group(2)
@@ -134,8 +136,8 @@ class GuardrailGradientContrastTestCase(SimpleTestCase):
         Kontrolle - und bleibt stehen, lange nachdem die Regel verschwunden
         ist, auf die er sich bezog.
         """
-        wurzel = Path(settings.BASE_DIR) / "templates"
-        alle = "\n".join(p.read_text(encoding="utf-8")
-                         for p in wurzel.rglob("*.html"))
+        from .test_guardrails import projekt_templates
+        alle = "\n".join(Path(p).read_text(encoding="utf-8")
+                         for p in projekt_templates())
         tot = sorted(k for k in self.ERLAUBT if k not in alle)
         self.assertEqual(tot, [], f"Ausnahme ohne zugehoerige Regel: {tot}")

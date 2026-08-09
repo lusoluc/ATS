@@ -84,7 +84,13 @@ class GuardrailNoWeakHasherInSettingsTestCase(TestCase):
     def test_settings_do_not_assign_password_hashers(self):
         from pathlib import Path
         basis = Path(settings.BASE_DIR) / "securats"
-        for pfad in basis.glob("*.py"):
+        dateien = sorted(basis.glob("*.py"))
+        # Selbstnachweis: Der Einstellungs-Ordner traegt mindestens
+        # settings/urls/wsgi - sieht der Scan weniger, zeigt er ins Leere,
+        # und der Waechter waere gruen und wertlos.
+        self.assertGreaterEqual(len(dateien), 3,
+                                f"Nur {len(dateien)} Dateien unter {basis}")
+        for pfad in dateien:
             text = pfad.read_text(encoding="utf-8")
             self.assertNotIn(
                 "PASSWORD_HASHERS =", text,

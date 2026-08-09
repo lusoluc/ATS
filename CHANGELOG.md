@@ -5,6 +5,39 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (Zustell-Jobs verloren Fehlschläge endgültig — und behaupteten Versand)
+
+Fortsetzung von Paket AX, dieselbe Frage an die vier Zustell-Jobs
+(Job-Alerts, Termin-, Entscheidungs- und Feedback-Erinnerungen). Alle liefen
+bereits über `send_notice` — werteten dessen Rückgabewert aber nicht aus.
+Drei Folgen, an jedem der vier Wege:
+
+- **Einmal-Marker wurden auch bei Fehlschlag gesetzt** (`lastAlertSentAt`,
+  `reminderSentAt`, Erinnerungs-Marker). Ein vorübergehender
+  Mailserver-Ausfall verlor die Benachrichtigung **endgültig** — kein
+  späterer Lauf wiederholte sie. Bei einer Termin-Erinnerung heißt das: Die
+  Person erscheint unvorbereitet oder gar nicht, und niemand weiß warum.
+- **Protokolle behaupteten Versand** (`ALERT_SENT`,
+  `INTERVIEW_REMINDER_SENT`, `FEEDBACK_REMINDER_SENT` entstanden vor bzw.
+  unabhängig vom Ergebnis) — dasselbe Muster wie der SBV-Vermerk in Paket AN.
+- **Die Erfolgsmeldung zählte Versuche statt Zustellungen**: „12 Alerts
+  versendet" konnte bei totem Mailserver vollständig erlogen sein, der
+  Scheduler-Vermerk blieb grün.
+
+Jetzt: Marker, Protokoll und Zählung **nur bei Zustellung**. Fehlschläge
+werden gezählt und beim nächsten Lauf wiederholt — auch die Portal-Nachricht
+der Termin-Erinnerung entsteht erst mit der Mail, sonst gäbe es beim
+Wiederholen Doppel. Schlägt **alles** fehl, endet der Job mit Fehler und
+steht rot auf der Jobs-Seite; Teilfehler bleiben grün, weil eine einzelne
+kaputte Adresse den Job nicht dauerhaft röten darf — wiederholt wird sie
+trotzdem. Scheitert nur die Team-Mail einer Termin-Erinnerung, zählt das als
+Fehlschlag, verhindert den Marker aber nicht: Die bewerbende Person deshalb
+doppelt zu erinnern wäre der falsche Preis.
+
+Nebenfund: Das Lösch-Protokoll der Job-Alerts nutzte Pythons `hash()` —
+der ist pro Prozess randomisiert, der Wert war als Nachweis wertlos. Jetzt:
+gekürzter Blind-Index, deterministisch.
+
 ### Behoben (Jobs, die liefen — aber nichts bewirkten)
 
 Zwei Funde derselben Klasse im Zeitplan, beide vom neuen Scheduler erst

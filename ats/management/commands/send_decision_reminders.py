@@ -53,7 +53,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         cutoff = timezone.now() - datetime.timedelta(days=max(1, options["days"]))
-        sent = 0
+        sent = fehlgeschlagen = 0
 
         # 1) Freigabe-Schritte: PENDING, an der Reihe, Ticket aelter als cutoff
         steps = (ApprovalStep.objects
@@ -80,12 +80,16 @@ class Command(BaseCommand):
                         continue
                     prefix = ("" if person == holder
                               else f"(In Vertretung für {holder.get_full_name() or holder.username}) ")
-                    send_notice(
+                    zugestellt = send_notice(
                         f"Erinnerung: Freigabe wartet seit {days} Tagen – {job.title}",
                         (f"{prefix}Die Freigabe '{job.title}' wartet seit {days} Tagen "
                          f"auf die Rolle {step.assignedRoleId or step.assignedUserId}.\n"
                          "Entscheiden: /recruiter/approvals/"),
                         None, [person.email], context="Erinnerung")
+                    if not zugestellt:
+                        # Kein Marker: der naechste Lauf wiederholt.
+                        fehlgeschlagen += 1
+                        continue
                     self._mark("APPROVAL", step.id, person.id)
                     sent += 1
 
@@ -112,12 +116,16 @@ class Command(BaseCommand):
                         continue
                     prefix = ("" if person == member
                               else f"(In Vertretung für {member.get_full_name() or member.username}) ")
-                    send_notice(
+                    zugestellt = send_notice(
                         f"Erinnerung: Gremium wartet – {app.jobPosting.title}",
                         (f"{prefix}Ihre Stimme zur Bewerbung auf '{app.jobPosting.title}' "
                          f"steht seit {days} Tagen aus – ohne Mehrheit kann nicht "
                          "eingeladen werden.\nAbstimmen: /recruiter/approvals/"),
                         None, [person.email], context="Erinnerung")
+                    if not zugestellt:
+                        # Kein Marker: der naechste Lauf wiederholt.
+                        fehlgeschlagen += 1
+                        continue
                     self._mark("PANEL", f"{app.id}:{uid}", person.id)
                     sent += 1
             # Eskalation bei ueberschrittener Abstimmungs-Frist: einmalig,
@@ -132,7 +140,7 @@ class Command(BaseCommand):
                             or self._already("PANEL_OVERDUE",
                                              f"{app.id}:{uid}", member.id)):
                         continue
-                    send_notice(
+                    zugestellt = send_notice(
                         f"Frist überschritten: Gremium blockiert – "
                         f"{app.jobPosting.title}",
                         (f"Die vereinbarte Abstimmungs-Frist "
@@ -141,6 +149,10 @@ class Command(BaseCommand):
                          f"Tagen offen und kann ohne Ihre Stimme nicht "
                          "weitergehen.\nJetzt abstimmen: /recruiter/approvals/"),
                         None, [member.email], context="Erinnerung")
+                    if not zugestellt:
+                        # Kein Marker: der naechste Lauf wiederholt.
+                        fehlgeschlagen += 1
+                        continue
                     self._mark("PANEL_OVERDUE", f"{app.id}:{uid}", member.id)
                     sent += 1
 
@@ -193,15 +205,25 @@ class Command(BaseCommand):
                               else f"(In Vertretung für "
                                    f"{holder.get_full_name() or holder.username}) ")
                     fac = req.facility.name if req.facility else "-"
-                    send_notice(
+                    zugestellt = send_notice(
                         f"Erinnerung: Stellenfreigabe wartet seit {days} "
                         f"Tagen – {req.title}",
                         (f"{prefix}Der Personalbedarf '{req.title}' ({fac}) "
                          f"wartet seit {days} Tagen auf die Stufe {roles}.\n"
                          "Entscheiden: /recruiter/bedarf/"),
                         None, [person.email], context="Erinnerung")
+                    if not zugestellt:
+                        # Kein Marker: der naechste Lauf wiederholt.
+                        fehlgeschlagen += 1
+                        continue
                     self._mark("REQUISITION", ref, person.id)
                     sent += 1
 
         self.stdout.write(self.style.SUCCESS(
-            f"{sent} Entscheidungs-Erinnerung(en) verschickt (ab {options['days']} Tagen)."))
+            f"{sent} Entscheidungs-Erinnerung(en) zugestellt, "
+            f"{fehlgeschlagen} fehlgeschlagen (ab {options['days']} Tagen)."))
+        if fehlgeschlagen and not sent:
+            from django.core.management.base import CommandError
+            raise CommandError(
+                f"Keine einzige von {fehlgeschlagen} Erinnerung(en) zugestellt - "
+                "Mailversand pruefen (Einstellungen -> E-Mail-Versand).")

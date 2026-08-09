@@ -166,7 +166,7 @@ class JobAlertScopeTestCase(TestCase):
         job("Pflegefachkraft Station 3", self.hh, self.fac_a)
         out = StringIO()
         call_command("send_job_alerts", "--hours", "1", stdout=out)
-        self.assertIn("1 Alert(s) versendet", out.getvalue())
+        self.assertIn("1 Alert(s) zugestellt", out.getvalue())
         log = JobAlertLog.objects.get(action="ALERT_SENT")
         self.assertIn("Pflegefachkraft", log.metadata)
 

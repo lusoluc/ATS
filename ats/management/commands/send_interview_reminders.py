@@ -42,7 +42,7 @@ class Command(BaseCommand):
                                "application__jobPosting",
                                "application__interviewSlot__createdBy"))
 
-        sent = 0
+        sent = fehlgeschlagen = 0
         for iv in due:
             app = iv.application
             when = timezone.localtime(iv.scheduledAt).strftime("%d.%m.%Y um %H:%M")
@@ -50,7 +50,7 @@ class Command(BaseCommand):
                                        else "Details in Ihrer Einladung")
 
             # 1) Bewerber:in – Mail + Portal-Nachricht
-            send_notice(
+            zugestellt = send_notice(
                 f"Erinnerung: Ihr Gespräch am {when} Uhr",
                 (f"Guten Tag {app.applicant.firstName},\n\n"
                  f"morgen ist es so weit: Ihr Gespräch zur Stelle "
@@ -59,6 +59,14 @@ class Command(BaseCommand):
                  "Falls etwas dazwischenkommt, antworten Sie einfach auf diese "
                  "E-Mail – wir finden einen neuen Termin.\n\nFreundliche Grüße"),
                 None, [app.applicant.email], context="Termin-Erinnerung")
+            if not zugestellt:
+                # Weder Marker noch Portal-Nachricht: Der naechste Lauf
+                # wiederholt beides zusammen. Vorher galt die Erinnerung als
+                # verschickt, sobald der VERSUCH stattgefunden hatte - ein
+                # Mailserver-Ausfall am Morgen hiess: niemand erinnert die
+                # Person je wieder, und das Audit behauptete das Gegenteil.
+                fehlgeschlagen += 1
+                continue
             Message.objects.create(
                 application=app, direction="OUTBOUND",
                 content=f"Erinnerung: Ihr Gespräch findet am {when} Uhr statt. "
@@ -70,7 +78,7 @@ class Command(BaseCommand):
             if slot and slot.createdBy_id and slot.createdBy.email:
                 team_emails.add(slot.createdBy.email)
             if team_emails:
-                send_notice(
+                team_ok = send_notice(
                     f"Erinnerung: {iv.kind_label} {when} Uhr – "
                     f"{app.applicant.firstName} {app.applicant.lastName}",
                     (f"Kurze Erinnerung: Am {when} Uhr – {iv.kind_label} mit "
@@ -78,6 +86,12 @@ class Command(BaseCommand):
                      f"({app.jobPosting.title}).\nOrt/Link: {where}\n\n"
                      "Details im Team-Kalender: /recruiter/interviews/"),
                     None, sorted(team_emails), context="Termin-Erinnerung")
+                if not team_ok:
+                    # Zaehlt als Fehlschlag, verhindert den Marker aber nicht:
+                    # Die bewerbende Person ist erinnert; sie morgen erneut
+                    # anzuschreiben, weil das TEAM nicht erreichbar war, waere
+                    # der falsche Preis.
+                    fehlgeschlagen += 1
 
             iv.reminderSentAt = now
             iv.save(update_fields=["reminderSentAt"])
@@ -86,4 +100,10 @@ class Command(BaseCommand):
             sent += 1
 
         self.stdout.write(self.style.SUCCESS(
-            f"{sent} Erinnerung(en) verschickt (Fenster: {options['hours']} h)."))
+            f"{sent} Erinnerung(en) zugestellt, {fehlgeschlagen} fehlgeschlagen "
+            f"(Fenster: {options['hours']} h)."))
+        if fehlgeschlagen and not sent:
+            from django.core.management.base import CommandError
+            raise CommandError(
+                f"Keine einzige von {fehlgeschlagen} Erinnerung(en) zugestellt - "
+                "Mailversand pruefen (Einstellungen -> E-Mail-Versand).")

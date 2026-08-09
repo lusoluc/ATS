@@ -61,7 +61,11 @@ Anonymisierung nach Fristablauf, die die Oberfläche als „automatisch" zusagt
 0 8 * * *   python manage.py send_decision_reminders          # Offene Freigaben, Gremien-Stimmen UND Stellenfreigabe-Ketten anmahnen (einmalig je Person+Vorgang, inkl. Vertretung)
 
 # Leitungs-KPI-Report (Montag 07:00)
-0 7 * * 1   cd /app && python manage.py weekly_report --out /reports/kpi-$(date +\%F).md
+# Ohne --out geht der Bericht per Mail an alle HR-Admins; --out schreibt
+# stattdessen eine Datei (eigene Verteilwege). Kann nicht zugestellt
+# werden, endet das Kommando mit Fehler - ein Bericht ohne Empfaenger
+# ist kein Erfolg.
+0 7 * * 1   cd /app && python manage.py weekly_report
 
 # KI-Golden-Set nach Prompt-/Modelländerungen (manuell oder wöchentlich)
 0 3 * * 0   cd /app && python manage.py ai_eval

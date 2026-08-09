@@ -241,9 +241,16 @@ def make_ollama_request(url, payload, timeout=8.0):
 
 
 def evaluate_with_local_gemma(cover_letter, requirements_list, application_id=None):
-    """
-    Evaluates the applicant's cover letter against the job requirements using local Gemma AI.
-    If the local Gemma service (Ollama on port 11434) is offline, it falls back to high-fidelity rule matching.
+    """Bewertet das Anschreiben gegen die Anforderungen mit der lokalen KI.
+
+    Ist die KI nicht erreichbar oder ihre Antwort unbrauchbar, wird ein
+    Fehler GEWORFEN - frueher fiel die Funktion still auf ein Keyword-Raten
+    zurueck (django/python/react/sales ...), das jeder Pflege-Bewerbung ohne
+    Tech-Vokabular ein "D - Geringe Uebereinstimmung" verpasste und den
+    KI-Ausfall damit als Ergebnis maskierte. Ein erfundener Score ist
+    schlimmer als keiner: Aufrufer entscheiden selbst, was ein Ausfall
+    bedeutet (Queue: Backoff/FAILED; Bewerbungseingang: ohne Score annehmen
+    und zur Nachbewertung einreihen).
     """
     import json
 
@@ -309,28 +316,15 @@ def evaluate_with_local_gemma(cover_letter, requirements_list, application_id=No
                              repaired=repaired,
                              application_id=str(application_id) if application_id else None)
             return score, rationale
+        # make_ollama_request hat den Fehler bereits gefangen und (False, ...)
+        # geliefert - fuer den Aufrufer ist das derselbe Ausfall.
+        raise RuntimeError(f"KI nicht erreichbar: {res_data}")
     except Exception as e:
-        logger.exception("Lokales KI-Scoring fehlgeschlagen; regelbasierter Fallback aktiv")
+        logger.exception("Lokales KI-Scoring fehlgeschlagen - KEIN Ersatz-Score")
         log_ai_execution("Bewerbungs-Scoring", get_ai_model(), None, False, True, str(e), False,
                          prompt_used=cover_letter, prompt_version=PROMPT_VERSION,
                          application_id=str(application_id) if application_id else None)
-
-    # Fallback to high-fidelity rule-based parsing
-    text_lower = cover_letter.lower()
-    matches = 0
-    keywords = ["django", "python", "javascript", "react", "html", "css", "postgresql", "mysql", "recruiting", "hr", "sales"]
-    for kw in keywords:
-        if kw in text_lower:
-            matches += 1
-
-    if matches >= 4:
-        return 'A', "Hervorragende Passgenauigkeit (Fallback). Anschreiben enthält exzellente Übereinstimmungen mit den geforderten Kompetenzen."
-    elif matches >= 2:
-        return 'B', "Gute Passgenauigkeit (Fallback). Mehrere relevante Fähigkeiten wurden identifiziert. Eignung im persönlichen Gespräch vertiefen."
-    elif matches >= 1:
-        return 'C', "Durchschnittliche Passgenauigkeit (Fallback). Grundlegende Kenntnisse vorhanden, detaillierte Unterlagenprüfung empfohlen."
-    else:
-        return 'D', "Geringe Übereinstimmung mit dem Anforderungsprofil (Fallback). Keine der gesuchten Schlüsselqualifikationen im Anschreiben identifiziert."
+        raise
 
 
 def try_parse_json_reply(reply):

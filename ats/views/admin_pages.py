@@ -37,7 +37,8 @@ from ..models import (
 )
 from ..permissions import hr_admin_required, scope_applications, scope_jobs
 
-__all__ = ["stats_page", "process_page", "templates_page", "ki_page", "hris_page", "save_auto_reply_settings", "retention_page", "privacy_notice_page", "settings_hub", "scheduled_jobs_page", "requeue_failed_ai_tasks", "mail_settings_page", "learned_scoring_view", "save_learned_scoring_settings"]
+__all__ = ["stats_page", "process_page", "templates_page", "ki_page", "hris_page", "save_auto_reply_settings", "retention_page", "privacy_notice_page", "settings_hub", "scheduled_jobs_page", "requeue_failed_ai_tasks",
+    "enqueue_unscored_applications", "mail_settings_page", "learned_scoring_view", "save_learned_scoring_settings"]
 
 
 def gemma_status() -> str:
@@ -663,7 +664,8 @@ def scheduled_jobs_page(request):
     # Schalter an ist, gehoert der Zustand hierher - die Queue ist
     # Hintergrund-Arbeit wie die Jobs darueber.
     queue_relevant = (
-        any([queue['pending'], queue['running'], queue['failed'], queue['done']])
+        any([queue['pending'], queue['running'], queue['failed'],
+             queue['done'], queue['unbewertet']])
         or SystemSetting.objects.filter(key='AI_ASYNC', value='1').exists())
     return render(request, 'admin_pages/scheduled_jobs.html', {
         'zeilen': zeilen,
@@ -692,4 +694,34 @@ def requeue_failed_ai_tasks(request):
                              f'eingereiht - der Worker nimmt sie wieder auf.')
         else:
             messages.info(request, 'Keine fehlgeschlagenen KI-Aufgaben.')
+    return redirect('ats:scheduled_jobs')
+
+
+@hr_admin_required
+def enqueue_unscored_applications(request):
+    """Unbewertete offene Bewerbungen zur Nachbewertung einreihen.
+
+    Der Fall aus dem laengeren KI-Ausfall: Im Sofort-Modus entstand gar keine
+    Aufgabe - die Bewerbung kam ohne Einordnung an, und es gab **keinen Weg**,
+    das je nachzuholen. Dasselbe gilt, wenn eine gescheiterte Aufgabe nach 90
+    Tagen weggeraeumt wurde oder das Scoring erst spaeter eingeschaltet wird.
+    """
+    from ..audit import write_audit
+    from ..queue import enqueue_unscored, scoring_aktiv
+    if request.method == 'POST':
+        if not scoring_aktiv():
+            # Ohne Opt-in waere das eine KI-Bewertung, die niemand
+            # eingeschaltet hat (EU AI Act: Aktivierung ist eine bewusste
+            # Entscheidung).
+            messages.warning(request, 'Die KI-Vorbewertung ist ausgeschaltet - '
+                                      'es wird nichts bewertet.')
+            return redirect('ats:scheduled_jobs')
+        anzahl = enqueue_unscored()
+        if anzahl:
+            write_audit('AI_QUEUE_BACKFILL', user=request.user, count=anzahl)
+            messages.success(request,
+                             f'{anzahl} unbewertete Bewerbung(en) zur '
+                             f'Nachbewertung eingereiht.')
+        else:
+            messages.info(request, 'Alle offenen Bewerbungen sind bewertet.')
     return redirect('ats:scheduled_jobs')

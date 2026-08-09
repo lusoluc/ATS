@@ -29,12 +29,17 @@ import datetime
 import json
 import logging
 from collections.abc import Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from django.db import transaction
 from django.utils import timezone
 
 from .models import AiTask
+
+if TYPE_CHECKING:
+    from django.db.models import QuerySet
+
+    from .models import Application
 
 logger = logging.getLogger(__name__)
 
@@ -265,6 +270,53 @@ def trim_finished(now: datetime.datetime | None = None) -> tuple[int, int]:
     return done, failed
 
 
+def scoring_aktiv() -> bool:
+    """Ist die KI-Vorbewertung eingeschaltet? (EU-AI-Act-Opt-in)"""
+    from .models import SystemSetting
+    return SystemSetting.objects.filter(
+        key="AI_SCORING_ENABLED", value="1").exists()
+
+
+def unscored_applications() -> QuerySet[Application]:
+    """Bewerbungen, die trotz aktivem Scoring keine Einordnung tragen.
+
+    Der Anlass ist der lange KI-Ausfall: Im Sofort-Modus (AI_ASYNC aus)
+    entstand frueher gar keine Aufgabe - die Bewerbung kam ohne Score an, und
+    es gab **keinen Weg**, sie je nachbewerten zu lassen. Dieselbe Lage
+    entsteht, wenn eine gescheiterte Aufgabe nach 90 Tagen weggeraeumt wurde
+    oder jemand das Scoring erst spaeter einschaltet.
+
+    Gesucht wird deshalb am ZUSTAND, nicht an der Ursache: kein Score, offener
+    Vorgang, keine Aufgabe in Arbeit. Entschiedene Vorgaenge bleiben aussen
+    vor - eine Einordnung fuer eine laengst abgelehnte oder eingestellte
+    Bewerbung waere Rechnen ohne Zweck.
+    """
+    from django.db.models import Q
+
+    from .models import Application
+    # Aufgaben, die noch laufen oder warten - deren Bewerbungen brauchen
+    # keinen zweiten Eintrag.
+    laufend = [i for i in (
+        AiTask.objects.filter(taskType="SCORE_APPLICATION",
+                              status__in=["PENDING", "RUNNING"])
+        .values_list("payloadJson__application_id", flat=True)) if i]
+    # `aiScore` ist NULL ODER leer - in SQL zwei verschiedene Dinge, hier
+    # dieselbe Bedeutung: keine Einordnung.
+    return (Application.objects
+            .filter(status__in=["NEW", "IN_REVIEW"])
+            .filter(Q(aiScore__isnull=True) | Q(aiScore=""))
+            .exclude(id__in=laufend))
+
+
+def enqueue_unscored() -> int:
+    """Reiht alle unbewerteten offenen Bewerbungen zur Bewertung ein."""
+    anzahl = 0
+    for app in unscored_applications().iterator(chunk_size=200):
+        enqueue("SCORE_APPLICATION", {"application_id": str(app.id)})
+        anzahl += 1
+    return anzahl
+
+
 def queue_depth() -> dict[str, int]:
     from django.db.models import Count
     rows = AiTask.objects.values("status").annotate(c=Count("id"))
@@ -292,4 +344,11 @@ def queue_overview(now: datetime.datetime | None = None) -> dict[str, Any]:
         "haengt": (warte_minuten is not None
                    and warte_minuten >= PENDING_WARN_MINUTES),
         "letzter_fehler": (letzter_fehler.error or "") if letzter_fehler else "",
+        # Bewerbungen, die trotz aktivem Scoring keine Einordnung tragen und
+        # auf die auch keine Aufgabe wartet - der Rest, den ein Ausfall
+        # hinterlaesst. Nur zaehlen, wenn Scoring ueberhaupt an ist: sonst
+        # waere JEDE Bewerbung "unbewertet", was schlicht der Normalzustand
+        # ohne KI ist.
+        "unbewertet": (unscored_applications().count()
+                       if scoring_aktiv() else 0),
     }

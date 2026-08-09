@@ -354,7 +354,10 @@ class SofortModusOhneKiTestCase(TestCase):
         from ..views.ai import evaluate_with_local_gemma
         with patch("ats.views.ai.make_ollama_request",
                    return_value=(False, {"error": "connection refused"})):
-            with self.assertRaises(Exception):
+            # Ausdruecklich RuntimeError statt Exception: Ein beliebiger
+            # TypeError wuerde die Zusicherung sonst genauso erfuellen -
+            # geprueft werden soll der BEABSICHTIGTE Ausfall-Fehler.
+            with self.assertRaises(RuntimeError):
                 evaluate_with_local_gemma("Ich pflege seit 12 Jahren.",
                                           ["Examen", "Nachtdienst"])
 

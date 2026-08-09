@@ -5,6 +5,28 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Geändert (Wächter beweisen bei jedem Lauf, dass sie etwas sehen)
+
+Die Doku sagte: „Die Wächter sind selbst getestet: In der Entwicklung wurde
+bewiesen, dass der Auth-Wächter eine ungeschützte View meldet." Das war ein
+Handnachweis, der genau einmal lief. Von 20 scannenden Wächtern prüften nur
+drei, ob ihr Scan überhaupt etwas gesehen hatte — verschiebt jemand ein
+Verzeichnis oder ändert eine Struktur, laufen die übrigen ins Leere: grün und
+wertlos, ohne dass es auffällt.
+
+- **Alle Datei-Scans laufen jetzt über zwei zentrale Helfer**
+  (`projekt_dateien()` / `projekt_templates()`), die bei jedem Aufruf eine
+  plausible Mindestmenge verlangen und sonst laut fehlschlagen. 17 Wächter
+  umgestellt, keine Reste — die drei verbliebenen Roh-Scans sind die Helfer
+  selbst und der Meta-Wächter über die Testdateien, der seinen eigenen
+  Selbstnachweis trägt.
+- **Funktionsprobe statt Behauptung**: `GuardrailScansProveThemselvesTestCase`
+  lässt die Helfer gegen einen absichtlich leeren Baum laufen (muss
+  anschlagen) und die Schlucker-Suche gegen einen absichtlich kaputten (muss
+  fündig werden) — bei jedem Testlauf, nicht einmal in der Entwicklung.
+- Die Scans in `test_kontrast.py`, `test_laufzeit.py` und `test_zeitplan.py`
+  tragen denselben Selbstnachweis.
+
 ### Behoben (Wächter, die eine Liste prüften statt einer Regel)
 
 Ein Durchgang durch die eigenen Sicherungen — mit derselben Frage, die sonst

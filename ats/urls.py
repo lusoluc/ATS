@@ -81,6 +81,8 @@ urlpatterns = [
     path('recruiter/board/bulk-status/', views.bulk_update_status, name='bulk_update_status'),  # WP4
     path('recruiter/applications/<uuid:app_id>/cv/', views.download_cv, name='download_cv'),      # B1
     path('recruiter/documents/<uuid:doc_id>/', views.download_document, name='download_document'),  # WP1
+    path('hilfe/', views.hilfe_view, name='hilfe'),
+    path('hilfe/bild/<str:name>', views.hilfe_bild, name='hilfe_bild'),
     path('recruiter/einstellungen/jobs/', views.scheduled_jobs_page,
          name='scheduled_jobs'),
     path('recruiter/einstellungen/jobs/ki-queue/requeue/',

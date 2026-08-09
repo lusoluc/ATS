@@ -5,6 +5,52 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Hinzugefügt (Benutzerhandbuch Teil 1+2 — mit Bildern, in der Anwendung, gegen Verrotten gesichert)
+
+Bisher gab es genau ein Dokument für Endanwender: `Handbuch_HR_Anwender.md`,
+145 Zeilen, entstanden zu einer Zeit, als die Plattform aus Dashboard, Stellen
+und Stammdaten bestand. Es kannte weder Sammel-Postfach noch Freigaben,
+Talent-Pool, Interview-Leitfaden, Datenaufbewahrung, Entgelttransparenz oder
+Vertretungen — und verwies auf zwei Bilder unter einem absoluten Pfad des
+Entwicklerrechners. Bei inzwischen 129 Routen war das kein Update, sondern ein
+Neubau.
+
+Neu ist `HANDBUCH.md` mit **Teil 1** (Die ersten 20 Minuten: anmelden,
+zurechtfinden, jemanden suchen) und **Teil 2** (die sechs Wege durch den
+Alltag: ausschreiben, ändern, sichten, schreiben, Gespräche, entscheiden) —
+aufgabenorientiert statt nach Menüpunkten, mit einem Bild an jedem Schritt und
+einem Einstieg nach Rolle. Lesbar auch unter **Hilfe & Handbuch** in der
+Anwendung selbst, samt Inhaltsverzeichnis und Druckansicht (Strg+P ergibt ein
+sauberes Heft ohne Menü und Schaltflächen — dafür braucht es kein
+Zusatzwerkzeug).
+
+**Die Bilder entstehen reproduzierbar:** `manage.py handbuch_bilder` legt eine
+eigene Testdatenbank an, befüllt sie mit erfundenen Personen, startet einen
+Testserver, meldet sich als die jeweilige Rolle an und schießt die
+Screenshots — danach wird die Datenbank wieder entfernt. Die Arbeitsdatenbank
+wird nie berührt: Ein Handbuch geht per Mail herum und landet auf
+Schulungsrechnern, echte Bewerberdaten haben darin nichts verloren.
+
+**Und es kann nicht still verrotten.** Vier Wächter laufen bei jedem Testlauf:
+
+- Kapitel über eine Seite, die es nicht mehr gibt → rot.
+- Ein im Handbuch genannter Knopf, den keine Vorlage kennt → rot. (Fand
+  prompt den ersten Fehler: Das Handbuch schrieb „Veröffentlichen“, die
+  Schaltfläche heißt „Stellenangebot veröffentlichen“.)
+- Ein Screenshot, dessen Vorlage sich seit der Aufnahme geändert hat → rot,
+  mit dem Befehl zum Neuerzeugen. Der Vergleich läuft über Vorlagen-Hashes im
+  Manifest, nicht über Dateidaten — die setzt Git beim Auschecken neu.
+- Bild ohne Alt-Text → rot.
+
+Seiten, die Teil 1+2 noch nicht erklären (Einrichtung, Governance,
+Störungsfälle), stehen mit Verweis auf den geplanten Teil in einer
+Ausnahmeliste — als Schuld, nicht als Freibrief; tote Einträge darin fallen
+ebenfalls auf.
+
+Nebenbei: Die gerenderte Handbuch-Seite läuft durch `nh3` (nur Handbuch-Tags,
+keine Ereignis-Attribute, nur http/https). „Nur Entwickler ändern diese Datei“
+ist eine Annahme, keine Sicherheitsmaßnahme.
+
 ### Behoben (Die Rolle „Viewer" konnte alles, was ein Hiring Manager kann)
 
 Aufgefallen bei der Vorbereitung des Benutzerhandbuchs: `Viewer` und

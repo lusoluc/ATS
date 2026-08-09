@@ -374,6 +374,9 @@
            die eigene Vertretung nicht heran. {% endcomment %}
         <a class="sidebar-link" href="{% url 'ats:delegations' %}"><i class="fa-solid fa-user-shield"></i> Meine Vertretung</a>
 
+        {# Handbuch dorthin, wo die Fragen entstehen: eine Datei im Projektordner erreicht niemanden #}
+        <a class="sidebar-link" href="{% url 'ats:hilfe' %}"><i class="fa-solid fa-book-open"></i> Hilfe &amp; Handbuch</a>
+
         {% if is_hr_admin %}
         <div style="margin:12px 8px 4px; font-size:11px; letter-spacing:1px; color:#64748b; text-transform:uppercase;">Steuern &amp; Entscheiden</div>
         <a class="sidebar-link" href="{% url 'ats:governance' %}"><i class="fa-solid fa-landmark"></i> Governance</a>

@@ -16,6 +16,7 @@ from .cms import *  # noqa: F401,F403
 from .common import *  # noqa: F401,F403
 from .feeds import *  # noqa: F401,F403
 from .governance import *  # noqa: F401,F403
+from .hilfe import hilfe_bild, hilfe_view  # noqa: F401
 from .interviews import *  # noqa: F401,F403
 from .jobs import *  # noqa: F401,F403
 from .public import *  # noqa: F401,F403

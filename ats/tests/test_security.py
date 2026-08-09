@@ -556,7 +556,15 @@ class ApplicantFormSecurityTestCase(TestCase):
         Datei hier mit Begruendung als Ausnahme ein – nicht stillschweigend.
         """
         import pathlib
-        allowed_exceptions = set()  # bewusst leer
+        #: Datei -> warum hier HTML durchgereicht werden MUSS und was es
+        #: stattdessen absichert.
+        allowed_exceptions = {
+            'hilfe.html':
+                'Das Benutzerhandbuch wird aus HANDBUCH.md nach HTML '
+                'gerendert - ohne Durchreichen gaebe es nur Rohtext. Die '
+                'Ausgabe laeuft vorher durch nh3 (ats/views/hilfe.py): nur '
+                'Handbuch-Tags, keine Ereignis-Attribute, nur http(s).',
+        }
         offenders = []
         for tpl in pathlib.Path("templates").rglob("*.html"):
             text = tpl.read_text(encoding="utf-8")
@@ -565,6 +573,11 @@ class ApplicantFormSecurityTestCase(TestCase):
                     offenders.append(str(tpl))
         self.assertEqual(offenders, [],
                          f"Unsichere Template-Filter gefunden: {offenders}")
+        # Tote Ausnahmen sind stehen gebliebene Erlaubnisse: Legt jemand
+        # spaeter eine gleichnamige Vorlage an, laesst der Waechter sie durch.
+        vorhanden = {t.name for t in pathlib.Path("templates").rglob("*.html")}
+        tot = sorted(set(allowed_exceptions) - vorhanden)
+        self.assertEqual(tot, [], f"Ausnahme ohne zugehoerige Vorlage: {tot}")
 
 class BruteForceLockoutTestCase(TestCase):
     """Fund 5: Schutz gegen Login-Brute-Force-Angriffe (IP/Username Sperre)."""

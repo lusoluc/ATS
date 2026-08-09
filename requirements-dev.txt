@@ -3,3 +3,8 @@ ruff>=0.14
 pre-commit>=4.0
 mypy>=1.15
 django-stubs>=6.0
+# Nur fuer `manage.py handbuch_bilder` (Screenshots des Benutzerhandbuchs).
+# Laeuft nie in der CI und nie in Produktion; ohne Playwright meldet das
+# Kommando das verstaendlich, statt zu scheitern.
+# Einmalig nach der Installation: python -m playwright install chromium
+playwright>=1.40

@@ -5,7 +5,12 @@ import uuid
 from django.db import models
 from django.utils import timezone
 
-from .base import EncryptedCharField, EncryptedTextField, email_blind_index
+from .base import (
+    EncryptedCharField,
+    EncryptedJSONField,
+    EncryptedTextField,
+    email_blind_index,
+)
 from .governance import PrivacyNoticeVersion
 from .jobs import JobPosting
 from .organization import Facility
@@ -90,7 +95,12 @@ class Application(models.Model):
     # Name der Person darin steht ("Lebenslauf_Maria_Schmidt.pdf").
     cvFileName = EncryptedCharField(max_length=255, blank=True, default="")
     coverLetterTxt = EncryptedTextField(blank=True, null=True)
-    screeningAnswersJson = models.JSONField(default=dict)
+    # Antworten auf Screening-Fragen. Bei Freitext-Fragen sind das die eigenen
+    # Worte der Person - dieselbe Kategorie wie das Anschreiben eine Zeile
+    # drueber, deshalb genauso verschluesselt. DB-seitige JSON-Lookups
+    # (`screeningAnswersJson__key`) gibt es damit nicht; alle Leser holen das
+    # dict nach Python (dsgvo, insights, profile_summary, scoring).
+    screeningAnswersJson = EncryptedJSONField(default=dict)
 
     aiScore = models.CharField(max_length=10, blank=True, null=True)  # A, B, C, D
     # KI-Begruendung zu EINER Person - beschreibt sie, gehoert also zu ihren

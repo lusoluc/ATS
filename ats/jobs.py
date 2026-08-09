@@ -79,6 +79,17 @@ JOBS: list[JobSpec] = [
     JobSpec("weekly_report", "Wochenbericht für die Leitung", 7, 0, weekday=0),
 ]
 
+# BEWUSST NICHT im Zeitplan (Entscheidung, keine Auslassung):
+#
+# * `ai_eval` (KI-Golden-Set): braucht eine erreichbare lokale KI. Auf
+#   Installationen ohne KI-Profil - dem Normalfall - stuende der Job jede
+#   Woche rot, und ein Job, der bei fehlender KI still uebersprungen wuerde,
+#   waere wieder ein gruener Nichtstuer. Er gehoert zur KI-Pflege und wird
+#   nach Prompt-/Modellaenderungen von Hand gestartet (OPERATIONS.md).
+# * `seed_demo --reset` (naechtlicher Demo-Reset): nur fuer Demo-Instanzen
+#   (DEMO_MODE=1) und dort als Host-Cron dokumentiert (INSTALL.md). In den
+#   Standard-Zeitplan gehoert kein Kommando, das eine Datenbank leert.
+
 JOBS_BY_NAME = {j.name: j for j in JOBS}
 
 

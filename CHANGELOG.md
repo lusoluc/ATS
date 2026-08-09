@@ -5,6 +5,40 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (Nachschärfung: Selbst-Audit der elf Pakete AN–AY)
+
+Ein Durchgang durch alle elf Pakete mit einer Frage: Wo wurde eine Abkürzung
+genommen oder etwas nur teilweise gelöst? Vier Funde, alle behoben:
+
+- **Screening-Antworten lagen im Klartext** (Lücke aus dem
+  Verschlüsselungs-Paket): `Application.screeningAnswersJson` trägt die
+  Antworten der bewerbenden Person auf die Screening-Fragen — bei
+  Freitext-Fragen ihre eigenen Worte, dieselbe Kategorie wie das
+  Anschreiben, das eine Zeile drüber längst verschlüsselt war. Der Wächter
+  prüfte nur Char-/Textfelder, und ein JSONField ist keins von beiden —
+  genau durch diese Lücke rutschte das Feld. Jetzt: `EncryptedJSONField`
+  (Fernet at-rest, Lesen liefert weiter das dict, auch über
+  `values_list`), Migration im Vier-Schritt (neue TEXT-Spalte, Daten
+  verschlüsselt kopieren, jsonb-Spalte entfernen, umbenennen — ein
+  direktes `AlterField` bräuchte auf PostgreSQL `USING` und bräche dort),
+  und der Wächter prüft JSONFelder mit. Gegenprobe: Feld testweise auf
+  JSONField zurückgedreht → Wächter meldet exakt dieses Feld.
+- **Das Job-Alert-Suchwort lag im Klartext**: `keyword` ist von der Person
+  frei getippt („Teilzeit Nachtdienst") — anders als die ID-Listen
+  `categories`/`locations` echter Freitext, der etwas über sie aussagt.
+  Die E-Mail derselben Zeile war verschlüsselt, das Suchwort nicht.
+  Verschlüsselbar, weil das Matching in Python läuft, nie per DB-Filter.
+  Der Feld-Wächter deckt jetzt auch `JobAlertSubscription` ab; die
+  strukturierten JSON-Felder (`ratingsJson`, `guideCoverageJson`,
+  ID-Listen) stehen mit Begründung in der Ausnahmeliste.
+- **`ai_eval` fehlte unbegründet im Zeitplan**: Die Auslassung war eine
+  Entscheidung (der Job braucht eine erreichbare lokale KI und stünde ohne
+  KI-Profil jede Woche rot), stand aber nirgends. Jetzt dokumentiert —
+  im Zeitplan-Modul und in OPERATIONS.md.
+- **Drei veraltete Kommentare** behaupteten noch `fail_silently`-Verhalten,
+  das seit Paket AW nicht mehr existiert; dazu eine Alt-Verrenkung beim
+  `--dry-run`-Lesen. Bereinigt.
+
 ### Behoben (Zustell-Jobs verloren Fehlschläge endgültig — und behaupteten Versand)
 
 Fortsetzung von Paket AX, dieselbe Frage an die vier Zustell-Jobs

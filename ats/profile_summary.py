@@ -70,7 +70,7 @@ def build_facts(app: Application, now: "datetime | None" = None) -> SteckbriefFa
 
     # K.O.-Kriterien: Pflichtfragen mit erwarteter Antwort (Antworten sind
     # nach Frage-TEXT verschluesselt gespeichert).
-    answers = app.screeningAnswersJson if isinstance(
+    answers: dict[str, str] = app.screeningAnswersJson if isinstance(
         app.screeningAnswersJson, dict) else {}
     ko = [q for q in (job.screeningQuestionsJson or [])
           if q.get("isMandatory") and q.get("expectedAnswer")]

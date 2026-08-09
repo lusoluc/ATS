@@ -73,7 +73,7 @@ class Command(BaseCommand):
         return gespeichert
 
     def handle(self, *args, **options):
-        trocken = options["dry-run"] if "dry-run" in options else options["dry_run"]
+        trocken = options["dry_run"]
         umbenannt = fehler = uebersprungen = ohne_datei = 0
         fehlend: list[str] = []
 

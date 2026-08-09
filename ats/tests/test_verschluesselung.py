@@ -67,6 +67,53 @@ class ApplicationFieldsAtRestTestCase(TestCase):
             self.assertNotIn(wert[:20], roh, f"{feld} enthaelt Klartext")
 
 
+class ScreeningAnswersAtRestTestCase(TestCase):
+    """Die Antworten der Person auf Screening-Fragen - bei Freitext-Fragen
+    ihre eigenen Worte, dieselbe Kategorie wie das Anschreiben. Als JSONField
+    lagen sie im Klartext, waehrend `coverLetterTxt` daneben verschluesselt
+    war: Der Waechter prueft(e) nur Char-/Textfelder, und ein JSONField ist
+    keins von beiden."""
+
+    ANTWORTEN = {
+        "Warum wechseln Sie?": "Konflikt mit der aktuellen Leitung.",
+        "Examen?": "ja",
+    }
+
+    def setUp(self):
+        world = make_world()
+        job = make_job(world, title="Pflegefachkraft")
+        person = Applicant.objects.create(firstName="Ines", lastName="R",
+                                          email="ines@example.invalid")
+        self.app = Application.objects.create(
+            applicant=person, jobPosting=job, status="NEW",
+            screeningAnswersJson=self.ANTWORTEN)
+
+    def test_the_application_still_reads_the_dict(self):
+        frisch = Application.objects.get(id=self.app.id)
+        self.assertEqual(frisch.screeningAnswersJson, self.ANTWORTEN)
+
+    def test_values_list_also_reads_the_dict(self):
+        """`insights.py` liest das Feld ueber values_list - der Weg muss
+        genauso entschluesseln wie der Attributzugriff."""
+        (wert,) = Application.objects.filter(id=self.app.id).values_list(
+            'screeningAnswersJson', flat=True)
+        self.assertEqual(wert, self.ANTWORTEN)
+
+    def test_the_database_holds_no_plain_text(self):
+        roh = _roh('ats_application', 'screeningAnswersJson')
+        self.assertTrue(roh)
+        self.assertNotIn("Konflikt", roh)
+        self.assertNotIn("Warum wechseln", roh)
+
+    def test_clearing_still_works(self):
+        """`data_retention` leert das Feld mit `{}` - das muss auch ueber die
+        Verschluesselung hinweg ankommen."""
+        self.app.screeningAnswersJson = {}
+        self.app.save(update_fields=['screeningAnswersJson'])
+        self.assertEqual(
+            Application.objects.get(id=self.app.id).screeningAnswersJson, {})
+
+
 class MessageAtRestTestCase(TestCase):
     def setUp(self):
         world = make_world()
@@ -189,7 +236,11 @@ class GuardrailPersonalFieldsEncryptedTestCase(TestCase):
         from django.apps import apps as django_apps
         from django.db import models as djm
 
-        from ..models.base import EncryptedCharField, EncryptedTextField
+        from ..models.base import (
+            EncryptedCharField,
+            EncryptedJSONField,
+            EncryptedTextField,
+        )
 
         muster = re.compile(self.MUSTER, re.I)
         offen = []
@@ -197,10 +248,13 @@ class GuardrailPersonalFieldsEncryptedTestCase(TestCase):
             for feld in modell._meta.get_fields():
                 if not isinstance(feld, djm.Field) or feld.is_relation:
                     continue
-                if isinstance(feld, (EncryptedCharField, EncryptedTextField)):
+                if isinstance(feld, (EncryptedCharField, EncryptedTextField,
+                                     EncryptedJSONField)):
                     continue
+                # JSONField gehoert MIT geprueft: `screeningAnswersJson` lag
+                # unverschluesselt, weil die erste Fassung nur Char/Text sah.
                 if not isinstance(feld, (djm.CharField, djm.TextField,
-                                         djm.EmailField)):
+                                         djm.EmailField, djm.JSONField)):
                     continue
                 if not muster.search(feld.name):
                     continue
@@ -234,13 +288,17 @@ class GuardrailApplicationDomainTextFieldsTestCase(TestCase):
     Versäumnis an einer Stelle, sondern acht Felder, die über Jahre einzeln
     dazukamen, ohne dass jemand die Frage stellte.
 
-    Der Wächter stellt sie jetzt: An diesen Modellen muss jedes Text-Feld
-    entweder verschlüsselt sein oder hier mit Begründung stehen.
+    Der Wächter stellt sie jetzt: An diesen Modellen muss jedes Text- UND
+    JSON-Feld entweder verschlüsselt sein oder hier mit Begründung stehen.
+    JSONField gehört dazu, seit `screeningAnswersJson` — die eigenen Worte
+    der Person auf Freitext-Fragen — genau durch diese Lücke rutschte:
+    Der Wächter sah nur Char/Text, und ein JSONField ist keins von beiden.
     """
 
     #: Modelle, die Daten ÜBER eine bewerbende Person tragen.
     MODELLE = ('Applicant', 'Application', 'Message', 'InterviewFeedback',
-               'ApplicationDocument', 'TalentPoolSubscription')
+               'ApplicationDocument', 'TalentPoolSubscription',
+               'JobAlertSubscription')
 
     #: Feld -> warum es KEIN personenbezogener Freitext ist.
     UNBEDENKLICH = {
@@ -259,13 +317,30 @@ class GuardrailApplicationDomainTextFieldsTestCase(TestCase):
         'TalentPoolSubscription.emailHash': 'Blind-Index',
         'TalentPoolSubscription.consentId': 'Einwilligungs-Referenz, kein Inhalt',
         'TalentPoolSubscription.criteria': 'JSON aus Jobfamilien- und Standort-IDs',
+        # Zahlenwerte 1..4 je Leitfaden-Kriterium - Einordnung wie aiScore,
+        # kein Freitext. Die Freitext-Urteile derselben Rueckmeldung
+        # (strengths/concerns/comment) sind verschluesselt.
+        'InterviewFeedback.ratingsJson': 'Zahlenwerte 1..4 je Kriterium',
+        'InterviewFeedback.guideCoverageJson':
+            'welche Leitfaden-Themen das Gespraech behandelt hat - '
+            'beschreibt das Gespraech, nicht die Person',
+        'JobAlertSubscription.emailHash': 'Blind-Index',
+        'JobAlertSubscription.status': 'PENDING/ACTIVE/INACTIVE - Zustand',
+        'JobAlertSubscription.categories': 'JSON-Liste von Jobfamilien-IDs',
+        'JobAlertSubscription.locations': 'JSON-Liste von Standort-IDs',
+        'JobAlertSubscription.confirmationToken': 'Zufalls-Token, kein Inhalt',
+        'JobAlertSubscription.managementToken': 'Zufalls-Token, kein Inhalt',
     }
 
     def test_every_text_field_is_encrypted_or_justified(self):
         from django.apps import apps as django_apps
         from django.db import models as djm
 
-        from ..models.base import EncryptedCharField, EncryptedTextField
+        from ..models.base import (
+            EncryptedCharField,
+            EncryptedJSONField,
+            EncryptedTextField,
+        )
 
         offen = []
         for name in self.MODELLE:
@@ -273,10 +348,12 @@ class GuardrailApplicationDomainTextFieldsTestCase(TestCase):
             for feld in modell._meta.get_fields():
                 if not isinstance(feld, djm.Field) or feld.is_relation:
                     continue
-                if isinstance(feld, (EncryptedCharField, EncryptedTextField)):
+                if isinstance(feld, (EncryptedCharField, EncryptedTextField,
+                                     EncryptedJSONField)):
                     continue
                 if not isinstance(feld, (djm.CharField, djm.TextField,
-                                         djm.EmailField, djm.FileField)):
+                                         djm.EmailField, djm.FileField,
+                                         djm.JSONField)):
                     continue
                 schluessel = f"{name}.{feld.name}"
                 if schluessel not in self.UNBEDENKLICH:
@@ -315,6 +392,19 @@ class JobAlertAtRestTestCase(TestCase):
         roh = _roh('ats_jobalertsubscription', 'email')
         self.assertTrue(roh)
         self.assertNotIn("alert-person", roh)
+
+    def test_the_keyword_is_encrypted(self):
+        """Das Suchwort ist frei getippt und sagt etwas ueber die Person
+        ("Teilzeit Nachtdienst") - es gehoert zur Adresse, nicht daneben."""
+        from ..models import JobAlertSubscription
+        sub = JobAlertSubscription.objects.get()
+        sub.keyword = "Teilzeit Nachtdienst"
+        sub.save(update_fields=['keyword'])
+        roh = _roh('ats_jobalertsubscription', 'keyword')
+        self.assertTrue(roh)
+        self.assertNotIn("Nachtdienst", roh)
+        self.assertEqual(JobAlertSubscription.objects.get().keyword,
+                         "Teilzeit Nachtdienst")
 
     def test_one_subscription_per_address_still_holds(self):
         """Die Eindeutigkeit haengt jetzt am Blind-Index, nicht an der Spalte."""

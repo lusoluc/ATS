@@ -49,7 +49,11 @@ class JobAlertSubscription(models.Model):
     locations = models.TextField(default="[]")   # Location-IDs als Umkreis-Zentren
     radiusKm = models.IntegerField(blank=True, null=True)
     # Alarm-Scope (UC-AY-11/12): Stichwort im Jobtitel und/oder Einrichtung ("Firma")
-    keyword = models.CharField(max_length=120, blank=True, default="")
+    # Frei getipptes Suchwort der Person - anders als die ID-Listen
+    # `categories`/`locations` echter Freitext ("Teilzeit Nachtdienst"), der
+    # etwas ueber sie aussagt. Verschluesselt moeglich, weil das Matching in
+    # Python laeuft (job_alerts.match_subscribers_for_job), nie per DB-Filter.
+    keyword = EncryptedCharField(max_length=120, blank=True, default="")
     facility = models.ForeignKey(Facility, on_delete=models.SET_NULL,
                                  blank=True, null=True, related_name="jobAlerts")
 

@@ -34,18 +34,26 @@ class Command(BaseCommand):
                 .filter(workflowState__name="published", createdAt__gte=since)
                 .select_related("location", "facility"))
 
-        sent = 0
+        sent = fehlgeschlagen = 0
         for job in jobs:
             for sub in match_subscribers_for_job(job):
-                JobAlertLog.objects.create(
-                    subscription=sub, action="ALERT_SENT",
-                    metadata=json.dumps({"job": job.title, "job_id": str(job.id)}))
-                send_notice(
+                zugestellt = send_notice(
                     f"Neue Stelle: {job.title}",
                     (f"Passend zu Ihrem Job-Alert: {job.title} "
                      f"({getattr(job.location, 'name', '—')}).\n"
                      f"Abmelden/verwalten: /job-alert/manage/{sub.managementToken}/"),
                     None, [sub.email], context="Job-Alert")
+                if not zugestellt:
+                    # KEIN Log, KEIN Zeitstempel: Der naechste Lauf wiederholt
+                    # den Alert. Vorher wurde beides VOR dem Versand gesetzt -
+                    # ein voruebergehender Mailserver-Ausfall verlor die
+                    # Benachrichtigung endgueltig, und das Protokoll
+                    # behauptete ALERT_SENT ueber eine Mail, die nie rausging.
+                    fehlgeschlagen += 1
+                    continue
+                JobAlertLog.objects.create(
+                    subscription=sub, action="ALERT_SENT",
+                    metadata=json.dumps({"job": job.title, "job_id": str(job.id)}))
                 sub.lastAlertSentAt = timezone.now()
                 sub.save(update_fields=["lastAlertSentAt", "updatedAt"])
                 sent += 1
@@ -54,11 +62,28 @@ class Command(BaseCommand):
         purged = 0
         for sub in JobAlertSubscription.objects.all():
             if sub.status == "INACTIVE" or is_expired(sub):
-                write_audit("JOB_ALERT_PURGED", subscription_email_hash=hash(sub.email) % 10**8,
+                # Blind-Index statt Pythons hash(): Der ist seit
+                # PYTHONHASHSEED pro Prozess randomisiert - derselbe Eintrag
+                # bekam bei jedem Lauf einen anderen Wert. Als Nachweis, WELCHES
+                # Abo geloescht wurde, war das Feld damit wertlos.
+                from ats.models import email_blind_index
+                write_audit("JOB_ALERT_PURGED",
+                            subscription_email_hash=email_blind_index(sub.email)[:16],
                             reason="INACTIVE" if sub.status == "INACTIVE" else "EXPIRED")
                 sub.delete()
                 purged += 1
 
         self.stdout.write(self.style.SUCCESS(
-            f"{jobs.count()} neue Stelle(n) geprüft, {sent} Alert(s) versendet, "
+            f"{jobs.count()} neue Stelle(n) geprüft, {sent} Alert(s) zugestellt, "
+            f"{fehlgeschlagen} fehlgeschlagen (werden wiederholt), "
             f"{purged} Abo(s) DSGVO-konform entfernt."))
+        if fehlgeschlagen and not sent:
+            # Alles fehlgeschlagen = systemisches Problem (Mailserver), kein
+            # Einzelfall. Der Job-Vermerk muss rot sein, sonst faellt es
+            # niemandem auf. Teilfehler bleiben gruen: Eine einzelne kaputte
+            # Adresse darf den Job nicht dauerhaft roeten - sie wird ohnehin
+            # beim naechsten Lauf erneut versucht.
+            from django.core.management.base import CommandError
+            raise CommandError(
+                f"Kein einziger von {fehlgeschlagen} Alert(s) zugestellt - "
+                "Mailversand pruefen (Einstellungen -> E-Mail-Versand).")

@@ -35,7 +35,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         cutoff = timezone.now() - datetime.timedelta(
             days=max(1, options["days"]))
-        sent = 0
+        sent = fehlgeschlagen = 0
         # Stattgefundene Gespraeche, die laenger als cutoff zurueckliegen
         interviews = (Interview.objects
                       .filter(outcome="COMPLETED", scheduledAt__lte=cutoff)
@@ -54,7 +54,7 @@ class Command(BaseCommand):
                 for person in pending_feedback_participants(iv, rnd):
                     if self._already(iv.id, person.id):
                         continue
-                    send_notice(
+                    zugestellt = send_notice(
                         f"Erinnerung: Feedback zu {name} steht noch aus",
                         (f"Ihr Gespräch mit {name} "
                          f"({app.jobPosting.title}) liegt einige Tage "
@@ -62,10 +62,22 @@ class Command(BaseCommand):
                          "kurz erfassen, damit die Entscheidung auf realem "
                          "Feedback steht.\nFeedback: /recruiter/interviews/"),
                         None, [person.email], context="Feedback-Anfrage")
+                    if not zugestellt:
+                        # Der Audit-Eintrag ist zugleich der Einmal-Marker
+                        # (_already prueft darauf). Ihn trotz Fehlschlag zu
+                        # schreiben hiesse: nie wiederholt UND ein Protokoll,
+                        # das Versand behauptet.
+                        fehlgeschlagen += 1
+                        continue
                     write_audit("FEEDBACK_REMINDER_SENT",
                                 marker=f"FB:{iv.id}:{person.id}")
                     sent += 1
                 break  # eine Runde reicht – Doppelmail vermeiden
         self.stdout.write(self.style.SUCCESS(
-            f"{sent} Feedback-Erinnerung(en) verschickt "
-            f"(ab {options['days']} Tagen)."))
+            f"{sent} Feedback-Erinnerung(en) zugestellt, "
+            f"{fehlgeschlagen} fehlgeschlagen (ab {options['days']} Tagen)."))
+        if fehlgeschlagen and not sent:
+            from django.core.management.base import CommandError
+            raise CommandError(
+                f"Keine einzige von {fehlgeschlagen} Erinnerung(en) zugestellt - "
+                "Mailversand pruefen (Einstellungen -> E-Mail-Versand).")

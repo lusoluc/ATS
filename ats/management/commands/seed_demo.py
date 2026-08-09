@@ -343,7 +343,15 @@ class Command(BaseCommand):
             return u
 
         hm_hoefer = demo_user("demo-hm", "Hiring-Manager", "Martin", "Höfer")
-        vertretung = demo_user("demo-vertretung", "Viewer", "Volkan", "Tas")
+        # Die Urlaubsvertretung braucht die Rolle des Vertretenen, nicht
+        # `Viewer`: Vertretung ist eine RoleDelegation, keine Rolle. Solange
+        # `Viewer` faktisch alles durfte, fiel das nicht auf - seit die Rolle
+        # haelt, was ihr Name sagt, koennte Tas sonst nichts uebernehmen.
+        vertretung = demo_user("demo-vertretung", "Hiring-Manager",
+                               "Volkan", "Tas")
+        # Reine Einsicht ohne Bearbeitung: der Standortleiter, der wissen
+        # will, wie es um seine Stellen steht - aber nicht mitarbeitet.
+        demo_user("demo-einsicht", "Viewer", "Holger", "Rittmann")
         leitung = demo_user("demo-leitung", "Hiring-Manager", "Melanie", "Dorn")
 
         # Vorstands-Mindeststandard: Pflege braucht IMMER die Examensfrage
@@ -439,4 +447,4 @@ class Command(BaseCommand):
             f"1 offenes Freigabe-Gate, 1 Gremium-Fall (PDL, 1/3 Stimmen), "
             f"1 aktive Vertretung, 1 offene Bedarfsmeldung, Talent-Pool mit "
             f"Treffer. Logins: demo-admin / demo-recruiter / demo-hm / "
-            f"demo-vertretung / demo-leitung."))
+            f"demo-vertretung / demo-leitung / demo-einsicht (Viewer)."))

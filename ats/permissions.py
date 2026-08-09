@@ -16,7 +16,7 @@ from django.db.models import Q, QuerySet
 from django.http import HttpRequest, HttpResponseBase
 
 if TYPE_CHECKING:
-    from django.contrib.auth.models import User
+    from django.contrib.auth.models import AnonymousUser, User
 
     from .models import Application, JobPosting, RoleDelegation
 
@@ -56,6 +56,52 @@ def role_required(*roles: str) -> Callable[[_ViewFunc], _ViewFunc]:
 any_staff_required = role_required(*ALL_ROLES)          # jede interne Rolle
 recruiter_required = role_required(HR_ADMIN, RECRUITER)  # operative Recruiting-Aktionen
 hr_admin_required = role_required(HR_ADMIN)              # Konfiguration/Administration
+
+#: Rollen, die allgemein bearbeiten duerfen - alle ausser Viewer.
+WRITING_ROLES = (HR_ADMIN, RECRUITER, HIRING_MANAGER)
+
+
+def may_modify(user: "User | AnonymousUser") -> bool:
+    """Darf diese Person allgemein etwas veraendern?
+
+    Die Rolle heisst `Viewer` - bis hierher konnte sie trotzdem das Board
+    umsortieren, Aufgaben abhaken, Seiteninhalte bearbeiten und Personalbedarf
+    melden: Sie war technisch mit `Hiring-Manager` identisch, weil beide nur
+    ueber `any_staff_required` liefen. Ein Name, der etwas anderes verspricht
+    als er haelt, ist in einer Rechteverwaltung besonders teuer - danach
+    werden Zugaenge vergeben.
+
+    ALLGEMEIN heisst: das taegliche Bearbeiten. NICHT gemeint sind
+    ausdrueckliche Einzelbenennungen (Auswahlgremium, Freigabestufe) - wer
+    dort namentlich berufen wurde, entscheidet genau dort, und die Befugnis
+    kommt aus der Benennung, nicht aus der Basisrolle. Sonst koennte ein
+    Betriebsratsmitglied mit Basisrolle `Viewer` seine eigene Freigabe nicht
+    mehr erteilen.
+    """
+    # Nicht angemeldet: Der Decorator soll auch dann sicher sein, wenn er
+    # einmal ohne `any_staff_required` darueber steht.
+    if not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+    return user.groups.filter(name__in=WRITING_ROLES).exists()
+
+
+def denies_viewer_writes(view_func: _ViewFunc) -> _ViewFunc:
+    """Laesst `Viewer` die Seite LESEN, aber nichts darauf veraendern.
+
+    Bewusst am Verfahren (POST/PUT/PATCH/DELETE) statt an der ganzen View:
+    Diese Seiten zeigen und aendern zugleich. Ein Decorator ueber alles wuerde
+    dem Viewer die Einsicht nehmen - genau das, wofuer es die Rolle gibt.
+    """
+    @wraps(view_func)
+    def _wrapped(request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
+        if request.method not in ("GET", "HEAD", "OPTIONS") and \
+                not may_modify(request.user):
+            raise PermissionDenied(
+                "Die Rolle Viewer darf Inhalte einsehen, aber nicht ändern.")
+        return view_func(request, *args, **kwargs)
+    return _wrapped
 
 
 # ============================================================================

@@ -5,9 +5,12 @@
   <h1 class="page-title"><i class="fa-solid fa-flag"></i> Kampagnen-Landingpages</h1>
   <p class="page-lead">Eigene Seite je Messe, Einrichtung, Abteilung oder Aktion unter <code>/k/&lt;name&gt;/</code> – mit eigener Ansprache, passenden Stellen und eingebauter Messung (der Seiten-Name ist die Quelle). Träger-Branding wirkt automatisch.</p>
 
+  {% include 'includes/_nur_lesen_hinweis.html' %}
+
+  {% if darf_aendern %}
   <div class="card" style="margin-bottom: var(--space-4);">
     <h2 style="font-size:15px; margin:0 0 var(--space-2);">Neue Landingpage</h2>
-    <form method="post">
+        <form method="post">
       {% csrf_token %}
       <div class="form-row" style="margin-bottom:var(--space-2);">
         <input type="text" name="name" class="input" placeholder="Name, z. B. Jobmesse Hamburg 09/2026" required>
@@ -28,6 +31,7 @@
       <button type="submit" class="btn btn-primary">Anlegen</button>
     </form>
   </div>
+  {% endif %}
 
   {% for r in rows %}
   <div class="card" style="margin-bottom: var(--space-3);">
@@ -47,6 +51,7 @@
           <div><strong style="font-size:20px;">{% if r.invite_rate is not None %}{{ r.invite_rate }}&nbsp;%{% else %}–{% endif %}</strong><span style="display:block; font-size:11px; color:var(--text-muted);">Einladungsquote</span></div>
           <div><strong style="font-size:20px; color:#22c55e;">{{ r.hired }}</strong><span style="display:block; font-size:11px; color:var(--text-muted);">eingestellt</span></div>
         </div>
+        {% if darf_aendern %}
         <form method="post" class="form-row" style="margin-top:var(--space-2); max-width:420px;">
           {% csrf_token %}
           <input type="hidden" name="form" value="expiry">
@@ -54,6 +59,8 @@
           <input type="date" name="expires" class="input" value="{{ r.lp.expiresAt|date:'Y-m-d' }}" title="Kampagnen-Ende (leer = unbegrenzt)">
           <button type="submit" class="btn btn-ghost" style="padding:6px 12px; font-size:12px;">Ablauf speichern</button>
         </form>
+        {% endif %}
+        {% if darf_aendern %}
         <form method="post" style="margin-top:var(--space-2); display:flex; gap:8px; align-items:center;">
           {% csrf_token %}
           <input type="hidden" name="lp_id" value="{{ r.lp.id }}">
@@ -75,6 +82,7 @@
           <a href="{{ r.link }}" target="_blank" style="font-size:12px;">Seite ansehen</a>
           <a href="{% url 'ats:blocks_editor' kind='landing' obj_id=r.lp.id %}" style="font-size:12px;"><i class="fa-solid fa-cubes"></i> Baukasten</a>
         </form>
+        {% endif %}
       </div>
     </div>
   </div>

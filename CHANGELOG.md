@@ -5,6 +5,47 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (Die Rolle „Viewer" konnte alles, was ein Hiring Manager kann)
+
+Aufgefallen bei der Vorbereitung des Benutzerhandbuchs: `Viewer` und
+`Hiring-Manager` waren technisch **identisch** — beide liefen nur über
+`any_staff_required`. Ein „Viewer" konnte damit das Board umsortieren,
+Aufgaben abhaken, Seiteninhalte und Landingpages bearbeiten und
+Personalbedarf melden. Ein Rollenname, der etwas anderes verspricht als er
+hält, ist in einer Rechteverwaltung besonders teuer: Danach werden Zugänge
+vergeben — „der schaut ja nur" — und niemand prüft nach. Ein Handbuch, das
+„Viewer = nur lesen" geschrieben hätte, wäre eine Zusicherung gewesen, die
+der Code nicht einlöst.
+
+Jetzt: `Viewer` **sieht** alles in seinem Bereich und **ändert nichts**.
+Geprüft wird am Verfahren (POST), nicht an der ganzen Seite — sonst hätte
+die Verschärfung dem Viewer genau die Einsicht genommen, für die es die
+Rolle gibt.
+
+Zwei Dinge, die bewusst so bleiben:
+
+- **Ausdrückliche Benennungen schlagen die Basisrolle.** Wer namentlich in
+  ein Auswahlgremium oder eine Freigabestufe berufen wurde, entscheidet
+  genau dort — auch als Viewer. Sonst könnte ein Betriebsratsmitglied mit
+  Basisrolle Viewer seine eigene Freigabe nicht mehr erteilen. Dasselbe gilt
+  für die eigene Vertretung. Alle vier Ausnahmen stehen mit Begründung im
+  Wächter.
+- **Vertretung ist keine Rolle.** Die Demo führte die Urlaubsvertretung als
+  `Viewer` — was nur funktionierte, solange Viewer faktisch alles durfte.
+  Korrigiert: Die vertretende Person trägt die Rolle der vertretenen, die
+  Vertretung selbst ist eine Delegation. Dafür gibt es jetzt ein echtes
+  Viewer-Demokonto (`demo-einsicht`, Standortleitung).
+
+Dazu die Oberfläche: Ein Knopf, der ins 403 läuft, ist schlimmer als kein
+Knopf — er behauptet eine Möglichkeit, die es nicht gibt. Alle Formulare der
+betroffenen Seiten erscheinen für den Viewer nicht mehr, samt ihrer Karten
+(ein leerer Rahmen verwirrt genauso), und an ihrer Stelle steht, warum.
+
+Der Wächter sichert die Fehlerklasse: Jede interne Seite, die per POST etwas
+verändert, muss den Viewer aussperren oder mit Begründung in der Ausnahme-
+liste stehen — inklusive Totprüfung und Funktionsprobe. Gegenprobe: Nimmt
+man den Schutz an zwei Stellen weg, meldet er genau diese zwei.
+
 ### Behoben (nach einem KI-Ausfall lässt sich die Bewertung nachholen)
 
 Aus der Frage, was jemand tut, der nach einer Woche zurückkommt und einen

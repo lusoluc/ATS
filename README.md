@@ -54,7 +54,21 @@ Produktion (`DEBUG=False`) sind `DJANGO_SECRET_KEY` und `PII_ENCRYPTION_KEY` Pfl
 
 ## Anmeldung & Rollen (RBAC)
 Der Recruiter-/Admin-Bereich (`/recruiter/...`) erfordert Login. Rollen sind als
-Django-Groups abgebildet: **HR-Admin**, **Recruiter**, **Hiring-Manager**, **Viewer**.
+Django-Groups abgebildet:
+
+| Rolle | Darf |
+|---|---|
+| **HR-Admin** | alles, inkl. Einrichtung, Stammdaten, Audit, KI-Konfiguration |
+| **Recruiter** | die operative Recruiting-Arbeit (Stellen, Bewerbungen, Nachrichten, Gespräche) |
+| **Hiring-Manager** | mitentscheiden und melden: Freigaben, Gremium, Personalbedarf, Aufgaben |
+| **Viewer** | **nur einsehen** – keine Änderung am Board, an Aufgaben, Bedarf oder Inhalten |
+
+Eine Ausnahme, die bewusst so ist: Wer namentlich in ein **Auswahlgremium** oder
+eine **Freigabestufe** berufen wurde, entscheidet genau dort – auch mit der Rolle
+Viewer. Diese Befugnis kommt aus der Benennung, nicht aus der Basisrolle; sonst
+könnte ein Betriebsratsmitglied seine eigene Freigabe nicht erteilen.
+Urlaubsvertretung ist **keine** Rolle, sondern eine Delegation (`RoleDelegation`) –
+die vertretende Person braucht die Rolle der vertretenen.
 Ersten Admin und die Rollen anlegen:
 
 ```bash

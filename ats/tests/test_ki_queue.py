@@ -18,10 +18,12 @@ from ..queue import (
     FAILURE_RATIONALE,
     PLACEHOLDER_RATIONALE,
     enqueue,
+    enqueue_unscored,
     reclaim_stale,
     requeue_failed,
     run_pending,
     trim_finished,
+    unscored_applications,
 )
 from .factories import make_job, make_world
 from .utils import make_user
@@ -222,6 +224,139 @@ class TrimTestCase(TestCase):
         self._task("DONE", 31)
         management.call_command("data_retention", "--dry-run")
         self.assertEqual(AiTask.objects.count(), 1)
+
+
+class NachbewertenTestCase(TestCase):
+    """Der Rest, den ein längerer KI-Ausfall hinterlässt.
+
+    Im Sofort-Modus entstand bei nicht erreichbarer KI gar keine Aufgabe: Die
+    Bewerbung kam ohne Einordnung an, und es gab KEINEN Weg, das je
+    nachzuholen. Genau der Fall aus der Frage „eine Woche weg — wie starte ich
+    unvollständige Vorgänge neu?".
+    """
+
+    def setUp(self):
+        self.admin = make_user("nachadmin", role="HR-Admin")
+        self.client.force_login(self.admin)
+        SystemSetting.objects.create(key="AI_SCORING_ENABLED", value="1")
+        self.world = make_world()
+        self.job = make_job(self.world, title="Pflegefachkraft")
+
+    def _bewerbung(self, status="NEW", score=None):
+        person = Applicant.objects.create(
+            firstName="N", lastName="N",
+            email=f"n{Application.objects.count()}@example.invalid")
+        return Application.objects.create(
+            applicant=person, jobPosting=self.job, status=status,
+            coverLetterTxt="Ich pflege gern.", aiScore=score)
+
+    def test_an_unscored_open_application_is_found(self):
+        app = self._bewerbung()
+        self.assertIn(app, list(unscored_applications()))
+
+    def test_a_scored_one_is_not(self):
+        self._bewerbung(score="B")
+        self.assertEqual(unscored_applications().count(), 0)
+
+    def test_an_empty_string_score_counts_as_unscored(self):
+        """NULL und Leerstring sind in SQL zweierlei - hier dasselbe."""
+        app = self._bewerbung(score="")
+        self.assertIn(app, list(unscored_applications()))
+
+    def test_decided_applications_are_left_alone(self):
+        """Eine Einordnung fuer eine laengst abgelehnte Bewerbung waere
+        Rechnen ohne Zweck - und ein KI-Lauf ueber Daten, die niemand mehr
+        braucht."""
+        for status in ("REJECTED", "HIRED", "INVITED", "WITHDRAWN"):
+            self._bewerbung(status=status)
+        self.assertEqual(unscored_applications().count(), 0)
+
+    def test_an_application_with_a_waiting_task_is_not_queued_twice(self):
+        app = self._bewerbung()
+        enqueue("SCORE_APPLICATION", {"application_id": str(app.id)})
+        self.assertEqual(unscored_applications().count(), 0)
+
+    def test_the_backfill_queues_them_and_the_worker_scores_them(self):
+        app = self._bewerbung()
+        self.assertEqual(enqueue_unscored(), 1)
+        with patch("ats.views.evaluate_with_local_gemma",
+                   return_value=("B", "Passt gut.")):
+            run_pending()
+        app.refresh_from_db()
+        self.assertEqual(app.aiScore, "B")
+        self.assertEqual(unscored_applications().count(), 0)
+
+    def test_the_page_shows_the_count_and_the_button(self):
+        self._bewerbung()
+        r = self.client.get(reverse('ats:scheduled_jobs'))
+        self.assertContains(r, "ohne Einordnung")
+        self.assertContains(r, "Bewertung nachholen")
+
+    def test_the_endpoint_queues_and_writes_audit(self):
+        from ..models import AuditLog
+        self._bewerbung()
+        r = self.client.post(reverse('ats:enqueue_unscored_applications'))
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(AiTask.objects.filter(status="PENDING").count(), 1)
+        self.assertTrue(AuditLog.objects.filter(
+            action="AI_QUEUE_BACKFILL").exists())
+
+    def test_without_the_ai_opt_in_nothing_is_queued(self):
+        """Ohne eingeschaltete Vorbewertung waere das eine KI-Bewertung, die
+        niemand aktiviert hat (EU AI Act: bewusste Entscheidung)."""
+        SystemSetting.objects.filter(key="AI_SCORING_ENABLED").delete()
+        self._bewerbung()
+        self.client.post(reverse('ats:enqueue_unscored_applications'))
+        self.assertEqual(AiTask.objects.count(), 0)
+
+    def test_without_the_opt_in_the_page_does_not_count_them(self):
+        SystemSetting.objects.filter(key="AI_SCORING_ENABLED").delete()
+        self._bewerbung()
+        r = self.client.get(reverse('ats:scheduled_jobs'))
+        self.assertNotContains(r, "ohne Einordnung")
+
+
+class SofortModusOhneKiTestCase(TestCase):
+    """Fällt die KI im Sofort-Modus aus, wird die Bewerbung angenommen —
+    ohne Score, und zur Nachbewertung eingereiht."""
+
+    def setUp(self):
+        SystemSetting.objects.create(key="AI_SCORING_ENABLED", value="1")
+        self.world = make_world()
+        self.job = make_job(self.world, title="Pflegefachkraft")
+
+    def _bewerben(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        return self.client.post(
+            reverse('ats:bewerben', args=[self.job.id]),
+            data={"first_name": "Sync", "last_name": "Test",
+                  "email": "sync@example.invalid",
+                  "cover_letter": "Ich pflege gern.", "consent_privacy": "on",
+                  "cv_file": SimpleUploadedFile("cv.pdf", b"%PDF-1")})
+
+    def test_the_application_is_accepted_and_queued_for_later(self):
+        with patch("ats.views.public.evaluate_with_local_gemma",
+                   side_effect=OSError("KI nicht erreichbar")):
+            resp = self._bewerben()
+        self.assertEqual(resp.status_code, 200)
+        app = Application.objects.get()
+        self.assertFalse(app.aiScore, "Ein erfundener Score waere schlimmer "
+                                      "als keiner.")
+        self.assertEqual(AiTask.objects.filter(status="PENDING").count(), 1,
+                         "Ohne Aufgabe bliebe die Bewerbung dauerhaft ohne "
+                         "Einordnung - genau die alte Luecke.")
+
+    def test_the_ai_never_invents_a_score_when_it_is_unreachable(self):
+        """Frueher fiel das Scoring still auf ein Keyword-Raten zurueck
+        (django/python/react/sales ...) - jede Pflege-Bewerbung ohne
+        Tech-Vokabular bekam ein 'D'. Ein Ausfall darf nicht als Ergebnis
+        auftreten."""
+        from ..views.ai import evaluate_with_local_gemma
+        with patch("ats.views.ai.make_ollama_request",
+                   return_value=(False, {"error": "connection refused"})):
+            with self.assertRaises(Exception):
+                evaluate_with_local_gemma("Ich pflege seit 12 Jahren.",
+                                          ["Examen", "Nachtdienst"])
 
 
 class AiAsyncSchalterTestCase(TestCase):

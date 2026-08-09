@@ -90,6 +90,31 @@ Verhalten der KI-Queue bei Störungen (seit Paket BA):
 - **Aufräumen:** `data_retention` (täglich im Zeitplan) löscht erledigte
   Tasks nach 30, gescheiterte nach 90 Tagen.
 
+### Nach einem längeren KI-Ausfall (Checkliste)
+
+Bewerbungen gehen dabei nie verloren: Sichten, Einladen und Absagen laufen
+ohne KI normal weiter — die A–D-Einordnung ist Lesehilfe, keine
+Voraussetzung. Nachzuholen ist nur die Bewertung.
+
+1. **Erkennen** — *Einstellungen → Wiederkehrende Jobs*, Block
+   „KI-Warteschlange": fehlgeschlagene Aufgaben, letzter Fehlertext, und
+   die Zahl der offenen Bewerbungen ohne Einordnung. Steht dort „bei
+   laufendem Worker unmöglich", läuft der Worker-Dienst selbst nicht.
+   Für Monitoring: `GET /healthz/` (`checks.ai`, `checks.queue`).
+2. **Ursache beheben** — KI starten (`docker compose --profile ki up -d`),
+   dann in der KI-Zentrale „KI-Verbindung testen", bis der Status ONLINE
+   ist. Erst danach lohnen die nächsten Schritte.
+3. **Gescheiterte Aufgaben** — „Fehlgeschlagene erneut einreihen". Sie
+   bekommen volle Versuche zurück.
+4. **Bewerbungen ohne Einordnung** — „Bewertung nachholen". Deckt die
+   Fälle ab, in denen gar keine Aufgabe entstand (Sofort-Modus bei
+   Ausfall), die Aufgabe längst weggeräumt wurde, oder die Vorbewertung
+   erst jetzt eingeschaltet wird. Nur offene Vorgänge; entschiedene
+   bleiben unberührt.
+
+Beide Aktionen landen im Audit-Log (`AI_QUEUE_REQUEUED`,
+`AI_QUEUE_BACKFILL`). Kein Shell-Zugriff nötig.
+
 ## 4. Monitoring
 
 - `GET /healthz/` – Gesamtstatus: DB, Media, KI-Erreichbarkeit, Queue-Tiefe

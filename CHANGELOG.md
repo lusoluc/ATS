@@ -5,6 +5,36 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (nach einem KI-Ausfall lässt sich die Bewertung nachholen)
+
+Aus der Frage, was jemand tut, der nach einer Woche zurückkommt und einen
+längeren KI-Ausfall vorfindet. Paket BA deckte die Warteschlange ab — der
+Weg **daneben** blieb offen:
+
+- **Im Sofort-Modus entstand gar keine Aufgabe**: War die KI beim
+  Bewerbungseingang nicht erreichbar, kam die Bewerbung ohne Einordnung an
+  — und es gab **keinen Weg**, das je nachzuholen. Jetzt zählt die Seite
+  *Wiederkehrende Jobs* die offenen Bewerbungen ohne Einordnung und reiht
+  sie per „Bewertung nachholen" zur Bewertung ein (Audit-Eintrag). Gesucht
+  wird am Zustand, nicht an der Ursache — dieselbe Schaltfläche hilft
+  also auch, wenn eine gescheiterte Aufgabe nach 90 Tagen weggeräumt wurde
+  oder die Vorbewertung erst später eingeschaltet wird. Entschiedene
+  Vorgänge bleiben unberührt, und ohne eingeschaltete Vorbewertung
+  passiert nichts (die Aktivierung bleibt eine bewusste Entscheidung).
+- **Ein Ausfall trat als Ergebnis auf**: War die KI nicht erreichbar, fiel
+  das Scoring still auf ein Keyword-Raten zurück — die Liste bestand aus
+  `django`, `python`, `react`, `sales` und ähnlichem. Eine
+  Pflegefachkraft mit zwölf Jahren Erfahrung bekam damit ein „D — Geringe
+  Übereinstimmung mit dem Anforderungsprofil", und im Kandidaten-Modal war
+  das von einem echten KI-Urteil nicht zu unterscheiden. Der Fallback ist
+  entfernt: Bei nicht erreichbarer KI wird ein Fehler gemeldet, die
+  Bewerbung ohne Score angenommen und zur Nachbewertung eingereiht. Kein
+  erfundener Score.
+
+Dazu eine Betriebs-Checkliste „Nach einem längeren KI-Ausfall" in
+OPERATIONS.md: erkennen, Ursache beheben, gescheiterte Aufgaben neu
+einreihen, Bewertung nachholen — alles über die Oberfläche, ohne Shell.
+
 ### Behoben (KI-Queue übersteht Ausfälle — und ist sichtbar)
 
 Dieselbe Frage wie an die Zustell-Jobs, diesmal an die KI-Warteschlange

@@ -73,7 +73,7 @@
 {% if queue %}
 {% comment %} Context-Aware: erscheint nur, wenn es KI-Tasks gibt oder
    AI_ASYNC an ist — auf Installationen ohne KI kein Rauschen. {% endcomment %}
-<div class="glass-card" style="margin-top:24px;{% if queue.haengt or queue.failed %} border-color:var(--danger);{% endif %}">
+<div class="glass-card" style="margin-top:24px;{% if queue.haengt or queue.failed or queue.unbewertet %} border-color:var(--danger);{% endif %}">
   <h2 style="font-size:17px; margin:0 0 8px;">
     <i class="fa-solid fa-robot" aria-hidden="true"></i> KI-Warteschlange
   </h2>
@@ -124,6 +124,35 @@
       erreichbar). Die Aufgaben bekommen wieder volle Versuche.
     </span>
   </form>
+  {% endif %}
+
+  {% if queue.unbewertet %}
+  {% comment %} Der Rest, den ein Ausfall hinterlässt: Bewerbungen ohne
+     Einordnung, auf die auch keine Aufgabe mehr wartet. Ohne diesen Weg
+     blieben sie dauerhaft unbewertet. {% endcomment %}
+  <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border);">
+    <h3 style="font-size:15px; margin:0 0 6px;">
+      {{ queue.unbewertet }} offene {% if queue.unbewertet == 1 %}Bewerbung ohne Einordnung{% else %}Bewerbungen ohne Einordnung{% endif %}
+    </h3>
+    <p style="font-size:13px; color:var(--text-muted); margin:0 0 10px;">
+      Die KI-Vorbewertung ist eingeschaltet, aber diese Bewerbungen tragen
+      keine Einordnung und es wartet auch keine Aufgabe auf sie — typisch nach
+      einem längeren KI-Ausfall oder wenn die Vorbewertung erst später
+      eingeschaltet wurde. Sichten und entscheiden lässt sich trotzdem
+      normal; die Einordnung ist nur Lesehilfe.
+    </p>
+    <form method="post" action="{% url 'ats:enqueue_unscored_applications' %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-secondary">
+        <i class="fa-solid fa-list-check" aria-hidden="true"></i>
+        Bewertung nachholen
+      </button>
+      <span style="display:block; font-size:12px; color:var(--text-muted); margin-top:6px;">
+        Reiht die Bewerbungen zur Bewertung ein. Nur offene Vorgänge —
+        entschiedene bleiben unberührt.
+      </span>
+    </form>
+  </div>
   {% endif %}
 </div>
 {% endif %}

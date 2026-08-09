@@ -327,6 +327,7 @@ def bewerben(request, job_id):
             # Platzhalter-Score erfunden. AI_ASYNC="1" -> Scoring via Queue (L6).
             ai_score = None
             ai_rationale = None
+            nachbewerten = False
             ai_scoring_on = SystemSetting.objects.filter(key='AI_SCORING_ENABLED', value='1').exists()
             ai_async = SystemSetting.objects.filter(key='AI_ASYNC', value='1').exists()
             if ai_scoring_on and not ko_failed:
@@ -337,7 +338,19 @@ def bewerben(request, job_id):
                     from ..queue import PLACEHOLDER_RATIONALE
                     ai_rationale = PLACEHOLDER_RATIONALE
                 else:
-                    ai_score, ai_rationale = evaluate_with_local_gemma(cover_letter, job.requirementsJson)
+                    try:
+                        ai_score, ai_rationale = evaluate_with_local_gemma(
+                            cover_letter, job.requirementsJson)
+                    except Exception:
+                        # KI nicht erreichbar: Die Bewerbung wird trotzdem
+                        # angenommen - ohne Score, nicht mit einem erfundenen.
+                        # Nach dem Speichern wird sie zur Nachbewertung
+                        # eingereiht (siehe unten), damit ein Ausfall keine
+                        # dauerhaft unbewertete Bewerbung hinterlaesst.
+                        logger.exception(
+                            "KI-Scoring beim Bewerbungseingang fehlgeschlagen "
+                            "- Bewerbung wird ohne Score angenommen")
+                        nachbewerten = True
 
             # 8. Create Application
             # § 164 SGB IX: freiwillige Angabe (Art. 9 -> verschluesselt,
@@ -366,8 +379,11 @@ def bewerben(request, job_id):
                         or 'DIRECT').upper()[:50],
             )
 
-            # L6: Async-Scoring nachreichen (Worker füllt aiScore/aiRationale)
-            if ai_scoring_on and ai_async and not ko_failed:
+            # L6: Async-Scoring nachreichen (Worker füllt aiScore/aiRationale).
+            # `nachbewerten` deckt den zweiten Fall ab: Im Sofort-Modus war die
+            # KI nicht erreichbar - dann geht die Bewerbung denselben Weg, statt
+            # dauerhaft ohne Einordnung liegen zu bleiben.
+            if ai_scoring_on and not ko_failed and (ai_async or nachbewerten):
                 from ..queue import enqueue
                 enqueue("SCORE_APPLICATION", {"application_id": str(application.id)})
 

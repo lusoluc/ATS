@@ -248,6 +248,11 @@ ERKLAERT_IN = {
     "global_search": "1.4 Jemanden suchen",
     "hilfe": "1.3 Das Menü",
     "inbox": "Weg 4",
+    # Haengt an einer Stelle (/jobs/<id>/serien-nachricht/) und faellt damit
+    # unter „Detailseiten haengen an ihrer Uebersicht" - der Waechter fragt
+    # nicht danach. Erklaert ist sie trotzdem, und dieser Eintrag haelt fest,
+    # wo: Sie war lange die einzige Funktion, die niemand im Handbuch fand.
+    "job_series_message": "Weg 4",
     "interviews": "Weg 5",
     "approvals": "Weg 6",
     "staffing_requests": "Weg 6",

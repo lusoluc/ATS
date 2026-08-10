@@ -31,6 +31,8 @@
   "95-aufbewahrung": "92775c7c746cbeca",
   "96-nachweis": "c8c5d47f6f1ba0eb",
   "97-auswertung": "41e168e42d600418",
+  "98-ki-transparenz": "38ad59994a908715",
+  "99-barrierefreiheit": "83553859258f749b",
   "A0-erscheinungsbild": "4d1b3da6ddfe0a23",
   "A1-seiten": "31dc27959527ca2d",
   "A2-mediathek": "b233fcc43856cfa0",
@@ -42,5 +44,6 @@
   "B3-hris": "2980675e967bed3a",
   "C0-karriereseite": "63d024b2863f07f3",
   "C1-stellenliste": "dd0b383e079565e3",
-  "C2-jobalert": "f09145fcbb9621bf"
+  "C2-jobalert": "f09145fcbb9621bf",
+  "C3-portal": "6307052cab54301b"
 }

@@ -108,10 +108,18 @@ def hilfe_bild(request: HttpRequest, name: str) -> HttpResponseBase:
     Bewusst mit fester Endung und ohne Pfadanteile: Der Name kommt aus der
     Adresszeile, und ein `../` darin duerfte niemals eine andere Datei
     erreichbar machen.
+
+    Grossbuchstaben gehoeren dazu. Das Muster liess vorher nur Kleinbuchstaben
+    durch - und die Bilder der Teile 7 bis 10 heissen `A0-…`, `B1-…`, `C3-…`.
+    13 der 47 Abbildungen kamen deshalb im Handbuch nie an: Der Text sprach von
+    einem Bild, an seiner Stelle stand ein leerer Rahmen. Auf der Platte lagen
+    sie die ganze Zeit, weshalb auch der Waechter zufrieden war - er prueft die
+    Datei, nicht die Auslieferung. Am Schutz aendert das nichts: weder Punkt
+    noch Schraegstrich sind erlaubt, ein `../` kommt nach wie vor nicht durch.
     """
     from django.http import FileResponse, Http404
 
-    if not re.fullmatch(r"[a-z0-9-]+\.png", name):
+    if not re.fullmatch(r"[A-Za-z0-9-]+\.png", name):
         raise Http404("Kein Handbuch-Bild.")
     ordner = _handbuch_pfad().parent / BILDER_PRAEFIX
     datei = ordner / name

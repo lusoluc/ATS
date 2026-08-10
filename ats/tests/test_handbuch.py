@@ -50,6 +50,27 @@ class HandbuchIstErreichbarTestCase(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r["Content-Type"], "image/png")
 
+    def test_every_image_is_actually_delivered_not_just_present_on_disk(self):
+        """Eine Stichprobe reicht hier nicht.
+
+        Der Waechter `test_every_image_file_exists` prueft die Platte, dieser
+        die Auslieferung - und genau dazwischen lag der Fehler: Das Muster im
+        Dateinamen liess nur Kleinbuchstaben durch, die Bilder der Teile 7 bis
+        10 heissen aber `A0-…`, `B1-…`, `C3-…`. 13 von 47 Abbildungen kamen im
+        Handbuch nie an. Die alte Stichprobe traf zufaellig ein
+        kleingeschriebenes Bild und war zufrieden.
+        """
+        fehlend = []
+        for bild in ALLE:
+            name = bild.datei.rsplit("/", 1)[-1]
+            if self.client.get(reverse('ats:hilfe_bild', args=[name])).status_code != 200:
+                fehlend.append(name)
+        self.assertEqual(
+            fehlend, [],
+            f"{len(fehlend)} Abbildung(en) liegen auf der Platte, werden aber "
+            f"nicht ausgeliefert - im Handbuch steht dort ein leerer Rahmen: "
+            f"{fehlend}")
+
     def test_no_path_traversal_through_the_image_name(self):
         """Der Name kommt aus der Adresszeile - `../` darf nie eine andere
         Datei erreichbar machen."""

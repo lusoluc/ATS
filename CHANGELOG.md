@@ -5,6 +5,48 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Hinzugefügt (AGG-Prüfstrecke: gleiche Qualifikation, anderes Merkmal, gleiche Note)
+
+Die Zusage „bewertet AGG-neutral" stand im System-Prompt der KI — und sonst
+nirgends. Das bestehende Golden-Set fragt, ob das Modell Passung erkennt und
+ob es sich per Anschreiben zu einer Note überreden lässt. Beides wichtig,
+beides sagt nichts über Diskriminierung. Ein Satz im Prompt ist keine Prüfung,
+und die `COMPLIANCE_MATRIX` führte AGG folgerichtig auf „teilweise".
+
+Neu ist ein Paartest: Ein fachlich identisches Anschreiben, einmal neutral und
+dann je einmal mit einem Merkmal versehen — Name, Geschlecht, Alter,
+Behinderung, Religion, sexuelle Identität, dazu die Elternzeit-Lücke (§ 3
+Abs. 2 AGG, mittelbare Benachteiligung) und nicht-muttersprachliches Deutsch.
+Ändert sich die Note, liegt es am Merkmal, denn sonst hat sich nichts geändert.
+
+- **`manage.py agg_eval`** führt die Paare gegen die lokale LLM. Mehrere
+  Bewertungen je Formulierung, weil Sprachmodelle streuen; bei Gleichstand
+  zählt die schlechtere Note — wer eine Fairness-Prüfung zu seinen eigenen
+  Gunsten rundet, kann sie sich sparen. Exit-Code 1 bei Verschiebung.
+- **Ein Paar, dessen beide Seiten am selben Fehler scheiterten, gilt nicht als
+  bestanden**, sondern als ungeprüft. Sonst erzeugt ein kaputtes Ollama eine
+  grüne Fairness-Bilanz.
+- **Der deterministische Teil läuft in jedem Testlauf mit** und braucht keine
+  KI: Der Merkmalsvektor des gelernten Scorings muss über alle Varianten
+  identisch sein. Diese Zusage steht seit Langem im Modul-Kopf von
+  `scoring.py` — geprüft hatte sie niemand. Dazu die Gegenprobe mit einem
+  absichtlich voreingenommenen Bewerter: Ein Wächter, der nie ausschlägt, ist
+  von einem kaputten nicht zu unterscheiden.
+- **Das Prüfset prüft sich selbst.** Ändert eine Variante nebenbei auch die
+  Qualifikation, misst die Strecke Fachlichkeit statt Merkmal — und bestünde
+  weiter. Also: fachlicher Kern in jeder Formulierung wortgleich, bei der
+  umformulierten Fassung jeder Fakt einzeln nachgewiesen.
+- Im Betrieb: `agg_eval` gehört neben `ai_eval` an den Prompt-/Modellwechsel,
+  nicht in die CI. **Wer die KI-Vorbewertung einschaltet, lässt sie vorher
+  laufen** — steht so im Runbook.
+
+Was die Strecke **nicht** ist: ein Nachweis der Diskriminierungsfreiheit. Sie
+prüft wenige Formulierungen und kann nur zeigen, dass etwas schiefliegt, nie
+dass alles in Ordnung ist. Ein bestandener Lauf ist ein Rauchmelder, kein
+Gutachten; die Anbieter-Konformitätsbewertung bleibt offen. Der Status in der
+`COMPLIANCE_MATRIX` steht deshalb weiter auf „teilweise" — mit Prüfstrecke
+statt mit einer Behauptung.
+
 ### Behoben (Das Handbuch zeigte leere Rahmen, und sein Verzeichnis sprang ins Leere)
 
 Beim Gegenlesen des fertigen Handbuchs fiel auf, dass es an zwei Stellen nicht

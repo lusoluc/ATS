@@ -34,7 +34,22 @@ def _bildpfade_umschreiben(markdown_text: str) -> str:
 
 
 def kapitel_liste(markdown_text: str) -> list[dict[str, str]]:
-    """Überschriften für das Inhaltsverzeichnis am Seitenrand."""
+    """Überschriften für das Inhaltsverzeichnis am Seitenrand.
+
+    Die Anker kommen aus DERSELBEN Funktion, mit der die `toc`-Erweiterung die
+    `id` an die Überschrift schreibt. Vorher rechnete diese Liste sie selbst
+    aus - und zwar anders: Ein Punkt wurde zu „-" statt zu entfallen
+    („6.3 …" -> `6-3-…` gegen `63-…`), Umlaute fielen ersatzlos weg statt
+    umgeschrieben zu werden („Das Menü" -> `1-3-das-men` gegen `13-das-menu`).
+    47 von 67 Einträgen im Inhaltsverzeichnis führten damit ins Leere: Ein
+    Klick sprang nirgendwohin, und wer Kapitel 6.3 aufrufen wollte, landete
+    wieder am Seitenanfang.
+
+    Zwei Berechnungen desselben Wertes gehen früher oder später auseinander.
+    Deshalb hier keine zweite, sondern die geliehene erste.
+    """
+    from markdown.extensions.toc import slugify
+
     kapitel = []
     for zeile in markdown_text.splitlines():
         treffer = re.match(r"^(#{1,3})\s+(.*)$", zeile)
@@ -43,8 +58,8 @@ def kapitel_liste(markdown_text: str) -> list[dict[str, str]]:
         ebene, titel = len(treffer.group(1)), treffer.group(2).strip()
         if ebene == 1 and titel.startswith("SecurATS"):
             continue        # der Dokumenttitel ist kein Kapitel
-        anker = re.sub(r"[^a-z0-9]+", "-", titel.lower()).strip("-")
-        kapitel.append({"ebene": str(ebene), "titel": titel, "anker": anker})
+        kapitel.append({"ebene": str(ebene), "titel": titel,
+                        "anker": slugify(titel, "-")})
     return kapitel
 
 

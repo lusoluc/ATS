@@ -64,6 +64,31 @@ class HandbuchIstErreichbarTestCase(TestCase):
         self.client.force_login(make_user("leser-viewer", role="Viewer"))
         self.assertEqual(self.client.get(reverse('ats:hilfe')).status_code, 200)
 
+    def test_every_entry_in_the_table_of_contents_leads_somewhere(self):
+        """Ein Verzeichnis, dessen Eintraege nirgendwohin springen, ist
+        schlimmer als keins - man sucht den Fehler bei sich.
+
+        Genau das war der Fall: Die Seitenleiste rechnete ihre Anker selbst
+        aus, die `toc`-Erweiterung vergab die `id` nach eigener Regel. Bei
+        Punkten und Umlauten gingen beide auseinander, und 47 von 67
+        Eintraegen waren tot - „6.3" wurde zu `6-3-…` statt `63-…`.
+        Zwei Berechnungen desselben Wertes driften; dieser Test merkt es.
+        """
+        antwort = self.client.get(reverse('ats:hilfe'))
+        seite = antwort.content.decode()
+        vorhandene = set(re.findall(r'<h[1-4][^>]*\bid="([^"]+)"', seite))
+        self.assertGreater(len(vorhandene), 30,
+                           "Kaum Ueberschriften mit id gefunden - vergibt die "
+                           "toc-Erweiterung sie noch? Sonst prueft dieser "
+                           "Waechter ins Leere.")
+        tot = sorted(k["anker"] for k in antwort.context["kapitel"]
+                     if k["anker"] not in vorhandene)
+        self.assertEqual(
+            tot, [],
+            f"{len(tot)} Eintraege im Inhaltsverzeichnis springen ins Leere - "
+            f"Anker der Seitenleiste und id der Ueberschrift stimmen nicht "
+            f"ueberein: {tot[:8]}")
+
 
 class GuardrailHandbuchBleibtWahrTestCase(TestCase):
     """Die vier Prüfungen, die das Handbuch am Leben halten."""

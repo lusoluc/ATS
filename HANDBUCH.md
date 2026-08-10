@@ -132,7 +132,13 @@ Schritt gefragt:
 
 1. **Titel und Einrichtung** — wie die Stelle heißen soll und wo sie besetzt wird.
 2. **Beschreibung und Anforderungen** — was die Person tun wird und was sie
-   mitbringen muss.
+   mitbringen muss. Sie müssen nicht vor dem leeren Feld beginnen:
+   **„Text-Entwurf vorschlagen“** stellt einen Entwurf aus dem zusammen, was
+   Ihr Haus schon hinterlegt hat — Textbausteine, Benefits,
+   Einrichtungsprofil. **„+ KI-Formulierung“** lässt die lokale KI den
+   Entwurf flüssig ausformulieren. Beides füllt nur leere Felder, nichts
+   wird überschrieben, und Gehaltszahlen nennt der Entwurf grundsätzlich
+   nicht — die Spanne kommt aus dem Entgeltband.
 3. **Gehaltsspanne** — von … bis. Ohne diese Angabe lässt sich die Stelle nicht
    veröffentlichen. Das ist keine Schikane, sondern seit der EU-Richtlinie zur
    Entgelttransparenz Pflicht: Bewerbende dürfen vorher wissen, worüber

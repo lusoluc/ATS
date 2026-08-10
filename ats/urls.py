@@ -32,6 +32,7 @@ urlpatterns = [
     path('recruiter/applications/<uuid:app_id>/feedback.json', views.application_feedback_json, name='application_feedback_json'),
     path('recruiter/messages/polish/', views.polish_message, name='polish_message'),
     path('recruiter/process/suggest/', views.suggest_process, name='suggest_process'),
+    path('recruiter/jobs/entwurf/', views.suggest_job_draft, name='suggest_job_draft'),
     path('recruiter/process/previous/', views.process_previous, name='process_previous'),
     path('recruiter/applications/<uuid:app_id>/vote/', views.application_vote, name='application_vote'),
     path('recruiter/gremien/', views.panel_defaults_view, name='panel_defaults'),

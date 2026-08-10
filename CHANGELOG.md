@@ -5,6 +5,31 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Hinzugefügt (Stellen-Entwurf: aus Bausteinen statt vor dem leeren Feld)
+
+Die Konvertierung einer Bedarfsmeldung erzeugte wörtlich „<Titel> —
+Beschreibung folgt.", und im Wizard begann die Beschreibung als leeres Feld —
+obwohl das Material längst im System liegt: Textbausteine je Jobfamilie,
+Benefits, das Einrichtungsprofil. Niemand sollte abtippen, was schon da ist.
+
+- **„Text-Entwurf vorschlagen"** im Stellen-Wizard stellt Beschreibung,
+  Aufgaben und Anforderungen deterministisch aus den Bausteinen zusammen —
+  funktioniert ohne KI, nennt seine Quellen. **„+ KI-Formulierung"** lässt die
+  lokale KI den Entwurf flüssig ausformulieren (hart validiert, bei jedem
+  Mangel fällt der Baustein-Entwurf durch). Gefüllt werden nur leere Felder;
+  wirksam wird nichts ohne Speichern.
+- **Die Konvertierung aus der Bedarfsmeldung** erzeugt denselben Entwurf statt
+  des Platzhalters — bewusst nur den deterministischen Teil, der POST leitet
+  sofort um. Kaltstart ohne Vorgängerstelle: Aufgaben/Anforderungen kommen aus
+  den Bausteinen der Jobfamilie statt als zwei leere Listen; eine
+  Vorgängerstelle gewinnt weiterhin (Prozess-Gedächtnis).
+- **Eine Grenze ist hart: kein Geldbetrag im Entwurf.** Die Spanne kommt aus
+  dem Entgeltband und nur von dort (EU-RL 2023/970). Eine KI-Fassung mit
+  Betrag — auch in einer Aufgabenzeile — wird komplett verworfen, nicht
+  repariert: Wer an einem Betrag herumschneidet, lässt den halben Satz stehen.
+- Vor der Veröffentlichung ändert sich nichts: Entgelt-Gate, Frageverbot und
+  Freigabekette stehen unverändert davor.
+
 ### Hinzugefügt (AGG-Prüfstrecke: gleiche Qualifikation, anderes Merkmal, gleiche Note)
 
 Die Zusage „bewertet AGG-neutral" stand im System-Prompt der KI — und sonst

@@ -14,7 +14,7 @@ Sie müssen nichts auswendig lernen und nichts vorher gelesen haben.
 |---|---|
 | Recruiterin oder Recruiter (Sie schreiben Stellen aus und betreuen Bewerbungen) | Teil 1, dann Teil 2 komplett |
 | Führungskraft im Fachbereich (Sie melden Bedarf, entscheiden mit, führen Gespräche) | Teil 1, dann Weg 5 und Weg 6 |
-| Personalverwaltung / HR-Leitung (Sie richten das System ein) | Teil 1 und 2, danach Teil 4 (folgt) |
+| Personalverwaltung / HR-Leitung (Sie richten das System ein) | Teil 1 und 2, danach Teil 4 und 7 |
 | Sie schauen nur zu (Rolle Viewer) | Teil 1 genügt |
 
 > **Schreibweise:** Was Sie anklicken, steht fett und in Anführungszeichen —
@@ -566,6 +566,140 @@ bevor Sie bestätigen.
 
 ---
 
+# Teil 5 — Wenn etwas klemmt
+
+Die vier Fälle, die im Betrieb tatsächlich vorkommen — und was Sie selbst tun
+können.
+
+## 5.1 Der zentrale Blick: Wiederkehrende Jobs
+
+![Wiederkehrende Jobs: was laufen soll und was wirklich lief](docs/handbuch/90-jobs.png)
+
+Diese Seite ist die erste Adresse, wenn etwas nicht passiert ist. Sie zeigt für
+jede regelmäßige Aufgabe, **wann sie zuletzt wirklich lief** — nicht, wann sie
+laufen sollte. Ein Job, der nie lief, steht als solcher da.
+
+Steht dort etwas rot, prüfen Sie zuerst, ob der Zeitplan-Dienst läuft:
+
+```bash
+docker compose ps scheduler
+```
+
+## 5.2 Es gehen keine E-Mails raus
+
+**Erkennen:** Bewerbende melden sich nicht, oder auf der Jobs-Seite stehen die
+Versand-Jobs rot.
+
+**Beheben:** Prüfen Sie die Verbindung unter *E-Mail-Versand* (Abschnitt 4.7).
+Ist der Mailserver wieder erreichbar, holen die Jobs das Versäumte beim
+nächsten Lauf nach — **fehlgeschlagene Nachrichten gehen nicht verloren**,
+sondern werden wiederholt. Sie müssen nichts von Hand nachsenden.
+
+## 5.3 Die KI antwortet nicht
+
+**Erkennen:** In der KI-Zentrale steht der Status auf offline; auf der
+Jobs-Seite zeigt der Block *KI-Warteschlange* fehlgeschlagene Aufgaben;
+betroffene Bewerbungen tragen den Vermerk, dass keine Analyse möglich war.
+
+**Beheben:**
+
+```bash
+docker compose --profile ki up -d ollama
+```
+
+Danach in der KI-Zentrale die Verbindung testen. Ist sie grün, drücken Sie auf
+der Jobs-Seite **„Fehlgeschlagene erneut einreihen“** — die Bewerbungen werden
+nachbewertet, der Vermerk verschwindet.
+
+**Wichtig:** Das Sichten, Einladen und Absagen funktioniert die ganze Zeit
+normal weiter. Die Einordnung ist eine Hilfe, keine Voraussetzung.
+
+## 5.4 Bewerbungen ohne Einordnung
+
+War die KI bei Eingang nicht erreichbar, kommt eine Bewerbung ohne Einordnung
+an. Auf der Jobs-Seite steht dann, wie viele das betrifft, und ein Klick auf
+**„Bewertung nachholen“** reiht sie nach.
+
+## 5.5 Wenn gar nichts geht
+
+Für die IT: `GET /healthz/` liefert den Gesamtzustand als Datensatz —
+Datenbank, Dateiablage, KI-Erreichbarkeit, Zwischenspeicher und die Länge der
+Warteschlange. Das eignet sich auch zur Überwachung.
+
+---
+
+# Teil 6 — Was das System für Sie erledigt
+
+Dieser Teil ist zum Nachschlagen, wenn jemand fragt: der Datenschutzbeauftragte,
+der Betriebsrat, eine Prüferin — oder eine bewerbende Person.
+
+## 6.1 Löschfristen laufen automatisch
+
+![Datenaufbewahrung: Fristen und der Trockenlauf vor dem Löschen](docs/handbuch/95-aufbewahrung.png)
+
+Abgelehnte Bewerbungen dürfen nicht unbegrenzt gespeichert werden (Art. 5 Abs. 1
+lit. e DSGVO). Sie legen die Frist fest, das System wendet sie täglich an und
+anonymisiert, was älter ist.
+
+**Der Trockenlauf** zeigt vorher, was betroffen wäre — ohne etwas zu ändern.
+Nutzen Sie ihn, bevor Sie eine Frist verkürzen.
+
+## 6.2 Jede Entscheidung ist belegbar
+
+![Nachweis-Protokoll: lückenlose Kette aller Entscheidungen](docs/handbuch/96-nachweis.png)
+
+Jede Statusänderung, jede Freigabe, jeder Versand wird protokolliert — und die
+Einträge sind kryptografisch verkettet. Wird ein Eintrag nachträglich geändert
+oder gelöscht, passt die Kette nicht mehr, und die tägliche Prüfung schlägt
+Alarm.
+
+Praktisch heißt das: Auf die Frage „warum wurde diese Person abgelehnt?“ gibt
+es eine Antwort, die nicht auf Erinnerung beruht.
+
+## 6.3 Auswertung ohne Namen
+
+![Auswertung: Kennzahlen und daraus abgeleitete Hinweise](docs/handbuch/97-auswertung.png)
+
+Wie lange dauert eine Besetzung? Wo springen Bewerbende ab? Welche Frage
+sortiert überdurchschnittlich viele aus? Die Auswertung beantwortet das auf
+Basis Ihrer eigenen Daten — und zeigt nur Zahlen, keine Namen. Wo die
+Datenmenge für eine Aussage zu klein ist, sagt sie das, statt Zufall als
+Muster auszugeben.
+
+## 6.4 Was Bewerbende sehen dürfen
+
+- **Ihren eigenen Stand** über einen persönlichen Zugangslink, ohne Konto und
+  ohne Passwort.
+- **Ihre Daten** als Datei zum Herunterladen (Art. 15 und 20 DSGVO).
+- **Wie KI eingesetzt wird**, auf einer öffentlichen Seite — die beschreibt
+  genau die Funktionen, die bei Ihnen aktiv sind, nicht eine Wunschliste.
+- **Wie barrierefrei die Seite ist**, in der Barrierefreiheitserklärung, inklusive
+  der Punkte, die noch nicht erfüllt sind.
+
+## 6.5 Was das System bewusst nicht tut
+
+- Keine automatische Absage aufgrund einer KI-Einschätzung. Automatische
+  Absagen gibt es ausschließlich bei vorher veröffentlichten Pflichtkriterien,
+  die regelbasiert geprüft werden — mit Begründung an die bewerbende Person.
+- Keine Frage nach dem bisherigen Gehalt.
+- Keine Übermittlung von Bewerberdaten an Dienstleister für Versand,
+  Kartendienste oder KI.
+- Keine Bewertung anhand der Angabe zu einer Schwerbehinderung.
+
+---
+
+## Und wenn etwas nicht funktioniert?
+
+Die häufigsten Fälle stehen in Teil 5. Zwei Dinge vorweg:
+
+- **Sie sehen weniger als hier abgebildet.** Das liegt fast immer an Ihrer Rolle,
+  nicht an einem Fehler. Wenn Sie mehr brauchen, wenden Sie sich an Ihre
+  Personalverwaltung.
+- **Etwas reagiert nicht.** Laden Sie die Seite neu. Bleibt es dabei, notieren Sie,
+  was Sie zuletzt getan haben, und melden Sie es Ihrer IT — mit dieser Angabe kann
+  sie sofort etwas anfangen.
+---
+
 # Teil 7 — Die eigene Karriereseite
 
 SecurATS bringt die öffentliche Karriereseite mit. Sie brauchen dafür weder
@@ -762,137 +896,3 @@ sieht sie ihren Stand, bucht Gesprächstermine selbst, kann Nachrichten
 schreiben, ihre Daten herunterladen und die Bewerbung zurückziehen — ohne
 Konto und ohne Passwort.
 
----
-
-# Teil 5 — Wenn etwas klemmt
-
-Die vier Fälle, die im Betrieb tatsächlich vorkommen — und was Sie selbst tun
-können.
-
-## 5.1 Der zentrale Blick: Wiederkehrende Jobs
-
-![Wiederkehrende Jobs: was laufen soll und was wirklich lief](docs/handbuch/90-jobs.png)
-
-Diese Seite ist die erste Adresse, wenn etwas nicht passiert ist. Sie zeigt für
-jede regelmäßige Aufgabe, **wann sie zuletzt wirklich lief** — nicht, wann sie
-laufen sollte. Ein Job, der nie lief, steht als solcher da.
-
-Steht dort etwas rot, prüfen Sie zuerst, ob der Zeitplan-Dienst läuft:
-
-```bash
-docker compose ps scheduler
-```
-
-## 5.2 Es gehen keine E-Mails raus
-
-**Erkennen:** Bewerbende melden sich nicht, oder auf der Jobs-Seite stehen die
-Versand-Jobs rot.
-
-**Beheben:** Prüfen Sie die Verbindung unter *E-Mail-Versand* (Abschnitt 4.7).
-Ist der Mailserver wieder erreichbar, holen die Jobs das Versäumte beim
-nächsten Lauf nach — **fehlgeschlagene Nachrichten gehen nicht verloren**,
-sondern werden wiederholt. Sie müssen nichts von Hand nachsenden.
-
-## 5.3 Die KI antwortet nicht
-
-**Erkennen:** In der KI-Zentrale steht der Status auf offline; auf der
-Jobs-Seite zeigt der Block *KI-Warteschlange* fehlgeschlagene Aufgaben;
-betroffene Bewerbungen tragen den Vermerk, dass keine Analyse möglich war.
-
-**Beheben:**
-
-```bash
-docker compose --profile ki up -d ollama
-```
-
-Danach in der KI-Zentrale die Verbindung testen. Ist sie grün, drücken Sie auf
-der Jobs-Seite **„Fehlgeschlagene erneut einreihen“** — die Bewerbungen werden
-nachbewertet, der Vermerk verschwindet.
-
-**Wichtig:** Das Sichten, Einladen und Absagen funktioniert die ganze Zeit
-normal weiter. Die Einordnung ist eine Hilfe, keine Voraussetzung.
-
-## 5.4 Bewerbungen ohne Einordnung
-
-War die KI bei Eingang nicht erreichbar, kommt eine Bewerbung ohne Einordnung
-an. Auf der Jobs-Seite steht dann, wie viele das betrifft, und ein Klick auf
-**„Bewertung nachholen“** reiht sie nach.
-
-## 5.5 Wenn gar nichts geht
-
-Für die IT: `GET /healthz/` liefert den Gesamtzustand als Datensatz —
-Datenbank, Dateiablage, KI-Erreichbarkeit, Zwischenspeicher und die Länge der
-Warteschlange. Das eignet sich auch zur Überwachung.
-
----
-
-# Teil 6 — Was das System für Sie erledigt
-
-Dieser Teil ist zum Nachschlagen, wenn jemand fragt: der Datenschutzbeauftragte,
-der Betriebsrat, eine Prüferin — oder eine bewerbende Person.
-
-## 6.1 Löschfristen laufen automatisch
-
-![Datenaufbewahrung: Fristen und der Trockenlauf vor dem Löschen](docs/handbuch/95-aufbewahrung.png)
-
-Abgelehnte Bewerbungen dürfen nicht unbegrenzt gespeichert werden (Art. 5 Abs. 1
-lit. e DSGVO). Sie legen die Frist fest, das System wendet sie täglich an und
-anonymisiert, was älter ist.
-
-**Der Trockenlauf** zeigt vorher, was betroffen wäre — ohne etwas zu ändern.
-Nutzen Sie ihn, bevor Sie eine Frist verkürzen.
-
-## 6.2 Jede Entscheidung ist belegbar
-
-![Nachweis-Protokoll: lückenlose Kette aller Entscheidungen](docs/handbuch/96-nachweis.png)
-
-Jede Statusänderung, jede Freigabe, jeder Versand wird protokolliert — und die
-Einträge sind kryptografisch verkettet. Wird ein Eintrag nachträglich geändert
-oder gelöscht, passt die Kette nicht mehr, und die tägliche Prüfung schlägt
-Alarm.
-
-Praktisch heißt das: Auf die Frage „warum wurde diese Person abgelehnt?“ gibt
-es eine Antwort, die nicht auf Erinnerung beruht.
-
-## 6.3 Auswertung ohne Namen
-
-![Auswertung: Kennzahlen und daraus abgeleitete Hinweise](docs/handbuch/97-auswertung.png)
-
-Wie lange dauert eine Besetzung? Wo springen Bewerbende ab? Welche Frage
-sortiert überdurchschnittlich viele aus? Die Auswertung beantwortet das auf
-Basis Ihrer eigenen Daten — und zeigt nur Zahlen, keine Namen. Wo die
-Datenmenge für eine Aussage zu klein ist, sagt sie das, statt Zufall als
-Muster auszugeben.
-
-## 6.4 Was Bewerbende sehen dürfen
-
-- **Ihren eigenen Stand** über einen persönlichen Zugangslink, ohne Konto und
-  ohne Passwort.
-- **Ihre Daten** als Datei zum Herunterladen (Art. 15 und 20 DSGVO).
-- **Wie KI eingesetzt wird**, auf einer öffentlichen Seite — die beschreibt
-  genau die Funktionen, die bei Ihnen aktiv sind, nicht eine Wunschliste.
-- **Wie barrierefrei die Seite ist**, in der Barrierefreiheitserklärung, inklusive
-  der Punkte, die noch nicht erfüllt sind.
-
-## 6.5 Was das System bewusst nicht tut
-
-- Keine automatische Absage aufgrund einer KI-Einschätzung. Automatische
-  Absagen gibt es ausschließlich bei vorher veröffentlichten Pflichtkriterien,
-  die regelbasiert geprüft werden — mit Begründung an die bewerbende Person.
-- Keine Frage nach dem bisherigen Gehalt.
-- Keine Übermittlung von Bewerberdaten an Dienstleister für Versand,
-  Kartendienste oder KI.
-- Keine Bewertung anhand der Angabe zu einer Schwerbehinderung.
-
----
-
-## Und wenn etwas nicht funktioniert?
-
-Die häufigsten Fälle stehen in Teil 5. Zwei Dinge vorweg:
-
-- **Sie sehen weniger als hier abgebildet.** Das liegt fast immer an Ihrer Rolle,
-  nicht an einem Fehler. Wenn Sie mehr brauchen, wenden Sie sich an Ihre
-  Personalverwaltung.
-- **Etwas reagiert nicht.** Laden Sie die Seite neu. Bleibt es dabei, notieren Sie,
-  was Sie zuletzt getan haben, und melden Sie es Ihrer IT — mit dieser Angabe kann
-  sie sofort etwas anfangen.

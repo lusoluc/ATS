@@ -5,6 +5,68 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (Das Handbuch zeigte leere Rahmen, und sein Verzeichnis sprang ins Leere)
+
+Beim Gegenlesen des fertigen Handbuchs fiel auf, dass es an zwei Stellen nicht
+hielt, was es zeigt. Beides war beim Schreiben unsichtbar, weil die Wächter
+danebengriffen — sie prüften jeweils die Nachbarschaft des Fehlers.
+
+- **13 der 47 Abbildungen kamen nie an.** Die Auslieferung ließ im Dateinamen
+  nur Kleinbuchstaben zu (`[a-z0-9-]+\.png`), die Bilder der Teile 7 bis 10
+  heißen aber `A0-…`, `B1-…`, `C0-…`. Im Handbuch stand an ihrer Stelle ein
+  leerer Rahmen, während der Text von einem Bild sprach. Der eine Wächter
+  prüfte, ob die Datei auf der Platte liegt — sie lag da. Der andere nahm eine
+  Stichprobe und traf zufällig ein kleingeschriebenes Bild. Jetzt prüft ein
+  Test **jede** Abbildung über die Route, nicht eine. Am Schutz ändert sich
+  nichts: weder Punkt noch Schrägstrich sind erlaubt, `../` kommt nicht durch.
+- **47 von 67 Einträgen im Inhaltsverzeichnis führten nirgendwohin.** Die
+  Seitenleiste rechnete ihre Sprungmarken selbst aus, die `toc`-Erweiterung
+  vergab die `id` nach eigener Regel. Bei Punkten und Umlauten gingen beide
+  auseinander: „6.3 Auswertung ohne Namen" wurde in der Leiste zu
+  `6-3-…`, an der Überschrift stand `63-…`; „1.3 Das Menü" ergab `1-3-das-men`
+  gegen `13-das-menu`. Ein Klick sprang zurück an den Seitenanfang — wer das
+  Kapitel suchte, suchte den Fehler bei sich. Die Liste leiht sich jetzt die
+  Funktion, die auch die `id` vergibt. Zwei Berechnungen desselben Wertes
+  driften früher oder später auseinander; ein Wächter vergleicht beide.
+- **Die Teile standen in der Reihenfolge 1, 2, 3, 4, 7, 8, 9, 10, 5, 6.** Beim
+  Zusammenführen der Handbuch-Pakete waren 7–10 vor 5–6 gelandet. Im Ausdruck
+  fällt das noch mehr auf als am Bildschirm.
+- „Und wenn etwas nicht funktioniert?" hing unnummeriert am Ende von Teil 6
+  („Was das System für Sie erledigt") und verwies im ersten Satz selbst auf
+  Teil 5. Steht jetzt als 5.6 dort, wo man bei einer Störung nachsieht.
+- Der Einstiegs-Wegweiser schickte die Personalverwaltung zu „Teil 4 (folgt)" —
+  Teil 4 gibt es längst. Und der Bildhinweis behauptete, alle Abbildungen
+  zeigten das dunkle Erscheinungsbild; die öffentlichen Seiten sind hell.
+
+### Hinzugefügt (Handbuch: Serien-Nachricht, Gliederung für Teil 9 und 10, Bewerber-Sicht im Bild)
+
+- **Die Serien-Nachricht fehlte im Handbuch.** Weg 4 beschrieb nur das
+  Antworten auf Fragen; dass man eine Stelle öffnen und alle laufenden
+  Bewerbungen von sich aus anschreiben kann — Einladung zum Infotag,
+  Ausbildungs-Event — stand nirgends. Der Vollständigkeits-Wächter konnte es
+  nicht finden: Die Seite hängt an einer Stellen-ID und fällt unter
+  „Detailseiten hängen an ihrer Übersicht". Jetzt erklärt, samt der Zusicherung,
+  dass Abgesagte und Zurückgezogene nie mit angeschrieben werden.
+- **Teil 9 und 10 haben nummerierte Kapitel** (9.1–9.3, 10.1–10.4). Vorher
+  standen sie als je ein Block im Verzeichnis, während jeder andere Teil
+  aufgeschlüsselt war. Die Zuordnung Route → Kapitel zeigt jetzt auf das genaue
+  Kapitel statt auf den ganzen Teil.
+- **6.4 „Was Bewerbende sehen dürfen" hat Abbildungen**: KI-Transparenzseite
+  und Barrierefreiheitserklärung. Das Bewerber-Portal — die wichtigste der vier
+  genannten Sachen — ist als 10.4 bebildert. Dafür löst `handbuch_bilder` jetzt
+  `{token}` in einer Bildadresse auf: Der Portal-Zugang gehört einer Person,
+  eine feste Adresse gibt es nicht. Ohne diese Ausnahme wäre ausgerechnet die
+  Seite ohne Bild geblieben, die Bewerbende am häufigsten sehen.
+- **Die Demo-Instanz zeigte eine leere Mediathek** („Noch keine Medien"), weil
+  `seed_demo` keine Medien anlegte — und damit ausgerechnet nicht das, was
+  Kapitel 7.3 erklärt. Jetzt 62 fiktive Einträge, weil erst oberhalb der
+  Seitengröße (50) eine zweite Seite entsteht: Bereichsangabe und Blätterung
+  sind vorführbar statt nur behauptet. `MediaAsset` gehört dabei in die
+  Wipe-Liste von `--reset`; ohne den Eintrag hätte der nächtliche Cron-Lauf
+  Nacht für Nacht 62 weitere Dateien angelegt. Ebenso neu: Portal-Zugänge für
+  die Demo-Bewerber (zufällige Token), sonst ist die Bewerber-Sicht auf einer
+  Demo-Instanz gar nicht aufrufbar.
+
 ### Behoben (Die Oberfläche lud Schrift und Symbole aus dem Netz — entgegen der eigenen Zusage)
 
 `System_Architektur_und_Feature_Katalog.md` wirbt wörtlich mit „Air-Gapped

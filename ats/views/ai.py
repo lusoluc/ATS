@@ -30,7 +30,7 @@ from ..permissions import (
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["get_ollama_url", "get_ai_model", "make_ollama_request", "evaluate_with_local_gemma", "try_parse_json_reply", "log_ai_execution", "classify_ai_error", "test_gemma", "get_ai_execution_logs", "gemma_agg_check", "gemma_agg_check_status", "gemma_translate_simple_german", "validate_ai_prompt", "validate_ai_prompt_status", "save_ai_settings", "polish_message", "apply_template_tone", "suggest_process", "analytics_ask", "healthz_ai", "ingest_best_performers", "best_performer_profiles"]
+__all__ = ["get_ollama_url", "get_ai_model", "make_ollama_request", "evaluate_with_local_gemma", "try_parse_json_reply", "log_ai_execution", "classify_ai_error", "test_gemma", "get_ai_execution_logs", "gemma_agg_check", "gemma_agg_check_status", "gemma_translate_simple_german", "validate_ai_prompt", "validate_ai_prompt_status", "save_ai_settings", "polish_message", "apply_template_tone", "suggest_process", "suggest_job_draft", "analytics_ask", "healthz_ai", "ingest_best_performers", "best_performer_profiles"]
 
 
 
@@ -921,6 +921,60 @@ def suggest_process(request):
         'questions': questions,
         'notes': notes,
         'gate': gate_info(facility),
+        'used_ai': used_ai,
+    })
+
+
+@recruiter_required
+def suggest_job_draft(request):
+    """Stellen-Entwurf: Beschreibung, Aufgaben und Anforderungen vorbefuellen.
+
+    Regelbasiert aus den Bausteinen des Hauses (immer verfuegbar), optional
+    von der lokalen KI ausformuliert. Die Oberflaeche fuellt damit NUR leere
+    Felder – nichts wird ueberschrieben, nichts ohne Speichern wirksam.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST erforderlich'}, status=405)
+    from ..job_draft import ai_draft_payload, rule_based_draft, validate_ai_draft
+    from ..models import Benefit
+    title = (request.POST.get('title') or '').strip()[:200]
+    family = (JobFamily.objects.filter(id=request.POST.get('job_family')).first()
+              if request.POST.get('job_family') else None)
+    facility = (Facility.objects.filter(id=request.POST.get('facility')).first()
+                if request.POST.get('facility') else None)
+    benefit_ids = [b for b in request.POST.getlist('benefits') if b]
+    benefit_names = (list(Benefit.objects.filter(id__in=benefit_ids)
+                          .order_by('name').values_list('name', flat=True))
+                     if benefit_ids else None)
+
+    draft = rule_based_draft(title, family, facility, benefit_names)
+    used_ai = False
+    if request.POST.get('with_ai') == '1':
+        payload = ai_draft_payload(title, family.name if family else '',
+                                   draft, get_ai_model())
+        try:
+            ok, data = make_ollama_request(get_ollama_url(), payload, timeout=25.0)
+            if ok:
+                draft, used_ai = validate_ai_draft(
+                    (data.get('response') or '').strip(), draft)
+        except Exception:
+            # Der Regel-Entwurf bleibt richtig – aber der Grund gehoert ins
+            # Protokoll, sonst sucht jemand, warum "+ KI" nie etwas tut.
+            logger.exception("Stellen-Entwurf: KI-Formulierung nicht abrufbar")
+    notes = []
+    if draft['quellen']:
+        notes.append("Quellen: " + ", ".join(draft['quellen']) + ".")
+    else:
+        notes.append("Keine Textbausteine hinterlegt – der Entwurf ist "
+                     "entsprechend knapp. Bausteine pflegen Sie unter "
+                     "Einstellungen → Textbausteine.")
+    notes.append("Der Entwurf füllt nur leere Felder; die Gehaltsspanne "
+                 "kommt weiterhin aus dem Entgeltband.")
+    return JsonResponse({
+        'description': draft['description'],
+        'tasks': draft['tasks'],
+        'requirements': draft['requirements'],
+        'notes': notes,
         'used_ai': used_ai,
     })
 

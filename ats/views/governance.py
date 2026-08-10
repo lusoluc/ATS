@@ -1071,18 +1071,26 @@ def staffing_requests_view(request):
         if req.status == 'ACCEPTED' and location:
             draft, _ = WorkflowState.objects.get_or_create(
                 name='draft', defaults={'description': 'Deaktiviert / Entwurf'})
+            # Statt "Beschreibung folgt": ein Entwurf aus den Bausteinen des
+            # Hauses (INTRO-Baustein, Einrichtungsprofil, Benefits). Bewusst
+            # NUR der deterministische Teil - dieser POST leitet sofort um,
+            # eine KI-Anfrage hat hier nichts verloren. Ausformulieren laesst
+            # sich der Text in der Bearbeitung ("+ KI-Formulierung").
+            from ..job_draft import rule_based_draft
+            fam = req.jobFamily or JobFamily.objects.order_by('name').first()
+            entwurf = rule_based_draft(req.title, fam, req.facility)
             job = JobPosting.objects.create(
                 headcount=req.headcount or 1,
                 title=req.title,
                 organization=req.facility.organization,
                 facility=req.facility,
                 location=location,
-                jobFamily=req.jobFamily or JobFamily.objects.order_by('name').first(),
+                jobFamily=fam,
                 workflowState=draft,
-                description=(f"{req.title} – Beschreibung folgt.\n\n"
-                             "(Entwurf aus Bedarfsmeldung. Bitte vor der "
-                             "Veröffentlichung vervollständigen – der "
-                             "Prozess-Berater in der Bearbeitung schlägt "
+                description=(entwurf['description']
+                             + "\n\n(Entwurf aus Bedarfsmeldung. Bitte vor der "
+                             "Veröffentlichung prüfen und vervollständigen – "
+                             "der Prozess-Berater in der Bearbeitung schlägt "
                              "passende Screening-Fragen vor.)"),
                 screeningQuestionsJson=[])
             # Prozess-Gedaechtnis: der Entwurf bekommt den zuletzt real
@@ -1096,6 +1104,14 @@ def staffing_requests_view(request):
                 job.requirementsJson = prev['requirements']
                 job.save(update_fields=['screeningQuestionsJson', 'tasksJson',
                                         'requirementsJson'])
+            # Kaltstart ohne Vorgaengerstelle: wenigstens die Bausteine der
+            # Jobfamilie (TASKS/REQUIREMENTS) statt zweier leerer Listen.
+            if not job.tasksJson and entwurf['tasks']:
+                job.tasksJson = entwurf['tasks']
+                job.save(update_fields=['tasksJson'])
+            if not job.requirementsJson and entwurf['requirements']:
+                job.requirementsJson = entwurf['requirements']
+                job.save(update_fields=['requirementsJson'])
             from ..process_advisor import ensure_minimum_standards
             if ensure_minimum_standards(job):
                 job.save(update_fields=['screeningQuestionsJson'])

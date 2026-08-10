@@ -442,6 +442,51 @@
             .finally(() => { btn.disabled = false; });
     }
 
+    // Stellen-Entwurf: fuellt NUR leere Felder – nichts wird ueberschrieben,
+    // wirksam wird nichts ohne Speichern. Die Gehaltsspanne kommt weiterhin
+    // ausschliesslich aus dem Entgeltband.
+    function draftJobText(btn, withAi) {
+        const status = document.getElementById('job-draft-notes');
+        const descEl = document.getElementById('job-desc-inp');
+        const tasksEl = document.getElementById('job-tasks-inp');
+        const reqsEl = document.getElementById('job-reqs-inp');
+        btn.disabled = true;
+        status.style.display = 'block';
+        status.innerText = withAi ? 'Bausteine + lokale KI …' : 'Bausteine werden zusammengestellt …';
+        const fd = new FormData();
+        const titleEl = document.getElementById('job-title-inp');
+        const famEl = document.getElementById('job-family');
+        const facEl = document.getElementById('job-facility');
+        fd.append('title', titleEl ? titleEl.value : '');
+        fd.append('job_family', famEl ? famEl.value : '');
+        fd.append('facility', facEl ? facEl.value : '');
+        fd.append('with_ai', withAi ? '1' : '0');
+        document.querySelectorAll('input[name="benefits"]:checked')
+            .forEach(cb => fd.append('benefits', cb.value));
+        fetch("{% url 'ats:suggest_job_draft' %}", { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                const gefuellt = [], uebersprungen = [];
+                const setzen = (el, wert, name) => {
+                    if (!el || !wert) return;
+                    if (el.value.trim()) { uebersprungen.push(name); return; }
+                    el.value = wert; gefuellt.push(name);
+                };
+                setzen(descEl, d.description, 'Beschreibung');
+                setzen(tasksEl, (d.tasks || []).join('\n'), 'Aufgaben');
+                setzen(reqsEl, (d.requirements || []).join('\n'), 'Anforderungen');
+                const parts = [];
+                if (gefuellt.length) parts.push('Vorbefüllt: ' + gefuellt.join(', ') + ' – bitte prüfen und anpassen.');
+                if (uebersprungen.length) parts.push('Unverändert (war nicht leer): ' + uebersprungen.join(', ') + '.');
+                if (!gefuellt.length && !uebersprungen.length) parts.push('Kein Entwurf möglich – Hinweise beachten.');
+                (d.notes || []).forEach(n => parts.push('• ' + n));
+                if (withAi && !d.used_ai) parts.push('• Die KI war nicht erreichbar – dies ist der Baustein-Entwurf.');
+                status.innerText = parts.join('\n');
+            })
+            .catch(() => { status.innerText = 'Entwurf fehlgeschlagen.'; })
+            .finally(() => { btn.disabled = false; });
+    }
+
     // Einladen: zentrale Vorlage + lokaler KI-Feinschliff
     const INVITE_TEMPLATE_TEXT = "{{ invite_template|escapejs }}";
     const COMPANY_NAME = "{{ company_name|escapejs }}";

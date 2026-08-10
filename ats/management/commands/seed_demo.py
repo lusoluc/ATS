@@ -11,6 +11,7 @@ Alle Personen/Einrichtungen sind frei erfunden.
 """
 import json
 import random
+import uuid
 from datetime import timedelta
 
 from django.conf import settings
@@ -21,6 +22,7 @@ from django.utils import timezone
 
 from ats.models import (
     Applicant,
+    ApplicantToken,
     Application,
     ApplicationVote,
     ApprovalStep,
@@ -366,6 +368,16 @@ class Command(BaseCommand):
         org.brandMode = "LIGHT"
         org.brandPrimary = "#0065bd"
         org.save(update_fields=["brandEnabled", "brandMode", "brandPrimary"])
+
+        # Portal-Zugaenge: Ohne sie ist die Bewerber-Sicht auf einer
+        # Demo-Instanz gar nicht aufrufbar - dabei ist gerade sie im Gespraech
+        # die ueberzeugendste Seite („so sieht es fuer die Bewerberin aus").
+        # Zufaellige Token, keine bekannten: Ein rateBARER Zugang waere hier
+        # unnoetig, der Link laesst sich in der Anwendung jederzeit erzeugen.
+        ApplicantToken.objects.bulk_create([
+            ApplicantToken(applicant=bewerber, token=uuid.uuid4().hex,
+                           expiresAt=now + timedelta(days=30))
+            for bewerber in Applicant.objects.all()])
 
         # ---------- Governance-Demo: Gremium, Vertretung, Standards, Pool ----
         # Erzaehlbare Geschichte fuer Discovery-Gespraeche mit komplexen

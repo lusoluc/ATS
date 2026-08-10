@@ -163,6 +163,12 @@ TEIL6: list[Bild] = [
     Bild("97-auswertung", "/recruiter/analytics/", "Recruiter",
          "Auswertung: Kennzahlen und daraus abgeleitete Hinweise",
          templates=("analytics.html",)),
+    Bild("98-ki-transparenz", "/ki-transparenz/", "-",
+         "Öffentliche Seite zum KI-Einsatz: welche Funktionen wirklich aktiv sind",
+         templates=("ai_transparency.html",)),
+    Bild("99-barrierefreiheit", "/barrierefreiheit/", "-",
+         "Barrierefreiheitserklärung, einschließlich der noch offenen Punkte",
+         templates=("accessibility_statement.html",)),
 ]
 
 #: TEIL 4 (Fortsetzung) - die restlichen Einrichtungsseiten.
@@ -233,6 +239,13 @@ TEIL9: list[Bild] = [
     Bild("C2-jobalert", "/job-alert/", "-",
          "Anmeldung für Benachrichtigungen über neue Stellen",
          templates=("job_alert.html",)),
+    # `{token}` wird beim Aufnehmen aus den Demo-Daten eingesetzt: Der
+    # Portal-Zugang haengt an einer Person, eine feste Adresse gibt es nicht.
+    # Ohne diese Ausnahme waere ausgerechnet die Seite ohne Bild geblieben,
+    # die Bewerbende am haeufigsten sehen.
+    Bild("C3-portal", "/bewerber/{token}/", "-",
+         "Das Bewerber-Portal: eigener Stand, Termine und Nachrichten ohne Konto",
+         templates=("candidate_portal.html",)),
 ]
 
 ALLE: list[Bild] = (TEIL1 + TEIL2 + TEIL3 + TEIL4 + TEIL4B + TEIL5 + TEIL6
@@ -274,7 +287,7 @@ ERKLAERT_IN = {
     "analytics": "6.3 Auswertung ohne Namen",
     "ai_transparency": "6.4 Was Bewerbende sehen dürfen",
     "accessibility_statement": "6.4 Was Bewerbende sehen dürfen",
-    "candidate_portal": "6.4 Was Bewerbende sehen dürfen",
+    "candidate_portal": "10.4 Nach der Bewerbung",
     "tasks": "4.3 Der Prozessablauf",
     "contacts": "4.9 Ansprechpartner",
     "categories": "4.10 Jobfamilien",
@@ -293,13 +306,13 @@ ERKLAERT_IN = {
     "learned_scoring": "8.3 Lernendes Scoring",
     "best_performer_profiles": "8.4 Vergleichsprofile",
     "ingest_best_performers": "8.4 Vergleichsprofile",
-    "hris_page": "Teil 9 — Anbindung an andere Systeme",
-    "sap_sf_mapper": "Teil 9 — Anbindung an andere Systeme",
-    "stepstone_feed": "Teil 9 — Anbindung an andere Systeme",
-    "hr_ba_xml_feed": "Teil 9 — Anbindung an andere Systeme",
-    "home": "Teil 10 — Was Bewerbende sehen",
-    "job_list": "Teil 10 — Was Bewerbende sehen",
-    "job_alert": "Teil 10 — Was Bewerbende sehen",
+    "hris_page": "9.1 Übergabe an das Personalsystem",
+    "sap_sf_mapper": "9.2 SAP SuccessFactors",
+    "stepstone_feed": "9.3 Stellenbörsen",
+    "hr_ba_xml_feed": "9.3 Stellenbörsen",
+    "home": "10.1 Die Karriereseite",
+    "job_list": "10.2 Die Stellenliste",
+    "job_alert": "10.3 Benachrichtigungen über neue Stellen",
 }
 
 

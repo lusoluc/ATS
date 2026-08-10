@@ -24,8 +24,9 @@ Sie müssen nichts auswendig lernen und nichts vorher gelesen haben.
 > **Hinweis zu den Bildern:** Alle Abbildungen stammen aus einer Demo-Installation
 > mit erfundenen Personen. Ihre Oberfläche kann anders aussehen: Farben, Logo und
 > die Wahl zwischen hellem und dunklem Erscheinungsbild legt Ihr Haus selbst fest.
-> Die Abbildungen hier zeigen das dunkle. Anordnung und Beschriftungen sind
-> dieselben.
+> Die internen Bildschirme sind hier dunkel abgebildet, die öffentlichen Seiten
+> hell — genau so, wie die Demo eingestellt ist. Anordnung und Beschriftungen
+> sind dieselben.
 
 ---
 
@@ -693,12 +694,24 @@ Muster auszugeben.
 ## 6.4 Was Bewerbende sehen dürfen
 
 - **Ihren eigenen Stand** über einen persönlichen Zugangslink, ohne Konto und
-  ohne Passwort.
+  ohne Passwort. Wie das aussieht, steht in 10.4.
 - **Ihre Daten** als Datei zum Herunterladen (Art. 15 und 20 DSGVO).
 - **Wie KI eingesetzt wird**, auf einer öffentlichen Seite — die beschreibt
   genau die Funktionen, die bei Ihnen aktiv sind, nicht eine Wunschliste.
 - **Wie barrierefrei die Seite ist**, in der Barrierefreiheitserklärung, inklusive
   der Punkte, die noch nicht erfüllt sind.
+
+![Öffentliche Seite zum KI-Einsatz: welche Funktionen wirklich aktiv sind](docs/handbuch/98-ki-transparenz.png)
+
+Die KI-Seite wird nicht von Hand gepflegt. Sie liest aus, was bei Ihnen
+eingeschaltet ist — schalten Sie die Vorbewertung ab, verschwindet sie auch
+dort. Eine Transparenzseite, die man getrennt pflegen muss, ist nach dem
+zweiten Umbau falsch.
+
+![Barrierefreiheitserklärung, einschließlich der noch offenen Punkte](docs/handbuch/99-barrierefreiheit.png)
+
+Die Barrierefreiheitserklärung nennt auch, was noch nicht erfüllt ist. Das ist
+kein Versehen: Das BFSG verlangt eine ehrliche Angabe, keine Bestnote.
 
 ## 6.5 Was das System bewusst nicht tut
 
@@ -868,16 +881,24 @@ Plattform funktioniert vollständig ohne ihn.
 
 Dieser Teil richtet sich an die IT.
 
+## 9.1 Übergabe an das Personalsystem
+
 ![HRIS-Anbindung: Übergabe an das Personalsystem](docs/handbuch/B3-hris.png)
 
-- **HRIS-Übergabe:** Steht eine Einstellung fest, lassen sich die Daten
-  strukturiert an das Personalsystem übergeben, statt sie abzutippen.
-- **SAP SuccessFactors:** Eine eigene Seite bildet die Felder beider Systeme
-  aufeinander ab.
-- **Stellenbörsen:** SecurATS liefert Ihre Stellen als Datenstrom für
-  Jobbörsen und die Bundesagentur für Arbeit. Diese Zugänge sind mit einem
-  Schlüssel geschützt — **ist keiner gesetzt, sind die Datenströme offen
-  erreichbar.** Bitte prüfen Sie das bei der Einrichtung.
+Steht eine Einstellung fest, lassen sich die Daten strukturiert an das
+Personalsystem übergeben, statt sie abzutippen.
+
+## 9.2 SAP SuccessFactors
+
+Eine eigene Seite bildet die Felder beider Systeme aufeinander ab. Sie legen
+dort einmal fest, welches Feld bei Ihnen welchem Feld drüben entspricht.
+
+## 9.3 Stellenbörsen
+
+SecurATS liefert Ihre Stellen als Datenstrom für Jobbörsen und die
+Bundesagentur für Arbeit. Diese Zugänge sind mit einem Schlüssel geschützt —
+**ist keiner gesetzt, sind die Datenströme offen erreichbar.** Bitte prüfen
+Sie das bei der Einrichtung.
 
 ---
 
@@ -885,26 +906,32 @@ Dieser Teil richtet sich an die IT.
 
 Es hilft, die andere Seite zu kennen — auch, um Rückfragen zu verstehen.
 
+## 10.1 Die Karriereseite
+
 ![Die öffentliche Startseite der Karriereseite](docs/handbuch/C0-karriereseite.png)
 
-**Die Karriereseite** ist die Startseite. Was dort steht, pflegen Sie in
-Teil 7.
+Die Karriereseite ist die Startseite. Was dort steht, pflegen Sie in Teil 7.
+
+## 10.2 Die Stellenliste
 
 ![Die öffentliche Stellenliste mit Filtern](docs/handbuch/C1-stellenliste.png)
 
-**Die Stellenliste** zeigt alle veröffentlichten Stellen, mit Filtern nach
-Ort, Bereich und Umfang. Jede Anzeige nennt die Gehaltsspanne — das ist keine
-Einstellung, sondern Pflicht.
+Sie zeigt alle veröffentlichten Stellen, mit Filtern nach Ort, Bereich und
+Umfang. Jede Anzeige nennt die Gehaltsspanne — das ist keine Einstellung,
+sondern Pflicht.
+
+## 10.3 Benachrichtigungen über neue Stellen
 
 ![Anmeldung für Benachrichtigungen über neue Stellen](docs/handbuch/C2-jobalert.png)
 
-**Benachrichtigungen:** Wer noch nichts Passendes findet, hinterlässt seine
-Adresse und wird bei neuen Stellen benachrichtigt. Die Anmeldung wird per
-E-Mail bestätigt (Double-Opt-in), und jede Nachricht enthält einen
-Abmelde-Link.
+Wer noch nichts Passendes findet, hinterlässt seine Adresse und wird bei neuen
+Stellen benachrichtigt. Die Anmeldung wird per E-Mail bestätigt
+(Double-Opt-in), und jede Nachricht enthält einen Abmelde-Link.
 
-**Nach der Bewerbung** bekommt die Person einen persönlichen Link. Darüber
-sieht sie ihren Stand, bucht Gesprächstermine selbst, kann Nachrichten
-schreiben, ihre Daten herunterladen und die Bewerbung zurückziehen — ohne
-Konto und ohne Passwort.
+## 10.4 Nach der Bewerbung
 
+![Das Bewerber-Portal: eigener Stand, Termine und Nachrichten ohne Konto](docs/handbuch/C3-portal.png)
+
+Die Person bekommt einen persönlichen Link. Darüber sieht sie ihren Stand,
+bucht Gesprächstermine selbst, kann Nachrichten schreiben, ihre Daten
+herunterladen und die Bewerbung zurückziehen — ohne Konto und ohne Passwort.

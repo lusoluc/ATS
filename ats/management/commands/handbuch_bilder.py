@@ -96,11 +96,12 @@ class Command(BaseCommand):
             basis = f"http://127.0.0.1:{server.port}"
             self.stdout.write(f"Testserver läuft auf {basis}")
 
+            platzhalter = self._platzhalter()
             manifest = {}
             with sync_playwright() as pw:
                 browser = pw.chromium.launch()
                 for bild in auswahl:
-                    self._aufnehmen(browser, basis, bild)
+                    self._aufnehmen(browser, basis, bild, platzhalter)
                     if bild.templates:
                         manifest[bild.name] = template_hash(bild.templates)
                     self.stdout.write(f"  {bild.datei}")
@@ -127,7 +128,25 @@ class Command(BaseCommand):
             nutzer.groups.clear()
             nutzer.groups.add(Group.objects.get(name=rolle))
 
-    def _aufnehmen(self, browser: Any, basis: str, bild: Bild) -> None:
+    def _platzhalter(self) -> dict[str, str]:
+        """Werte fuer Adressen, die an einem Datensatz haengen.
+
+        Das Bewerber-Portal hat keine feste Adresse - der Zugang gehoert einer
+        Person. Ohne diese Aufloesung waere ausgerechnet die Seite ohne Bild
+        geblieben, die Bewerbende am haeufigsten sehen.
+        """
+        from ats.models import ApplicantToken
+        token = (ApplicantToken.objects.order_by("createdAt")
+                 .values_list("token", flat=True).first())
+        if not token:
+            raise CommandError(
+                "Kein Portal-Zugang in den Demo-Daten - ohne ihn laesst sich "
+                "das Bewerber-Portal nicht aufnehmen. Legt `seed_demo` noch "
+                "ApplicantToken an?")
+        return {"token": token}
+
+    def _aufnehmen(self, browser: Any, basis: str, bild: Bild,
+                   platzhalter: dict[str, str]) -> None:
         groesse = ({"width": 390, "height": 844} if bild.mobil
                    else {"width": BREITE, "height": HOEHE})
         # Aufloesung 1:1. Mit doppelter Pixeldichte wog ein Bild rund 1,4 MB -
@@ -146,7 +165,7 @@ class Command(BaseCommand):
                 seite.fill("input[name=password]", PASSWORT)
                 seite.click("button[type=submit]")
                 seite.wait_for_load_state("networkidle")
-            seite.goto(f"{basis}{bild.pfad}")
+            seite.goto(f"{basis}{bild.pfad.format(**platzhalter)}")
             seite.wait_for_load_state("networkidle")
             for selektor in bild.klicks:
                 seite.click(selektor)

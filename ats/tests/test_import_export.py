@@ -278,6 +278,36 @@ class DemoSeedTestCase(TestCase):
         self.assertEqual(Application.objects.count(), n)   # deterministisch gleich
 
     @override_settings(DEMO_MODE=True)
+    def test_seed_fills_the_media_library_without_piling_up(self):
+        """Die Mediathek stand in der Demo leer da („Noch keine Medien") und
+        konnte ausgerechnet das nicht zeigen, was Handbuch-Kapitel 7.3
+        erklärt: Bereichsangabe und Blätterung.
+
+        Der zweite Teil ist der eigentliche Wächter: Fehlt ein Modell in der
+        Wipe-Liste, überlebt es jeden `--reset`. Der nächtliche Cron-Lauf
+        legt dann Nacht für Nacht 62 weitere Dateien an, und in ein paar
+        Wochen erklärt niemand mehr, warum die Demo-Mediathek viertausend
+        Einträge hat.
+        """
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        from ..models import MediaAsset
+        call_command("seed_demo", stdout=StringIO())
+        n = MediaAsset.objects.count()
+        self.assertGreater(n, 50, "Unter der Seitengröße (50) entsteht keine "
+                                  "zweite Seite – dann zeigt die Demo die "
+                                  "Blätterung nicht.")
+        self.assertFalse(
+            MediaAsset.objects.filter(altText="").exists(),
+            "Demo-Medien ohne Alt-Text: Die Seite verlangt ihn beim Hochladen "
+            "(WCAG 1.1.1) – die eigenen Beispieldaten dürfen ihn nicht "
+            "unterlaufen.")
+        call_command("seed_demo", "--reset", stdout=StringIO())
+        self.assertEqual(MediaAsset.objects.count(), n)
+
+    @override_settings(DEMO_MODE=True)
     def test_demo_banner_and_logins(self):
         from io import StringIO
 

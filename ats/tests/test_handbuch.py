@@ -68,31 +68,16 @@ class HandbuchIstErreichbarTestCase(TestCase):
 class GuardrailHandbuchBleibtWahrTestCase(TestCase):
     """Die vier Prüfungen, die das Handbuch am Leben halten."""
 
-    #: Seiten-Name (URL-Name) -> warum das Handbuch sie (noch) nicht erklaert.
-    #: Jeder Eintrag ist eine SCHULD, kein Freibrief.
+    #: Seiten-Name (URL-Name) -> warum das Handbuch sie nicht erklaert.
+    #: Jeder Eintrag ist eine SCHULD, kein Freibrief. Beim Abarbeiten der
+    #: Liste hat sich gezeigt: „hat keinen eigenen Bildschirm" ist KEIN
+    #: tragfaehiger Grund - eine Funktion wird dann eben woanders bedient und
+    #: ist oft gerade deshalb erklaerungsbeduerftig (Gespraechsformate,
+    #: Vergleichsprofile). Als Grund zaehlt nur, dass die Seite fuer
+    #: Anwendende gar keine Rolle spielt.
     NOCH_NICHT_ERKLAERT = {
-        'stats_page': 'Kennzahlen-Seite - geht in 6.3 auf, eigener Abschnitt offen',
-        'learned_scoring': 'Lernendes Scoring ist Opt-in und selten - offen',
-        'hris_page': 'HRIS-Anbindung betrifft die IT, nicht die Anwendung - offen',
-        'sap_sf_mapper': 'SAP-Anbindung betrifft die IT - offen',
-        'talent_pool': 'Talent-Pool - Ergaenzung zu Weg 3 offen',
-        'branding': 'Erscheinungsbild (Farben, Logo) - offen',
-        'pages_manage': 'CMS-Seiten der Karriereseite - offen',
-        'media_manage': 'Mediathek - offen',
-        'snippets': 'Textbausteine der Karriereseite - offen',
-        'landing_pages': 'Kampagnen-Landingpages - offen',
-        'data_import': 'Stammdaten-Import (Einmal-Vorgang bei der Einrichtung)',
-        'categories': 'Jobfamilien - in 4.2 gestreift, eigener Abschnitt offen',
-        'contacts': 'Ansprechpartner - in 4.1 als Schritt genannt, Abschnitt offen',
-        'source_channels': 'Herkunftskanäle - offen',
-        'job_templates': 'Stellen-Vorlagen - in Weg 2 gestreift, Abschnitt offen',
-        'interview_formats': 'Gesprächsformate - offen',
-        'privacy_notice': 'Datenschutzhinweis-Versionen - offen',
-        'best_performer_profiles': 'Vergleichsprofile (Opt-in, selten) - offen',
-        'job_alert': 'oeffentliche Seite fuer Bewerbende, nicht fuer Beschaeftigte',
-        'job_list': 'oeffentliche Stellenboerse, nicht fuer Beschaeftigte',
-        'home': 'oeffentliche Startseite, nicht fuer Beschaeftigte',
-        'pricing': 'nur in der Demo-Instanz sichtbar',
+        'pricing': 'Preisseite, erscheint ausschliesslich in der Demo-Instanz '
+                   '(DEMO_MODE) und nie bei einem Kunden',
     }
 
     def test_every_page_is_explained_or_owed(self):

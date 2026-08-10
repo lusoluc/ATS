@@ -85,7 +85,6 @@ class Command(BaseCommand):
             with override_settings(DEMO_MODE=True):
                 call_command("seed_demo", verbosity=0)
             self._konten_anlegen()
-            self._medien_anlegen()
             from django.contrib.staticfiles.handlers import StaticFilesHandler
             server = LiveServerThread("127.0.0.1", StaticFilesHandler,
                                       connections_override={})
@@ -127,56 +126,6 @@ class Command(BaseCommand):
             nutzer.save()
             nutzer.groups.clear()
             nutzer.groups.add(Group.objects.get(name=rolle))
-
-    def _medien_anlegen(self) -> None:
-        """Beispiel-Medien fuer Kapitel 7.3.
-
-        `seed_demo` legt keine MediaAssets an - die Mediathek stand im Bild
-        deshalb leer da („Noch keine Medien") und konnte ausgerechnet das
-        nicht zeigen, worum es in dem Kapitel geht: Bereichsangabe und
-        Blaetterung. Ein Screenshot, der den erklaerten Zustand nicht
-        herstellt, erklaert nichts.
-
-        62 Eintraege, weil erst ueber der Seitengroesse (50) eine zweite
-        Seite entsteht - „1-50 von 62" und „Seite 1 von 2" sind genau die
-        Angaben, die der Text beschreibt. Reine Datensaetze ohne Dateien:
-        Die Tabelle zeigt Name, Typ und Datum, keine Vorschaubilder.
-        """
-        import datetime
-
-        from django.utils import timezone
-
-        from ats.models import MediaAsset
-
-        neueste = [
-            ("Teamfoto Pflege Station 3", "team-pflege-station-3.jpg", "image/jpeg"),
-            ("Klinik Nord Aussenansicht", "klinik-nord-aussen.jpg", "image/jpeg"),
-            ("Logo Traeger RGB", "logo-traeger-rgb.png", "image/png"),
-            ("Ausbildungsflyer 2026", "ausbildung-2026.pdf", "application/pdf"),
-            ("Empfang Haus B", "empfang-haus-b.jpg", "image/jpeg"),
-            ("Physiotherapie Uebungsraum", "physio-uebungsraum.jpg", "image/jpeg"),
-            ("Messestand Pflegetag", "messestand-pflegetag.jpg", "image/jpeg"),
-            ("Leitbild Kurzfassung", "leitbild-kurz.pdf", "application/pdf"),
-            ("Kantine Mittagsangebot", "kantine-mittag.jpg", "image/jpeg"),
-            ("Nachtdienst Uebergabe", "nachtdienst-uebergabe.jpg", "image/jpeg"),
-            ("Fuhrpark Ambulanz", "fuhrpark-ambulanz.jpg", "image/jpeg"),
-            ("Fortbildungsraum", "fortbildungsraum.jpg", "image/jpeg"),
-        ]
-        jetzt = timezone.now()
-        zeilen = []
-        for i, (name, datei, typ) in enumerate(neueste):
-            zeilen.append(MediaAsset(
-                name=name, altText=f"{name} - Beispielbild der Demo-Daten",
-                file=f"uploads/{datei}", contentType=typ,
-                createdAt=jetzt - datetime.timedelta(days=i)))
-        for i in range(len(neueste), 62):
-            zeilen.append(MediaAsset(
-                name=f"Anzeigenmotiv Archiv {i - len(neueste) + 1:02d}",
-                altText="Archiviertes Anzeigenmotiv der Demo-Daten",
-                file=f"uploads/anzeige-archiv-{i:02d}.jpg",
-                contentType="image/jpeg",
-                createdAt=jetzt - datetime.timedelta(days=i)))
-        MediaAsset.objects.bulk_create(zeilen)
 
     def _aufnehmen(self, browser: Any, basis: str, bild: Bild) -> None:
         groesse = ({"width": 390, "height": 844} if bild.mobil

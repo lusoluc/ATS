@@ -38,6 +38,7 @@ from ats.models import (
     JobPosting,
     JobTemplate,
     Location,
+    MediaAsset,
     Organization,
     RoleDelegation,
     StaffingRequest,
@@ -72,6 +73,7 @@ class Command(BaseCommand):
                       ApplicationVote, RoleDelegation, StaffingRequest,
                       TalentPoolContact, TalentPoolSubscription,
                       Application, Applicant, ApprovalStep, ApprovalTicket,
+                      MediaAsset,
                       JobAlertSubscription, JobPosting, TextSnippet, JobTemplate,
                       FacilityContactPerson, ContactPerson, FacilityProfile,
                       Department, Facility, JobFamily, Location, Benefit,
@@ -154,6 +156,50 @@ class Command(BaseCommand):
         JobTemplate.objects.create(
             title="Pflegefachkraft (Vorlage)", version=1,
             content="Standardvorlage Pflegefachkraft – Aufgaben, Anforderungen, Benefits.")
+
+        # Mediathek: Die Demo zeigte hier bisher „Noch keine Medien" – und
+        # damit ausgerechnet nichts von dem, was Kapitel 7.3 des Handbuchs
+        # erklaert. 62 Eintraege, weil erst oberhalb der Seitengroesse (50)
+        # eine zweite Seite entsteht: Bereichsangabe („1–50 von 62") und
+        # Blaetterung lassen sich so vorfuehren statt nur beschreiben.
+        # Reine Datensaetze ohne hinterlegte Dateien – die Tabelle zeigt
+        # Name, Typ und Datum, keine Vorschaubilder.
+        aktuelle_medien = [
+            ("Teamfoto Station 3 – Innere", "team-station-3.jpg", "image/jpeg"),
+            ("Klinik Elbblick Außenansicht", "klinik-elbblick-aussen.jpg", "image/jpeg"),
+            ("Seniorenzentrum Ilmenaupark Garten", "ilmenaupark-garten.jpg", "image/jpeg"),
+            ("Logo Elbtal Gesundheitsgruppe RGB", "logo-elbtal-rgb.png", "image/png"),
+            ("Ausbildungsflyer Pflege 2026", "ausbildung-pflege-2026.pdf", "application/pdf"),
+            ("Empfang Haus B Hamburg-Altona", "empfang-haus-b.jpg", "image/jpeg"),
+            ("Physiotherapie Übungsraum", "physio-uebungsraum.jpg", "image/jpeg"),
+            ("Leitbild Kurzfassung", "leitbild-kurz.pdf", "application/pdf"),
+            ("Kantine Mittagsangebot", "kantine-mittag.jpg", "image/jpeg"),
+            ("Nachtdienst Übergabe", "nachtdienst-uebergabe.jpg", "image/jpeg"),
+            ("Fuhrpark Ambulanz Lüneburg", "fuhrpark-ambulanz.jpg", "image/jpeg"),
+            ("Fortbildungsraum Berlin-Pankow", "fortbildungsraum-pankow.jpg", "image/jpeg"),
+            ("IT-Abteilung Arbeitsplatz", "it-arbeitsplatz.jpg", "image/jpeg"),
+            ("Benefits-Übersicht Aushang", "benefits-aushang.pdf", "application/pdf"),
+        ]
+        motive = ["Pflegetag", "Ausbildungsmesse", "Tag der offenen Tür",
+                  "Karrieretag Lüneburg", "Nachtdienst-Kampagne", "Quereinstieg"]
+        medien = [
+            MediaAsset(name=name,
+                       altText=f"{name} – fiktives Demo-Motiv, keine echten Personen",
+                       file=f"uploads/{datei}", contentType=typ,
+                       createdAt=now - timedelta(days=i))
+            for i, (name, datei, typ) in enumerate(aktuelle_medien)]
+        for i in range(len(aktuelle_medien), 62):
+            lauf = i - len(aktuelle_medien)
+            motiv = motive[lauf % len(motive)]
+            jahr = 2025 - (lauf // len(motive)) // 2
+            medien.append(MediaAsset(
+                name=f"Kampagnenmotiv {motiv} {jahr}-{lauf % 12 + 1:02d}",
+                altText=(f"Archiviertes Kampagnenmotiv {motiv} – fiktives "
+                         "Demo-Motiv, keine echten Personen"),
+                file=f"uploads/kampagne-{lauf:02d}-{jahr}.jpg",
+                contentType="image/jpeg",
+                createdAt=now - timedelta(days=i)))
+        MediaAsset.objects.bulk_create(medien)
 
         published, _ = WorkflowState.objects.get_or_create(
             name="published", defaults={"description": "Öffentlich sichtbar"})

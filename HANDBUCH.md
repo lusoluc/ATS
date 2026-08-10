@@ -279,9 +279,336 @@ ist, und das Recruiting hat alle Angaben beisammen, statt nachfragen zu müssen.
 
 ---
 
+# Teil 3 — Wenn mehrere mitreden
+
+In vielen Häusern entscheidet nicht eine Person allein. Dieser Teil erklärt die
+drei Wege, auf denen andere beteiligt werden — und wie Sie erkennen, worauf ein
+Vorgang gerade wartet.
+
+## 3.1 Freigaben: wenn eine Stelle genehmigt werden muss
+
+Manche Häuser wollen, dass eine Ausschreibung erst nach Zustimmung online geht —
+etwa durch die Bereichsleitung, die Geschäftsführung oder den Betriebsrat.
+Ist das eingerichtet, entsteht mit jeder Bedarfsmeldung ein Vorgang, der die
+Stationen der Reihe nach durchläuft.
+
+Die Beteiligten finden ihre offenen Vorgänge unter **„Freigaben“** (siehe Weg 6).
+Wichtig zu wissen:
+
+- **Die Reihenfolge zählt.** Eine Station wird erst gefragt, wenn die vorherige
+  zugestimmt hat. Solange davor jemand fehlt, sehen Sie den Vorgang zwar, können
+  aber noch nicht entscheiden.
+- **Ablehnen beendet den Vorgang nicht heimlich.** Die Ablehnung mit Begründung
+  geht an die antragstellende Person zurück.
+- **Sie sind im Urlaub?** Dann richten Sie eine Vertretung ein (Abschnitt 3.3) —
+  sonst bleibt der Vorgang liegen.
+
+### Der Betriebsrat hat eigene Regeln
+
+Ist eine Station als Betriebsrat eingerichtet, gilt § 99 BetrVG. Das System
+setzt zwei Dinge um, die dort vorgeschrieben sind:
+
+- **Eine Woche Zeit.** Die Frist läuft sichtbar mit.
+- **Widerspruch nur mit Katalog-Grund.** Das Gesetz kennt sechs zulässige
+  Gründe; genau diese bietet die Auswahl an. Ein freier Text allein genügt
+  nicht — das schützt beide Seiten, denn ein Widerspruch ohne gesetzlichen
+  Grund ist unwirksam.
+
+## 3.2 Auswahlgremien: mehrere Stimmen zu einer Person
+
+Bei manchen Stellen soll nicht eine Person allein entscheiden, wer eingeladen
+oder eingestellt wird. Dafür gibt es Gremien.
+
+![Auswahlgremien: wer bei welcher Art Stelle mitentscheidet](docs/handbuch/70-gremien.png)
+
+Die Personalverwaltung legt fest, wer bei welcher Art von Stelle mitstimmt.
+Für die Mitglieder heißt das: Im Steckbrief einer Bewerbung erscheint eine
+Abstimmung. Jede Stimme wird einzeln festgehalten — auch abweichende.
+
+**Wer darf abstimmen?** Nur, wer namentlich in das Gremium berufen wurde. Das
+gilt unabhängig von der sonstigen Rolle: Auch wer die Plattform sonst nur
+einsehen darf, stimmt hier mit, wenn er oder sie benannt wurde.
+
+## 3.3 Vertretung: wenn Sie nicht da sind
+
+Eine Entscheidung, die drei Wochen liegen bleibt, weil jemand Urlaub hat, ist
+der häufigste Grund für abgesprungene Bewerbende.
+
+![Vertretungen: wer wen wie lange vertritt](docs/handbuch/71-vertretung.png)
+
+Legen Sie unter **„Meine Vertretung“** fest, wer Sie wie lange vertritt. Die
+Vertretung übernimmt genau Ihre Entscheidungsbefugnisse, für den gewählten
+Zeitraum, und kann auf Wunsch auf eine Einrichtung oder eine einzelne Stelle
+beschränkt werden.
+
+Zwei Dinge, die oft übersehen werden:
+
+- **Vertretung ist keine Rolle.** Die vertretende Person braucht die Rechte,
+  die sie ausüben soll — jemand, der nur einsehen darf, kann auch als
+  Vertretung nichts entscheiden.
+- **Jede Handlung bleibt zugeordnet.** Im Protokoll steht, wer in wessen
+  Vertretung entschieden hat. Das ist kein Misstrauen, sondern die Bedingung
+  dafür, dass Entscheidungen später nachvollziehbar sind.
+
+## 3.4 Der Überblick: worauf wartet gerade was?
+
+![Governance-Übersicht: Entscheidungswege und ihre Nachweise](docs/handbuch/72-governance.png)
+
+Die Seite **„Governance“** beantwortet die Fragen, die in Sitzungen gestellt
+werden: Welche Vorgänge laufen? Wo hakt es? Wer hat wann entschieden? Sie ist
+die Zusammenfassung all dessen, was in den Abschnitten oben einzeln passiert.
+
+## 3.5 Schwerbehindertenvertretung
+
+Gibt eine bewerbende Person freiwillig eine Schwerbehinderung oder
+Gleichstellung an, unterrichtet das System die Schwerbehindertenvertretung —
+so verlangt es § 164 SGB IX. Dafür müssen Sie nichts tun.
+
+Drei Dinge geschehen dabei bewusst **nicht**: Die Angabe fließt nie in eine
+Bewertung ein, sie steht nicht im Protokoll im Klartext, und sie wird nur
+weitergegeben, wenn die Person sie ausdrücklich gemacht hat. Widerrufen kann
+sie die Angabe jederzeit selbst über ihren Zugangslink.
+
+---
+
+# Teil 4 — Einrichten
+
+Dieser Teil richtet sich an die **Personalverwaltung** (Rolle HR-Admin). Wer
+täglich Bewerbungen betreut, braucht ihn nicht.
+
+## 4.1 Die Einstellungs-Zentrale
+
+![Einstellungs-Zentrale: alle Einrichtungsbereiche mit ihrem Zustand](docs/handbuch/80-einstellungen.png)
+
+Fangen Sie hier an. Die Seite listet nicht nur die Bereiche auf, sondern zeigt
+je Eintrag den **Zustand**: Was noch nicht eingerichtet ist, sagt das hier —
+statt im Betrieb still auszufallen.
+
+Die sinnvolle Reihenfolge beim Aufsetzen:
+
+1. Standorte und Einrichtungen
+2. Ansprechpartner
+3. Prozessablauf
+4. E-Mail-Versand
+5. Entgeltbänder
+6. alles Weitere nach Bedarf
+
+## 4.2 Standorte und Einrichtungen
+
+![Standorte anlegen und pflegen](docs/handbuch/81-standorte.png)
+
+Jede Stelle gehört zu einem Standort. Tragen Sie die Postleitzahl ein — daraus
+ergibt sich der Umkreis für die Stellensuche, ohne dass Adressdaten an einen
+Kartendienst gehen.
+
+## 4.3 Der Prozessablauf
+
+![Prozessablauf: die Schritte, die jede Bewerbung durchläuft](docs/handbuch/82-prozess.png)
+
+Hier legen Sie die Spalten des Boards fest — also die Schritte, die jede
+Bewerbung durchläuft. Weniger ist mehr: Jede zusätzliche Station bedeutet einen
+weiteren Handgriff pro Bewerbung.
+
+Zusätzlich können Sie **Automatiken** hinterlegen: Wenn eine Bewerbung in einen
+bestimmten Zustand kommt, entsteht automatisch eine Aufgabe oder geht eine
+Nachricht hinaus.
+
+## 4.4 Fragen an Bewerbende
+
+![Fragen-Baukasten: wiederverwendbare Fragen an Bewerbende](docs/handbuch/83-fragen.png)
+
+Statt jede Frage bei jeder Stelle neu zu tippen, pflegen Sie sie hier einmal.
+Beim Ausschreiben wählen Recruiterinnen daraus aus.
+
+**Pflichtkriterien mit Bedacht:** Eine Frage, die als Pflichtkriterium
+markiert ist, führt bei Nichterfüllung zu einer sofortigen Absage — ohne dass
+ein Mensch die Bewerbung gesehen hat. Das ist zulässig, wenn das Kriterium
+sachlich für die Stelle nötig und vorher veröffentlicht ist (etwa ein
+staatlich anerkanntes Examen). Alles Weichere gehört nicht in ein
+Pflichtkriterium.
+
+Bestimmte Fragen sind gesperrt: nach dem bisherigen Gehalt darf seit der
+EU-Entgelttransparenzrichtlinie nicht mehr gefragt werden. Das System lässt
+solche Fragen gar nicht erst zu.
+
+## 4.5 Entgeltbänder
+
+![Entgeltbänder: Gehaltsspannen je Tätigkeit](docs/handbuch/84-entgeltbaender.png)
+
+Hinterlegen Sie je Tätigkeit eine Spanne. Beim Ausschreiben wird sie
+vorgeschlagen. Ohne Spanne lässt sich eine Stelle nicht veröffentlichen —
+diese Pflicht kommt aus der EU-Richtlinie zur Entgelttransparenz und gilt seit
+Juni 2026.
+
+## 4.6 E-Mail-Vorlagen
+
+![E-Mail-Vorlagen für wiederkehrende Nachrichten](docs/handbuch/85-mailvorlagen.png)
+
+Eingangsbestätigung, Einladung, Absage: Diese Texte schreiben Sie einmal.
+Platzhalter wie der Name werden beim Versand ersetzt.
+
+## 4.7 E-Mail-Versand
+
+![E-Mail-Versand einrichten und die Verbindung prüfen](docs/handbuch/86-mailversand.png)
+
+Tragen Sie hier den Mailserver Ihres Hauses ein. **Prüfen Sie die Verbindung
+mit der Testfunktion** — ein falsch eingerichteter Versand fällt sonst erst
+auf, wenn Bewerbende sich beschweren, dass sie nichts hören.
+
+Bewusst kein Versanddienstleister: Bewerberdaten sollen das Haus nicht
+verlassen. Das Passwort wird verschlüsselt gespeichert und nie wieder
+angezeigt.
+
+## 4.8 KI ein- oder ausschalten
+
+![KI-Zentrale: Vorbewertung ein- oder ausschalten und testen](docs/handbuch/87-ki.png)
+
+Die KI-Vorbewertung ist **im Auslieferungszustand aus**. Das ist eine bewusste
+Entscheidung: Eine Einordnung von Menschen durch ein Modell soll niemand
+versehentlich aktiviert haben.
+
+Wenn Sie sie einschalten, gilt:
+
+- Die Einordnung A bis D ist eine **Lesehilfe**. Sie sortiert nichts aus und
+  lädt niemanden ein.
+- Die Angabe zu einer Schwerbehinderung fließt **nie** ein.
+- Schalten Sie zusätzlich **„Vorbewertung im Hintergrund berechnen“** ein, dann
+  wartet die Bewerbungsseite nicht auf die KI. Dafür muss der KI-Worker laufen
+  (siehe Teil 5).
+- Alles läuft auf Ihrem eigenen Server. Es gehen keine Bewerbungsdaten an einen
+  Anbieter.
+
+Was Sie den Bewerbenden schulden, erledigt das System: Die öffentliche Seite
+zur KI-Transparenz beschreibt genau die Funktionen, die bei Ihnen wirklich
+aktiv sind (siehe Teil 6).
+
+---
+
+# Teil 5 — Wenn etwas klemmt
+
+Die vier Fälle, die im Betrieb tatsächlich vorkommen — und was Sie selbst tun
+können.
+
+## 5.1 Der zentrale Blick: Wiederkehrende Jobs
+
+![Wiederkehrende Jobs: was laufen soll und was wirklich lief](docs/handbuch/90-jobs.png)
+
+Diese Seite ist die erste Adresse, wenn etwas nicht passiert ist. Sie zeigt für
+jede regelmäßige Aufgabe, **wann sie zuletzt wirklich lief** — nicht, wann sie
+laufen sollte. Ein Job, der nie lief, steht als solcher da.
+
+Steht dort etwas rot, prüfen Sie zuerst, ob der Zeitplan-Dienst läuft:
+
+```bash
+docker compose ps scheduler
+```
+
+## 5.2 Es gehen keine E-Mails raus
+
+**Erkennen:** Bewerbende melden sich nicht, oder auf der Jobs-Seite stehen die
+Versand-Jobs rot.
+
+**Beheben:** Prüfen Sie die Verbindung unter *E-Mail-Versand* (Abschnitt 4.7).
+Ist der Mailserver wieder erreichbar, holen die Jobs das Versäumte beim
+nächsten Lauf nach — **fehlgeschlagene Nachrichten gehen nicht verloren**,
+sondern werden wiederholt. Sie müssen nichts von Hand nachsenden.
+
+## 5.3 Die KI antwortet nicht
+
+**Erkennen:** In der KI-Zentrale steht der Status auf offline; auf der
+Jobs-Seite zeigt der Block *KI-Warteschlange* fehlgeschlagene Aufgaben;
+betroffene Bewerbungen tragen den Vermerk, dass keine Analyse möglich war.
+
+**Beheben:**
+
+```bash
+docker compose --profile ki up -d ollama
+```
+
+Danach in der KI-Zentrale die Verbindung testen. Ist sie grün, drücken Sie auf
+der Jobs-Seite **„Fehlgeschlagene erneut einreihen“** — die Bewerbungen werden
+nachbewertet, der Vermerk verschwindet.
+
+**Wichtig:** Das Sichten, Einladen und Absagen funktioniert die ganze Zeit
+normal weiter. Die Einordnung ist eine Hilfe, keine Voraussetzung.
+
+## 5.4 Bewerbungen ohne Einordnung
+
+War die KI bei Eingang nicht erreichbar, kommt eine Bewerbung ohne Einordnung
+an. Auf der Jobs-Seite steht dann, wie viele das betrifft, und ein Klick auf
+**„Bewertung nachholen“** reiht sie nach.
+
+## 5.5 Wenn gar nichts geht
+
+Für die IT: `GET /healthz/` liefert den Gesamtzustand als Datensatz —
+Datenbank, Dateiablage, KI-Erreichbarkeit, Zwischenspeicher und die Länge der
+Warteschlange. Das eignet sich auch zur Überwachung.
+
+---
+
+# Teil 6 — Was das System für Sie erledigt
+
+Dieser Teil ist zum Nachschlagen, wenn jemand fragt: der Datenschutzbeauftragte,
+der Betriebsrat, eine Prüferin — oder eine bewerbende Person.
+
+## 6.1 Löschfristen laufen automatisch
+
+![Datenaufbewahrung: Fristen und der Trockenlauf vor dem Löschen](docs/handbuch/95-aufbewahrung.png)
+
+Abgelehnte Bewerbungen dürfen nicht unbegrenzt gespeichert werden (Art. 5 Abs. 1
+lit. e DSGVO). Sie legen die Frist fest, das System wendet sie täglich an und
+anonymisiert, was älter ist.
+
+**Der Trockenlauf** zeigt vorher, was betroffen wäre — ohne etwas zu ändern.
+Nutzen Sie ihn, bevor Sie eine Frist verkürzen.
+
+## 6.2 Jede Entscheidung ist belegbar
+
+![Nachweis-Protokoll: lückenlose Kette aller Entscheidungen](docs/handbuch/96-nachweis.png)
+
+Jede Statusänderung, jede Freigabe, jeder Versand wird protokolliert — und die
+Einträge sind kryptografisch verkettet. Wird ein Eintrag nachträglich geändert
+oder gelöscht, passt die Kette nicht mehr, und die tägliche Prüfung schlägt
+Alarm.
+
+Praktisch heißt das: Auf die Frage „warum wurde diese Person abgelehnt?“ gibt
+es eine Antwort, die nicht auf Erinnerung beruht.
+
+## 6.3 Auswertung ohne Namen
+
+![Auswertung: Kennzahlen und daraus abgeleitete Hinweise](docs/handbuch/97-auswertung.png)
+
+Wie lange dauert eine Besetzung? Wo springen Bewerbende ab? Welche Frage
+sortiert überdurchschnittlich viele aus? Die Auswertung beantwortet das auf
+Basis Ihrer eigenen Daten — und zeigt nur Zahlen, keine Namen. Wo die
+Datenmenge für eine Aussage zu klein ist, sagt sie das, statt Zufall als
+Muster auszugeben.
+
+## 6.4 Was Bewerbende sehen dürfen
+
+- **Ihren eigenen Stand** über einen persönlichen Zugangslink, ohne Konto und
+  ohne Passwort.
+- **Ihre Daten** als Datei zum Herunterladen (Art. 15 und 20 DSGVO).
+- **Wie KI eingesetzt wird**, auf einer öffentlichen Seite — die beschreibt
+  genau die Funktionen, die bei Ihnen aktiv sind, nicht eine Wunschliste.
+- **Wie barrierefrei die Seite ist**, in der Barrierefreiheitserklärung, inklusive
+  der Punkte, die noch nicht erfüllt sind.
+
+## 6.5 Was das System bewusst nicht tut
+
+- Keine automatische Absage aufgrund einer KI-Einschätzung. Automatische
+  Absagen gibt es ausschließlich bei vorher veröffentlichten Pflichtkriterien,
+  die regelbasiert geprüft werden — mit Begründung an die bewerbende Person.
+- Keine Frage nach dem bisherigen Gehalt.
+- Keine Übermittlung von Bewerberdaten an Dienstleister für Versand,
+  Kartendienste oder KI.
+- Keine Bewertung anhand der Angabe zu einer Schwerbehinderung.
+
+---
+
 ## Und wenn etwas nicht funktioniert?
 
-Die häufigsten Fälle stehen in Teil 5 (folgt). Zwei Dinge vorweg:
+Die häufigsten Fälle stehen in Teil 5. Zwei Dinge vorweg:
 
 - **Sie sehen weniger als hier abgebildet.** Das liegt fast immer an Ihrer Rolle,
   nicht an einem Fehler. Wenn Sie mehr brauchen, wenden Sie sich an Ihre
@@ -289,8 +616,3 @@ Die häufigsten Fälle stehen in Teil 5 (folgt). Zwei Dinge vorweg:
 - **Etwas reagiert nicht.** Laden Sie die Seite neu. Bleibt es dabei, notieren Sie,
   was Sie zuletzt getan haben, und melden Sie es Ihrer IT — mit dieser Angabe kann
   sie sofort etwas anfangen.
-
----
-
-*Teil 3 (Wenn mehrere mitreden), Teil 4 (Einrichten), Teil 5 (Wenn etwas klemmt)
-und Teil 6 (Was das System für Sie erledigt) folgen.*

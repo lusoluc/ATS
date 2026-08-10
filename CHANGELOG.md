@@ -5,6 +5,33 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Hinzugefügt (Benutzerhandbuch Teil 3–6 — und der Wächter, der bisher fehlte)
+
+Das Handbuch ist vollständig: **Teil 3** (Wenn mehrere mitreden: Freigaben mit
+§-99-Sonderregeln, Auswahlgremien, Vertretung, Governance-Überblick,
+Schwerbehindertenvertretung), **Teil 4** (Einrichten — für die
+Personalverwaltung, mit der sinnvollen Reihenfolge beim Aufsetzen), **Teil 5**
+(Wenn etwas klemmt: die vier Fälle, die im Betrieb wirklich vorkommen, mit den
+Befehlen zum Beheben) und **Teil 6** (Was das System für Sie erledigt:
+Löschfristen, Nachweiskette, Auswertung ohne Namen, Bewerbendenrechte — und
+ausdrücklich, was das System bewusst *nicht* tut).
+
+15 neue Bilder, alle über `manage.py handbuch_bilder` erzeugt; 26 insgesamt.
+
+**Der Wächter, der bisher fehlte:** Angekündigt war „jede interne Seite kommt
+im Handbuch vor oder steht mit Begründung in der Ausnahmeliste" — gebaut war
+bislang nur die Totprüfung der Liste. Die eigentliche Prüfung fehlte, das
+Handbuch hätte also beliebig unvollständig werden können, ohne dass etwas rot
+wird. Jetzt geht der Wächter über alle Routen, blendet Djangos eigene
+Oberfläche, Detailseiten und Aktionen aus und verlangt für jeden verbleibenden
+Bildschirm entweder eine Kapitelzuordnung oder einen Schuldeintrag. Ein zweiter
+Test prüft, dass jedes zugeordnete Kapitel im Handbuch wirklich existiert — eine
+Zuordnung auf ein erfundenes Kapitel wäre schlimmer als gar keine.
+
+Gegenprobe: Nimmt man eine Seite aus der Zuordnung, meldet der Wächter genau
+diese. 22 Seiten stehen noch als offene Schuld drin (Erscheinungsbild, CMS,
+HRIS/SAP, Talent-Pool und weitere) — jede mit dem Grund, warum sie noch fehlt.
+
 ### Hinzugefügt (Benutzerhandbuch Teil 1+2 — mit Bildern, in der Anwendung, gegen Verrotten gesichert)
 
 Bisher gab es genau ein Dokument für Endanwender: `Handbuch_HR_Anwender.md`,

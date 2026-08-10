@@ -69,25 +69,92 @@ class GuardrailHandbuchBleibtWahrTestCase(TestCase):
     """Die vier Prüfungen, die das Handbuch am Leben halten."""
 
     #: Seiten-Name (URL-Name) -> warum das Handbuch sie (noch) nicht erklaert.
-    #: Teil 1+2 decken den Alltag ab; Einrichtung und Sonderfaelle folgen in
-    #: Teil 3-6. Jeder Eintrag ist eine SCHULD, kein Freibrief.
+    #: Jeder Eintrag ist eine SCHULD, kein Freibrief.
     NOCH_NICHT_ERKLAERT = {
-        'stats_page': 'Teil 4 (Einrichten)',
-        'process_page': 'Teil 4 (Einrichten)',
-        'templates_page': 'Teil 4 (Einrichten)',
-        'ki_page': 'Teil 4 (Einrichten)',
-        'learned_scoring': 'Teil 4 (Einrichten)',
-        'hris_page': 'Teil 4 (Einrichten)',
-        'retention': 'Teil 4 (Einrichten)',
-        'scheduled_jobs': 'Teil 5 (Wenn etwas klemmt)',
-        'audit_log': 'Teil 6 (Nachweis)',
-        'governance': 'Teil 3 (Wenn mehrere mitreden)',
-        'panel_defaults': 'Teil 3 (Wenn mehrere mitreden)',
-        'delegations': 'Teil 3 (Wenn mehrere mitreden)',
-        'talent_pool': 'Teil 2, Weg 3 - Ergaenzung geplant',
-        'analytics': 'Teil 4 (Auswertung)',
-        'global_search': 'in Teil 1.4 als Suchfeld erklaert, keine eigene Seite',
+        'stats_page': 'Kennzahlen-Seite - geht in 6.3 auf, eigener Abschnitt offen',
+        'learned_scoring': 'Lernendes Scoring ist Opt-in und selten - offen',
+        'hris_page': 'HRIS-Anbindung betrifft die IT, nicht die Anwendung - offen',
+        'sap_sf_mapper': 'SAP-Anbindung betrifft die IT - offen',
+        'talent_pool': 'Talent-Pool - Ergaenzung zu Weg 3 offen',
+        'branding': 'Erscheinungsbild (Farben, Logo) - offen',
+        'pages_manage': 'CMS-Seiten der Karriereseite - offen',
+        'media_manage': 'Mediathek - offen',
+        'snippets': 'Textbausteine der Karriereseite - offen',
+        'landing_pages': 'Kampagnen-Landingpages - offen',
+        'data_import': 'Stammdaten-Import (Einmal-Vorgang bei der Einrichtung)',
+        'categories': 'Jobfamilien - in 4.2 gestreift, eigener Abschnitt offen',
+        'contacts': 'Ansprechpartner - in 4.1 als Schritt genannt, Abschnitt offen',
+        'source_channels': 'Herkunftskanäle - offen',
+        'job_templates': 'Stellen-Vorlagen - in Weg 2 gestreift, Abschnitt offen',
+        'interview_formats': 'Gesprächsformate - offen',
+        'privacy_notice': 'Datenschutzhinweis-Versionen - offen',
+        'best_performer_profiles': 'Vergleichsprofile (Opt-in, selten) - offen',
+        'job_alert': 'oeffentliche Seite fuer Bewerbende, nicht fuer Beschaeftigte',
+        'job_list': 'oeffentliche Stellenboerse, nicht fuer Beschaeftigte',
+        'home': 'oeffentliche Startseite, nicht fuer Beschaeftigte',
+        'pricing': 'nur in der Demo-Instanz sichtbar',
     }
+
+    def test_every_page_is_explained_or_owed(self):
+        """Neue Seite ohne Kapitel -> rot.
+
+        Das ist der Waechter, der die Handbuchpflege wirklich erzwingt: Wer
+        einen Bildschirm hinzufuegt, muss ihn erklaeren oder die Schuld
+        eintragen. Ohne ihn faellt eine Luecke erst der Person auf, die
+        davorsitzt.
+        """
+        from django.urls.resolvers import URLPattern, URLResolver
+
+        from ..handbuch import ERKLAERT_IN
+
+        seiten = []
+
+        def sammeln(patterns, praefix=""):
+            for p in patterns:
+                if isinstance(p, URLResolver):
+                    sammeln(p.url_patterns, praefix + str(p.pattern))
+                elif isinstance(p, URLPattern) and p.name:
+                    seiten.append((p.name, praefix + str(p.pattern)))
+
+        from django.urls import get_resolver
+        sammeln(get_resolver().url_patterns)
+
+        bekannt = set(ERKLAERT_IN) | set(self.NOCH_NICHT_ERKLAERT)
+        offen = []
+        for name, muster in seiten:
+            if muster.startswith("admin/"):
+                continue            # Djangos eigene Oberflaeche, kein Produkt
+            if "<" in muster:
+                continue            # Detailseiten haengen an ihrer Uebersicht
+            if not muster.startswith("recruiter/") and name not in bekannt:
+                continue            # oeffentliche Seiten: eigenes Kapitel spaeter
+            if name in bekannt:
+                continue
+            # Aktionen/Exporte haben keinen eigenen Bildschirm.
+            if any(w in name for w in ("save_", "_export", "delete_", "archive_",
+                                       "create_", "toggle_", "bulk_", "reorder",
+                                       "logout", "polish", "suggest", "validate",
+                                       "test_", "ingest", "reclassify", "batch_",
+                                       "requeue", "enqueue", "import_", "slot_",
+                                       "schedule_", "process_previous", "_ask",
+                                       "gemma_", "get_ai", "apply_", "panel_preview",
+                                       "healthz_ai", "feed", "interviews_ics")):
+                continue
+            offen.append(f"{name} (/{muster})")
+        self.assertEqual(
+            offen, [],
+            "Bildschirm ohne Kapitel im Handbuch. Bitte erklaeren und in "
+            "ERKLAERT_IN eintragen ODER als Schuld in NOCH_NICHT_ERKLAERT: "
+            + ", ".join(sorted(offen)))
+
+    def test_every_claimed_chapter_really_exists(self):
+        """Eine Zuordnung auf ein erfundenes Kapitel waere schlimmer als keine."""
+        from ..handbuch import ERKLAERT_IN
+        text = _handbuch()
+        fehlend = sorted(k for k in ERKLAERT_IN.values() if k not in text)
+        self.assertEqual(
+            fehlend, [],
+            f"ERKLAERT_IN verweist auf Kapitel, die es nicht gibt: {fehlend}")
 
     def test_every_chapter_points_to_a_real_page(self):
         """Kapitel über eine Seite, die es nicht mehr gibt."""

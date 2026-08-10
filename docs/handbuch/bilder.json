@@ -9,5 +9,20 @@
   "40-postfach": "1865afdb296c323b",
   "50-termine": "1c73e815049a4394",
   "60-freigaben": "37116a5fa77e01aa",
-  "61-bedarf": "08a4cb6a678a000a"
+  "61-bedarf": "08a4cb6a678a000a",
+  "70-gremien": "0f75081666c2133b",
+  "71-vertretung": "47a3502b3ab32dfd",
+  "72-governance": "4d461b02c085f624",
+  "80-einstellungen": "3784b2ac869dc56e",
+  "81-standorte": "c60c0941802520aa",
+  "82-prozess": "c786198fc8ff4baf",
+  "83-fragen": "25884a5dcf279b61",
+  "84-entgeltbaender": "4f9666464c40ce93",
+  "85-mailvorlagen": "5bfec7b10f7073df",
+  "86-mailversand": "ab02778bda4b76d9",
+  "87-ki": "cd90ba5c0786473f",
+  "90-jobs": "b2ea01d5dd51af2d",
+  "95-aufbewahrung": "92775c7c746cbeca",
+  "96-nachweis": "c8c5d47f6f1ba0eb",
+  "97-auswertung": "41e168e42d600418"
 }

@@ -104,7 +104,103 @@ TEIL2: list[Bild] = [
          templates=("staffing_requests.html",)),
 ]
 
-ALLE: list[Bild] = TEIL1 + TEIL2
+#: TEIL 3 - Wenn mehrere mitreden.
+TEIL3: list[Bild] = [
+    Bild("70-gremien", "/recruiter/gremien/", "HR-Admin",
+         "Auswahlgremien: wer bei welcher Art Stelle mitentscheidet",
+         templates=("panel_defaults.html",)),
+    Bild("71-vertretung", "/recruiter/delegations/", "Hiring-Manager",
+         "Vertretungen: wer wen wie lange vertritt",
+         templates=("delegations.html",)),
+    Bild("72-governance", "/recruiter/governance/", "Hiring-Manager",
+         "Governance-Übersicht: Entscheidungswege und ihre Nachweise",
+         templates=("governance.html",)),
+]
+
+#: TEIL 4 - Einrichten.
+TEIL4: list[Bild] = [
+    Bild("80-einstellungen", "/recruiter/einstellungen/", "HR-Admin",
+         "Einstellungs-Zentrale: alle Einrichtungsbereiche mit ihrem Zustand",
+         templates=("admin_pages/settings_hub.html",)),
+    Bild("81-standorte", "/recruiter/locations/", "HR-Admin",
+         "Standorte anlegen und pflegen",
+         templates=("locations.html",)),
+    Bild("82-prozess", "/recruiter/prozess-flow/", "HR-Admin",
+         "Prozessablauf: die Schritte, die jede Bewerbung durchläuft",
+         templates=("admin_pages/process.html",)),
+    Bild("83-fragen", "/recruiter/screening-questions/", "HR-Admin",
+         "Fragen-Baukasten: wiederverwendbare Fragen an Bewerbende",
+         templates=("screening_questions.html",)),
+    Bild("84-entgeltbaender", "/recruiter/pay-bands/", "HR-Admin",
+         "Entgeltbänder: Gehaltsspannen je Tätigkeit",
+         templates=("pay_bands.html",)),
+    Bild("85-mailvorlagen", "/recruiter/email-vorlagen/", "HR-Admin",
+         "E-Mail-Vorlagen für wiederkehrende Nachrichten",
+         templates=("admin_pages/templates.html",)),
+    Bild("86-mailversand", "/recruiter/einstellungen/email/", "HR-Admin",
+         "E-Mail-Versand einrichten und die Verbindung prüfen",
+         templates=("admin_pages/mail_settings.html",)),
+    Bild("87-ki", "/recruiter/ki-zentrale/", "HR-Admin",
+         "KI-Zentrale: Vorbewertung ein- oder ausschalten und testen",
+         templates=("admin_pages/ki.html",)),
+]
+
+#: TEIL 5 - Wenn etwas klemmt.
+TEIL5: list[Bild] = [
+    Bild("90-jobs", "/recruiter/einstellungen/jobs/", "HR-Admin",
+         "Wiederkehrende Jobs: was laufen soll und was wirklich lief",
+         templates=("admin_pages/scheduled_jobs.html",)),
+]
+
+#: TEIL 6 - Was das System für Sie erledigt.
+TEIL6: list[Bild] = [
+    Bild("95-aufbewahrung", "/recruiter/datenaufbewahrung/", "HR-Admin",
+         "Datenaufbewahrung: Fristen und der Trockenlauf vor dem Löschen",
+         templates=("admin_pages/retention.html",)),
+    Bild("96-nachweis", "/recruiter/audit/", "HR-Admin",
+         "Nachweis-Protokoll: lückenlose Kette aller Entscheidungen",
+         templates=("audit_log.html",)),
+    Bild("97-auswertung", "/recruiter/analytics/", "Recruiter",
+         "Auswertung: Kennzahlen und daraus abgeleitete Hinweise",
+         templates=("analytics.html",)),
+]
+
+ALLE: list[Bild] = TEIL1 + TEIL2 + TEIL3 + TEIL4 + TEIL5 + TEIL6
+
+
+#: Seite (URL-Name) -> Kapitel, das sie erklaert. Der Waechter prueft, dass
+#: das genannte Kapitel im Handbuch wirklich existiert - eine Zuordnung auf
+#: ein erfundenes Kapitel waere schlimmer als gar keine.
+ERKLAERT_IN = {
+    "login": "1.1 Anmelden",
+    "dashboard": "1.2 Was Sie jetzt sehen",
+    "global_search": "1.4 Jemanden suchen",
+    "hilfe": "1.3 Das Menü",
+    "inbox": "Weg 4",
+    "interviews": "Weg 5",
+    "approvals": "Weg 6",
+    "staffing_requests": "Weg 6",
+    "panel_defaults": "3.2 Auswahlgremien",
+    "delegations": "3.3 Vertretung",
+    "governance": "3.4 Der Überblick",
+    "settings_hub": "4.1 Die Einstellungs-Zentrale",
+    "locations": "4.2 Standorte und Einrichtungen",
+    "process_page": "4.3 Der Prozessablauf",
+    "screening_questions": "4.4 Fragen an Bewerbende",
+    "pay_bands": "4.5 Entgeltbänder",
+    "templates_page": "4.6 E-Mail-Vorlagen",
+    "mail_settings": "4.7 E-Mail-Versand",
+    "ki_page": "4.8 KI ein- oder ausschalten",
+    "scheduled_jobs": "5.1 Der zentrale Blick",
+    "healthz": "5.5 Wenn gar nichts geht",
+    "retention": "6.1 Löschfristen",
+    "audit_log": "6.2 Jede Entscheidung ist belegbar",
+    "analytics": "6.3 Auswertung ohne Namen",
+    "ai_transparency": "6.4 Was Bewerbende sehen dürfen",
+    "accessibility_statement": "6.4 Was Bewerbende sehen dürfen",
+    "candidate_portal": "6.4 Was Bewerbende sehen dürfen",
+    "tasks": "4.3 Der Prozessablauf",
+}
 
 
 def _repo() -> pathlib.Path:

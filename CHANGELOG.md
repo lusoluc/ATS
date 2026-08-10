@@ -5,6 +5,45 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Hinzugefügt (Handbuch vollständig — die letzten 22 Seiten, Teil 7 bis 10)
+
+Die Schuldenliste ist abgearbeitet. Neu sind **Teil 7** (Die eigene
+Karriereseite: Erscheinungsbild, Seiten, Mediathek, Textbausteine,
+Kampagnen-Landingpages), **Teil 8** (Auswerten und Lernen: Kennzahlen,
+Talent-Pool, Lernendes Scoring, Vergleichsprofile), **Teil 9** (Anbindung an
+andere Systeme, für die IT) und **Teil 10** (Was Bewerbende sehen). Teil 4
+wuchs um sieben Abschnitte: Ansprechpartner, Jobfamilien, Herkunftskanäle,
+Stellen-Vorlagen, Gesprächsformate, Datenschutzhinweis, Stammdaten einlesen.
+
+18 neue Bilder, 44 insgesamt.
+
+**Eine Begründung, die keine war:** Zwei Funktionen standen als „hat keinen
+eigenen Bildschirm, deshalb nicht erklärt" in der Schuldenliste —
+Gesprächsformate und Vergleichsprofile. Das war ein Fehlschluss: Eine Funktion
+ohne eigene Seite wird eben woanders bedient und ist oft *gerade deshalb*
+schwer zu finden. Beide sind jetzt erklärt, die Vergleichsprofile besonders
+ausführlich: Was technisch passiert (nur ein nicht rückrechenbarer Vektor wird
+gespeichert, der Lebenslauf nicht), und warum man zweimal überlegen sollte —
+Einwilligung der Mitarbeitenden, Betriebsrat, und das AGG-Risiko, die
+bisherige Belegschaftszusammensetzung als Maßstab fortzuschreiben. Dazu die
+klare Aussage: Im Zweifel leer lassen, die Plattform funktioniert vollständig
+ohne.
+
+Auch beim Lernenden Scoring steht jetzt die unbequeme Seite dabei: Ein System,
+das aus vergangenen Entscheidungen lernt, lernt vergangene Einseitigkeiten mit.
+
+### Geändert
+
+- `simulateCVIngestion` heißt jetzt `ladeVergleichsprofileHoch`. Die Funktion
+  lädt längst wirklich hoch — der Name stammte noch aus der Zeit, als sie nur
+  einen Fortschrittsbalken zeigte, und war beim Lesen irreführend. Die
+  Regressions-Wache dagegen bleibt und hängt am neuen Namen; sie prüft jetzt
+  auf den Aufruf statt auf die bloße Erwähnung, damit der erklärende Kommentar
+  zur Umbenennung stehen bleiben darf.
+- Screenshots entstehen mit einfacher statt doppelter Pixeldichte. Bei 44
+  Bildern hätte das Repository sonst um mehrere Dutzend Megabyte zugenommen,
+  ohne dass jemand die Bilder so groß braucht (14 MB statt 45 MB).
+
 ### Hinzugefügt (Benutzerhandbuch Teil 3–6 — und der Wächter, der bisher fehlte)
 
 Das Handbuch ist vollständig: **Teil 3** (Wenn mehrere mitreden: Freigaben mit

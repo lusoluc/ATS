@@ -522,11 +522,24 @@ class BestPerformerIngestionTestCase(TestCase):
         self.assertEqual(BestPerformerProfile.objects.count(), 0)
 
     def test_no_simulation_code_remains(self):
-        """Regressions-Wache: kein erfundener Fortschritt / Schein-Erfolg mehr."""
+        """Regressions-Wache: kein erfundener Fortschritt / Schein-Erfolg mehr.
+
+        Die Funktion hiess frueher `simulateCVIngestion` und war genau das.
+        Sie laedt laengst wirklich hoch - der Name blieb aber stehen und war
+        beim Lesen irrefuehrend, gerade in einer Codebasis, die Schein-Erfolge
+        bekaempft. Umbenannt in `ladeVergleichsprofileHoch`; diese Wache
+        bleibt und haengt jetzt am neuen Namen.
+        """
         import os
         tpl = open(os.path.join('templates', 'includes', 'dashboard', 'scripts.html'),
                    encoding='utf-8').read()
-        i = tpl.index('function simulateCVIngestion')
+        # Auf den AUFRUF pruefen, nicht auf die blosse Erwaehnung: Der
+        # Kommentar nennt den alten Namen absichtlich, um die Umbenennung zu
+        # erklaeren - eine Erklaerung darf ein Waechter nicht verbieten.
+        self.assertNotIn(
+            'simulateCVIngestion(', tpl,
+            "Der alte, irrefuehrende Funktionsname wird wieder aufgerufen.")
+        i = tpl.index('function ladeVergleichsprofileHoch')
         block = tpl[i:i+2600]
         # Der echte Upload ruft den Endpunkt auf ...
         self.assertIn('/recruiter/best-performers/ingest/', block)

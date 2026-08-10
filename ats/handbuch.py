@@ -165,7 +165,78 @@ TEIL6: list[Bild] = [
          templates=("analytics.html",)),
 ]
 
-ALLE: list[Bild] = TEIL1 + TEIL2 + TEIL3 + TEIL4 + TEIL5 + TEIL6
+#: TEIL 4 (Fortsetzung) - die restlichen Einrichtungsseiten.
+TEIL4B: list[Bild] = [
+    Bild("88-ansprechpartner", "/recruiter/contacts/", "HR-Admin",
+         "Ansprechpartner, die auf Stellenanzeigen genannt werden",
+         templates=("contacts.html",)),
+    Bild("89-jobfamilien", "/recruiter/categories/", "HR-Admin",
+         "Jobfamilien: die fachliche Gliederung der Stellen",
+         templates=("categories.html",)),
+    Bild("89b-kanaele", "/recruiter/kanaele/", "HR-Admin",
+         "Herkunftskanäle: woher Bewerbungen kommen",
+         templates=("source_channels.html",)),
+    Bild("89c-vorlagen", "/recruiter/job-templates/", "HR-Admin",
+         "Stellen-Vorlagen für wiederkehrende Ausschreibungen",
+         templates=("job_templates.html",)),
+    Bild("89d-datenschutzhinweis", "/recruiter/datenschutzhinweis/", "HR-Admin",
+         "Versionen des Datenschutzhinweises für Bewerbende",
+         templates=("admin_pages/privacy_notice.html",)),
+    Bild("89e-import", "/recruiter/import/", "HR-Admin",
+         "Stammdaten aus einer Tabelle einlesen",
+         templates=("import.html",)),
+]
+
+#: TEIL 7 - Die eigene Karriereseite.
+TEIL7: list[Bild] = [
+    Bild("A0-erscheinungsbild", "/recruiter/branding/", "HR-Admin",
+         "Erscheinungsbild: Farben, Logo, helle oder dunkle Darstellung",
+         templates=("branding.html",)),
+    Bild("A1-seiten", "/recruiter/pages/", "HR-Admin",
+         "Seiten der Karriereseite bearbeiten",
+         templates=("pages_manage.html",)),
+    Bild("A2-mediathek", "/recruiter/media/", "HR-Admin",
+         "Mediathek: Bilder für Karriereseite und Anzeigen",
+         templates=("media_manage.html",)),
+    Bild("A3-textbausteine", "/recruiter/snippets/", "HR-Admin",
+         "Textbausteine, die auf mehreren Seiten wiederverwendet werden",
+         templates=("snippets.html",)),
+    Bild("A4-landingpages", "/recruiter/landingpages/", "HR-Admin",
+         "Kampagnen-Landingpages für gezielte Ansprache",
+         templates=("landing_pages_manage.html",)),
+]
+
+#: TEIL 8 - Auswertung und Schnittstellen.
+TEIL8: list[Bild] = [
+    Bild("B0-kennzahlen", "/recruiter/kpis/", "HR-Admin",
+         "Kennzahlen-Übersicht des Recruitings",
+         templates=("admin_pages/stats.html",)),
+    Bild("B1-talentpool", "/recruiter/talent-pool/", "Recruiter",
+         "Talent-Pool: Menschen, die einer späteren Ansprache zugestimmt haben",
+         templates=("talent_pool.html",)),
+    Bild("B2-lernendes-scoring", "/recruiter/lernendes-scoring/", "HR-Admin",
+         "Lernendes Scoring: Messstrecke und Freigabe-Stand",
+         templates=("admin_pages/learned_scoring.html",)),
+    Bild("B3-hris", "/recruiter/hris/", "HR-Admin",
+         "HRIS-Anbindung: Übergabe an das Personalsystem",
+         templates=("admin_pages/hris.html",)),
+]
+
+#: TEIL 9 - Was Bewerbende sehen.
+TEIL9: list[Bild] = [
+    Bild("C0-karriereseite", "/", "-",
+         "Die öffentliche Startseite der Karriereseite",
+         templates=("home.html",)),
+    Bild("C1-stellenliste", "/jobs/", "-",
+         "Die öffentliche Stellenliste mit Filtern",
+         templates=("job_list.html",)),
+    Bild("C2-jobalert", "/job-alert/", "-",
+         "Anmeldung für Benachrichtigungen über neue Stellen",
+         templates=("job_alert.html",)),
+]
+
+ALLE: list[Bild] = (TEIL1 + TEIL2 + TEIL3 + TEIL4 + TEIL4B + TEIL5 + TEIL6
+                    + TEIL7 + TEIL8 + TEIL9)
 
 
 #: Seite (URL-Name) -> Kapitel, das sie erklaert. Der Waechter prueft, dass
@@ -200,6 +271,30 @@ ERKLAERT_IN = {
     "accessibility_statement": "6.4 Was Bewerbende sehen dürfen",
     "candidate_portal": "6.4 Was Bewerbende sehen dürfen",
     "tasks": "4.3 Der Prozessablauf",
+    "contacts": "4.9 Ansprechpartner",
+    "categories": "4.10 Jobfamilien",
+    "source_channels": "4.11 Herkunftskanäle",
+    "job_templates": "4.12 Stellen-Vorlagen",
+    "interview_formats": "4.13 Gesprächsformate",
+    "privacy_notice": "4.14 Datenschutzhinweis",
+    "data_import": "4.15 Stammdaten einlesen",
+    "branding": "7.1 Erscheinungsbild",
+    "pages_manage": "7.2 Seiten",
+    "media_manage": "7.3 Mediathek",
+    "snippets": "7.4 Textbausteine",
+    "landing_pages": "7.5 Kampagnen-Landingpages",
+    "stats_page": "8.1 Kennzahlen",
+    "talent_pool": "8.2 Talent-Pool",
+    "learned_scoring": "8.3 Lernendes Scoring",
+    "best_performer_profiles": "8.4 Vergleichsprofile",
+    "ingest_best_performers": "8.4 Vergleichsprofile",
+    "hris_page": "Teil 9 — Anbindung an andere Systeme",
+    "sap_sf_mapper": "Teil 9 — Anbindung an andere Systeme",
+    "stepstone_feed": "Teil 9 — Anbindung an andere Systeme",
+    "hr_ba_xml_feed": "Teil 9 — Anbindung an andere Systeme",
+    "home": "Teil 10 — Was Bewerbende sehen",
+    "job_list": "Teil 10 — Was Bewerbende sehen",
+    "job_alert": "Teil 10 — Was Bewerbende sehen",
 }
 
 

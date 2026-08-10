@@ -482,6 +482,271 @@ Was Sie den Bewerbenden schulden, erledigt das System: Die öffentliche Seite
 zur KI-Transparenz beschreibt genau die Funktionen, die bei Ihnen wirklich
 aktiv sind (siehe Teil 6).
 
+## 4.9 Ansprechpartner
+
+![Ansprechpartner, die auf Stellenanzeigen genannt werden](docs/handbuch/88-ansprechpartner.png)
+
+Wer auf einer Anzeige als Kontakt genannt wird, steht hier. Sie können
+Ansprechpartner einer Einrichtung oder einem Bereich fest zuordnen — dann
+schlägt das System sie beim Ausschreiben automatisch vor.
+
+Diese Angaben sind bewusst **nicht verschlüsselt**: Sie stehen ohnehin
+öffentlich auf der Stellenanzeige. Nehmen Sie hier also nur Menschen auf, die
+damit einverstanden sind, und am besten eine Funktionsadresse statt einer
+persönlichen.
+
+## 4.10 Jobfamilien
+
+![Jobfamilien: die fachliche Gliederung der Stellen](docs/handbuch/89-jobfamilien.png)
+
+Eine Jobfamilie fasst gleichartige Tätigkeiten zusammen — „Pflege &
+Betreuung“, „Verwaltung“, „IT“. Sie ist mehr als eine Sortierhilfe: An ihr
+hängen die Entgeltbänder, die Pflichtfragen und die Auswertung. Legen Sie
+lieber wenige, klare Familien an als viele feine.
+
+**Mindeststandards:** Sie können je Familie Fragen hinterlegen, die in *jeder*
+Stelle dieser Familie erscheinen müssen — etwa der Nachweis eines Examens in
+der Pflege. Damit kann niemand versehentlich eine Stelle ohne die fachlich
+zwingende Frage ausschreiben.
+
+## 4.11 Herkunftskanäle
+
+![Herkunftskanäle: woher Bewerbungen kommen](docs/handbuch/89b-kanaele.png)
+
+Hier pflegen Sie, über welche Wege Bewerbungen eingehen — eigene
+Karriereseite, Jobbörse, Empfehlung, Aushang. Der Kanal wird bei jeder
+Bewerbung mitgeführt und macht in der Auswertung sichtbar, welcher Weg sich
+lohnt und welcher nur Geld kostet.
+
+## 4.12 Stellen-Vorlagen
+
+![Stellen-Vorlagen für wiederkehrende Ausschreibungen](docs/handbuch/89c-vorlagen.png)
+
+Wenn Sie dieselbe Stelle mehrmals im Jahr ausschreiben, sichern Sie sie als
+Vorlage. Beim nächsten Mal übernehmen Sie Beschreibung, Anforderungen und
+Fragen mit einem Klick und ändern nur, was sich unterscheidet.
+
+## 4.13 Gesprächsformate
+
+Telefonat, Video, Gespräch vor Ort, Probearbeiten, Assessment-Tag: Welche
+Formate es bei Ihnen gibt, legen Sie selbst fest — unten auf der Seite
+**„Interview-Kalender“** unter *Gesprächsformate verwalten*.
+
+Das Format erscheint danach überall: bei der Terminvergabe, in den
+Zeitfenstern zur Selbstbuchung und in der Einladung an die bewerbende Person.
+Sie ist damit vorbereitet und weiß, ob sie eine Kamera braucht oder anreisen
+muss.
+
+**Beim Entfernen eines Formats** behalten bereits vereinbarte Termine ihre
+Bezeichnung. Ein Gespräch, das als „Probearbeiten“ vereinbart wurde, heißt
+weiter so — auch wenn Sie das Format künftig nicht mehr anbieten.
+
+## 4.14 Datenschutzhinweis
+
+![Versionen des Datenschutzhinweises für Bewerbende](docs/handbuch/89d-datenschutzhinweis.png)
+
+Jede Bewerbung wird mit der **Fassung** des Datenschutzhinweises verknüpft,
+die zum Zeitpunkt der Bewerbung galt. Ändern Sie den Text, entsteht eine neue
+Fassung; alte Bewerbungen bleiben mit ihrer verknüpft.
+
+Warum das wichtig ist: Art. 7 Abs. 1 DSGVO verlangt den Nachweis, **worin**
+eingewilligt wurde. Ein Hinweis, der heute anders lautet als vor einem Jahr,
+belegt nichts über eine Bewerbung von damals.
+
+## 4.15 Stammdaten einlesen
+
+![Stammdaten aus einer Tabelle einlesen](docs/handbuch/89e-import.png)
+
+Beim Aufsetzen ersparen Sie sich Tipparbeit: Standorte, Einrichtungen und
+Ansprechpartner lassen sich aus einer Tabelle einlesen. Laden Sie zuerst die
+Beispieldatei herunter — sie zeigt die erwarteten Spalten.
+
+Das Einlesen zeigt vorher an, was entstehen würde. Prüfen Sie diese Liste,
+bevor Sie bestätigen.
+
+---
+
+# Teil 7 — Die eigene Karriereseite
+
+SecurATS bringt die öffentliche Karriereseite mit. Sie brauchen dafür weder
+eine Agentur noch Zugriff auf das Haupt-Internetauftritt Ihres Hauses.
+
+## 7.1 Erscheinungsbild
+
+![Erscheinungsbild: Farben, Logo, helle oder dunkle Darstellung](docs/handbuch/A0-erscheinungsbild.png)
+
+Logo, Hausfarbe und die Wahl zwischen heller und dunkler Darstellung. Die
+Vorschau zeigt sofort, wie es wirkt.
+
+**Ein Hinweis zur Lesbarkeit:** Wählen Sie keine zu hellen Farben auf hellem
+Grund. Das System prüft den Kontrast nicht für Sie — und schlecht lesbare
+Schrift schließt genau die Menschen aus, die Sie erreichen wollen.
+
+## 7.2 Seiten
+
+![Seiten der Karriereseite bearbeiten](docs/handbuch/A1-seiten.png)
+
+„Über uns“, „Unsere Werte“, „Ausbildung bei uns“: Diese Seiten pflegen Sie
+hier. Der Baukasten arbeitet mit Blöcken — Text, Bild, Zitat, Aufzählung —,
+die Sie in beliebiger Reihenfolge stapeln.
+
+## 7.3 Mediathek
+
+![Mediathek: Bilder für Karriereseite und Anzeigen](docs/handbuch/A2-mediathek.png)
+
+Alle Bilder an einem Ort. **Vergeben Sie zu jedem Bild eine kurze
+Beschreibung** — sie wird Menschen vorgelesen, die einen Screenreader nutzen,
+und ist bei einer öffentlichen Stelle rechtlich verlangt (BFSG).
+
+Achten Sie außerdem darauf, Fotos von Mitarbeitenden nur mit deren
+Einwilligung zu verwenden.
+
+## 7.4 Textbausteine
+
+![Textbausteine, die auf mehreren Seiten wiederverwendet werden](docs/handbuch/A3-textbausteine.png)
+
+Textteile, die auf mehreren Seiten gleich lauten sollen — etwa Ihre
+Benefits-Liste. Einmal geändert, überall aktuell.
+
+## 7.5 Kampagnen-Landingpages
+
+![Kampagnen-Landingpages für gezielte Ansprache](docs/handbuch/A4-landingpages.png)
+
+Für eine Messe, eine Anzeigenkampagne oder eine bestimmte Zielgruppe können
+Sie eine eigene Seite mit eigener Adresse anlegen. Weil jede Landingpage eine
+eigene Adresse hat, sehen Sie in der Auswertung genau, welche Kampagne
+Bewerbungen gebracht hat.
+
+---
+
+# Teil 8 — Auswerten und Lernen
+
+## 8.1 Kennzahlen
+
+![Kennzahlen-Übersicht des Recruitings](docs/handbuch/B0-kennzahlen.png)
+
+Die Zahlen, nach denen die Leitung fragt: offene Stellen, Bewerbungen je
+Stelle, Dauer bis zur Besetzung, Absagequote. Alles auf Ihren eigenen Daten,
+ohne Namen.
+
+## 8.2 Talent-Pool
+
+![Talent-Pool: Menschen, die einer späteren Ansprache zugestimmt haben](docs/handbuch/B1-talentpool.png)
+
+Wer abgelehnt wurde, aber gut war, ist nicht verloren — sofern die Person
+ausdrücklich zugestimmt hat, später wieder angesprochen zu werden. Nur diese
+Menschen stehen hier.
+
+Bei jeder neuen Stelle zeigt das System passende Treffer aus dem Pool an. So
+haben Sie Kandidatinnen und Kandidaten, bevor die Anzeige überhaupt läuft.
+
+**Die Einwilligung läuft ab.** Abgelaufene Einträge werden automatisch
+gelöscht — eine Zustimmung von vor drei Jahren trägt keine Ansprache mehr.
+
+## 8.3 Lernendes Scoring
+
+![Lernendes Scoring: Messstrecke und Freigabe-Stand](docs/handbuch/B2-lernendes-scoring.png)
+
+Hiervon sollten Sie wissen, auch wenn Sie es nicht einschalten.
+
+Die Idee: Das System lernt aus Ihren eigenen Entscheidungen, welche Merkmale
+in Ihrem Haus zu einer Einladung geführt haben, und leitet daraus eine
+Einschätzung ab. Das ist mächtiger als die einfache KI-Vorbewertung — und
+genau deshalb strenger eingezäunt:
+
+- **Es ist standardmäßig aus** und läuft erst in einer Messstrecke mit, bevor
+  überhaupt etwas angezeigt wird. Sie sehen also erst, ob es bei Ihnen
+  funktioniert, bevor es jemand zu sehen bekommt.
+- **Ohne Zustimmung des Betriebsrats bleibt es aus.** Ein System, das
+  Mitarbeitendenverhalten auswertet, ist mitbestimmungspflichtig (§ 87 Abs. 1
+  Nr. 6 BetrVG). Das ist keine Höflichkeit, sondern eine technische Sperre.
+- **Es warnt vor sich selbst.** Weicht das Modell zunehmend von den
+  menschlichen Entscheidungen ab, wird das gemeldet — statt still weiter
+  Empfehlungen auszugeben.
+
+**Was Sie bedenken sollten:** Ein System, das aus vergangenen Entscheidungen
+lernt, lernt auch vergangene Einseitigkeiten. Wenn in Ihrem Haus bisher
+überwiegend ein bestimmtes Profil eingeladen wurde, wird das Modell genau das
+für richtig halten. Die Einschätzung bleibt deshalb immer eine Lesehilfe, und
+die Messstrecke ist dazu da, solche Muster zu erkennen, bevor sie wirken.
+
+## 8.4 Vergleichsprofile („Wissensdatenbank“)
+
+In der KI-Zentrale gibt es einen dritten Block, der leicht übersehen wird und
+Erklärung verdient: Sie können **anonymisierte Lebensläufe besonders geeigneter
+Mitarbeitender** hochladen. Die lokale KI erzeugt daraus ein mathematisches
+Profil, und neue Bewerbungen werden damit inhaltlich verglichen.
+
+So funktioniert es technisch:
+
+- Aus jedem PDF wird ein **Vektor** berechnet — eine Zahlenreihe, die den
+  Inhalt zusammenfasst. **Der Lebenslauf selbst wird nicht gespeichert**, und
+  aus dem Vektor lässt er sich nicht zurückrechnen.
+- Ist die lokale KI nicht erreichbar, entsteht **nichts**. Es gibt keinen
+  Fortschrittsbalken, der Erfolg vortäuscht.
+- Alles bleibt auf Ihrem Server.
+
+**Und jetzt das Wichtige — überlegen Sie zweimal, bevor Sie das nutzen:**
+
+- Die Lebensläufe gehören realen Mitarbeitenden. Anonymisieren allein genügt
+  oft nicht; holen Sie deren Einwilligung ein, und beziehen Sie den
+  Betriebsrat ein.
+- „Wer ist ein Best Performer?“ ist eine Wertung, keine Messung. Wer die
+  bisherige Belegschaft zum Maßstab macht, schreibt deren Zusammensetzung
+  fort — das kann eine mittelbare Benachteiligung im Sinne des AGG sein.
+- Nutzen Sie es, wenn überhaupt, für **fachliche Ähnlichkeit** (welche
+  Tätigkeiten, welche Qualifikationen) und nie als Ersatz für das Anschauen
+  einer Bewerbung.
+
+Wenn Sie das nicht sicher beurteilen können: Lassen Sie den Block leer. Die
+Plattform funktioniert vollständig ohne ihn.
+
+---
+
+# Teil 9 — Anbindung an andere Systeme
+
+Dieser Teil richtet sich an die IT.
+
+![HRIS-Anbindung: Übergabe an das Personalsystem](docs/handbuch/B3-hris.png)
+
+- **HRIS-Übergabe:** Steht eine Einstellung fest, lassen sich die Daten
+  strukturiert an das Personalsystem übergeben, statt sie abzutippen.
+- **SAP SuccessFactors:** Eine eigene Seite bildet die Felder beider Systeme
+  aufeinander ab.
+- **Stellenbörsen:** SecurATS liefert Ihre Stellen als Datenstrom für
+  Jobbörsen und die Bundesagentur für Arbeit. Diese Zugänge sind mit einem
+  Schlüssel geschützt — **ist keiner gesetzt, sind die Datenströme offen
+  erreichbar.** Bitte prüfen Sie das bei der Einrichtung.
+
+---
+
+# Teil 10 — Was Bewerbende sehen
+
+Es hilft, die andere Seite zu kennen — auch, um Rückfragen zu verstehen.
+
+![Die öffentliche Startseite der Karriereseite](docs/handbuch/C0-karriereseite.png)
+
+**Die Karriereseite** ist die Startseite. Was dort steht, pflegen Sie in
+Teil 7.
+
+![Die öffentliche Stellenliste mit Filtern](docs/handbuch/C1-stellenliste.png)
+
+**Die Stellenliste** zeigt alle veröffentlichten Stellen, mit Filtern nach
+Ort, Bereich und Umfang. Jede Anzeige nennt die Gehaltsspanne — das ist keine
+Einstellung, sondern Pflicht.
+
+![Anmeldung für Benachrichtigungen über neue Stellen](docs/handbuch/C2-jobalert.png)
+
+**Benachrichtigungen:** Wer noch nichts Passendes findet, hinterlässt seine
+Adresse und wird bei neuen Stellen benachrichtigt. Die Anmeldung wird per
+E-Mail bestätigt (Double-Opt-in), und jede Nachricht enthält einen
+Abmelde-Link.
+
+**Nach der Bewerbung** bekommt die Person einen persönlichen Link. Darüber
+sieht sie ihren Stand, bucht Gesprächstermine selbst, kann Nachrichten
+schreiben, ihre Daten herunterladen und die Bewerbung zurückziehen — ohne
+Konto und ohne Passwort.
+
 ---
 
 # Teil 5 — Wenn etwas klemmt

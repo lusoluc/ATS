@@ -2231,10 +2231,10 @@
         }
     }
 
-    function simulateCVIngestion(event) {
-        // Name aus historischen Gruenden beibehalten; die Funktion ist jetzt
-        // ECHT: sie laedt die Dateien hoch, der Server erzeugt per Ollama
-        // echte Embeddings und speichert sie. Kein Fortschritts-Theater mehr.
+    function ladeVergleichsprofileHoch(event) {
+        // Laedt die Dateien hoch; der Server erzeugt per Ollama echte
+        // Embeddings und speichert sie. Hiess frueher simulateCVIngestion und
+        // war genau das - ein Fortschrittsbalken ohne Wirkung.
         event.preventDefault();
         event.stopPropagation();
 

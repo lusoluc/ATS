@@ -130,8 +130,13 @@ class Command(BaseCommand):
     def _aufnehmen(self, browser: Any, basis: str, bild: Bild) -> None:
         groesse = ({"width": 390, "height": 844} if bild.mobil
                    else {"width": BREITE, "height": HOEHE})
+        # Aufloesung 1:1. Mit doppelter Pixeldichte wog ein Bild rund 1,4 MB -
+        # bei ueber 40 Bildern waere das Repository um mehrere Dutzend Megabyte
+        # gewachsen, ohne dass jemand die Bilder je so gross braucht. 1280 px
+        # Breite sind am Bildschirm scharf und ergeben gedruckt auf 16 cm rund
+        # 200 dpi.
         kontext = browser.new_context(viewport=groesse,
-                                      device_scale_factor=2,
+                                      device_scale_factor=1,
                                       locale="de-DE")
         seite = kontext.new_page()
         try:

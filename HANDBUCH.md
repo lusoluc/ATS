@@ -601,6 +601,21 @@ und ist bei einer öffentlichen Stelle rechtlich verlangt (BFSG).
 Achten Sie außerdem darauf, Fotos von Mitarbeitenden nur mit deren
 Einwilligung zu verwenden.
 
+Über der Tabelle steht, welcher Ausschnitt gerade zu sehen ist — etwa
+„1–50 von 62 Dateien“. Der Bestand wächst nur, deshalb blättern Sie mit
+**„Ältere Dateien“** weiter nach hinten; auch die erste hochgeladene Datei ist
+so erreichbar. Wer eine bestimmte Datei sucht, tippt sie ins Feld
+**„Datei suchen“** und drückt **„Suchen“**. Gesucht wird in beidem: im
+Anzeigenamen und im Dateinamen. Das ist wichtig, sobald beides auseinanderläuft
+— aus „IMG_2831.jpg“ wird beim Hochladen gern „Teamfoto Station 3“, und
+gefunden werden soll die Datei unter beiden Namen. Ergibt eine Suche nichts,
+sagt die Seite es und nennt den Bestand, damit „nichts gefunden“ und „hier ist
+nichts“ nicht gleich aussehen; **„Suche zurücksetzen“** bringt Sie zur vollen
+Liste zurück.
+
+Wenn Sie eine Datei löschen, kehren Sie auf dieselbe Seite und in dieselbe
+Suche zurück — beim Aufräumen fängt man sonst nach jedem Löschen wieder oben an.
+
 ## 7.4 Textbausteine
 
 ![Textbausteine, die auf mehreren Seiten wiederverwendet werden](docs/handbuch/A3-textbausteine.png)

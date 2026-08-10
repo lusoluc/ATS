@@ -1467,3 +1467,122 @@ class GuardrailScansProveThemselvesTestCase(TestCase):
         self.assertTrue(any("kaputt.py" in f for f in funde),
                         "Die Funktionsprobe fand den absichtlichen Schlucker "
                         "nicht - der Waechter waere wirkungslos.")
+
+
+class GuardrailNoExternalAssetsTestCase(TestCase):
+    """Die Oberfläche lädt nichts aus dem Netz nach.
+
+    SecurATS wird ausdrücklich als On-Premise-System verkauft, teils für
+    abgeschottete Netze. Schriften und Symbole kamen trotzdem von
+    `cdnjs.cloudflare.com` und `fonts.googleapis.com`: Ohne Internetzugang
+    fehlten damit ALLE Symbole und die Hausschrift — und jeder Seitenaufruf
+    teilte Cloudflare und Google die IP-Adresse der Nutzenden mit. Bei einer
+    Bewerbungsplattform ist das ein Personenbezug, den niemand angekündigt hat.
+
+    Geprüft wird die EINBINDUNG (link/script/@import/url), nicht jede
+    Erwähnung: Ein Verweis im Fließtext oder in einem Kommentar ist
+    unbedenklich und manchmal nötig (Quellenangabe, Erklärung).
+    """
+
+    #: Datei -> warum hier ausnahmsweise von aussen geladen werden MUSS.
+    ERLAUBT: dict[str, str] = {}
+
+    def _einbindungen(self, text: str) -> list[str]:
+        import re
+        treffer = []
+        treffer += re.findall(r'<link[^>]+href=["\'](https?://[^"\']+)', text)
+        treffer += re.findall(r'<script[^>]+src=["\'](https?://[^"\']+)', text)
+        treffer += re.findall(r'@import\s+["\']?(https?://[^"\')]+)', text)
+        treffer += re.findall(r'url\((["\']?)(https?://[^"\')]+)', text)
+        return [t if isinstance(t, str) else t[-1] for t in treffer]
+
+    def test_no_template_loads_assets_from_the_internet(self):
+        import pathlib
+        wurzel = pathlib.Path("templates")
+        dateien = sorted(wurzel.rglob("*.html"))
+        self.assertGreaterEqual(
+            len(dateien), 20,
+            "Der Scan findet fast keine Vorlagen - er prueft ins Leere.")
+        offen = []
+        for tpl in dateien:
+            text = tpl.read_text(encoding="utf-8", errors="ignore")
+            for quelle in self._einbindungen(text):
+                if tpl.name in self.ERLAUBT:
+                    continue
+                offen.append(f"{tpl.name}: {quelle}")
+        self.assertEqual(
+            offen, [],
+            "Vorlage laedt eine Ressource aus dem Internet. Auf einer "
+            "abgeschotteten Installation fehlt sie dann. Bitte lokal "
+            "ausliefern (static/vendor/, siehe LIZENZEN.md) ODER mit "
+            "Begruendung in ERLAUBT eintragen: " + ", ".join(offen))
+
+    def test_the_exception_list_has_no_dead_entries(self):
+        import pathlib
+        vorhanden = {t.name for t in pathlib.Path("templates").rglob("*.html")}
+        tot = sorted(set(self.ERLAUBT) - vorhanden)
+        self.assertEqual(tot, [], f"Ausnahme ohne zugehoerige Vorlage: {tot}")
+
+    def test_the_scan_would_notice_a_new_reference(self):
+        """Funktionsprobe: Erkennt der Scan eine kuenstlich eingebaute
+        Einbindung? Ohne diesen Nachweis koennte die Erkennung stillschweigend
+        kaputtgehen und der Waechter waere ab dann ein gruener Nichtstuer."""
+        probe = ('<link rel="stylesheet" href="https://example.invalid/a.css">'
+                 '<script src="https://example.invalid/b.js"></script>'
+                 '@import "https://example.invalid/c.css";'
+                 'url(https://example.invalid/d.woff2)')
+        gefunden = self._einbindungen(probe)
+        self.assertEqual(len(gefunden), 4,
+                         f"Der Scan uebersieht Einbindungen: {gefunden}")
+
+    def test_a_mention_in_text_is_not_flagged(self):
+        """Eine Quellenangabe im Fliesstext ist keine Einbindung."""
+        probe = ('<p>Quelle: https://fontawesome.com</p>'
+                 '{# geladen wurde frueher von https://cdnjs.cloudflare.com #}')
+        self.assertEqual(self._einbindungen(probe), [])
+
+
+class GuardrailLocalAssetsResolveTestCase(TestCase):
+    """Jede lokal eingebundene Datei muss auch wirklich liegen.
+
+    Beim Lokal-Ausliefern der Symbole ist genau das schiefgegangen: Die CSS
+    lag eine Ebene zu hoch, ihr relativer Verweis `../webfonts/` zeigte ins
+    Leere, und die Seite lud ohne Symbole. Kein Test hat das bemerkt — nur der
+    Blick in die Netzwerk-Anfragen des Browsers. Dieser Waechter macht daraus
+    eine Pruefung: Er loest die Verweise IN den CSS-Dateien auf und verlangt,
+    dass die Zieldatei existiert.
+    """
+
+    def test_every_stylesheet_reference_exists(self):
+        import pathlib
+        import re
+        wurzel = pathlib.Path("static")
+        css_dateien = sorted(wurzel.rglob("*.css"))
+        self.assertGreaterEqual(
+            len(css_dateien), 1,
+            "Kein Stylesheet gefunden - der Waechter prueft ins Leere.")
+        fehlend = []
+        for css in css_dateien:
+            text = css.read_text(encoding="utf-8", errors="ignore")
+            for roh in re.findall(r"url\(([^)]+)\)", text):
+                ziel = roh.strip("\"' ")
+                if ziel.startswith(("http", "data:", "#")):
+                    continue
+                ziel = ziel.split("?")[0].split("#")[0]
+                if not (css.parent / ziel).resolve().exists():
+                    fehlend.append(f"{css.as_posix()} -> {ziel}")
+        self.assertEqual(
+            fehlend, [],
+            "Ein Stylesheet verweist auf eine Datei, die es nicht gibt. Die "
+            "Seite laedt dann ohne Schrift oder Symbole, ohne dass jemand "
+            "etwas merkt: " + ", ".join(fehlend))
+
+    def test_the_scan_would_notice_a_broken_reference(self):
+        """Funktionsprobe gegen einen kuenstlich kaputten Verweis."""
+        import pathlib
+        import re
+        probe = "@font-face{src:url(../gibtsnicht/x.woff2) format('woff2')}"
+        ziele = [z.strip("\"' ") for z in re.findall(r"url\(([^)]+)\)", probe)]
+        self.assertEqual(ziele, ["../gibtsnicht/x.woff2"])
+        basis = pathlib.Path("static")
+        self.assertFalse((basis / ziele[0]).exists())

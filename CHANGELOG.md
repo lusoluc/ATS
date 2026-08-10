@@ -5,6 +5,44 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (Die Oberfläche lud Schrift und Symbole aus dem Netz — entgegen der eigenen Zusage)
+
+`System_Architektur_und_Feature_Katalog.md` wirbt wörtlich mit „Air-Gapped
+Architektur (keine Cloud-APIs, keine Tracker, **keine Google Fonts**)". Der
+Code hielt das nicht: `base.html` lud die Symbole von
+`cdnjs.cloudflare.com` und die Schriften von `fonts.googleapis.com`. Zwei
+Folgen, beide ernst:
+
+- **Ohne Internetzugang fehlten alle Symbole** (leere Kästchen), und die
+  Hausschrift fiel auf eine Systemschrift zurück. Genau der Betriebsfall, für
+  den das Produkt verkauft wird — KRITIS, kirchliche Träger, abgeschottete
+  Netze.
+- **Jeder Seitenaufruf verriet Cloudflare und Google die IP-Adresse der
+  Nutzenden.** Bei einer Bewerbungsplattform ist das ein Personenbezug, den
+  niemand angekündigt hat und für den es keine Rechtsgrundlage gab.
+
+Jetzt liegen beide im Projekt (`static/vendor/`, Lizenzen und Herkunft in
+`static/vendor/LIZENZEN.md`). Mitgeliefert wird nur, was gebraucht wird: der
+Stil „solid" (die Anwendung nutzt ausschließlich `fa-solid`) und die
+Zeichensätze latin/latin-ext — zusammen 425 KB. Die Schriftdateien holt
+`static/vendor/fonts/_holen.py`, das daneben liegt, damit beim nächsten
+Wechsel nachvollziehbar bleibt, wie sie entstanden sind.
+
+**Zwei Wächter, damit es nicht zurückkommt:**
+
+- Keine Vorlage bindet eine Ressource aus dem Internet ein (geprüft werden
+  `link`/`script`/`@import`/`url` — eine Quellenangabe im Fließtext bleibt
+  erlaubt, mit eigener Probe für beide Richtungen).
+- Jeder lokale Verweis in einem Stylesheet zeigt auf eine Datei, die
+  existiert. Dieser zweite Wächter entstand aus einem Fehler in genau diesem
+  Paket: Die Symbol-CSS lag eine Ebene zu hoch, ihr relativer Verweis
+  `../webfonts/` zeigte ins Leere, und die Seite lud ohne Symbole. Kein Test
+  hat das gesehen — nur der Blick in die Netzwerk-Anfragen des Browsers.
+  Jetzt fällt so etwas beim Testlauf auf.
+
+Belegt im Browser: keine externen Aufrufe, keine fehlerhaften Dateien, alle
+Schnitte geladen (Inter, Outfit, Font Awesome 6 Free).
+
 ### Hinzugefügt (Handbuch vollständig — die letzten 22 Seiten, Teil 7 bis 10)
 
 Die Schuldenliste ist abgearbeitet. Neu sind **Teil 7** (Die eigene

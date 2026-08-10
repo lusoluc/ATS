@@ -221,6 +221,19 @@ hinterlegen. Das System schlägt den passenden Baustein vor; Sie ändern ihn ode
 **Einzeln antworten** geht weiterhin: im Steckbrief der Person, Bereich
 Nachrichten.
 
+**Von sich aus alle anschreiben:** Bis hierher ging es um Antworten auf Fragen.
+Manchmal wollen Sie umgekehrt beginnen — eine Einladung zum Infotag, eine
+Nachricht an alle, die sich auf eine Ausbildungsstelle beworben haben. Dafür
+gibt es die Serien-Nachricht: Sie öffnen die Stelle und schreiben eine Vorlage,
+die je Person mit Anrede, Stellenbezeichnung und aktuellem Stand gefüllt wird.
+Vor dem Senden sehen Sie die fertige Nachricht und die Empfängerliste.
+
+Angeschrieben werden nur die **laufenden** Bewerbungen dieser Stelle.
+Abgesagte und zurückgezogene bleiben außen vor — eine Einladung an jemanden,
+dem Sie vorige Woche abgesagt haben, wäre schlimmer als keine Nachricht.
+Jede Person erhält ihre eigene E-Mail und dieselbe Nachricht im Portal;
+niemand sieht die anderen Empfänger.
+
 ## Weg 5 — Gespräche planen und bewerten
 
 **Ziel:** Der Termin steht, alle Beteiligten wissen Bescheid, und die Eindrücke
@@ -626,6 +639,17 @@ Für die IT: `GET /healthz/` liefert den Gesamtzustand als Datensatz —
 Datenbank, Dateiablage, KI-Erreichbarkeit, Zwischenspeicher und die Länge der
 Warteschlange. Das eignet sich auch zur Überwachung.
 
+## 5.6 Zwei Dinge vorweg, wenn etwas klemmt
+
+Bevor Sie die Fälle oben durchgehen:
+
+- **Sie sehen weniger als hier abgebildet.** Das liegt fast immer an Ihrer Rolle,
+  nicht an einem Fehler. Wenn Sie mehr brauchen, wenden Sie sich an Ihre
+  Personalverwaltung.
+- **Etwas reagiert nicht.** Laden Sie die Seite neu. Bleibt es dabei, notieren Sie,
+  was Sie zuletzt getan haben, und melden Sie es Ihrer IT — mit dieser Angabe kann
+  sie sofort etwas anfangen.
+
 ---
 
 # Teil 6 — Was das System für Sie erledigt
@@ -686,18 +710,6 @@ Muster auszugeben.
   Kartendienste oder KI.
 - Keine Bewertung anhand der Angabe zu einer Schwerbehinderung.
 
----
-
-## Und wenn etwas nicht funktioniert?
-
-Die häufigsten Fälle stehen in Teil 5. Zwei Dinge vorweg:
-
-- **Sie sehen weniger als hier abgebildet.** Das liegt fast immer an Ihrer Rolle,
-  nicht an einem Fehler. Wenn Sie mehr brauchen, wenden Sie sich an Ihre
-  Personalverwaltung.
-- **Etwas reagiert nicht.** Laden Sie die Seite neu. Bleibt es dabei, notieren Sie,
-  was Sie zuletzt getan haben, und melden Sie es Ihrer IT — mit dieser Angabe kann
-  sie sofort etwas anfangen.
 ---
 
 # Teil 7 — Die eigene Karriereseite

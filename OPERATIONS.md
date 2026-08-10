@@ -72,7 +72,17 @@ Anonymisierung nach Fristablauf, die die Oberfläche als „automatisch" zusagt
 # rot. Nach Prompt-/Modellaenderungen von Hand starten; wer das
 # KI-Profil produktiv betreibt, kann ihn als Host-Cron ergaenzen:
 0 3 * * 0   cd /app && python manage.py ai_eval
+# AGG-Strecke: gleiche Qualifikation, anderes Merkmal nach § 1 AGG - die
+# Note darf sich nicht verschieben. Gleiche Bedingungen wie oben, laenger
+# (mehrere Bewertungen je Formulierung). Endet mit Exit-Code 1, wenn eine
+# Note wandert:
+0 4 * * 0   cd /app && python manage.py agg_eval
 ```
+
+> **Wer die KI-Vorbewertung einschaltet, laesst vorher `agg_eval` laufen.**
+> Verschiebt sich dort eine Note, ist das kein Schoenheitsfehler: Bei
+> gleicher Qualifikation entscheidet dann das Merkmal mit. Bis das geklaert
+> ist, bleibt die Vorbewertung aus - sie ist ohnehin per Default aus.
 
 Queue-Abarbeitung ohne Dauer-Worker (Alternative zu `--loop`):
 ```cron

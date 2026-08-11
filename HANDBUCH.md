@@ -139,6 +139,15 @@ Schritt gefragt:
    Entwurf flüssig ausformulieren. Beides füllt nur leere Felder, nichts
    wird überschrieben, und Gehaltszahlen nennt der Entwurf grundsätzlich
    nicht — die Spanne kommt aus dem Entgeltband.
+
+   Zur Beschreibung gehören zwei freiwillige Zusatzfassungen: **Leichte
+   Sprache** (kurze Sätze, einfache Wörter — für Menschen, denen der
+   Amtston Hürden baut) und eine **englische Fassung** (für internationale
+   Bewerbende, bis das Deutsch reicht). Beide bekommen auf der öffentlichen
+   Anzeige einen Umschalter, sobald sie gepflegt sind; ein leeres Feld
+   bedeutet schlicht: kein Umschalter. Die lokale KI liefert auf Knopfdruck
+   einen Entwurf — er landet zur Prüfung im Textfeld, nie ungesehen auf der
+   Anzeige.
 3. **Gehaltsspanne** — von … bis. Ohne diese Angabe lässt sich die Stelle nicht
    veröffentlichen. Das ist keine Schikane, sondern seit der EU-Richtlinie zur
    Entgelttransparenz Pflicht: Bewerbende dürfen vorher wissen, worüber

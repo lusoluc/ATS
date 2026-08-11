@@ -229,28 +229,52 @@
         <div class="detail-block">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
                 <h2 style="margin:0;"><i class="fa-solid fa-align-left"></i> Stellenbeschreibung</h2>
-                {% if job.descriptionEasy %}
-                <button type="button" id="easyToggle" onclick="toggleEasyLang()" aria-pressed="false"
-                        style="background:none;border:1px solid var(--glass-border);color:var(--text-main);border-radius:var(--border-radius-sm);padding:6px 12px;cursor:pointer;font-size:13px;">
-                    <i class="fa-solid fa-language" aria-hidden="true"></i> <span id="easyToggleLabel">Leichte Sprache</span>
-                </button>
+                {% if job.descriptionEasy or job.descriptionEnglish %}
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    {% if job.descriptionEasy %}
+                    <button type="button" id="descBtnEasy" onclick="showDesc('easy')" aria-pressed="false"
+                            style="background:none;border:1px solid var(--glass-border);color:var(--text-main);border-radius:var(--border-radius-sm);padding:6px 12px;cursor:pointer;font-size:13px;">
+                        <i class="fa-solid fa-universal-access" aria-hidden="true"></i> Leichte Sprache
+                    </button>
+                    {% endif %}
+                    {% if job.descriptionEnglish %}
+                    <button type="button" id="descBtnEnglish" onclick="showDesc('english')" aria-pressed="false" lang="en"
+                            style="background:none;border:1px solid var(--glass-border);color:var(--text-main);border-radius:var(--border-radius-sm);padding:6px 12px;cursor:pointer;font-size:13px;">
+                        <i class="fa-solid fa-language" aria-hidden="true"></i> English
+                    </button>
+                    {% endif %}
+                </div>
                 {% endif %}
             </div>
             <p id="descStandard" style="color: var(--text-main); font-size: 15px; line-height: 1.8; margin-top: 12px;">{{ job.description|linebreaksbr }}</p>
             {% if job.descriptionEasy %}
             <p id="descEasy" style="display:none; color: var(--text-main); font-size: 17px; line-height: 2; margin-top: 12px;">{{ job.descriptionEasy|linebreaksbr }}</p>
+            {% endif %}
+            {% if job.descriptionEnglish %}
+            {% comment %} lang="en": Screenreader wechseln sonst nicht die
+               Aussprache (WCAG 3.1.2). {% endcomment %}
+            <p id="descEnglish" lang="en" style="display:none; color: var(--text-main); font-size: 15px; line-height: 1.8; margin-top: 12px;">{{ job.descriptionEnglish|linebreaksbr }}</p>
+            {% endif %}
+            {% if job.descriptionEasy or job.descriptionEnglish %}
             <script>
-            function toggleEasyLang() {
-                var std = document.getElementById('descStandard');
-                var easy = document.getElementById('descEasy');
-                var label = document.getElementById('easyToggleLabel');
-                var showEasy = easy.style.display === 'none';
-                easy.style.display = showEasy ? 'block' : 'none';
-                std.style.display = showEasy ? 'none' : 'block';
-                label.textContent = showEasy ? 'Normale Sprache' : 'Leichte Sprache';
-                // Zustand fuer Screenreader (WCAG 4.1.2)
-                document.getElementById('easyToggle')
-                    .setAttribute('aria-pressed', showEasy ? 'true' : 'false');
+            // Drei Fassungen, EIN sichtbarer Text. Ein aktiver Knopf zurueck-
+            // geklickt = zurueck zur normalen Fassung.
+            function showDesc(which) {
+                var alle = { standard: document.getElementById('descStandard'),
+                             easy: document.getElementById('descEasy'),
+                             english: document.getElementById('descEnglish') };
+                var knoepfe = { easy: document.getElementById('descBtnEasy'),
+                                english: document.getElementById('descBtnEnglish') };
+                var aktiv = knoepfe[which] &&
+                            knoepfe[which].getAttribute('aria-pressed') === 'true';
+                var ziel = aktiv ? 'standard' : which;
+                for (var k in alle) {
+                    if (alle[k]) alle[k].style.display = (k === ziel) ? 'block' : 'none';
+                }
+                for (var b in knoepfe) {
+                    if (knoepfe[b]) knoepfe[b].setAttribute('aria-pressed',
+                        b === ziel ? 'true' : 'false');   // WCAG 4.1.2
+                }
             }
             </script>
             {% endif %}

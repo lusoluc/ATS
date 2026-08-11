@@ -73,6 +73,7 @@ def seed_data_if_empty():
         # Schalter wurden nie durchgesetzt (keine automatische KI-Absage).
         "AI_AGG_PROMPT": "Prüfe den folgenden Text auf Diskriminierung (Alter, Geschlecht, Herkunft, Religion) nach dem deutschen AGG. Zeige kritische Stellen auf und mache neutrale Formulierungsvorschläge.",
         "AI_EASY_LANGUAGE_PROMPT": "Übersetze den folgenden Text in leichte Sprache (A2/B1 Niveau). Nutze kurze Sätze, vermeide Fachwörter und verwende aktive Verben.",
+        "AI_ENGLISH_PROMPT": "Übersetze den folgenden deutschen Anzeigentext in klares, natürliches Englisch (B1-Niveau, freundlich, ohne Amtsdeutsch). Erfinde nichts dazu, lass nichts weg und nenne keine Gehaltszahlen.",
         "AI_MODEL": "gemma:2b"
     }
     for k, v in ai_defaults.items():

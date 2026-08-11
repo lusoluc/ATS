@@ -72,6 +72,10 @@ def create_job(request):
         # Stellendetail blieb auf Produktivdaten fuer immer leer.
         easy_sent = 'description_easy' in request.POST
         description_easy = request.POST.get('description_easy', '').strip()
+        # Englische Fassung: gleiche Semantik wie die Leichte Sprache -
+        # nur aendern, wenn das Feld mitgesendet wurde.
+        english_sent = 'description_english' in request.POST
+        description_english = request.POST.get('description_english', '').strip()
 
         tasks_raw = request.POST.get('tasks', '')
         requirements_raw = request.POST.get('requirements', '')
@@ -139,6 +143,8 @@ def create_job(request):
                 job.description = description
                 if easy_sent:
                     job.descriptionEasy = description_easy or None
+                if english_sent:
+                    job.descriptionEnglish = description_english or None
                 job.tasksJson = tasks
                 job.requirementsJson = requirements
                 job.screeningQuestionsJson = screening_questions
@@ -162,6 +168,7 @@ def create_job(request):
                     panelDeadlineDays=panel_deadline,
                     description=description,
                     descriptionEasy=description_easy or None,
+                    descriptionEnglish=description_english or None,
                     tasksJson=tasks,
                     requirementsJson=requirements,
                     screeningQuestionsJson=screening_questions,

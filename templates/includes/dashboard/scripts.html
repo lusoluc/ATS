@@ -659,6 +659,31 @@
             .finally(() => { btn.disabled = false; });
     }
 
+    function draftEnglish(btn) {
+        // Englische Fassung: KI-ENTWURF, landet im Textfeld zur Pruefung.
+        // Kein deterministischer Fallback - eine Uebersetzung laesst sich
+        // nicht durch Satzkuerzung ersetzen. Ohne KI bleibt das Feld leer.
+        const src = document.getElementById('job-desc-inp');
+        const target = document.getElementById('job-desc-english');
+        const status = document.getElementById('job-english-status');
+        if (!src.value.trim()) { status.innerText = 'Bitte zuerst eine Beschreibung eingeben.'; return; }
+        btn.disabled = true; status.innerText = 'KI übersetzt ins Englische…';
+        const fd = new FormData();
+        fd.append('text', src.value);
+        fetch("{% url 'ats:gemma_translate_english' %}", { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                if (d.success && d.result) {
+                    target.value = d.result;
+                    status.innerText = 'Entwurf erstellt – bitte prüfen und bei Bedarf anpassen.';
+                } else {
+                    status.innerText = d.error || 'KI nicht erreichbar – Feld unverändert.';
+                }
+            })
+            .catch(() => { status.innerText = 'KI nicht erreichbar – Feld unverändert.'; })
+            .finally(() => { btn.disabled = false; });
+    }
+
     function getDragAfterElement(container, y) {
         const cards = [...container.querySelectorAll('.applicant-card:not(.dragging)')];
         return cards.reduce((closest, el) => {

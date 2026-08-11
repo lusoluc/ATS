@@ -69,6 +69,15 @@ _OLLAMA_BASE_CACHE: tuple[float, str] | None = None
 #: nicht bei jedem Schritt neu sucht.
 OLLAMA_DISCOVERY_TTL = 60.0
 
+#: Zeitlimit je Verbindungsversuch. Ollama laeuft auf demselben Rechner oder
+#: im selben Netz: Dort steht eine TCP-Verbindung in Millisekunden, oder sie
+#: wird sofort abgelehnt. Die zwei Sekunden wirkten nur in EINEM Fall - wenn
+#: Pakete ins Leere laufen (host.docker.internal ohne Docker), und genau der
+#: ist der Normalfall beim Kunden ohne KI-Profil. Drei solche Versuche
+#: hintereinander kosteten das Dashboard sechs Sekunden. 0,8 Sekunden sind
+#: fuer einen Handshake im LAN reichlich.
+OLLAMA_CONNECT_TIMEOUT = 0.8
+
 
 def reset_ollama_url_cache() -> None:
     """Suche vergessen - fuer Tests und fuer `ai_doctor`, das den echten
@@ -105,7 +114,8 @@ def _discover_ollama_base(port: str) -> str:
     base = None
     for host in ["host.docker.internal", "127.0.0.1"]:
         try:
-            s = socket.create_connection((host, int(port)), timeout=2.0)
+            s = socket.create_connection((host, int(port)),
+                                         timeout=OLLAMA_CONNECT_TIMEOUT)
             s.close()
             base = f"{host}:{port}"
             break
@@ -197,7 +207,8 @@ def ollama_reachable() -> bool:
     parts = urlsplit(get_ollama_url("api/tags"))
     host, port = parts.hostname or "127.0.0.1", parts.port or 11434
     try:
-        socket.create_connection((host, port), timeout=2.0).close()
+        socket.create_connection((host, port),
+                                 timeout=OLLAMA_CONNECT_TIMEOUT).close()
         alive = True
     except OSError:
         alive = False

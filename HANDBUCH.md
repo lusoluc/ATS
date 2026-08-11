@@ -500,6 +500,13 @@ Die KI-Vorbewertung ist **im Auslieferungszustand aus**. Das ist eine bewusste
 Entscheidung: Eine Einordnung von Menschen durch ein Modell soll niemand
 versehentlich aktiviert haben.
 
+Im Menü steht neben „KI-Zentrale“ ein kleines Abzeichen mit dem Zustand:
+**AUS** heißt, die Assistenz ist nicht freigeschaltet — das ist der
+Normalfall und kein Fehler. **ONLINE** und **OFFLINE** erscheinen erst,
+wenn Sie eingeschaltet haben; OFFLINE heißt dann, dass die KI zwar
+freigeschaltet, aber gerade nicht erreichbar ist (siehe 5.3). Ob eine KI
+antwortet, prüft die KI-Zentrale selbst — auch schon vor dem Einschalten.
+
 Wenn Sie sie einschalten, gilt:
 
 - Die Einordnung A bis D ist eine **Lesehilfe**. Sie sortiert nichts aus und

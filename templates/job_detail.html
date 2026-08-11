@@ -18,6 +18,21 @@
         margin-top: 20px;
     }
 
+    /* Ein Grid-Element schrumpft ohne min-width:0 nie unter die Breite seines
+       laengsten Wortes. Bei deutschen Komposita ("Pflegehilfskraft",
+       "Schwerbehindertenvertretung") reicht ein Wort, um die Spalte am Handy
+       ueber den Rand zu schieben - und body{overflow-x:hidden} schneidet den
+       Ueberstand ab, statt ihn scrollbar zu machen. Betroffen war zuletzt
+       ausgerechnet "One-Click bewerben": der wichtigste Knopf der Seite,
+       am Telefon nicht anklickbar. */
+    .detail-main, .detail-sidebar {
+        min-width: 0;
+    }
+
+    .detail-main h1, .detail-main h2, .detail-header h1 {
+        overflow-wrap: break-word;
+    }
+
     /* Left Details Section */
     .detail-main {
         display: flex;

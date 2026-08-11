@@ -77,7 +77,17 @@ Anonymisierung nach Fristablauf, die die Oberfläche als „automatisch" zusagt
 # (mehrere Bewertungen je Formulierung). Endet mit Exit-Code 1, wenn eine
 # Note wandert:
 0 4 * * 0   cd /app && python manage.py agg_eval
+# Handy-Pruefung der oeffentlichen Seiten (375 px, echter Browser). Braucht
+# playwright, nicht Ollama - laeuft also auch ohne KI-Profil. Exit-Code 1,
+# sobald etwas ueber den Rand ragt:
+0 5 * * 0   cd /app && python manage.py mobil_pruefen
 ```
+
+> **Nach jeder Aenderung an `base.html` oder einer oeffentlichen Vorlage:**
+> `python manage.py mobil_pruefen`. Diese Fehlerklasse ist im HTML nicht zu
+> sehen - `body { overflow-x: hidden }` schneidet Ueberstehendes ab, statt es
+> scrollbar zu machen. Zuletzt lag deshalb "One-Click bewerben" ausserhalb
+> des Handy-Bildschirms, ohne dass es jemandem auffiel.
 
 > **Wer die KI-Vorbewertung einschaltet, laesst vorher `agg_eval` laufen.**
 > Verschiebt sich dort eine Note, ist das kein Schoenheitsfehler: Bei

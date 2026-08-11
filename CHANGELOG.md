@@ -5,6 +5,29 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Hinzugefügt (Verlaufs-Kurzfassung: den Schriftwechsel in Sekunden erfassen)
+
+Wer einen Fall übernimmt — Urlaubsvertretung, Krankheitsfall, „Mein Bereich"
+einer Kollegin — las bisher den ganzen Nachrichtenverlauf von unten nach oben,
+nur um drei Fragen zu beantworten: Wie viel wurde geschrieben, wer ist am Zug,
+worum ging es zuletzt? Der Steckbrief beantwortete das für die Bewerbung,
+nicht für den Schriftwechsel.
+
+- **Auf der Antworten-Seite** (aus dem Postfach) steht jetzt eine Kurzfassung
+  über dem Verlauf: Zählung und Zeitraum, wer zuletzt schrieb, seit wie vielen
+  Tagen eine Frage unbeantwortet ist, das Anliegen der letzten eingehenden
+  Nachricht (über die bestehende Postfach-Klassifikation, kein neues
+  Regelwerk) — und als Zitat der Anfang der letzten Nachricht, die eine Zeile,
+  die sagt, ob es eilt.
+- **Dieselbe Kurzfassung in der Bewerbungskarte**, unter dem Steckbrief. Eine
+  unbeantwortete Frage trägt dort ihre Wartezeit sichtbar („wartet seit
+  6 Tagen").
+- **Wie beim Steckbrief**: Die Fakten sind deterministisch; die lokale KI darf
+  den Text nur umformulieren (hinter demselben Opt-in, ohne Freischaltung kein
+  Verbindungsversuch — per Test festgehalten). Der Auszug bleibt immer
+  wörtliches Zitat, nie KI-Material. Fällt die KI aus, bleibt der
+  deterministische Text.
+
 ### Hinzugefügt (Stellen-Entwurf: aus Bausteinen statt vor dem leeren Feld)
 
 Die Konvertierung einer Bedarfsmeldung erzeugte wörtlich „<Titel> —

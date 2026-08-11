@@ -1240,9 +1240,16 @@ def application_messages(request, app_id):
             action='STATUS_CHANGE', applicationId=str(app.id),
             createdAt__gte=last_out.createdAt).exists()
         awaiting_reply = not answered and not status_changed
+    # Verlaufs-Kurzfassung: Wer den Fall uebernimmt (Vertretung), soll in
+    # Sekunden wissen, wie viel geschrieben wurde, wer am Zug ist und worum es
+    # zuletzt ging - statt den Verlauf von unten nach oben zu lesen.
+    from ..thread_summary import build_verlauf, verlauf_text
+    fakten = build_verlauf(app)
     return render(request, 'messages.html',
                   {'application': app, 'messages': msgs,
-                   'awaiting_reply': awaiting_reply})
+                   'awaiting_reply': awaiting_reply,
+                   'verlauf': verlauf_text(fakten) if fakten else '',
+                   'verlauf_fakten': fakten})
 
 
 @any_staff_required
@@ -1378,6 +1385,18 @@ def application_summary(request, app_id):
         result['learned'] = {'grade': grade, 'reasons': reasons,
                              'context': ctx}
 
+    # Verlaufs-Kurzfassung: dieselben Fakten wie auf der Nachrichten-Seite,
+    # damit die Uebernahme eines Falls schon in der Karte beginnt.
+    from ..thread_summary import build_verlauf, verlauf_text
+    fakten = build_verlauf(app)
+    if fakten is not None:
+        result['verlauf'] = {
+            'text': verlauf_text(fakten),
+            'auszug': fakten.auszug,
+            'wartet_seit_tagen': fakten.wartet_seit_tagen,
+            'used_ai': False,
+        }
+
     # Optionale lokale Umformulierung - strikt nur umformulieren. Hinter dem
     # AI-Opt-in: ist die KI-Assistenz aus (Default), kommt der deterministische
     # Text SOFORT zurueck (kein Ollama-Verbindungsversuch, kein Modal-Hänger).
@@ -1388,24 +1407,41 @@ def application_summary(request, app_id):
 
     from ..ai_safety import wrap_untrusted
     from .ai import get_ai_model, get_ollama_url, make_ollama_request
-    payload = {
-        "model": get_ai_model(),
-        "system": ("Formuliere die folgenden Fakten zu einer Bewerbung in ein "
-                   "bis zwei sachliche, fluessige Saetze um. Erfinde NICHTS, "
-                   "fuege nichts hinzu, lass keine Zahl und kein Kriterium weg, "
-                   "keine Wertung. Antworte nur mit dem umformulierten Text."),
-        "prompt": wrap_untrusted(text),
-        "stream": False,
-        "options": {"temperature": 0.2},
-        "keep_alive": "10m",
-    }
-    try:
-        ok, data = make_ollama_request(get_ollama_url(), payload, timeout=15.0)
-        if ok and (data.get('response') or '').strip():
-            result['text'] = data['response'].strip()[:800]
-            result['used_ai'] = True
-    except Exception:
-        logger.exception("Steckbrief-Umformulierung nicht verfügbar")
+
+    def _umformulieren(quelle: str, timeout: float) -> str | None:
+        """Strikt nur umformulieren - bei jedem Fehler bleibt das Original."""
+        payload = {
+            "model": get_ai_model(),
+            "system": ("Formuliere die folgenden Fakten zu einer Bewerbung in "
+                       "ein bis zwei sachliche, fluessige Saetze um. Erfinde "
+                       "NICHTS, fuege nichts hinzu, lass keine Zahl und kein "
+                       "Kriterium weg, keine Wertung. Antworte nur mit dem "
+                       "umformulierten Text."),
+            "prompt": wrap_untrusted(quelle),
+            "stream": False,
+            "options": {"temperature": 0.2},
+            "keep_alive": "10m",
+        }
+        try:
+            ok, data = make_ollama_request(get_ollama_url(), payload,
+                                           timeout=timeout)
+            if ok and (data.get('response') or '').strip():
+                return data['response'].strip()[:800]
+        except Exception:
+            logger.exception("Steckbrief-Umformulierung nicht verfügbar")
+        return None
+
+    neu = _umformulieren(text, timeout=15.0)
+    if neu:
+        result['text'] = neu
+        result['used_ai'] = True
+    # Der Auszug bleibt woertlich - umformuliert wird NUR der Faktentext.
+    # Kuerzeres Zeitfenster: die erste Anfrage hat das Modell schon geweckt.
+    if fakten is not None:
+        neu = _umformulieren(result['verlauf']['text'], timeout=10.0)
+        if neu:
+            result['verlauf']['text'] = neu
+            result['verlauf']['used_ai'] = True
     return JsonResponse(result)
 
 

@@ -5,6 +5,49 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (Auf den Entscheider-Seiten war die Suche 16 Pixel hoch)
+
+Der Handy-Wächter aus dem Paket davor kannte nur die öffentlichen Seiten.
+Jetzt kennt er auch die interne Strecke — und misst zusätzlich die Zielgrößen
+der Bedienelemente. Im CHANGELOG stand bisher:
+
+> „Geprüft und in Ordnung befunden statt angenommen: Zielgrößen (27 px
+> Desktop, 44 px Phone)"
+
+Gemessen wurde etwas anderes:
+
+- **Die globale Suche im Kopfbereich maß 87 × 16 px** — auf *jeder* internen
+  Seite. Der gepolsterte Rahmen sieht aus wie ein Feld; klickbar ist aber nur
+  das Eingabefeld darin, und das war 16 px hoch. WCAG 2.5.8 verlangt 24.
+- **Die Board-Filter „Nach Quelle" und „Nach KI-Score" waren 19 px hoch.**
+- **Der Kalender-Export `.ics` lag außerhalb des Bildschirms**: Die
+  Monats-Navigation auf der Termine-Seite brach nicht um und schob ihn auf
+  391 px. Wer sich die Gespräche in Outlook holen wollte, kam am Telefon
+  nicht heran.
+
+Ursache im Kern: Der Mobile-Block in `base.html` schreibt sich selbst
+„(2) Buttons als echte Touch-Ziele" auf die Fahne — und meinte damit
+ausschließlich `.btn`. Eingabe- und Auswahlfelder standen nicht in der Regel.
+Wer tippt und auswählt, braucht aber dieselbe Zielgröße wie wer klickt.
+Jetzt: 44 px für Eingaben und Auswahlfelder, 24 px für Kontrollkästchen
+(größer wirkt neben dem Text wie ein Fehler).
+
+- **Der Wächter deckt jetzt 14 Seiten** statt acht, meldet Bedienelemente
+  unter 24 px und meldet **nicht** mehr, was in einem scrollbaren Kasten
+  steht — eine breite Tabelle im `.table-scroll`-Wrapper ist erreichbar, man
+  schiebt sie. Ohne diese Unterscheidung hätte er bei jeder Tabelle Alarm
+  geschlagen und wäre nach zwei Wochen abgeschaltet worden.
+- Dekorative Hintergrund-Verläufe bluten absichtlich über den Rand; gemeldet
+  wird nur noch, was das Dokument verbreitert oder ein Bedienelement
+  hinausschiebt.
+
+**Nebenbefund im eigenen Netz:** Der Label-Wächter (`GuardrailFormLabelTestCase`)
+schlug bei einem CSS-**Kommentar** an, in dem das Wort `<input>` vorkam — er
+las `<style>`-Blöcke als Markup. Jetzt blendet er Stil-, Skript- und
+Kommentarblöcke aus, bevor er sucht (zeilentreu, damit die gemeldete
+Zeilennummer stimmt). Gegengeprüft mit einem absichtlich eingebauten
+unbeschrifteten Feld: Er schlägt weiterhin an und nennt die richtige Zeile.
+
 ### Behoben (Am Handy war „One-Click bewerben" nicht anklickbar)
 
 Die Bewerberstrecke am Telefon geprüft — dort, wo das Produkt mit

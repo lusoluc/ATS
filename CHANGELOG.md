@@ -5,6 +5,52 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (Wer auf eine besetzte Stelle klickte, sah „Not Found" und sonst nichts)
+
+Es gab keine eigenen Fehlerseiten. In Produktion antwortete Django mit seinem
+Standardtext — gemessen: **179 Bytes**, `lang="en"`, kein einziger Link:
+
+> Not Found — The requested resource was not found on this server.
+
+Für eine deutsche Karriereseite in der Pflege ist das eine verlorene
+Bewerbung. Und der häufigste 404 ist kein Tippfehler: Anzeigen verschwinden,
+sobald die Stelle besetzt ist — der Link in einer Jobbörse oder E-Mail bleibt
+bestehen.
+
+- **404** nennt den wahrscheinlichen Grund („Die Stelle ist inzwischen
+  besetzt") und bietet drei Wege weiter: Stellenbörse, Benachrichtigung bei
+  neuen Stellen, Startseite. Wer über einen toten Link kommt, ist ja gerade
+  jemand, der sich bewerben wollte.
+- **403** sagt, dass es Absicht ist und nicht ein Defekt: Die Rolle schließt
+  den Bereich nicht ein, die Personalverwaltung kann erweitern. Mit dem
+  Hinweis auf abgelaufene Vertretungen — ein häufiger Fall, den sonst niemand
+  einordnen kann.
+- **CSRF-Fehler** war der teuerste Fall: Formular in Ruhe ausgefüllt,
+  zwischendurch telefoniert, Sitzung abgelaufen — und Django antwortete mit
+  „CSRF verification failed. Request aborted." Jetzt steht dort, was hilft:
+  **Die Eingaben stehen noch im Formular**, Zurück-Knopf, erneut absenden.
+  Der technische Ablehnungsgrund bleibt bewusst draußen: Er hilft beim
+  Sondieren und sagt einer bewerbenden Person nichts.
+- **400** für abgeschnittene Adressen und abgebrochene Uploads.
+
+**Die 500-Seite ist bewusst eigenständig.** Sie erscheint, wenn etwas kaputt
+ist — oft die Datenbank. Würde sie `base.html` erben, liefen Kontextprozessoren
+(Branding, Navigation) mit, die genau dann ebenfalls scheitern: Eine
+Fehlerseite, die selbst einen Fehler wirft, zeigt wieder Djangos nackten
+Standardtext. Also kein `extends`, kein `static`, keine Datenbank, Stil
+eingebettet — per Test festgehalten, samt Rendern mit leerem Kontext, so wie
+Django es tut. Kontraste nachgerechnet: 6,3:1 bis 19,3:1, hell wie dunkel.
+
+Ein Wächter hält fest, dass **jede** Fehlerseite mindestens einen Weg zurück
+anbietet — eine Fehlerseite ohne Ausweg ist eine Sackgasse mit Stil.
+
+Beim Schreiben zweimal derselbe Stolperstein wie zuletzt: Der Auth-Wächter
+schlug bei der neuen CSRF-Sicht an (sie muss ohne Anmeldung erreichbar sein —
+jetzt mit Begründung auf der Allowlist, die selbst auf tote Einträge geprüft
+wird), und der eigene Jargon-Test schlug bei einem **Kommentar** an, der
+„403 Forbidden" als das zitiert, was ersetzt wird. Geprüft wird jetzt, was der
+Mensch sieht, nicht der Quelltext.
+
 ### Behoben (Die Air-Gap-Zusage galt nur, solange alle daran denken)
 
 `System_Architektur_und_Feature_Katalog.md` wirbt wörtlich mit „Air-Gapped

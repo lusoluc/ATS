@@ -62,6 +62,13 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'securats.urls'
 
+# Abgelaufene Sitzung beim Absenden eines Formulars. Ohne diese Zeile
+# antwortet Django mit "CSRF verification failed. Request aborted." - wer das
+# nach dem Ausfuellen des Bewerbungsformulars liest, denkt an einen Defekt
+# und gibt auf. Die eigene Sicht sagt stattdessen, dass die Eingaben noch im
+# Formular stehen (siehe ats/views/errors.py).
+CSRF_FAILURE_VIEW = 'ats.views.errors.csrf_failure'
+
 # Setzt waehrend des Testlaufs einen schnellen Passwort-Hasher. Begruendung
 # und Messung stehen in ats/test_runner.py. Bewusst ein Runner statt eines
 # `if 'test' in sys.argv` hier: Diese Einstellung kann so nicht in den

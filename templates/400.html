@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Anfrage nicht verstanden · SecurATS{% endblock %}
+{% block content %}
+{% comment %} Selten, aber nicht nie: fehlerhafte Adresse, abgeschnittener
+   Upload, ein Host-Name, der nicht in ALLOWED_HOSTS steht. Auch dafür sah
+   man bisher Djangos englischen Standardtext ohne Weg zurück. {% endcomment %}
+<div class="page-wrap" style="max-width:640px;">
+  <h1 class="page-title"><i class="fa-solid fa-circle-question" aria-hidden="true"></i> Die Anfrage kam unvollständig an</h1>
+  <p class="page-lead">
+    Der Server konnte mit dieser Anfrage nichts anfangen.
+  </p>
+  <div class="card">
+    <p style="margin-top:0;">
+      Das passiert meistens, wenn eine Adresse unterwegs abgeschnitten wurde —
+      etwa beim Kopieren aus einer E-Mail — oder wenn ein Upload abgebrochen
+      ist. Versuchen Sie es noch einmal; bei einem Upload hilft es, die Datei
+      erneut auszuwählen.
+    </p>
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:var(--space-4);">
+      <a class="btn btn-primary" href="{% url 'ats:job_list' %}">Zu den Stellenangeboten</a>
+      <a class="btn btn-ghost" href="{% url 'ats:home' %}">Zur Startseite</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

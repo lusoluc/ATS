@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Seite nicht gefunden · SecurATS{% endblock %}
+{% block content %}
+{% comment %} Anders als 500.html erbt diese Seite base.html: Ein 404 heißt,
+   dass eine Adresse ins Leere zeigt — die Anwendung selbst läuft. Navigation,
+   Branding und Fußzeile funktionieren also und gehören hierher, denn der
+   ganze Zweck der Seite ist ein Weg zurück.
+
+   Vorher stand hier Djangos Standardtext: „Not Found — The requested resource
+   was not found on this server.", auf Englisch, mit lang="en", ohne einen
+   einzigen Link. Der häufigste Fall ist aber kein Tippfehler, sondern eine
+   besetzte Stelle, deren Link noch in einer Jobbörse oder einer E-Mail
+   steht. {% endcomment %}
+<div class="page-wrap" style="max-width:640px;">
+  <h1 class="page-title"><i class="fa-solid fa-signs-post" aria-hidden="true"></i> Diese Seite gibt es nicht (mehr)</h1>
+  <p class="page-lead">
+    Die Adresse führt ins Leere. Das liegt meistens nicht an Ihnen.
+  </p>
+  <div class="card">
+    <p style="margin-top:0;">Die häufigsten Gründe:</p>
+    <ul style="margin:0 0 var(--space-4); padding-left:1.2em; color:var(--text-muted);">
+      <li><strong>Die Stelle ist inzwischen besetzt</strong> oder wurde
+          zurückgezogen. Anzeigen verschwinden, sobald sie nicht mehr aktuell
+          sind — der Link in einer Jobbörse oder E-Mail bleibt aber bestehen.</li>
+      <li>Eine Kampagnenseite ist abgelaufen.</li>
+      <li>Ein Tippfehler in der Adresse.</li>
+    </ul>
+    <p style="margin-bottom:var(--space-4);">
+      Alle aktuell offenen Stellen stehen in der Stellenbörse — dort lohnt
+      sich der Blick, auch wenn Ihre Stelle nicht mehr dabei ist.
+    </p>
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+      <a class="btn btn-primary" href="{% url 'ats:job_list' %}">
+        <i class="fa-solid fa-briefcase" aria-hidden="true"></i> Offene Stellen ansehen
+      </a>
+      <a class="btn btn-ghost" href="{% url 'ats:job_alert' %}">
+        <i class="fa-solid fa-bell" aria-hidden="true"></i> Bei neuen Stellen benachrichtigen lassen
+      </a>
+      <a class="btn btn-ghost" href="{% url 'ats:home' %}">Zur Startseite</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

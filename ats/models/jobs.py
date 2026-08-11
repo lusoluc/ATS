@@ -114,6 +114,11 @@ class JobPosting(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     descriptionEasy = models.TextField(blank=True, null=True)  # WP1: Leichte-Sprache-Variante
+    # Englische Fassung der Beschreibung – fuer internationale Bewerbende die
+    # Bruecke, bis das Deutsch reicht. Gleiche Mechanik wie die Leichte
+    # Sprache: leer = kein Umschalter auf der Anzeige, gepflegt im Editor
+    # (mit KI-Entwurf), nie automatisch veroeffentlicht.
+    descriptionEnglish = models.TextField(blank=True, null=True)
 
     tasksJson = models.JSONField(default=list)
     requirementsJson = models.JSONField(default=list)

@@ -281,6 +281,20 @@ MODALS & OVERLAYS
                         <textarea name="description_easy" id="job-desc-easy" class="form-textarea" rows="2" placeholder="Kurze Sätze. Einfache Wörter. Leer lassen = kein Umschalter auf der Anzeige."></textarea>
                         <span id="job-easy-status" aria-live="polite" style="font-size:11px; color: var(--text-muted);"></span>
                     </div>
+
+                    <!-- Englische Fassung: gleiche Mechanik wie die Leichte Sprache.
+                         Der KI-Entwurf landet im Textfeld zur Pruefung, nie
+                         ungesehen auf der Anzeige. -->
+                    <div style="margin-top:14px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap;">
+                            <label class="form-label" style="margin-bottom:0;" for="job-desc-english">Englische Fassung (optional)</label>
+                            <button type="button" class="btn-secondary-cta" style="height:28px; font-size:11px; padding:0 12px;" onclick="draftEnglish(this)">
+                                <i class="fa-solid fa-language" style="margin-right:6px;"></i>Übersetzung mit KI entwerfen
+                            </button>
+                        </div>
+                        <textarea name="description_english" id="job-desc-english" class="form-textarea" rows="2" placeholder="English version of the description. Leer lassen = kein Umschalter auf der Anzeige."></textarea>
+                        <span id="job-english-status" aria-live="polite" style="font-size:11px; color: var(--text-muted);"></span>
+                    </div>
                     
                     <!-- New Interactive Premium Suggestions Panel -->
                     <div id="agg-suggestions-box" class="glass-card" style="display: none; margin-top: 12px; padding: 16px; border: 1px solid rgba(139, 92, 246, 0.4); background: rgba(15, 12, 30, 0.85); box-shadow: 0 8px 32px 0 rgba(139, 92, 246, 0.2); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 8px; transition: all 0.3s ease;">

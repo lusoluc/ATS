@@ -137,7 +137,10 @@ class CandidateFlowWP1TestCase(TestCase):
         job = self._job(easy=None)
         resp = self.client.get(reverse('ats:job_detail', args=[job.id]))
         self.assertEqual(resp.status_code, 200)
-        self.assertNotContains(resp, "easyToggle")
+        # descBtnEasy ist die Kennung des Umschalters seit dem Drei-Fassungen-
+        # Umbau (normal/leicht/englisch). Der alte Marker "easyToggle" existiert
+        # nicht mehr - ihn zu pruefen hiesse, immer zu bestehen.
+        self.assertNotContains(resp, "descBtnEasy")
 
 class PortalMessagesTestCase(TestCase):
     """UC-LK-11/RI-06: Portal zeigt den Nachrichten-Verlauf und erlaubt Rückfragen."""

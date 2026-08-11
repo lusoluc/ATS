@@ -71,6 +71,7 @@ urlpatterns = [
     path('recruiter/ki/agg-check/', views.gemma_agg_check, name='gemma_agg_check'),
     path('recruiter/ki/agg-check/status/<uuid:task_id>/', views.gemma_agg_check_status, name='gemma_agg_check_status'),
     path('recruiter/ki/simple-german/', views.gemma_translate_simple_german, name='gemma_translate_simple_german'),
+    path('recruiter/ki/english/', views.gemma_translate_english, name='gemma_translate_english'),
     path('recruiter/ki/settings/save/', views.save_ai_settings, name='save_ai_settings'),
     path('recruiter/ki/logs/', views.get_ai_execution_logs, name='get_ai_execution_logs'),
     path('recruiter/ki/validate-prompt/', views.validate_ai_prompt, name='validate_ai_prompt'),

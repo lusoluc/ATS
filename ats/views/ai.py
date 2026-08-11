@@ -30,7 +30,7 @@ from ..permissions import (
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["get_ollama_url", "get_ai_model", "make_ollama_request", "evaluate_with_local_gemma", "try_parse_json_reply", "log_ai_execution", "classify_ai_error", "test_gemma", "get_ai_execution_logs", "gemma_agg_check", "gemma_agg_check_status", "gemma_translate_simple_german", "validate_ai_prompt", "validate_ai_prompt_status", "save_ai_settings", "polish_message", "apply_template_tone", "suggest_process", "suggest_job_draft", "analytics_ask", "healthz_ai", "ingest_best_performers", "best_performer_profiles"]
+__all__ = ["get_ollama_url", "get_ai_model", "make_ollama_request", "evaluate_with_local_gemma", "try_parse_json_reply", "log_ai_execution", "classify_ai_error", "test_gemma", "get_ai_execution_logs", "gemma_agg_check", "gemma_agg_check_status", "gemma_translate_simple_german", "gemma_translate_english", "validate_ai_prompt", "validate_ai_prompt_status", "save_ai_settings", "polish_message", "apply_template_tone", "suggest_process", "suggest_job_draft", "analytics_ask", "healthz_ai", "ingest_best_performers", "best_performer_profiles"]
 
 
 
@@ -583,6 +583,56 @@ def gemma_translate_simple_german(request):
     return JsonResponse({'success': False, 'error': 'Invalid request method.'})
 
 
+@recruiter_required
+def gemma_translate_english(request):
+    """Englische Fassung der Stellenbeschreibung entwerfen (lokale KI).
+
+    Gleiche Mechanik wie die Leichte Sprache: Der Entwurf landet im Textfeld
+    zur Pruefung, nie ungesehen auf der Anzeige. Anders als dort gibt es KEINEN
+    deterministischen Fallback - eine Uebersetzung laesst sich nicht durch
+    Satzkuerzung ersetzen. Ist die KI nicht erreichbar, sagt die Antwort das,
+    und das Feld bleibt unveraendert.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request method.'},
+                            status=405)
+    text = (request.POST.get('text') or '').strip()
+    if not text:
+        return JsonResponse({'success': False, 'error': 'Kein Text übermittelt.'})
+
+    _row = SystemSetting.objects.filter(key='AI_ENGLISH_PROMPT').first()
+    instruction = ((_row.value.strip() if _row and _row.value else '') or
+                   "Du bist der SecurATS Übersetzer für Stellenanzeigen. "
+                   "Übersetze den folgenden deutschen Anzeigentext in "
+                   "klares, natürliches Englisch (B1-Niveau, freundlich, "
+                   "ohne Amtsdeutsch). Erfinde nichts dazu, lass nichts weg "
+                   "und nenne KEINE Gehaltszahlen, auch wenn der Text "
+                   "welche enthalten sollte.")
+    prompt = (f"{instruction}\n\nText zum Übersetzen:\n{text}\n\n"
+              "NUR die Übersetzung ausgeben.")
+    payload = {"model": get_ai_model(), "prompt": prompt, "stream": False}
+
+    import time
+    start_time = time.time()
+    try:
+        success, res_data = make_ollama_request(get_ollama_url(), payload,
+                                                timeout=28.0)
+        latency = round(time.time() - start_time, 2)
+        if success and (res_data.get("response") or "").strip():
+            log_ai_execution("Englische Fassung", get_ai_model(), latency,
+                             True, False, "", False, prompt)
+            return JsonResponse({'success': True,
+                                 'result': res_data["response"].strip()})
+        log_ai_execution("Englische Fassung", get_ai_model(), latency,
+                         False, False, f"Ollama-Fehler: {res_data}", False, prompt)
+    except Exception as e:
+        latency = round(time.time() - start_time, 2)
+        log_ai_execution("Englische Fassung", get_ai_model(), latency,
+                         False, False, str(e), False, prompt)
+    return JsonResponse({'success': False,
+                         'error': 'KI nicht erreichbar – Feld unverändert.'})
+
+
 @hr_admin_required
 def validate_ai_prompt(request):
     """Validates the current custom AGG or Leichte Sprache prompt by running it on a test input asynchronously."""
@@ -777,6 +827,7 @@ def save_ai_settings(request):
         # KI-Absage; K.O. nur regelbasiert ueber Pflichtkriterien).
         agg_prompt = request.POST.get('AI_AGG_PROMPT', '').strip()
         easy_prompt = request.POST.get('AI_EASY_LANGUAGE_PROMPT', '').strip()
+        english_prompt = request.POST.get('AI_ENGLISH_PROMPT', '').strip()
 
         # Das zentrale KI-Opt-in war bisher nur per Shell schaltbar, obwohl es
         # an vier Stellen wirkt (EU AI Act: Aktivierung ist eine bewusste
@@ -792,6 +843,7 @@ def save_ai_settings(request):
             'AI_TONE': tone,
             'AI_AGG_PROMPT': agg_prompt,
             'AI_EASY_LANGUAGE_PROMPT': easy_prompt,
+            'AI_ENGLISH_PROMPT': english_prompt,
         }
 
         with transaction.atomic():

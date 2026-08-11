@@ -5,6 +5,32 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Hinzugefügt (Englische Fassung der Stellenanzeige — die Brücke, bis das Deutsch reicht)
+
+Zielgruppe des Hauses sind auch internationale Pflegekräfte. Die Leichte
+Sprache hatte ihren Pflegeweg seit B5; eine englische Fassung gab es nicht.
+Jetzt gilt dieselbe Mechanik und dieselbe Ehrlichkeit:
+
+- **Feld im Stellen-Editor** („Englische Fassung (optional)") mit
+  KI-Entwurf per **„Übersetzung mit KI entwerfen"** — der Entwurf landet zur
+  Prüfung im Textfeld, nie ungesehen auf der Anzeige. Leer lassen heißt:
+  kein Umschalter.
+- **Anders als bei der Leichten Sprache gibt es keinen deterministischen
+  Fallback.** Eine Übersetzung lässt sich nicht durch Satzkürzung ersetzen —
+  ist die KI nicht erreichbar, sagt die Antwort das, und das Feld bleibt
+  unverändert. Deutsch als Englisch auszugeben wäre die schlechtere Ehrlichkeit.
+- **Der Übersetzungs-Prompt ist in der KI-Zentrale pflegbar** (`AI_ENGLISH_PROMPT`)
+  und wird auch wirklich gelesen — die Asymmetrie, die bei der Leichten
+  Sprache einst behoben wurde (pflegbarer Prompt, den niemand las), ist hier
+  von Anfang an per Test ausgeschlossen.
+- **Die öffentliche Anzeige** hat jetzt bis zu drei Fassungen (normal, leicht,
+  englisch) hinter zwei Umschaltern mit `aria-pressed`-Zustand; die englische
+  trägt `lang="en"`, sonst liest ein deutscher Screenreader englischen Text
+  mit deutschen Ausspracheregeln vor (WCAG 3.1.2). Der alte Zwei-Wege-Toggle
+  ist im selben Zug ersetzt; der Test, der den entfernten Marker `easyToggle`
+  prüfte, zeigt auf die neue Kennung — ein Test auf einen toten Marker
+  bestünde immer.
+
 ### Hinzugefügt (Verlaufs-Kurzfassung: den Schriftwechsel in Sekunden erfassen)
 
 Wer einen Fall übernimmt — Urlaubsvertretung, Krankheitsfall, „Mein Bereich"

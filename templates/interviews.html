@@ -5,7 +5,10 @@
 <div class="page-wrap" style="max-width:1100px;">
   <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
     <h1 class="page-title" style="margin:0;"><i class="fa-solid fa-calendar-days"></i> Team-Kalender</h1>
-    <div style="display:flex; gap:8px; align-items:center;">
+    <!-- flex-wrap: Ohne Umbruch schob die Monats-Navigation den .ics-Knopf
+         am Handy auf 391 px hinaus - dort war der Kalender-Export nicht mehr
+         anklickbar. -->
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
       <a class="btn btn-ghost" href="?monat={{ prev_month }}" aria-label="Voriger Monat"><i class="fa-solid fa-chevron-left"></i></a>
       <strong style="min-width:150px; text-align:center;">{{ month_label }}</strong>
       <a class="btn btn-ghost" href="?monat={{ next_month }}" aria-label="Nächster Monat"><i class="fa-solid fa-chevron-right"></i></a>

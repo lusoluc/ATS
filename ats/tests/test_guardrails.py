@@ -756,9 +756,19 @@ class GuardrailFormLabelTestCase(TestCase):
         base = os.path.join(os.path.dirname(os.path.dirname(
             os.path.dirname(__file__))), "templates")
         offenders = []
+        # In <style>/<script> und in Kommentaren gibt es keine Formularfelder -
+        # nur Prosa, die wie welche aussieht. Ein CSS-Kommentar mit dem Wort
+        # „<input>" hat diesen Waechter ausgeloest. Die Bloecke werden durch
+        # gleich viele Zeilenumbrueche ersetzt, damit die gemeldete
+        # Zeilennummer weiterhin stimmt.
+        stumm = re.compile(
+            r"<style\b.*?</style>|<script\b.*?</script>|<!--.*?-->"
+            r"|\{#.*?#\}|\{% comment %\}.*?\{% endcomment %\}",
+            re.DOTALL | re.IGNORECASE)
         for rel in sorted(_public_templates()):
-            src = open(os.path.join(base, *rel.split("/")),
+            roh = open(os.path.join(base, *rel.split("/")),
                        encoding="utf-8").read()
+            src = stumm.sub(lambda m: "\n" * m.group(0).count("\n"), roh)
             for m in re.finditer(r"<(input|textarea|select)\b[^>]*>",
                                  src, re.DOTALL):
                 tag = m.group(0)

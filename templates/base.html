@@ -873,6 +873,19 @@
             .btn, .btn-primary, .btn-ghost, .btn-cta, .btn-secondary-cta {
                 min-height: 44px; }
             .btn-icon { min-width: 44px; min-height: 44px; }
+            /* Punkt (2) galt bisher nur fuer Knoepfe. Gemessen wurden dabei
+               Auswahlfelder mit 19 px Hoehe und die globale Suche mit 16 px -
+               ein 19 px hohes Auswahlfeld ist am Daumen nicht sicherer zu
+               treffen als ein 19 px hoher Knopf (WCAG 2.5.8: mindestens 24,
+               2.5.5: bequeme 44). Kontrollkaestchen bekommen 24 px: groesser
+               wirkt neben dem Text wie ein Fehler. */
+            .input, .form-input, .filter-select, select, textarea,
+            input[type="search"], input[type="text"], input[type="email"],
+            input[type="tel"], input[type="date"], input[type="number"],
+            input[type="password"] {
+                min-height: 44px; }
+            input[type="checkbox"], input[type="radio"] {
+                min-width: 24px; min-height: 24px; }
             input[type="file"]:not(.file-upload-input) { font-size: 16px !important; }
             input[type="file"]:not(.file-upload-input)::file-selector-button {
                 min-height: 44px; font-size: 16px; }
@@ -939,10 +952,19 @@
         .global-search input {
             background: none; border: none; outline: none;
             color: var(--text-main); font-size: 14px; width: 100%;
+            /* Gemessen 87x16 px: Der gepolsterte Rahmen sieht wie ein Feld
+               aus, klickbar ist aber nur das <input> darin - und das war
+               16 px hoch (WCAG 2.5.8 verlangt 24). */
+            min-height: 24px;
         }
         .global-search input::placeholder { color: var(--text-muted); }
         @media (max-width: 960px) {
             .global-search { order: 3; max-width: none; width: 100%; margin: 12px 0 0; }
+            /* Hier und nicht im 560er-Block: Die .global-search-Regeln stehen
+               weiter unten in der Datei und gewinnen bei gleicher Gewichtung.
+               Eine Regel, die von der Quellreihenfolge ueberstimmt wird, sieht
+               richtig aus und tut nichts. */
+            .global-search input { min-height: 44px; }
         }
 
         /* Nur für Screenreader (z. B. aria-live-Regionen, Tastatur-Hinweise) */

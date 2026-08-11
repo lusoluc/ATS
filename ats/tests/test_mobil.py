@@ -26,7 +26,7 @@ import re
 from django.test import TestCase
 from django.urls import Resolver404, resolve
 
-from ..management.commands.mobil_pruefen import BREITE, SEITEN
+from ..management.commands.mobil_pruefen import BREITE, MIN_ZIEL, SEITEN
 
 VORLAGEN = pathlib.Path(__file__).resolve().parent.parent.parent / "templates"
 
@@ -49,7 +49,7 @@ class WaechterDeckungTestCase(TestCase):
     def test_every_checked_path_really_exists(self):
         """Eine tote Adresse in der Liste ist eine Prüfung, die nichts trifft."""
         tot = []
-        for name, pfad in SEITEN:
+        for name, pfad, _rolle in SEITEN:
             probe = pfad.replace("{job}",
                                  "00000000-0000-0000-0000-000000000000")
             try:
@@ -61,16 +61,41 @@ class WaechterDeckungTestCase(TestCase):
     def test_the_applicant_path_is_covered_completely(self):
         """Jede öffentliche Seite, die eine bewerbende Person erreicht, muss
         in der Prüfliste stehen — sonst wächst genau dort die nächste Lücke."""
-        gedeckt = {p for _, p in SEITEN}
+        gedeckt = {p for _, p, _r in SEITEN}
         pflicht = {"/", "/jobs/", "/jobs/{job}/", "/jobs/{job}/bewerben/",
                    "/job-alert/", "/barrierefreiheit/", "/ki-transparenz/"}
         self.assertEqual(
             pflicht - gedeckt, set(),
             "Öffentliche Seite ohne Handy-Prüfung: " + str(pflicht - gedeckt))
 
+    def test_the_decision_path_is_covered_too(self):
+        """„Mobil für Entscheider" wurde gebaut, aber nie gemessen. Der erste
+        Lauf über die internen Seiten fand die globale Suche mit 16 px Höhe
+        auf JEDER Seite und den Kalender-Export außerhalb des Bildschirms."""
+        gedeckt = {p for _, p, _r in SEITEN}
+        pflicht = {"/recruiter/dashboard/", "/recruiter/approvals/",
+                   "/recruiter/bedarf/", "/recruiter/interviews/",
+                   "/recruiter/postfach/"}
+        self.assertEqual(
+            pflicht - gedeckt, set(),
+            "Entscheider-Seite ohne Handy-Prüfung: " + str(pflicht - gedeckt))
+
+    def test_internal_pages_declare_a_role(self):
+        """Ohne Rolle wird nicht angemeldet – die Seite läuft in die
+        Anmeldemaske und der Wächter prüft fröhlich das Login-Formular."""
+        ohne = [n for n, p, r in SEITEN if p.startswith("/recruiter/")
+                and p != "/recruiter/login/" and not r]
+        self.assertEqual(ohne, [], f"Interne Seite ohne Rolle: {ohne}")
+
     def test_the_narrowest_common_device_is_used(self):
         """375 px ist das iPhone SE. Wer breiter prüft, prüft weniger."""
         self.assertLessEqual(BREITE, 375)
+
+    def test_the_target_size_matches_the_binding_level(self):
+        """WCAG 2.5.8 (AA) verlangt 24 px. 44 wären bequem (2.5.5, AAA) —
+        geprüft wird die verbindliche Schwelle, sonst scheitert der Wächter
+        an Geschmacksfragen und wird abgeschaltet."""
+        self.assertEqual(MIN_ZIEL, 24)
 
 
 class LayoutRegelnTestCase(TestCase):
@@ -108,6 +133,16 @@ class LayoutRegelnTestCase(TestCase):
         block = quelle.split(".mobile-toggle {", 1)[1].split("}", 1)[0]
         self.assertIn("min-width: 44px", block)
         self.assertIn("min-height: 44px", block)
+
+    def test_form_controls_are_touch_sized_on_phones(self):
+        """Der Mobile-Block sagt selbst „Buttons als echte Touch-Ziele" — und
+        meinte damit nur `.btn`. Gemessen: Auswahlfelder 19 px, globale Suche
+        16 px. Wer tippt und auswählt, braucht dieselbe Zielgröße wie wer
+        klickt."""
+        quelle = _css("base.html")
+        mobil = quelle.split("@media (max-width: 560px)", 1)[1]
+        self.assertIn(".filter-select, select, textarea", mobil)
+        self.assertIn('input[type="checkbox"], input[type="radio"]', mobil)
 
     def test_the_hero_headline_shrinks_on_small_screens(self):
         """56 px sind eine Bildschirm-Überschrift, keine Handy-Überschrift."""

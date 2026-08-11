@@ -5,6 +5,18 @@
   <h1 class="page-title"><i class="fa-solid fa-comments"></i> Nachrichten</h1>
   <p class="page-lead">Verlauf zur Bewerbung {{ application.id|truncatechars:12 }}.</p>
   <div class="card">
+    {% if verlauf %}
+    {% comment %} Kurzfassung fuer die Uebernahme eines Falls: Zaehlung,
+       wer am Zug ist, Anliegen zuletzt. Deterministisch aus den Nachrichten
+       gebaut - keine KI noetig, nichts erfunden. {% endcomment %}
+    <div role="note" style="border:1px solid var(--border-color); border-left:3px solid var(--accent); border-radius:var(--border-radius-sm); padding:10px 14px; margin-bottom:var(--space-4); font-size:13px; color:var(--text-main);">
+      <strong style="display:block; margin-bottom:4px;"><i class="fa-solid fa-forward-fast" aria-hidden="true"></i> Kurzfassung</strong>
+      {{ verlauf }}
+      {% if verlauf_fakten.auszug %}
+      <span style="display:block; margin-top:4px; color:var(--text-muted);">„{{ verlauf_fakten.auszug }}“</span>
+      {% endif %}
+    </div>
+    {% endif %}
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom: var(--space-4);">
       {% for m in messages %}
         <div style="align-self:{% if m.direction == 'OUTBOUND' %}flex-end;background:rgba(139,92,246,0.18);border:1px solid rgba(139,92,246,0.35){% else %}flex-start;background:var(--surface-hover);border:1px solid var(--border-color){% endif %};max-width:80%;padding:10px 14px;border-radius:12px;color:var(--text-main);">

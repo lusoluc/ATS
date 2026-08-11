@@ -226,7 +226,11 @@ hinterlegen. Das System schlägt den passenden Baustein vor; Sie ändern ihn ode
 übernehmen ihn.
 
 **Einzeln antworten** geht weiterhin: im Steckbrief der Person, Bereich
-Nachrichten.
+Nachrichten. Über dem Verlauf steht eine **Kurzfassung**: wie viele
+Nachrichten, wer am Zug ist, seit wann eine Frage unbeantwortet ist und worum
+es zuletzt ging. Gerade in der Vertretung erspart das, einen fremden Verlauf
+von unten nach oben zu lesen — dieselbe Kurzfassung steht auch in der
+Bewerbungskarte.
 
 **Von sich aus alle anschreiben:** Bis hierher ging es um Antworten auf Fragen.
 Manchmal wollen Sie umgekehrt beginnen — eine Einladung zum Infotag, eine

@@ -974,6 +974,23 @@
                 chips.innerHTML = d.bullets.map(b =>
                     `<span style="font-size:11px; background:rgba(255,255,255,0.08); border:1px solid var(--glass-border); border-radius:12px; padding:2px 9px; color:#e5e7eb;">${esc(b)}</span>`).join('');
             }
+            // Verlaufs-Kurzfassung: nur zeigen, wenn es einen Schriftwechsel gibt
+            const verlaufBox = document.getElementById('modal-verlauf');
+            if (verlaufBox) {
+                if (d.verlauf && d.verlauf.text) {
+                    const wartet = d.verlauf.wartet_seit_tagen;
+                    verlaufBox.innerHTML =
+                        `<strong style="display:block; margin-bottom:3px;"><i class="fa-solid fa-comments" aria-hidden="true"></i> Schriftwechsel`
+                        + (wartet != null && wartet >= 1 ? ` <span style="color:var(--warning, #f59e0b);">· wartet seit ${esc(wartet)} Tag${wartet !== 1 ? 'en' : ''}</span>` : '')
+                        + (d.verlauf.used_ai ? ' <span style="font-size:10px; color:var(--text-muted);">· KI-formuliert</span>' : '')
+                        + `</strong>${esc(d.verlauf.text)}`
+                        + (d.verlauf.auszug ? `<span style="display:block; margin-top:3px; color:var(--text-muted);">„${esc(d.verlauf.auszug)}“</span>` : '');
+                    verlaufBox.style.display = 'block';
+                } else {
+                    verlaufBox.style.display = 'none';
+                    verlaufBox.innerHTML = '';
+                }
+            }
             // Hochgeladene Nachweise: existierten samt Download-Endpunkt,
             // wurden aber nirgends angezeigt - wer sie anforderte, sah sie nie.
             const docsBox = document.getElementById('modal-documents');

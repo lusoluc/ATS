@@ -54,6 +54,10 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # Content-Security-Policy + Permissions-Policy. Macht aus der
+    # Air-Gap-Zusage eine Regel, die der Browser durchsetzt - siehe
+    # ats/security_headers.py.
+    'ats.security_headers.SicherheitsHeaderMiddleware',
 ]
 
 ROOT_URLCONF = 'securats.urls'

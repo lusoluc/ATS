@@ -53,6 +53,7 @@ module = [
     "ats.reply_drafts",
     "ats.retention",
     "ats.scoring",
+    "ats.security_headers",
     "ats.scoring_eval",
     "ats.talent_pool",
     "ats.thread_summary",

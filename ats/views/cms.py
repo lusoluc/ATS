@@ -10,6 +10,7 @@ import json
 import logging
 from urllib.parse import urlencode
 
+from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Q
@@ -39,6 +40,23 @@ from ..permissions import (
 from .common import campaign_expired
 
 logger = logging.getLogger(__name__)
+
+
+def _ist_fremde_adresse(wert: str) -> bool:
+    """Zeigt diese Bild-Adresse auf einen fremden Server?
+
+    Relative Pfade (`/media/uploads/logo.png`) und eingebettete Daten sind in
+    Ordnung - sie kommen von hier. Alles mit Schema oder protokollrelativem
+    `//host/...` kommt von woanders und wird von der
+    Content-Security-Policy geblockt (siehe ats/security_headers.py).
+    """
+    wert = (wert or "").strip()
+    if not wert:
+        return False
+    if wert.startswith("data:"):
+        return False
+    return wert.startswith("//") or "://" in wert
+
 
 __all__ = ["save_page", "pages_manage", "delete_page", "media_manage", "delete_media", "blocks_editor", "branding_view", "landing_pages_manage", "snippets_manage"]
 
@@ -300,10 +318,33 @@ def branding_view(request):
         if primary:
             org.brandPrimary = primary
         org.brandAccent = accent or ''
-        org.brandLogoUrl = (request.POST.get('logo_url') or '').strip()[:500]
-        org.brandHeroUrl = (request.POST.get('hero_url') or '').strip()[:500]
+        # Ein Logo von einem fremden Server meldet die IP-Adresse JEDER
+        # bewerbenden Person an diesen Server - dieselbe Fehlerklasse wie die
+        # Schriften vom CDN, nur vom Haus selbst eingetragen. Die
+        # Content-Security-Policy blockt es ohnehin; ohne diese Pruefung
+        # bliebe das Logo einfach leer und niemand wuesste, warum. Der Weg
+        # steht schon am Feld: hochladen unter „Medien".
+        abgelehnt = []
+        for feld, wert in (('logo_url', request.POST.get('logo_url')),
+                           ('hero_url', request.POST.get('hero_url'))):
+            sauber = (wert or '').strip()[:500]
+            if _ist_fremde_adresse(sauber):
+                abgelehnt.append(sauber)
+                continue
+            setattr(org, 'brandLogoUrl' if feld == 'logo_url'
+                    else 'brandHeroUrl', sauber)
         org.save(update_fields=['brandEnabled', 'brandMode', 'brandPrimary',
                                 'brandAccent', 'brandLogoUrl', 'brandHeroUrl'])
+        if abgelehnt:
+            messages.warning(
+                request,
+                "Bilder von fremden Servern sind nicht möglich: Der Browser "
+                "blockiert sie, und jede bewerbende Person würde ihre "
+                "IP-Adresse dorthin melden. Laden Sie das Bild unter „Medien“ "
+                "hoch und tragen Sie die Adresse von dort ein. Nicht "
+                "übernommen: " + ", ".join(abgelehnt))
+            write_audit('BRANDING_EXTERNAL_URL_BLOCKED', user=request.user,
+                        count=len(abgelehnt))
         write_audit('BRANDING_CHANGED', user=request.user,
                     enabled=org.brandEnabled, primary=org.brandPrimary,
                     mode=org.brandMode)

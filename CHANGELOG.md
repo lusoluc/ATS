@@ -5,6 +5,48 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (Die Air-Gap-Zusage galt nur, solange alle daran denken)
+
+`System_Architektur_und_Feature_Katalog.md` wirbt wörtlich mit „Air-Gapped
+Architektur (keine Cloud-APIs, keine Tracker, keine Google Fonts)". Diese
+Zusage war schon einmal gebrochen — `base.html` lud Schriften und Symbole von
+cdnjs und Google, jahrelang, unbemerkt. Behoben wurde das von Hand. Seither
+galt sie wieder nur als Vorsatz.
+
+Gemessen an einer Antwort mit `DEBUG=False`: Django setzt von sich aus
+Referrer-Policy, `X-Frame-Options: DENY`, nosniff und COOP. Es fehlten
+**Content-Security-Policy** und **Permissions-Policy** — also genau die
+Kopfzeile, die aus der Zusage eine Regel macht, die der Browser durchsetzt.
+
+- **Neue Middleware** `ats/security_headers.py`, bewusst ohne die Abhängigkeit
+  `django-csp`: Es sind zwei Kopfzeilen, und ein Paket mehr in einem Produkt
+  für abgeschottete Server ist keins weniger.
+- **Keine Direktive nennt eine fremde Herkunft, keine enthält `*`** — per Test
+  festgehalten. `connect-src 'self'` schließt den Abfluss von Bewerberdaten
+  per fetch/XHR, `frame-ancestors 'none'` und `form-action 'self'` schließen
+  Einbettung und entführte Formulare.
+- **Permissions-Policy**: Kamera, Mikrofon, Standort und Bezahlung aus. Ein
+  Bewerbungssystem hat danach nicht zu fragen.
+- **Im Browser gegengeprüft**, auf öffentlichen und internen Seiten: null
+  Verstöße bei voller Bedienung (Reiterwechsel, Board-Filter, Kandidaten-Modal
+  samt nachgeladenem Steckbrief). Und die Gegenprobe, dass die Regel greift —
+  ein cdnjs-Skript, ein externes Bild und ein `fetch` nach draußen werden alle
+  drei geblockt.
+- **Fremde Logo-Adressen werden abgelehnt.** Zwei Felder darf der Betrieb frei
+  füllen; eine fremde Adresse dort meldet die IP-Adresse *jeder* bewerbenden
+  Person an diesen Server — dieselbe Fehlerklasse wie die Schriften vom CDN,
+  nur vom Haus selbst eingetragen. Die CSP blockt sie ohnehin; ohne diese
+  Prüfung bliebe das Logo einfach leer und niemand wüsste, warum. Jetzt mit
+  Begründung abgelehnt, auditiert, und der Weg über „Medien" steht schon am
+  Feld. Ein Fehlversuch löscht das bestehende Logo nicht.
+
+**Was die Politik nicht leistet:** `'unsafe-inline'` bleibt für Skripte und
+Stile drin, weil die Oberfläche durchgehend mit `onclick="…"` und `style="…"`
+arbeitet. Gegen eine XSS-Lücke im eigenen Markup schützt sie damit nicht. Sie
+schützt gegen das, was hier real passiert ist. Die Inline-Handler zu entfernen
+ist ein eigenes Paket; die Politik jetzt strenger aussehen zu lassen, als sie
+ist, wäre die schlechtere Wahl.
+
 ### Behoben (Auf den Entscheider-Seiten war die Suche 16 Pixel hoch)
 
 Der Handy-Wächter aus dem Paket davor kannte nur die öffentlichen Seiten.

@@ -122,6 +122,59 @@ LocMemCache zurueckfaellt.
 
 ---
 
+## Fund 7 — Keine Content-Security-Policy · Mittel · behoben
+
+**Gemessen** an einer Antwort mit `DEBUG=False`: Django setzt von sich aus
+`Referrer-Policy`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`
+und `Cross-Origin-Opener-Policy`. Es fehlten **Content-Security-Policy** und
+**Permissions-Policy**.
+
+Das wiegt hier schwerer als anderswo, weil das Produkt mit „Air-Gapped
+Architektur (keine Cloud-APIs, keine Tracker, keine Google Fonts)" wirbt — und
+genau diese Zusage schon einmal gebrochen war: `base.html` lud Schriften und
+Symbole von cdnjs und Google, jahrelang. Behoben wurde das von Hand; seither
+galt die Zusage wieder nur, solange alle daran denken. Eine Regel, die auf
+Disziplin baut, hält nicht.
+
+**Behoben** mit `ats/security_headers.py` (eigene Middleware, bewusst ohne die
+Abhängigkeit `django-csp` — es sind zwei Kopfzeilen):
+
+- `default-src 'self'` und je Typ dasselbe: keine Direktive nennt eine fremde
+  Herkunft, keine enthält `*` (per Test festgehalten).
+- `connect-src 'self'` schließt den Abfluss von Bewerberdaten per fetch/XHR.
+- `frame-ancestors 'none'`, `form-action 'self'`, `base-uri 'self'`,
+  `object-src 'none'`.
+- `Permissions-Policy`: Kamera, Mikrofon, Standort und Bezahlung aus — ein
+  Bewerbungssystem hat danach nicht zu fragen.
+
+**Im Browser gegengeprüft.** Auf öffentlichen und internen Seiten null
+Verstöße bei voller Bedienung (Reiterwechsel, Board-Filter, Kandidaten-Modal
+samt nachgeladenem Steckbrief). Und die Gegenprobe, dass die Regel überhaupt
+greift — alle drei realen Wege werden geblockt:
+
+    script-src-elem blockte https://cdnjs.cloudflare.com/.../jquery.min.js
+    connect-src     blockte https://example.com/sammeln
+    img-src         blockte https://example.com/logo.png
+
+**Ehrlich benannte Grenze:** `'unsafe-inline'` steht für Skripte und Stile
+drin, weil die Oberfläche durchgehend mit `onclick="…"` und `style="…"`
+arbeitet. Gegen eine XSS-Lücke im eigenen Markup schützt die Politik damit
+nicht. Sie schützt gegen das, was hier real passiert ist (externe Quellen) und
+gegen Abfluss, Einbettung und entführte Formulare. Die Inline-Handler zu
+entfernen ist ein eigenes Paket — die Politik jetzt strenger aussehen zu
+lassen, als sie ist, wäre die schlechtere Wahl.
+
+**Nebenbefund:** Zwei Felder darf der Betrieb frei füllen — Logo- und
+Startbild-Adresse im Erscheinungsbild. Eine fremde Adresse dort meldet die
+IP-Adresse **jeder** bewerbenden Person an diesen Server: dieselbe
+Fehlerklasse wie die Schriften vom CDN, nur vom Haus selbst eingetragen. Die
+CSP blockt sie ohnehin; ohne Prüfung bliebe das Logo einfach leer. Jetzt
+werden solche Adressen beim Speichern abgelehnt, benannt (mit dem Grund) und
+auditiert (`BRANDING_EXTERNAL_URL_BLOCKED`) — der Weg über „Medien" steht
+schon am Feld.
+
+---
+
 ## Behobene Nebensache
 
 Doppelter `@recruiter_required`-Decorator auf `advance_interview_round` entfernt

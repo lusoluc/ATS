@@ -366,6 +366,11 @@ class GuardrailAuthDecoratorTestCase(TestCase):
         # wie beim Portal selbst. Die View prueft ihn und liefert
         # ausschliesslich die Daten der zugehoerigen Person.
         "candidate_data_export",
+        # BV: Die CSRF-Fehlerseite. Sie MUSS ohne Anmeldung erreichbar sein -
+        # sie erscheint gerade dann, wenn die Sitzung abgelaufen ist. Sie
+        # liest nichts aus der Datenbank, nimmt nichts entgegen und zeigt nur
+        # einen Text; den technischen Ablehnungsgrund verschweigt sie bewusst.
+        "csrf_failure",
     }
 
     def _iter_views(self):

@@ -14,6 +14,7 @@ from .applications import *  # noqa: F401,F403
 from .auth_views import *  # noqa: F401,F403
 from .cms import *  # noqa: F401,F403
 from .common import *  # noqa: F401,F403
+from .errors import *  # noqa: F401,F403
 from .feeds import *  # noqa: F401,F403
 from .governance import *  # noqa: F401,F403
 from .hilfe import hilfe_bild, hilfe_view  # noqa: F401

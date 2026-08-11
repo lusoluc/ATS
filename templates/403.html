@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Kein Zugriff · SecurATS{% endblock %}
+{% block content %}
+{% comment %} Diese Seite sieht fast nur, wer angemeldet ist: `role_required`
+   wirft PermissionDenied, wenn die Rolle nicht reicht. Djangos Standardtext
+   („403 Forbidden") liest sich wie ein Defekt — dabei ist es eine
+   Entscheidung, die jemand bewusst so eingerichtet hat. Wer das nicht weiß,
+   ruft die IT. {% endcomment %}
+<div class="page-wrap" style="max-width:640px;">
+  <h1 class="page-title"><i class="fa-solid fa-lock" aria-hidden="true"></i> Für diesen Bereich fehlt Ihnen die Berechtigung</h1>
+  <p class="page-lead">
+    Das ist kein Fehler, sondern Absicht: Ihre Rolle schließt diesen Bereich
+    nicht ein.
+  </p>
+  <div class="card">
+    <p style="margin-top:0;">
+      SecurATS zeigt jeder Rolle nur, was sie für ihre Arbeit braucht — und
+      protokolliert Zugriffe auf Bewerberdaten. Wenn Sie diesen Bereich für
+      Ihre Aufgabe benötigen, wenden Sie sich an Ihre Personalverwaltung
+      (Rolle „HR-Admin"); dort lässt sich die Berechtigung erweitern.
+    </p>
+    <p style="color:var(--text-muted);">
+      Falls Sie hier gelandet sind, weil ein Link Sie hergeführt hat: Das
+      passiert auch bei Vertretungen, deren Zeitraum abgelaufen ist.
+    </p>
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:var(--space-4);">
+      <a class="btn btn-primary" href="{% url 'ats:dashboard' %}">
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Zurück zu meinem Bereich
+      </a>
+      <a class="btn btn-ghost" href="{% url 'ats:hilfe' %}">
+        <i class="fa-solid fa-book-open" aria-hidden="true"></i> Hilfe &amp; Handbuch
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

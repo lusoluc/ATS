@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Sitzung abgelaufen · SecurATS{% endblock %}
+{% block content %}
+{% comment %} Der Regelfall ist harmlos und trifft die falschen Leute: Jemand
+   füllt das Bewerbungsformular in Ruhe aus, telefoniert dazwischen — und beim
+   Absenden ist der Sitzungs-Zeitstempel abgelaufen. Djangos Standardantwort
+   („CSRF verification failed. Request aborted.") liest sich wie ein Defekt.
+   Der Hinweis auf den Zurück-Knopf ist keine Floskel: Die Eingaben stehen
+   noch im Formular, weil der Browser sie zwischenspeichert. {% endcomment %}
+<div class="page-wrap" style="max-width:640px;">
+  <h1 class="page-title"><i class="fa-solid fa-hourglass-end" aria-hidden="true"></i> Ihre Sitzung ist abgelaufen</h1>
+  <p class="page-lead">
+    Das Formular konnte nicht abgeschickt werden — aus Sicherheitsgründen,
+    nicht wegen eines Fehlers in Ihren Angaben.
+  </p>
+  <div class="card">
+    <p style="margin-top:0;"><strong>Ihre Eingaben sind wahrscheinlich noch da.</strong>
+      Gehen Sie mit dem Zurück-Knopf Ihres Browsers eine Seite zurück; die
+      ausgefüllten Felder stehen dort in der Regel noch. Schicken Sie das
+      Formular dann erneut ab.</p>
+    <p style="color:var(--text-muted);">
+      Warum überhaupt? Ein Formular ist nur eine begrenzte Zeit gültig. Das
+      verhindert, dass eine fremde Seite in Ihrem Namen etwas abschickt —
+      derselbe Schutz, der auch Ihre Bewerbungsdaten sichert. Wenn Sie
+      zwischendurch lange nichts getan haben oder Cookies blockiert sind,
+      läuft diese Frist ab.
+    </p>
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:var(--space-4);">
+      <button type="button" class="btn btn-primary" onclick="history.back();">
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Zurück zum Formular
+      </button>
+      <a class="btn btn-ghost" href="{% url 'ats:job_list' %}">Zu den Stellenangeboten</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

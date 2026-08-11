@@ -5,6 +5,44 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (Das Dashboard wartete sechs Sekunden auf eine abgeschaltete Funktion)
+
+Gemessen statt vermutet: Gegen die Demo-Daten brauchte das Dashboard — die
+meistgeöffnete Seite des Produkts — **6.299 ms**. Davon entfielen **6.161 ms**
+auf die Erreichbarkeitsprüfung der lokalen KI. Für eine Funktion, die im
+Auslieferungszustand **aus** ist und auf der Seite nur ein Abzeichen zeichnet.
+
+Die Prüfung war schon einmal Thema und wurde damals zwischengespeichert. Der
+Puffer hält aber nur 20 Sekunden: Alle 20 Sekunden wartete die nächste Person
+wieder sechs Sekunden. Im Büro mit mehreren Recruiterinnen heißt das:
+praktisch immer.
+
+- **Ohne Freischaltung wird gar nicht mehr gesucht.** Dasselbe Muster galt im
+  Steckbrief längst („kein Ollama-Verbindungsversuch, kein Modal-Hänger") — es
+  war an dieser Tür nur nicht durchgesetzt. Genau die Fehlerklasse, die sich
+  durch dieses Projekt zieht: die Regel existiert, aber nicht überall.
+- **Dritter Zustand „AUS"** statt „OFFLINE". Das ist nicht nur schneller,
+  sondern ehrlicher: „OFFLINE" liest sich wie ein Defekt, obwohl schlicht
+  nichts eingeschaltet ist — und der Unterschied entscheidet, ob jemand die IT
+  ruft. In der Einstellungs-Zentrale steht entsprechend „KI-Assistenz ist aus"
+  statt „lokale KI nicht erreichbar".
+- **Die KI-Zentrale prüft weiterhin** (`force=True`): Dort ist die
+  Erreichbarkeit die eigentliche Frage — wer die Vorbewertung einschalten
+  will, muss vorher sehen, ob überhaupt etwas antwortet.
+- **Zeitlimit je Verbindungsversuch von 2,0 auf 0,8 Sekunden.** Ollama läuft
+  lokal oder im LAN; dort steht eine TCP-Verbindung in Millisekunden oder wird
+  sofort abgelehnt. Die zwei Sekunden wirkten nur, wenn Pakete ins Leere
+  laufen — und dann dreimal hintereinander. Das begrenzt auch den Fall
+  „KI eingeschaltet, aber tot" auf gut zwei Sekunden.
+
+**Ergebnis: 6.299 ms → 239 ms.** Bezahlt mit genau einer zusätzlichen
+Datenbankabfrage (der Blick auf den Schalter) statt eines Netzwerk-Versuchs.
+
+Bei der Gelegenheit gegengemessen, ob die Seiten mit der Datenmenge
+skalieren: Bei 37 → 237 Bewerbungen bleibt die Abfragezahl auf allen
+geprüften Seiten **konstant** (Dashboard 105/84, Termine 81/81, Analytics
+125/125). Kein N+1 — die frühere Arbeit an `select_related`/`Subquery` hält.
+
 ### Hinzugefügt (Englische Fassung der Stellenanzeige — die Brücke, bis das Deutsch reicht)
 
 Zielgruppe des Hauses sind auch internationale Pflegekräfte. Die Leichte

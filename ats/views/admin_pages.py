@@ -41,10 +41,11 @@ __all__ = ["stats_page", "process_page", "templates_page", "ki_page", "hris_page
     "enqueue_unscored_applications", "mail_settings_page", "learned_scoring_view", "save_learned_scoring_settings"]
 
 
-def gemma_status() -> str:
-    """Erreichbarkeit der lokalen KI als ONLINE/OFFLINE.
+def gemma_status(force: bool = False) -> str:
+    """Zustand der lokalen KI: AUS, ONLINE oder OFFLINE.
 
-    Wird sowohl von der KI-Zentrale als auch vom Dashboard-Abzeichen genutzt.
+    Wird vom Dashboard-Abzeichen, der Einstellungs-Zentrale und der
+    KI-Zentrale genutzt.
 
     Frueher stand hier eine eigene Verbindungspruefung mit fest verdrahtetem
     Port 11434. Zwei Folgen:
@@ -52,12 +53,31 @@ def gemma_status() -> str:
     * Wer OLLAMA_PORT setzte, sah ein OFFLINE-Abzeichen ueber einer laufenden
       KI - die Anzeige widersprach der Funktion.
     * Ohne KI kostete jeder Dashboard-Aufruf bis zu vier Sekunden, weil zwei
-      Verbindungsversuche mit je zwei Sekunden ins Leere liefen. Beim Kunden
-      ohne KI-Profil ist genau das der Normalfall.
+      Verbindungsversuche mit je zwei Sekunden ins Leere liefen.
 
     Beides erledigt `ollama_reachable()`: dieselbe Adresse wie die echten
     KI-Aufrufe, und die Antwort gilt kurz nach.
+
+    GEMESSEN (Demo-Daten, keine KI installiert): Das Dashboard brauchte
+    trotzdem 6,3 Sekunden - davon 6,16 fuer diese Pruefung. Der
+    Zwischenspeicher haelt sie nur 20 Sekunden, also wartete alle 20 Sekunden
+    die naechste Person wieder sechs Sekunden. Fuer eine Funktion, die per
+    Default AUS ist.
+
+    Deshalb der dritte Zustand: Ist die KI-Assistenz nicht freigeschaltet,
+    wird gar nicht erst gesucht - dann gibt es nichts zu melden ausser "AUS".
+    Dasselbe Muster wie im Steckbrief, der ohne Opt-in sofort zurueckkommt
+    statt auf Ollama zu warten. Nebenbei ehrlicher: "OFFLINE" liest sich wie
+    ein Defekt, obwohl schlicht nichts eingeschaltet ist.
+
+    `force=True` nutzt die KI-Zentrale: Dort ist die Erreichbarkeit die
+    eigentliche Frage - wer die Vorbewertung einschalten will, muss vorher
+    sehen, ob ueberhaupt etwas antwortet.
     """
+    from ..models import SystemSetting
+    if not force and not SystemSetting.objects.filter(
+            key='AI_SCORING_ENABLED', value='1').exists():
+        return 'AUS'
     from .ai import ollama_reachable
     return 'ONLINE' if ollama_reachable() else 'OFFLINE'
 
@@ -142,7 +162,7 @@ def ki_page(request):
         for i in sorted(AUTO_SAFE_INTENTS)]
     return render(request, 'admin_pages/ki.html', {
         'ai_settings': {s.key: s.value for s in SystemSetting.objects.all()},
-        'gemma_status': gemma_status(),
+        'gemma_status': gemma_status(force=True),
         'auto_reply_master': is_master_enabled(),
         'auto_reply_choices': auto_reply_choices,
     })
@@ -321,6 +341,10 @@ def settings_hub(request):
         return {'ok': bool(ok), 'label': good if ok else bad,
                 'warn': bool(warn)}
 
+    # EINMAL abfragen statt in der Zeile darunter - und ohne `force`, damit
+    # eine abgeschaltete KI keine Netz-Suche ausloest (siehe gemma_status).
+    _ki_zustand = gemma_status()
+
     groups = [
         {
             'title': 'Zustellung & Kommunikation',
@@ -421,8 +445,13 @@ def settings_hub(request):
                 {'name': 'KI-Zentrale', 'url': 'ats:ki_page',
                  'icon': 'fa-robot',
                  'hint': 'Lokale KI, AGG-Check, Auto-Antwort',
-                 'state': state(gemma_status() == 'ONLINE', 'lokale KI erreichbar',
-                                'lokale KI nicht erreichbar', warn=True)},
+                 # Ohne Freischaltung wird NICHT gesucht (sonst wartet die
+                 # Seite Sekunden auf eine abgeschaltete Funktion) - und die
+                 # Zeile sagt dann auch das, statt "nicht erreichbar".
+                 'state': (state(True, 'KI-Assistenz ist aus', '', warn=False)
+                           if _ki_zustand == 'AUS' else
+                           state(_ki_zustand == 'ONLINE', 'lokale KI erreichbar',
+                                 'lokale KI nicht erreichbar', warn=True))},
                 {'name': 'Lernendes Scoring', 'url': 'ats:learned_scoring',
                  'icon': 'fa-graduation-cap',
                  'hint': 'Messstrecke und Freischaltung (Opt-in)', 'state': None},

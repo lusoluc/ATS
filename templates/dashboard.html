@@ -334,7 +334,14 @@
 
         <a class="sidebar-link" href="{% url 'ats:ki_page' %}">
             <i class="fa-solid fa-robot"></i> KI-Zentrale & Spam
-            <span class="badge {% if gemma_status == 'ONLINE' %}badge-accent{% else %}badge-primary{% endif %}" style="padding: 2px 6px; font-size: 9px; margin-left: auto;">{{ gemma_status }}</span>
+            {% comment %} „AUS" statt „OFFLINE", wenn die KI-Assistenz gar
+               nicht freigeschaltet ist: Dann ist nichts kaputt, es ist nur
+               nichts eingeschaltet. Ohne Freischaltung wird auch nicht
+               gesucht — die Suche kostete das Dashboard sechs Sekunden.
+            {% endcomment %}
+            <span class="badge {% if gemma_status == 'ONLINE' %}badge-accent{% else %}badge-primary{% endif %}"
+                  style="padding: 2px 6px; font-size: 9px; margin-left: auto;"
+                  title="{% if gemma_status == 'AUS' %}KI-Assistenz ist nicht freigeschaltet{% elif gemma_status == 'ONLINE' %}Lokale KI erreichbar{% else %}KI freigeschaltet, aber nicht erreichbar{% endif %}">{{ gemma_status }}</span>
         </a>
 
         <a class="sidebar-link" href="{% url 'ats:hris_page' %}">

@@ -311,6 +311,14 @@
             color: #fff;
             font-size: 22px;
             cursor: pointer;
+            /* Das Symbol allein mass 19x27 px - unter dem Mindestmass von
+               24x24 (WCAG 2.5.8). Ausgerechnet der Knopf, der am Handy das
+               GANZE Menue oeffnet: Wer ihn nicht trifft, kommt nirgendwo hin.
+               44 px sind die bequeme Groesse fuer den Daumen (2.5.5). */
+            min-width: 44px;
+            min-height: 44px;
+            align-items: center;
+            justify-content: center;
         }
 
         /* Core container layout */
@@ -410,6 +418,17 @@
         .footer-links {
             display: flex;
             gap: 20px;
+            /* Ohne Umbruch stand diese Zeile am Handy 504 px breit in einem
+               375-px-Fenster. Zwei Folgen, beide unsichtbar fuer den
+               Entwickler am grossen Bildschirm:
+               1. "KI-Transparenz" (EU AI Act Art. 86) und "ATS-Dashboard"
+                  ragten hinaus und waren nicht anklickbar - body{overflow-x:
+                  hidden} schnitt sie ab, statt scrollbar zu machen.
+               2. Das ganze Dokument wurde dadurch 529 px breit. Der
+                  Barrierefreiheits-Knopf steht position:fixed mit right:30px
+                  und rechnete gegen diese 529 px - er landete bei 443..499px
+                  und war am Handy gar nicht mehr erreichbar. Ausgerechnet er. */
+            flex-wrap: wrap;
         }
 
         .footer-links a {
@@ -471,7 +490,7 @@
             }
 
             .mobile-toggle {
-                display: block;
+                display: flex;
             }
         }
 
@@ -479,6 +498,11 @@
             .footer-content {
                 flex-direction: column;
                 text-align: center;
+            }
+            /* Gestapelter Footer: Die umbrechenden Links mittig, passend zum
+               text-align der Spalte. */
+            .footer-links {
+                justify-content: center;
             }
         }
 

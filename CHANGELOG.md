@@ -5,6 +5,48 @@ Update-Pfad: `docker compose pull && docker compose up -d` (Migrationen laufen a
 
 ## [Unreleased]
 
+### Behoben (Am Handy war „One-Click bewerben" nicht anklickbar)
+
+Die Bewerberstrecke am Telefon geprüft — dort, wo das Produkt mit
+„Handy-Foto genügt" wirbt. Drei Befunde, alle drei unsichtbar, solange man am
+großen Bildschirm entwickelt:
+
+- **Der Apply-Knopf war weg.** Auf dem Stellendetail schob ein deutsches
+  Kompositum die Grid-Spalte auf 410 px in einem 375-px-Fenster; „One-Click
+  bewerben" lag außerhalb. Der wichtigste Knopf des Produkts, auf dem Gerät,
+  mit dem sich Pflegekräfte bewerben.
+- **Zwei Footer-Links waren abgeschnitten**, darunter „KI-Transparenz" —
+  der Link, den EU AI Act Art. 86 verlangt. Die Zeile war ein `display:flex`
+  ohne `flex-wrap` und stand 504 px breit.
+- **Der Barrierefreiheits-Knopf war unerreichbar.** Weil der Footer das
+  Dokument auf 529 px verbreiterte, rechnete er (`position:fixed; right:30px`)
+  gegen diese 529 px und landete bei 443..499 px. Ausgerechnet der Knopf, der
+  Kontrast, Schriftgröße und Lese-Lineal einstellt — für die Menschen, die ihn
+  am dringendsten brauchen.
+
+`body { overflow-x: hidden }` macht diese Fehlerklasse lautlos: Überstehendes
+wird **abgeschnitten statt scrollbar**. Dieselbe Falle wie einst bei den
+Tabellen — dort gibt es seit dem Mobile-Audit einen Wächter, für alles andere
+gab es keinen.
+
+- Ursache in allen drei Fällen dieselbe Familie: fehlender `flex-wrap`, und
+  Grid-Elemente ohne `min-width: 0` schrumpfen nie unter ihr längstes Wort.
+  Bei deutschen Komposita („Pflegehilfskraft", „Schwerbehindertenvertretung")
+  reicht ein Wort. Dazu `overflow-wrap: break-word` und eine Hero-Überschrift,
+  die am Handy 34 statt 56 px misst.
+- **Neuer Wächter `manage.py mobil_pruefen`**: fährt die acht öffentlichen
+  Seiten mit einem echten Browser bei 375 px an und endet mit Exit-Code 1,
+  sobald etwas über den Rand ragt — samt Namen der nicht mehr anklickbaren
+  Bedienelemente. Im HTML ist das nicht zu sehen; ob etwas übersteht,
+  entscheidet sich erst im Layout. Genau dieser Wächter hat den Apply-Knopf
+  gefunden, nachdem die Handprüfung ihn übersehen hatte.
+- Dazu Tests, die die Prüfliste ehrlich halten (keine tote Adresse, keine
+  öffentliche Seite ohne Prüfung) und die Layout-Regeln festhalten.
+- Beim Nachmessen mitgenommen: Der Menü-Knopf am Handy maß **19 × 27 px** —
+  unter dem Mindestmaß 24 × 24 (WCAG 2.5.8), jetzt 44 × 44. Ausgerechnet der
+  Knopf, der am Telefon das ganze Menü öffnet: Wer ihn nicht trifft, kommt
+  nirgendwo hin.
+
 ### Behoben (Das Dashboard wartete sechs Sekunden auf eine abgeschaltete Funktion)
 
 Gemessen statt vermutet: Gegen die Demo-Daten brauchte das Dashboard — die

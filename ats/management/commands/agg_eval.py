@@ -95,12 +95,12 @@ class Command(BaseCommand):
             zeile = (f"{b.merkmal:34} Referenz {b.referenz_note} · "
                      f"Varianten {noten}")
             if b.bestanden:
-                self.stdout.write(self.style.SUCCESS(f"✓ {zeile}"))
+                self.stdout.write(self.style.SUCCESS(f"OK   {zeile}"))
             elif b.unvollstaendig:
-                self.stdout.write(self.style.WARNING(f"? {zeile}"))
+                self.stdout.write(self.style.WARNING(f"OFFEN  {zeile}"))
                 self.stdout.write("    nicht ermittelt – siehe Fehler oben")
             else:
-                self.stdout.write(self.style.ERROR(f"✗ {zeile}"))
+                self.stdout.write(self.style.ERROR(f"FEHLER {zeile}"))
                 self.stdout.write(f"    {b.rechtsgrund}")
 
         schief = [b for b in befunde if not b.bestanden]

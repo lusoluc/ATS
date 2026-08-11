@@ -61,6 +61,27 @@ Legende: ✅ erfüllt · ◐ teilweise · ❌ offen · n/a nicht anwendbar
 4. ~~Alt-Text-Pflichtfeld beim Medien-Upload; `alt` an Kontaktperson-Fotos.~~ ✅ Pflicht (HTML + Server, getestet); sprechende `alt`-Texte in Landingpage und Content-Blöcken ergänzt.
 5. ~~Serverseitige Formularfehler inline am Feld.~~ ✅ umgesetzt (Nachtrag): Zusammenfassung + Feldfehler mit ARIA, Werte-Erhalt; deckt zugleich eine Robustheitslücke (direkte POSTs ohne Pflichtfelder erzeugten Datensätze mit leerer E-Mail).
 
+### Nachtrag: Handy-Durchgang (Paket BS)
+
+Ein dritter Durchgang, diesmal am 375-px-Bildschirm mit einem echten Browser
+(`manage.py mobil_pruefen`). Er fand drei Dinge, die zwei Audits übersehen
+hatten — alle unsichtbar, solange man am großen Bildschirm entwickelt:
+
+- **„One-Click bewerben" lag außerhalb des Bildes.** Ein deutsches Kompositum
+  schob die Grid-Spalte des Stellendetails auf 410 px. Der wichtigste Knopf
+  des Produkts, auf dem Gerät, mit dem sich die Zielgruppe bewirbt.
+- **Der Barrierefreiheits-Knopf war unerreichbar.** Die nicht umbrechende
+  Footer-Zeile machte das Dokument 529 px breit; der Knopf steht
+  `position:fixed; right:30px` und rechnete gegen diese 529 px.
+- **„KI-Transparenz" im Footer war abgeschnitten** — der Link, den EU AI Act
+  Art. 86 verlangt.
+- Dazu: Menü-Knopf 19 × 27 px statt mindestens 24 × 24 (WCAG 2.5.8).
+
+Lehre für künftige Audits: `body { overflow-x: hidden }` verwandelt jeden
+Überstand in **unsichtbaren Verlust**. Eine Sichtprüfung am Telefon zeigt
+nicht, was fehlt — man sieht ja nur, was da ist. Deshalb misst der Wächter die
+Elementkanten gegen die Fensterbreite, statt Bilder zu vergleichen.
+
 > Fazit (aktualisiert 04.08.2026): Die im Erst-Audit katalogisierten Lücken sind
 > geschlossen. Eine ZWEITE, tiefere Inventur (Paket B1–B7) fand und behob weitere
 > Defekte, die das Erst-Audit übersehen hatte — u. a. Panel-Switches ohne
